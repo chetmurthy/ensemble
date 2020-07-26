@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_RAND.C: Randomly multicast/send messages and fail */
 /* Author: Ohad Rodeh 8/2001 */
 /* Based on demo/rand.ml */
@@ -14,7 +24,7 @@
 /**************************************************************/
 #define NAME "CE_RAND"
 /**************************************************************/
-#define RAND_PROPS    CE_DEFAULT_PROPERTIES ":XFER"
+#define RAND_PROPS    CE_DEFAULT_PROPERTIES ":XFER:DEBUG"
 #define MAX_MSG_SIZE  16000
 
 #define MIN(x,y)  ((x) > (y) ? (y) : (x))
@@ -56,7 +66,7 @@ typedef struct state_t {
 static int thresh = 5;
 static int nmembers = 5;
 static int quiet = 0;
-static int size = 21;
+static int size = 17000 ;
 
 // This function is used prior to its definition. 
 void join(void);
@@ -68,18 +78,19 @@ void join(void);
 void
 policy (int rank, int nmembers, double *next /* OUT */, action_t *a /* OUT */) {
     int p = rand () % 100;
+    int q = rand () % (nmembers * 8) ;
     
     *a = ANone;
     if (nmembers >= thresh) {
-	if (p < 6)
+	if (p < 6 && q==0 )
 	    *a= ALeave;
-	else if (p < 9)
+	else if (p < 9 && q==0 )
 	    *a= APrompt;
-	else if (p < 15)
+	else if (p < 15 && q==0 )
 	    *a= ASuspect;
-	else if (p < 20)
+	else if (p < 20 && q==0 )
 	    *a= AProtocol;
-	else if (p < 25)
+	else if (p < 25 && q==0 )
 	    *a= AProperties;
 	else if (p < 40)
 	    *a = ACast;
@@ -209,7 +220,7 @@ void action(void *env)
     ce_rank_t dests[2];
     ce_rank_t suspects[2];
 
-    TRACE("action");
+//    TRACE("action");
 //    TRACE_GEN(("CE_RAND: blocked=%d\t xfer_view=%d\t leaving=%d\n",
 //	       s->blocked, s->xfer_view, s->leaving));
 
@@ -382,6 +393,7 @@ void main_block(void *env){
 	&& s->xfer_view == 0)
 	for(i=1; i<=5; i++)
 	    block_msg (s);
+    ce_BlockOk(s->intf);
 }
 
 void main_recv_cast(void *env, int rank, int len, char *data)
@@ -425,6 +437,8 @@ void join()
     memcpy(jops.properties, RAND_PROPS, strlen(RAND_PROPS));
     jops.use_properties = 1;
     jops.hrtbt_rate = 3.0;
+    jops.async_block_ok = 1;
+    jops.debug = 1;
     
     s = (state_t*) malloc (sizeof(state_t));
     memset(s, 0, sizeof(state_t));

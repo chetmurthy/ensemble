@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* HOT_INBOARD.ML *)
 (* Author:  Alexey Vaysburd, 11/96 *)
 (* init_view_state and capp_main_loop are based on code by Mark Hayden *)

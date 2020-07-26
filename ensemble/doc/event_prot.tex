@@ -1,3 +1,13 @@
+%*************************************************************%
+%
+%    Ensemble, 1_42
+%    Copyright 2003 Cornell University, Hebrew University
+%           IBM Israel Science and Technology
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
 \newcommand {\eventtype}[2]    {\item {#1:} #2}
 
 \newenvironment{EventType}{%
@@ -343,9 +353,10 @@ the key for the upcoming view}.
 
 \subsection{Event fields}
 Here we describe all the fields that appear in the events. The
-type definitions appear in fig~\ref{fig:fields} and
-fig~\ref{fig:extensions}.  Default values for the fields appear in
-fig~\ref{fig:defaults}.
+type definitions appear in fig~\ref{event-fields} and
+fig~\ref{fig:extensions}.  
+%Default values for the fields appear in
+%fig~\ref{fig:defaults}.
 
 \begin{figure}
 \begin{codebox}
@@ -402,11 +413,6 @@ type field =
       (* Signature/Verification with Auth *)
   | AuthData of Addr.set * Auth.data
 
-      (* Information passing between optimized rekey layers *)
-  | Tree    of bool * Tree.z
-  | TreeAct of Tree.sent
-  | AgreedKey of Security.key
-
       (* The channel list held by the SECCHAN layer *)
   | SecChannelList of Trans.rank list
   | SecStat of int              (* PERF figures for SECCHAN layer *)
@@ -417,6 +423,7 @@ type field =
 \end{figure}
 
 \subsubsection{Event Fields}
+\label{event-fields}
 \begin{EventType}
 \eventtype{Typ}{The type of the event.}
 

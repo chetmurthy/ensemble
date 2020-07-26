@@ -1,3 +1,13 @@
+(**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
 
 (* Note: this file is modified from the Caml Light 7.1
  * distribution.  Does the above copyright apply?

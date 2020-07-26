@@ -1,3 +1,13 @@
+/**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
 /* crypto/dh/dhtest.c */
 /* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.

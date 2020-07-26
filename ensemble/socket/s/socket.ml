@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* SOCKET.ML *)
 (* Authors: Robbert vanRenesse and Mark Hayden, 4/95 *)
 (**************************************************************)
@@ -61,6 +71,11 @@ let is_unix = Socksupp.is_unix
  *)
 module Basic_iov = Natiov_impl
 open Basic_iov
+
+type mcast_send_recv = Socksupp.mcast_send_recv = 
+  | Recv_only
+  | Send_only
+  | Both
 
 (**************************************************************)
 module Opt = struct

@@ -1,0 +1,78 @@
+The test plan
+-------------
+
+===================================================
+Supported features: 
+------------------
+1. inboard mode
+2. outboard mode
+3. languages:
+   OCaml, C/C++, Java, C#
+4. transports: 
+   NETSIM, UDP, TCP, IPMC
+5. 
+
+to be supported better
+----------------------
+1. groupd: light weight groups 
+
+
+===================================================
+Tests
+-----
+* per language, these need to be repeated.
+
+1. all-in-one single-process tests. These should test:
+  - single threaded API
+  - the multi-threaded API
+   ML:    rand.ml
+   C:     ce_rand.c, ce_rand_mt.c
+   C#:    Rand.cs
+   Java:  RandTest.java
+
+2. Parameters for the inboard tests: 
+  - different protocol stacks
+  - test membership
+  - test ordering: total+fifo+causal
+  - test long sequences of multicasts: up to 2000 messages in a single membership
+  - configuration parameters: 
+    frag_len
+    window_size
+
+3. Distributed tests
+  - Something like rand.ml but distributed across many members in a cluster
+
+4. Performance tests
+  - test: run perf.ml/ce_perf.c/PerfTest.java/Perf.cs and test throughput and latency
+
+===================================================
+Missing features
+----------------
+1. ML outboard tests, thread-safe API
+
+To be discarded
+---------------
+Maestro
+HOT
+Tcl/Tk
+EJAVA
+
+===================================================
+What was done for 1.42
+----------------------
+1. running all the single-process tests: 
+   rand.ml, ce_rand.c, ce_rand_mt.c, hot_test.c, maestro_test.c
+
+2. multi-machine tests/performance. Interoperability between win32/Linux is tested.
+   perf.ml 
+          modes UDP, UDP:TCP, DEERING (only inside a single machine)
+          programs: rpc, 1-n
+   
+   ce_perf.c, ce_perf_mt.c ce_perfo.c, 
+          modes UDP, UDP:TCP, DEERING (only inside a single machine)
+          programs: rpc, 1-n
+
+   
+
+===================================================
+

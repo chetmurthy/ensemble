@@ -1,3 +1,13 @@
+%*************************************************************%
+%
+%    Ensemble, 1_42
+%    Copyright 2003 Cornell University, Hebrew University
+%           IBM Israel Science and Technology
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
 \section{Native C \ensemble\ Application Interface (CE)}
 
 The C application interface is very similar in design to the ML
@@ -196,7 +206,6 @@ void ce_Rekey(
 ) ;
 \end{codebox}
 
-
 Request a protocol change.  The \cval{protocol\_name} is a string
 specifying the exact set of layers to use. The string is a colon
 separated list of layers, for example:
@@ -221,6 +230,15 @@ void ce_ChangeProperties(
     char *properties
 ) ;
 \end{codebox}
+
+Tell the system we will no longer send messages in this view. Should
+be used only when the group has joined with the flag {\tt async\_block\_ok}.
+\begin{codebox}
+void ce_BlockOk(
+    ce_appl_intf_t *c_appl
+) ;
+\end{codebox}
+
 
 All arguments to the group-action calls are copied into CE, hence the
 application can use the run-time stack to create the arguments. There
@@ -271,6 +289,9 @@ void ce_RmvSockRecv(
 );
 \end{codebox}
 
+These two calls are supported only for the single-threaded version of
+the library. Attempting to use the calls from the multi-threaded
+library will result in an {\tt exit(1)}. 
 
 \subsection{Memory management}
 The convention used throughout is that all data-structures passed from
@@ -1027,6 +1048,15 @@ typedef struct ce_view_state_t {
   endpoints in the group.
 \end{description}
 
+\subsection{Asynchronous install callbacks}
+By default, after receiving the block callback in view $V$ an application cannot
+send any more messages in $V$. To change this default an application
+can set the {\tt async\_block\_ok} flag in the join-options
+structure. The endpoint will then be able to send messages after
+receiving the block callback, however, it will need to respond with a
+{\tt BlockOk} action some time later in $V$. Until Ensemble receives BlockOk
+from all members in a view it will not stabilize the current view and
+move to the next. 
 
 \subsection{Notes}
 Of the four transports supported by Ensemble : NETSIM, UDP, TCP, and

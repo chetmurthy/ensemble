@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* SENDRECV.C */
 /* Author: Ohad Rodeh  9/2001 */
 /* This is a complete rewrite of previous code by Mark Hayden */
@@ -43,7 +53,7 @@ value skt_udp_recv_packet(
     CAMLparam2(sock_v, cbuf_v);
     CAMLlocal3(buf_v, iov_v, ret_v);
     
-    SKTTRACE2(("Udp_recv_packet(\n"));
+    SKTTRACE(("Udp_recv_packet(\n"));
     sock = Socket_val(sock_v);
     
     /* Peek to read the headers. (8 Bytes, = 2 UINT32)
@@ -53,6 +63,18 @@ value skt_udp_recv_packet(
     *(uint32*) &(peek_buf[SIZE_INT32]) = 0 ;
     
     len = recv(sock, peek_buf, HEADER_PEEK, MSG_PEEK);
+
+    // This version is for debugging, it prints out the source IP
+    /*
+    {
+	struct sockaddr_in from;
+	int from_len = sizeof(struct sockaddr_in);
+	memset((char*)&from, 0, sizeof(struct sockaddr_in));
+	len = recvfrom(sock, peek_buf, HEADER_PEEK, MSG_PEEK, (struct sockaddr*)&from, &from_len);
+	SKTTRACE(("Udp_recv_packet:  from=(%d,%s)\n", ntohs(from.sin_port), inet_ntoa(from.sin_addr))); 
+    }
+    */
+    
     
     if(len < 0) {
 	perror(" recv(sock, peek_buf, HEADER_PEEK, MSG_PEEK); ");
@@ -169,7 +191,7 @@ value skt_udp_recv_packet(
     ret_v = alloc_small(2, 0);
     Field(ret_v, 0) = alloc_string(0);
     Field(ret_v, 1) = mm_empty ();
-    if (len == -1) skt_udp_recv_error () ;
+    if (len == -1) skt_udp_recv_error ("skt_udp_packet_recv") ;
     // printf("dump_packet)\n"); fflush (stdout);
     goto ret;
 }
@@ -226,7 +248,7 @@ value skt_sendtov(
     ocaml_skt_t sock;
     
     info = skt_Sendto_info_val(info_v);
-    send_msghdr.msg_iovlen = gather(iova_v);
+    send_msghdr.msg_iovlen = skt_gather(iova_v);
     
     send_msghdr.msg_namelen = info->addrlen ;
     sock = info->sock ;
@@ -256,7 +278,7 @@ value skt_sendtosv(
     skt_sendto_info_t *info ;
     
     info = skt_Sendto_info_val(info_v);
-    send_msghdr.msg_iovlen = prefixed_gather(prefix_v, ofs_v, len_v, iova_v); 
+    send_msghdr.msg_iovlen = skt_prefixed_gather(prefix_v, ofs_v, len_v, iova_v); 
     
     send_msghdr.msg_namelen = info->addrlen ;
     sock = info->sock ;
@@ -300,7 +322,7 @@ value skt_recv(value sock, value buff, value ofs, value len) /* ML */
     
     SKTTRACE(("skt_recv(\n"));
     ret = recv(Socket_val(sock), &Byte(buff, Long_val(ofs)), Int_val(len),0) ;
-    if (ret == -1) serror("skt_recv");
+    if (ret == -1) skt_tcp_recv_error("skt_recv");
     SKTTRACE2(("len=%d)\n",ret));
     return Val_int(ret);
 }
@@ -317,7 +339,7 @@ value skt_recv_iov(value sock_v, value iov_v, value ofs_v, value len_v) /* ML */
     
     SKTTRACE(("skt_recv_iov\n"));
     ret = recv(sock, (char*)cbuf + ofs, len, 0) ;
-    if (ret == -1) serror("recv_iov");
+    if (ret == -1) skt_tcp_recv_error("recv_iov");
     return Val_int(ret);
 }
 
@@ -341,7 +363,7 @@ value skt_send_p(
     buf = ((char*)&Byte(buf_v,ofs)) ;
     
     ret = send(sock, buf, len, 0) ;
-    if (ret == -1) serror("send_p");
+    if (ret == -1) skt_tcp_recv_error("send_p");
     return Val_int(ret) ;
 }
 
@@ -354,13 +376,13 @@ value skt_sendv_p(
     ocaml_skt_t sock;
     
     
-    send_msghdr.msg_iovlen = gather_p(iova_v) ;
+    send_msghdr.msg_iovlen = skt_gather_p(iova_v) ;
     send_msghdr.msg_namelen = 0; 
     sock = Socket_val(sock_v);
     send_msghdr.msg_name = NULL;
     
-    ret = sendmsg(sock, &send_msghdr, 0) ;
-    if (ret == -1) serror("sendv_p");
+    ret = sendmsg(sock, &send_msghdr, MSG_DONTWAIT) ;
+    if (ret == -1) skt_tcp_recv_error("sendv_p");
     return(Val_int(ret));
 }
 
@@ -375,13 +397,13 @@ value skt_sendsv_p(
     int ret=0;
     ocaml_skt_t sock=0 ;
     
-    send_msghdr.msg_iovlen = prefixed_gather_p(prefix_v, ofs_v, len_v, iova_v) ;
+    send_msghdr.msg_iovlen = skt_prefixed_gather_p(prefix_v, ofs_v, len_v, iova_v) ;
     send_msghdr.msg_namelen = 0;
     sock = Socket_val(sock_v);
     send_msghdr.msg_name = NULL;
     
-    ret = sendmsg(sock, &send_msghdr, 0) ;
-    if (ret == -1) serror("sendsv_p");
+    ret = sendmsg(sock, &send_msghdr, MSG_DONTWAIT) ;
+    if (ret == -1) skt_tcp_recv_error("sendsv_p");
     return (Val_int(ret));
 }
 
@@ -398,13 +420,18 @@ value skt_sends2v_p_native(
     ocaml_skt_t sock=0 ;
     
     
-    send_msghdr.msg_iovlen = prefixed2_gather_p(prefix1_v, prefix2_v, ofs2_v, len2_v, iova_v) ;
+    send_msghdr.msg_iovlen = skt_prefixed2_gather_p(prefix1_v, prefix2_v, ofs2_v, len2_v, iova_v) ;
     sock = Socket_val(sock_v);
     send_msghdr.msg_namelen = 0; 
     send_msghdr.msg_name = NULL;
-    
-    ret = sendmsg(sock, &send_msghdr, 0) ;
-    if (ret == -1) serror("sends2v_p");
+
+    SKTTRACE2(("skt_sends2v_p("));
+    ret = sendmsg(sock, &send_msghdr, MSG_DONTWAIT) ;
+    if (ret == -1) {
+	skt_tcp_recv_error("sends2v_p");
+	ret = 0;
+    }
+    SKTTRACE2(("ret=%d)\n",ret));
     return (Val_int(ret));
 }
 
@@ -438,7 +465,7 @@ value skt_tcp_recv_packet(
     len = recvmsg(Socket_val(sock_v), &recv_msghdr, 0);   
     SKTTRACE(("recv_len=%d )\n", len));
     
-    if (len == -1) serror("skt_tcp_recv_packet");
+    if (len == -1) skt_tcp_recv_error("skt_tcp_recv_packet");
     return Val_int(len);
 }
 

@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* COMMON.H */
 /* Author: Ohad Rodeh  10/2002 */
 /* Based on code by Mark Hayden */
@@ -36,17 +46,19 @@
 /* Debuggin macros. 
  */
 
-//#define SKTTRACE(x) printf x; fflush(stdout)
+//#define SKTTRACE(x) { printf x; fflush(stdout); }
 #define SKTTRACE(x) {}
 //#define SKTTRACE2(x) printf x; fflush(stdout)
 #define SKTTRACE2(x) {}
 //#define SKTTRACE3(x) printf x; fflush(stdout)
 #define SKTTRACE3(x) {}
+//#define SKTTRACE4(x) printf x; fflush(stdout)
+#define SKTTRACE4(x) {}
 /**************************************************************/
 /* A set of errors to ignore on receiving a UDP or a TCP packet.
  */
-void skt_udp_recv_error(void);
-int skt_tcp_recv_error(char *debug);
+void skt_udp_recv_error(char *debug);
+void skt_tcp_recv_error(char *debug);
 
 /**************************************************************/
 

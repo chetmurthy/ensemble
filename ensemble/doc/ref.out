@@ -40,51 +40,56 @@
 \BOOKMARK [2][-]{subsection.6.2}{Notes}{section.6}
 \BOOKMARK [2][-]{subsection.6.3}{Values and Types}{section.6}
 \BOOKMARK [1][-]{section.7}{Event Handlers: Standard}{part.1}
-\BOOKMARK [1][-]{section.8}{The Ensemble Security Architecture \(by Ohad Rodeh\)}{part.1}
-\BOOKMARK [2][-]{subsection.8.1}{Cryptographic Infrastructure}{section.8}
-\BOOKMARK [2][-]{subsection.8.2}{Rekeying}{section.8}
-\BOOKMARK [2][-]{subsection.8.3}{A secure stack}{section.8}
-\BOOKMARK [2][-]{subsection.8.4}{Security events}{section.8}
-\BOOKMARK [2][-]{subsection.8.5}{Using Security}{section.8}
-\BOOKMARK [2][-]{subsection.8.6}{Checking that things work}{section.8}
-\BOOKMARK [2][-]{subsection.8.7}{Using security from HOT and EJava}{section.8}
+\BOOKMARK [1][-]{section.8}{Heterogeneous Transports}{part.1}
+\BOOKMARK [2][-]{subsection.8.1}{Code walk-through}{section.8}
+\BOOKMARK [2][-]{subsection.8.2}{Design of the routers}{section.8}
+\BOOKMARK [1][-]{section.9}{The Ensemble Security Architecture \(by Ohad Rodeh\)}{part.1}
+\BOOKMARK [2][-]{subsection.9.1}{Cryptographic Infrastructure}{section.9}
+\BOOKMARK [2][-]{subsection.9.2}{Rekeying}{section.9}
+\BOOKMARK [2][-]{subsection.9.3}{A secure stack}{section.9}
+\BOOKMARK [2][-]{subsection.9.4}{Security events}{section.9}
+\BOOKMARK [2][-]{subsection.9.5}{Using Security}{section.9}
+\BOOKMARK [2][-]{subsection.9.6}{Checking that things work}{section.9}
+\BOOKMARK [2][-]{subsection.9.7}{Using security from HOT and EJava}{section.9}
+\BOOKMARK [1][-]{section.10}{Outboard messaging}{part.1}
+\BOOKMARK [2][-]{subsection.10.1}{Locating the service}{section.10}
+\BOOKMARK [2][-]{subsection.10.2}{Communicating with the service}{section.10}
+\BOOKMARK [2][-]{subsection.10.3}{Messages from server to client}{section.10}
+\BOOKMARK [2][-]{subsection.10.4}{Messages from client to server}{section.10}
 \BOOKMARK [0][-]{part.2}{II The Ensemble Protocols}{}
-\BOOKMARK [1][-]{section.9}{Layers and Stacks}{part.2}
-\BOOKMARK [2][-]{subsection.9.1}{ANYLAYER}{section.9}
-\BOOKMARK [2][-]{subsection.9.2}{CREDIT}{section.9}
-\BOOKMARK [2][-]{subsection.9.3}{RATE}{section.9}
-\BOOKMARK [2][-]{subsection.9.4}{BOTTOM}{section.9}
-\BOOKMARK [2][-]{subsection.9.5}{CAUSAL}{section.9}
-\BOOKMARK [2][-]{subsection.9.6}{ELECT}{section.9}
-\BOOKMARK [2][-]{subsection.9.7}{ENCRYPT}{section.9}
-\BOOKMARK [2][-]{subsection.9.8}{HEAL}{section.9}
-\BOOKMARK [2][-]{subsection.9.9}{INTER}{section.9}
-\BOOKMARK [2][-]{subsection.9.10}{INTRA}{section.9}
-\BOOKMARK [2][-]{subsection.9.11}{LEAVE}{section.9}
-\BOOKMARK [2][-]{subsection.9.12}{MERGE}{section.9}
-\BOOKMARK [2][-]{subsection.9.13}{MFLOW}{section.9}
-\BOOKMARK [2][-]{subsection.9.14}{MNAK}{section.9}
-\BOOKMARK [2][-]{subsection.9.15}{OPTREKEY}{section.9}
-\BOOKMARK [2][-]{subsection.9.16}{PERFREKEY}{section.9}
-\BOOKMARK [2][-]{subsection.9.17}{PRIMARY}{section.9}
-\BOOKMARK [2][-]{subsection.9.18}{PT2PT}{section.9}
-\BOOKMARK [2][-]{subsection.9.19}{PT2PTW}{section.9}
-\BOOKMARK [2][-]{subsection.9.20}{PT2PTWP}{section.9}
-\BOOKMARK [2][-]{subsection.9.21}{REALKEYS}{section.9}
-\BOOKMARK [2][-]{subsection.9.22}{REKEY}{section.9}
-\BOOKMARK [2][-]{subsection.9.23}{REKEY\137DT}{section.9}
-\BOOKMARK [2][-]{subsection.9.24}{REKEY\137DIAM}{section.9}
-\BOOKMARK [2][-]{subsection.9.25}{SECCHAN}{section.9}
-\BOOKMARK [2][-]{subsection.9.26}{SEQUENCER}{section.9}
-\BOOKMARK [2][-]{subsection.9.27}{SLANDER}{section.9}
-\BOOKMARK [2][-]{subsection.9.28}{STABLE}{section.9}
-\BOOKMARK [2][-]{subsection.9.29}{SUSPECT}{section.9}
-\BOOKMARK [2][-]{subsection.9.30}{SYNC}{section.9}
-\BOOKMARK [2][-]{subsection.9.31}{TOTEM}{section.9}
-\BOOKMARK [2][-]{subsection.9.32}{WINDOW}{section.9}
-\BOOKMARK [2][-]{subsection.9.33}{XFER}{section.9}
-\BOOKMARK [2][-]{subsection.9.34}{ZBCAST}{section.9}
-\BOOKMARK [2][-]{subsection.9.35}{VSYNC}{section.9}
+\BOOKMARK [1][-]{section.11}{Layers and Stacks}{part.2}
+\BOOKMARK [2][-]{subsection.11.1}{ANYLAYER}{section.11}
+\BOOKMARK [2][-]{subsection.11.2}{CREDIT}{section.11}
+\BOOKMARK [2][-]{subsection.11.3}{RATE}{section.11}
+\BOOKMARK [2][-]{subsection.11.4}{BOTTOM}{section.11}
+\BOOKMARK [2][-]{subsection.11.5}{CAUSAL}{section.11}
+\BOOKMARK [2][-]{subsection.11.6}{ELECT}{section.11}
+\BOOKMARK [2][-]{subsection.11.7}{ENCRYPT}{section.11}
+\BOOKMARK [2][-]{subsection.11.8}{HEAL}{section.11}
+\BOOKMARK [2][-]{subsection.11.9}{INTER}{section.11}
+\BOOKMARK [2][-]{subsection.11.10}{INTRA}{section.11}
+\BOOKMARK [2][-]{subsection.11.11}{LEAVE}{section.11}
+\BOOKMARK [2][-]{subsection.11.12}{MERGE}{section.11}
+\BOOKMARK [2][-]{subsection.11.13}{MFLOW}{section.11}
+\BOOKMARK [2][-]{subsection.11.14}{MNAK}{section.11}
+\BOOKMARK [2][-]{subsection.11.15}{PRIMARY}{section.11}
+\BOOKMARK [2][-]{subsection.11.16}{PT2PT}{section.11}
+\BOOKMARK [2][-]{subsection.11.17}{PT2PTW}{section.11}
+\BOOKMARK [2][-]{subsection.11.18}{PT2PTWP}{section.11}
+\BOOKMARK [2][-]{subsection.11.19}{REKEY}{section.11}
+\BOOKMARK [2][-]{subsection.11.20}{REKEY\137DT}{section.11}
+\BOOKMARK [2][-]{subsection.11.21}{SECCHAN}{section.11}
+\BOOKMARK [2][-]{subsection.11.22}{SEQUENCER}{section.11}
+\BOOKMARK [2][-]{subsection.11.23}{SLANDER}{section.11}
+\BOOKMARK [2][-]{subsection.11.24}{STABLE}{section.11}
+\BOOKMARK [2][-]{subsection.11.25}{SUSPECT}{section.11}
+\BOOKMARK [2][-]{subsection.11.26}{SYNC}{section.11}
+\BOOKMARK [2][-]{subsection.11.27}{TOPS}{section.11}
+\BOOKMARK [2][-]{subsection.11.28}{TOTEM}{section.11}
+\BOOKMARK [2][-]{subsection.11.29}{WINDOW}{section.11}
+\BOOKMARK [2][-]{subsection.11.30}{XFER}{section.11}
+\BOOKMARK [2][-]{subsection.11.31}{ZBCAST}{section.11}
+\BOOKMARK [2][-]{subsection.11.32}{VSYNC}{section.11}
 \BOOKMARK [1][-]{section.A}{Appendix: ML Does Not Allow Segmentation Faults}{part.2}
 \BOOKMARK [1][-]{section.B}{Ensemble Membership Service TCP Interface}{part.2}
 \BOOKMARK [2][-]{subsection.B.1}{Locating the service}{section.B}

@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_CONVERT.C */
 /* Author: Ohad Rodeh  8/2001 */
 /* Conversion of ML <-> C data-structures */
@@ -172,7 +182,7 @@ View_id_array_val(value view_id_array_v, int num)
 {
     int i;
     ce_view_id_t *va;
-    
+
     va = (ce_view_id_t*) ce_malloc(num * sizeof(ce_view_id_t));
     memset((char*)va, 0, num * sizeof(ce_view_id_t));
     for (i=0; i<num; i++) 
@@ -192,7 +202,6 @@ enum ce_view_state_enum {
     CE_VIEW_STATE_GROUPD,
     CE_VIEW_STATE_XFER_VIEW,
     CE_VIEW_STATE_KEY,
-    CE_VIEW_STATE_NUM_IDS,
     CE_VIEW_STATE_PREV_IDS,
     CE_VIEW_STATE_PARAMS,
     CE_VIEW_STATE_UPTIME,
@@ -235,7 +244,7 @@ void ViewState_of_val(value vs_v, int nmembers, ce_view_state_t *vs)
 	vs->key
 	);
     TRACE(".");
-    vs->num_ids   = Int_val(Field(vs_v, CE_VIEW_STATE_NUM_IDS));
+    vs->num_ids   = Wosize_val(Field(vs_v, CE_VIEW_STATE_PREV_IDS));
     TRACE("..");
     vs->prev_ids  = View_id_array_val(Field(vs_v, CE_VIEW_STATE_PREV_IDS),
 				      vs->num_ids);
@@ -520,9 +529,10 @@ Val_action (ce_action_t *a)
 	Field(a_v, 0) = field0 ;
 	break;
 	
-    case APPL_BLOCK:
-	a_v = alloc_small(1,APPL_BLOCK);
-	Field(a_v, 0) = Val_unit ;
+    case APPL_BLOCK_OK:
+	field0 = Val_int(a->u.block_ok) ;
+	a_v = alloc_small(1,APPL_BLOCK_OK);
+	Field(a_v, 0) = field0; 
 	break;
 	
     default:

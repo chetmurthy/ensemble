@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* HSYS.MLI *)
 (* Author: Mark Hayden, 5/95 *)
 (**************************************************************)
@@ -7,7 +17,12 @@ open Buf
 type debug = string
 type port = int
 type inet = Unix.inet_addr
-type socket = Socket.socket
+type socket = Socket.socket 
+type mcast_send_recv = Socket.mcast_send_recv = 
+  | Recv_only
+  | Send_only
+  | Both
+
 
 type timeval = {
   mutable sec10 : int ;
@@ -176,7 +191,7 @@ val sends2v_p : socket -> Buf.t -> Buf.t -> ofs -> len -> Iovecl.t -> len
 type socket_option =
   | Nonblock of bool
   | Reuse
-  | Join of inet
+  | Join of inet * mcast_send_recv
   | Leave of inet
   | Ttl of int 
   | Loopback of bool

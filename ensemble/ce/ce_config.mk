@@ -19,7 +19,8 @@ ifeq ("$(PLATFORM)" , "i386-linux")
 CE_LIB = .so
 CE_LNKLIB = .so
 
-CE_LINK_FLAGS = -ltermcap -lm -ldl -lpthread 
+CE_LINK_FLAGS = -ltermcap -lm -ldl 
+CE_THREAD_LIB = -lpthread 
 CFLAGS = -DINLINE=inline \
 	 -O2 -DNDEBUG -Wall -Wno-unused -Wstrict-prototypes \
 	 -I $(OCAML_LIB)		
@@ -34,7 +35,8 @@ CE_LNKLIB = .a
 
 MKSHRLIB   = ld 
 
-CE_LINK_FLAGS  = -lthread -lposix4 -ltermcap -lsocket -lnsl -lm -lresolv -ldl
+CE_LINK_FLAGS = -lposix4 -ltermcap -lsocket -lnsl -lm -lresolv -ldl
+CE_THREAD_LIB = -lthread 
 CFLAGS = -DINLINE=inline \
 	-O2 -Wall -Wno-unused -Wstrict-prototypes \
 	-DNDEBUG  -DSolaris \
@@ -53,6 +55,7 @@ CE_LNKLIB = .a
 MKSHRLIB   = ld -b
 
 CE_LINK_FLAGS = -ltermcap -lm -ldce
+CE_THREAD_LIB = 
 CFLAGS = -DINLINE=inline \
 	-O2 -Wall -Wstrict-prototypes \
 	-I $(OCAML_LIB)	 -I /opt/dce/include/ 	
@@ -63,7 +66,8 @@ endif
 
 #alpha-osf1
 ifeq ("$(PLATFORM)" , "alpha-osf1")
-CE_LINK_FLAGS = -ltermcap -lm -ldl -lpthread
+CE_LINK_FLAGS = -ltermcap -lm -ldl 
+CE_THREAD_LIB = -lpthread 
 CFLAGS = -DINLINE=inline \
 	-O2 -Wall -Wstrict-prototypes \
 	-I $(OCAML_LIB)		

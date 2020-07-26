@@ -1,16 +1,25 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* UDP.ML *)
 (* Author: Mark Hayden, 5/95 *)
+(* Fixes:  Ohad Rodeh, 6/2003, multicast on win32 *)
 (**************************************************************)
 open Util
 open Trans
+open Ipmc
 (**************************************************************)
 let name = Trace.file "UDP"
 let failwith s = Trace.make_failwith name s
 let log = Trace.log name
-(**************************************************************)
-(* NOTE: What about using an extra socket set to
- * no-local-receipt for sending multicasts on?  *)
 (**************************************************************)
 
 let init_sock host =
@@ -59,49 +68,25 @@ let domain alarm =
    * send messages to me.
    *)
   let host =
-    match Arge.get Arge.udp_host with
+    match Arge.get Arge.host_ip with
     | None -> Hsys.gethost ()
-    | Some host -> Arge.inet_of_string Arge.udp_host host
+    | Some host -> Arge.inet_of_string Arge.host_ip host
   in
 
   let localhost = Hsys.getlocalhost() in
   let map_localhost inet =
-    if inet = host then localhost else inet
+    if inet = host  then localhost else inet
   in
 
   (* Initialize send and receive sockets.  Both are bound
    * to INADDR_ANY so that messages will be accepted on
    * all network interfaces.
    *)
-  let addr =
-    match Arge.get Arge.udp_host with
-      | None -> Hsys.inet_any()
-      | Some host -> Arge.inet_of_string Arge.udp_host host
-  in
-  let (udp_sock, port) = init_sock addr in
-
-(*
-  let xmit_sock_mc = do_once (fun () ->
-    if not (Hsys.has_ip_multicast()) then
-      failwith "multicast not supported" ;
-    let sock = init_xmit_sock () in
-    Hsys.setsockopt sock (Hsys.Multicast true) ;
-    sock
-  )
-  in
-*)
+  let (udp_sock, port) = init_sock (Hsys.inet_any ()) in
 
   (* Tell the alarm module our unique port number.
    *)
   Alarm.install_port port ;
-
-  (* TODO: I'm having problems with the loopback stuff.
-   *)
-  let noloop = udp_sock in
-(*
-  let noloop = socket_dgram () in
-  setsock_multicast noloop false ;
-*)
 
   let udp_addr = Addr.UdpA(host,port) in
 
@@ -127,7 +112,7 @@ let domain alarm =
 	  let hash = Group.hash_of_id group in
 	  let deering_sock = Ipmc.join (Hsys.deering_addr hash) (deering_port ()) in
 	  Alarm.add_sock_recv alarm name udp_sock Hsys.Handler1 ;
-	  Alarm.add_sock_recv alarm "DEERING" deering_sock Hsys.Handler1 ;
+	  Alarm.add_sock_recv alarm "DEERING" deering_sock Hsys.Handler1;
 
 	  let disable () =
 	    let hash = Group.hash_of_id group in

@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_CONVERT.H */
 /* Author: Ohad Rodeh  8/2001 */
 /* Conversion of ML <-> C data-structures */

@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* SENDRECV.C */
 /* Author: Ohad Rodeh  9/2001 */
 /* This is a complete rewrite of previous code by Mark Hayden */
@@ -12,9 +22,9 @@
 /* BUG:
  * This MUST be the same as Buf.max_msg_len
  */
-#define MAX_MSG_SIZE 8*1024
-
-#define SIZE_INT32 sizeof(uint32)
+#define MAX_MSG_SIZE     (8*1024)
+#define FLATTEN_BUF_SIZE (MAX_MSG_SIZE + 1024)
+#define SIZE_INT32       (sizeof(uint32))
 
 /* Peeking to read the first two integers.  This is signed (versus
  * unsigned) because we are comparing against the received length to
@@ -27,10 +37,19 @@ extern ce_iovec_t iov[N_IOVS] ;
 extern ce_iovec_t recv_iov[3] ;
 extern char peek_buf[HEADER_PEEK]; 
 
+/* Common exported buffers.
+ */
+ce_iovec_t iov[N_IOVS] ;
+ce_iovec_t recv_iov[3] ;
+char peek_buf[HEADER_PEEK]; 
+
 /* This is used in the flat versions
  */
 extern char iobuf[MAX_MSG_SIZE];
 extern int iobuf_len;
+
+char iobuf[MAX_MSG_SIZE];
+int iobuf_len;
 
 /**************************************************************/
 
@@ -95,21 +114,9 @@ value skt_Val_create_sendto_info(
 }
 
 /**************************************************************/
-/* Common exported buffers.
- */
-ce_iovec_t iov[N_IOVS] ;
-ce_iovec_t recv_iov[3] ;
-char peek_buf[HEADER_PEEK]; 
-
-/* This is used in the flat versions
- */
-char iobuf[MAX_MSG_SIZE];
-int iobuf_len;
-
-/**************************************************************/
 
 INLINE
-static int iovl_len(value iova_v){
+static int skt_iovl_len(value iova_v){
     int i, nvecs, len=0;
     value t_v, iov_v;
     
@@ -124,14 +131,14 @@ static int iovl_len(value iova_v){
 }
 
 INLINE
-static void prepare_send_header(value len_v, value iova_v){
+static void skt_prepare_send_header(value len_v, value iova_v){
     *((int*)((char*)peek_buf)) = htonl(Int_val(len_v));
-    *((int*)((char*)peek_buf + SIZE_INT32)) = htonl(iovl_len(iova_v));
+    *((int*)((char*)peek_buf + SIZE_INT32)) = htonl(skt_iovl_len(iova_v));
 }
 
 /* Add a header describing the length of the ML/Iovec parts.
  */
-int gather(value iova_v){
+int skt_gather(value iova_v){
     value t_v, iov_v;
     int i, nvecs, iovlen ;
     int len;
@@ -143,7 +150,7 @@ int gather(value iova_v){
     
     /* Write the ML/Iovec length.
      */
-    prepare_send_header(Val_int(0), iova_v);
+    skt_prepare_send_header(Val_int(0), iova_v);
     Iov_len(iov[0]) = HEADER_PEEK;
     Iov_buf(iov[0]) = peek_buf;
     
@@ -161,7 +168,7 @@ int gather(value iova_v){
 }
 
 
-int prefixed_gather(value prefix_v, value ofs_v, value len_v, value iova_v)
+int skt_prefixed_gather(value prefix_v, value ofs_v, value len_v, value iova_v)
 {
     value t_v, iov_v;
     int i, nvecs, len, iovlen;
@@ -173,7 +180,7 @@ int prefixed_gather(value prefix_v, value ofs_v, value len_v, value iova_v)
     
     /* Write the ML/Iovec length.
      */
-    prepare_send_header(len_v, iova_v);
+    skt_prepare_send_header(len_v, iova_v);
     Iov_len(iov[0]) = HEADER_PEEK;
     Iov_buf(iov[0]) = peek_buf;
     
@@ -195,7 +202,7 @@ int prefixed_gather(value prefix_v, value ofs_v, value len_v, value iova_v)
     return iovlen;
 }
 
-int gather_p(value iova_v)
+int skt_gather_p(value iova_v)
 {
     value t_v, iov_v;
     int i, nvecs, iovlen ;
@@ -218,7 +225,7 @@ int gather_p(value iova_v)
     return iovlen;
 }
 
-int prefixed_gather_p(value prefix_v, value ofs_v, value len_v, value iova_v)
+int skt_prefixed_gather_p(value prefix_v, value ofs_v, value len_v, value iova_v)
 {
     value t_v, iov_v;
     int i, nvecs, len, iovlen;
@@ -247,7 +254,7 @@ int prefixed_gather_p(value prefix_v, value ofs_v, value len_v, value iova_v)
 
 
 
-int prefixed2_gather_p(value prefix1_v, value prefix2_v, value ofs2_v,
+int skt_prefixed2_gather_p(value prefix1_v, value prefix2_v, value ofs2_v,
 		       value len2_v, value iova_v)
 {
     value t_v, iov_v;
@@ -280,7 +287,7 @@ int prefixed2_gather_p(value prefix1_v, value prefix2_v, value ofs2_v,
 /**************************************************************/
 /* The flat versions come here.
  */
-void gather_p_flat(value iova_v)
+void skt_gather_p_flat(value iova_v)
 {
     value t_v, iov_v;
     int i, nvecs;
@@ -307,7 +314,7 @@ void gather_p_flat(value iova_v)
     iobuf_len = ofs;
 }
 
-void prefixed_gather_p_flat(value prefix_v, value ofs_v, value len_v, value iova_v)
+void skt_prefixed_gather_p_flat(value prefix_v, value ofs_v, value len_v, value iova_v)
 {
     value t_v, iov_v;
     int i, nvecs, len, iovlen, ofs, len1;
@@ -336,7 +343,7 @@ void prefixed_gather_p_flat(value prefix_v, value ofs_v, value len_v, value iova
     iobuf_len = ofs;
 }
 
-void prefixed_gather_flat(value prefix_v, value ofs_v, value len_v, value iova_v)
+void skt_prefixed_gather_flat(value prefix_v, value ofs_v, value len_v, value iova_v)
 {
     value t_v, iov_v;
     int i, nvecs, len, iovlen, ofs, len1;
@@ -345,7 +352,7 @@ void prefixed_gather_flat(value prefix_v, value ofs_v, value len_v, value iova_v
     /* Prepare the ML header
      */
     *((int*)&iobuf[0]) = htonl(Int_val(len_v));
-    *((int*)&iobuf[SIZE_INT32]) = htonl(iovl_len(iova_v));
+    *((int*)&iobuf[SIZE_INT32]) = htonl(skt_iovl_len(iova_v));
     ofs = SIZE_INT32 * 2;
 
     nvecs = Wosize_val(iova_v) ; /* inspired by array.c */
@@ -372,7 +379,7 @@ void prefixed_gather_flat(value prefix_v, value ofs_v, value len_v, value iova_v
     iobuf_len = ofs;
 }
 
-void prefixed2_gather_p_flat(value prefix1_v, value prefix2_v, value ofs2_v, value len2_v, value iova_v)
+void skt_prefixed2_gather_p_flat(value prefix1_v, value prefix2_v, value ofs2_v, value len2_v, value iova_v)
 {
     value t_v, iov_v;
     int i, nvecs, len, len1, len2, ofs=0;

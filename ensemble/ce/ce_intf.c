@@ -1,3 +1,13 @@
+/**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
 /****************************************************************************/
 /* CE_INTF.C */
 /* Author:  Ohad Rodeh, 03/2002. */
@@ -107,6 +117,12 @@ LINKDLL void
 ce_ChangeProperties(ce_appl_intf_t *c_appl, char *properties)
 {
     ce_st_ChangeProperties(c_appl, properties);
+}
+
+LINKDLL void
+ce_BlockOk(ce_appl_intf_t *c_appl)
+{
+    ce_st_BlockOk(c_appl);
 }
 
 LINKDLL void

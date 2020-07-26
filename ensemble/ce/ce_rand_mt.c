@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_RAND_MT.C: Randomly create actions */
 /* Author: Ohad Rodeh 8/2001 */
 /* This is the multi-threaded version */
@@ -73,7 +83,7 @@ typedef struct state_t {
 
 
 static int id_cnt = 0;
-static int thresh = 5;
+static int thresh = 3;
 static int nmembers = 5;
 static int quiet = 0;
 static int size = 21;
@@ -308,7 +318,7 @@ void action(void *env)
 	policy(s->rank, s->nmembers, &(s->next), &a);
 //	TRACE("action");
 
-	if (rand () % 10 == 0) 
+//	if (rand () % 10 == 0) 
 	switch (a) {
 	case ACast:
 	    TRACE_D("ACast", s->id);
@@ -537,7 +547,7 @@ void act_thread(void* env)
     while(1){
 	/* Sleep for 30msecs*/
 	tv.tv_sec=0;
-	tv.tv_usec=50000;
+	tv.tv_usec=10000;
 	select(0, NULL, NULL, NULL, &tv);
 //	counter++;
 
@@ -612,7 +622,7 @@ fifo_process_args(int argc, char **argv)
 	    }
 	    
 	    thresh = atoi(argv[i]);
-	    printf (" thresh=%d ", thresh);
+	    printf (" thresh=%d ", thresh); 
 	}
 	else if (strcmp(argv[i], "-quiet") == 0) {
 	    quiet = 1;
@@ -634,6 +644,7 @@ fifo_process_args(int argc, char **argv)
 	    ml_args++ ;
     }
     printf("\n");
+    fflush(stdout);
     
     ret = (char**) malloc ((ml_args+1) * sizeof(char*));
     

@@ -1,5 +1,15 @@
 #*************************************************************#
 #
+#   Ensemble, 1_42
+#   Copyright 2003 Cornell University, Hebrew University
+#           IBM Israel Science and Technology
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+#*************************************************************#
+#
 # Makefile: root Ensemble Makefile
 #
 # Author: Ohad Rodeh  12\2001
@@ -7,15 +17,15 @@
 #
 #*************************************************************#
 
-.PHONY: socket tar hot ce maestro tools
+.PHONY: socket tar hot ce maestro tools doc
 
 !include mk\config.nmk
-
-#include mk\preamble.mk
+!include mk\preamble.nmk
 
 SUBDIRS =\
 	appl\
 	ce\
+	cs\
 	cejava\
 	crypto\
 	demo\
@@ -54,6 +64,16 @@ SUBDIRS =\
 	type\
 	util	
 
+# Make everything from scratch
+# 
+all : dirs
+	cd socket & $(MAKE) all 
+	$(MAKE_BASE) -f Makefile.top.nt all
+	cd demo & $(MAKE) 
+	cd ce & $(MAKE)	
+	cd hot & $(MAKE) 
+	cd maestro & $(MAKE) 
+
 # Make sure the target directories are in place
 #
 dirs : 
@@ -62,36 +82,31 @@ dirs :
 	$(MKDIR) bin\$(PLATFORM)
 	$(MKDIR) lib\$(PLATFORM)
 
-# Make everything from scratch
-# 
-all: dirs
-	cd socket & $(MAKE) all & $(MAKE) install
-	$(MAKE_BASE) -f Makefile.top.nt all& $(MAKE_BASE) -f Makefile.top.nt install
-	cd demo & $(MAKE) & $(MAKE) install
-	cd ce & $(MAKE)	  & $(MAKE) install
-	cd cejava & $(MAKE) & $(MAKE) install
-	cd hot & $(MAKE)  & $(MAKE) install
-	cd maestro & $(MAKE) & $(MAKE) install
-
 maestro : 
 	cd maestro & $(MAKE) all
 
-sock : 
-	cd socket& $(MAKE) all & $(MAKE) install
+sock : dirs
+	cd socket& $(MAKE) all
 
-just:
-	$(MAKE_BASE) -f Makefile.top.nt all& $(MAKE_BASE) -f Makefile.top.nt install
-	cd demo & $(MAKE) just
+just: dirs
+	cd socket & $(MAKE) all 
+	$(MAKE_BASE) -f Makefile.top.nt all
+	cd demo & $(MAKE) 
 
 # Make the optimized versions
 opt: dirs
-	cd socket & $(MAKE) opt & $(MAKE) install
-	$(MAKE_BASE) -f Makefile.top.nt opt& $(MAKE_BASE) -f Makefile.top.nt install
-	cd demo & 	$(MAKE) opt &	$(MAKE) install
-	cd ce & $(MAKE) opt & $(MAKE) install
-	cd cejava & $(MAKE) opt & $(MAKE) install
-	cd hot & $(MAKE) opt & $(MAKE) install
-	cd maestro & $(MAKE) & $(MAKE) install
+	cd socket & $(MAKE) opt 
+	$(MAKE_BASE) -f Makefile.top.nt opt
+	cd demo & 	$(MAKE) opt 
+	cd ce & $(MAKE) opt 
+	cd hot & $(MAKE) opt 
+	cd maestro & $(MAKE) 
+
+# Make the java JNI API. This has been separated out from the main 'nmake -f Makefile.nt' because
+# not all OSes have Java.
+#
+cejava : 
+	cd cejava & $(MAKE) & $(MAKE) install
 
 crypto : 
 	cd crypto & $(MAKE) & $(MAKE) install 
@@ -105,6 +120,8 @@ tk :
 tk_opt :
 	$(MAKE_BASE) -f Makefile.top.nt OPT=yes tk
 
+
+everything : all cejava
 
 touch_depend : 
 	touch .depend .depend.nt
@@ -120,9 +137,13 @@ touch_depend :
 
 dos2unix : 
 	nmake -f Makefile.nt touch_depend
+	dos2unix tar\{copyright*,tarcr,tarcheck}
 	dos2unix Makefile* *\Makefile* *\*\Makefile*
-	dos2unix *\*.[ch] *\*\*.[ch]
-	dos2unix *\*.ml* *\*\*.ml* 
+	dos2unix .cvsignore *\.cvsignore *\*\.cvsignore *\*\*\.cvsignore
+	dos2unix *\*.[chC] *\*\*.[chC] *\*\*\*.[chC]
+	dos2unix *\*.tex *\*\*.tex
+	dos2unix *\*.java
+	dos2unix *\*.ml* *\*\*.ml* *\*\*\*.ml* 
 	dos2unix *\*.mk 
 	tools\ntify.sh
 
@@ -131,14 +152,15 @@ dos2unix :
 src: dos2unix
 	nmake -f Makefile.nt realclean
 	nmake -f Makefile.nt depend
-	cd tar& tcsh tarcr 1.41 \home\orodeh\e\1.41\ensemble 
-	cd doc& nmake -f Makefile.nt build
+	cd tar& tcsh tarcr $(VERSION) \home\orodeh\e\1.42\ensemble 
 
+doc : 
+	cd doc& $(MAKE) all& $(MAKE) build
 
 # build a tar file containing executables and libraries.
 #
 dist : 
-	cd ..\build& for d in *& do (tar -cf ensemble-1_40-$$d.tar $$d& gzip ensemble-1_40-$$d.tar& rm -rf $$d)& done
+	cd ..\build& for d in *& do (tar -cf ensemble-$VERSION-$$d.tar $$d& gzip ensemble-1_42-$$d.tar& rm -rf $$d)& done
 
 
 depend:
@@ -175,9 +197,60 @@ clean:
 realclean: clean 
 	$(RMDIR) bin
 	$(RMDIR) lib
-	cd maestro &	$(MAKE) realclean
+	cd maestro & 	$(MAKE) realclean 
 	cd doc & 	$(MAKE) realclean 
 
 
 #*************************************************************#
+# Get a breakdown of size of the ML\C\Latex sources
+
+wc:
+	@ echo "Core code:"
+	  cat util\*.{ml,mli} | wc -l -
+	  cat mm\*.{ml,mli} | wc -l -
+	  cat type\*.{ml,mli} | wc -l -
+	  cat route\*.{ml,mli} | wc -l -
+	  cat appl\*.{ml,mli} | wc -l -
+	  cat infr\*.{ml,mli} | wc -l -
+	  cat trans\*.{ml,mli} | wc -l -
+	  cat layers\*\*.ml | wc -l -
+
+old_wc:
+	@ wc -l\
+	  util\*.ml\
+	  mm\*.ml\
+	  type\*.ml\
+	  appl\*.ml\
+	  infr\*.ml\
+	  route\*.ml\
+	  trans\*.ml\
+	  layers\*\*.ml\
+	@ echo "ML code:"
+	@ wc -l\
+	  util\*.ml	util\*.mli\
+	  mm\*.ml	mm\*.mli\
+	  mm\*.ml	mm\*.mli\
+	  type\*.ml	type\*.mli\
+	  appl\*.ml	appl\*.mli\
+	  groupd\*.ml   groupd\*.mli\
+	  layers\*\*.ml\
+	  socket\*.ml	socket\*.mli\
+	  trans\*.ml	trans\*.mli\
+	  demo\*.ml\
+	  demo\tk\*.ml\
+	  demo\life\*.ml demo\life\*.mli 
+	@ echo
+	@ echo "C code:"
+	@ wc\
+	  socket\*\*.[ch] socket\*\*\*.[ch]
+	@ echo
+	@ echo "Latex Documentation"
+	@ wc doc\*.tex doc\layers\*.tex
+
+
+nfiles:
+	@ ls $(SRCS) mk\* | wc
+
+#*************************************************************#
+
 

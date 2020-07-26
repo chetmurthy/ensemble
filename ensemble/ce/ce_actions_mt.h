@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_ACTIONS_MT.H: application interface */
 /* Author: Ohad Rodeh 8/2001 */
 /* Based on code by  Mark Hayden from the CEnsemble system */
@@ -15,16 +25,10 @@
 
  * Ts_join : ce_Join
 
- * Ts_ADDSOCKRECV : ce_AddSockRecv
-
- * TS_RMVSOCKRECV : ce_RmvSockRecv
 */
 typedef struct ce_mt_action_t {
     enum {
 	MT_JOIN,
-	MT_ADDSOCKRECV,
-	MT_RMVSOCKRECV
-
     } type;
     union {
 	struct {
@@ -68,17 +72,6 @@ ce_mt_action_t *ce_mt_appl_join(
     ce_jops_t *ops
     );
 				       
-ce_mt_action_t *ce_mt_appl_AddSockRecv(
-    ce_mt_queue_t*,
-    CE_SOCKET socket, ce_handler_t handler, ce_env_t env
-    );
-
-ce_mt_action_t *ce_mt_appl_RmvSockRecv(
-    ce_mt_queue_t*,
-    CE_SOCKET socket
-    );
-
-
 //void ce_action_free(ce_mt_action_t*) ;
 
 /**************************************************************/

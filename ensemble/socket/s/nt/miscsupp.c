@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* MISCSUPP.C: miscelaneous support functions */
 /* Author: Mark Hayden, 10/97 */
 /* Changes: Ohad Rodeh 10/2002 */
@@ -172,57 +182,38 @@ value skt_substring_eq(
 /**************************************************************/
 /* A set of errors to ignore on receiving a UDP packet.
  */
-void skt_udp_recv_error(void) {
+void skt_udp_recv_error(char *debug) {
     switch (h_errno) {
-#ifdef EPIPE
     case EPIPE:
-#endif
-	
-#ifdef EINTR
     case EINTR:
-#endif
-#ifdef EAGAIN
     case EAGAIN:
-#endif
-	
-#ifdef ECONNREFUSED
-    case ECONNREFUSED:
-#endif
-	
-#ifdef WSAECONNREFUSED
     case WSAECONNREFUSED:
-#endif
-	
-#ifdef WSAECONNRESET
     case WSAECONNRESET:
-#endif
-	
-#ifdef WSAEHOSTUNREACH
     case WSAEHOSTUNREACH:
-#endif
-	
-#ifdef WSAEHOSTDOWN
     case WSAEHOSTDOWN:
-#endif
-	
-#ifdef WSAEISCONN
     case WSAEISCONN:
-#endif
-	
-#ifdef WSAEMSGSIZE
     case WSAEMSGSIZE:
-#endif
-	
-#ifdef WSAWOULDBLOCK
-    case WSAWOULDBLOCK:
-#endif
-	
+    case WSAEWOULDBLOCK:
 	/* Do nothing */
 	break ;
     default:
-	printf ("Udp recv, uncaught error (%d)\n", h_errno);
-	serror("udp_recv");
+	serror(debug);
 	break ;
+    }
+}
+
+/* Some errors need to be ignored
+ */
+void skt_tcp_recv_error(char *debug) {
+    switch (h_errno) {
+
+    case WSAEWOULDBLOCK:
+	/* Do nothing */
+	break ;
+
+    default:
+	serror(debug);
+	break;
     }
 }
 

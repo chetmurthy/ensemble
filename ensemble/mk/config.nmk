@@ -189,10 +189,21 @@ CP	= copy
 MV	= move
 LN	= copy			# use copy instead
 RM      = -del /Q /F
+RM_REC	= -del /S
 MAKE	= nmake -f Makefile.nt
 MAKE_BASE = nmake               #sometimes we need the basic command
 MKLIB	= lib /nologo /debugtype:CV
 MKLIBO  = /out:
+
+# Relative library paths 
+# For example, instead of:
+#     libce.lib
+# We have:
+#      $(LIB_PREF)ce$(LIB_SUFF)
+LIB_PATH = -link /LIBPATH:
+LIB_PREF = lib
+LIB_SUFF = .lib
+
 #*************************************************************#
 ## Shared libraries, DLLs on win32
 
@@ -248,5 +259,6 @@ CLEANDIR = \
     $(RM) .nfs* *.cm* *.ppo .err a.out *.o *.exe *.obj *.a *.lib *.asm *~ .*~ core *.pdb core gmon.out camlprim* *.exp *.dll *.idb
 
 #*************************************************************#
+
 
 

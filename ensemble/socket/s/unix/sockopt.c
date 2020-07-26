@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* SOCKOPT.C: socket operations not supported natively by Caml */
 /* Author: Ohad Rodeh  10/2002 */
 /* Based on code by Mark Hayden */
@@ -27,14 +37,15 @@ value skt_setsockopt_bsdcompat(	/* ML */
 	value bool_v
 ) {
 #ifdef SO_BSDCOMPAT
-  int sock ;
-  int ret ;
-  int flag ;
-  sock = Socket_val(sock_v) ;
-  flag = Bool_val(bool_v) ;
-  ret = setsockopt(sock, SOL_SOCKET, SO_BSDCOMPAT, &flag, sizeof(flag)) ;
-  if (ret < 0) serror("setsockopt:bsdcompat");
+    int sock ;
+    int ret ;
+    int flag ;
+    sock = Socket_val(sock_v) ;
+    flag = Bool_val(bool_v) ;
+    ret = setsockopt(sock, SOL_SOCKET, SO_BSDCOMPAT, &flag, sizeof(flag)) ;
+    if (ret < 0) serror("setsockopt:bsdcompat");
 #endif
-  return Val_unit ;
+    return Val_unit ;
 }
+
 

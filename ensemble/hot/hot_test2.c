@@ -1,5 +1,15 @@
 /**************************************************************/
 /*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
+/*
  *  Ensemble, (Version 0.40c)
  *  Copyright 1997 Cornell University
  *  All rights reserved.

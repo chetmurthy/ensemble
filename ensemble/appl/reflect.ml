@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* REFLECT.ML: server side of gossip transport *)
 (* Author: Mark Hayden, 8/95 *)
 (**************************************************************)
@@ -38,9 +48,9 @@ let create_server_sock port =
   end ;
   
   let addr =
-    match Arge.get Arge.udp_host with
+    match Arge.get Arge.host_ip with
       | None -> Hsys.inet_any()
-      | Some host -> Arge.inet_of_string Arge.udp_host host
+      | Some host -> Arge.inet_of_string Arge.host_ip host
   in
 
   (* Bind it to the gossip port.
@@ -70,7 +80,8 @@ let intf alarm initial_sock port =
   Alarm.add_sock_recv alarm name !sock_r (Hsys.Handler0 recv_gossip) ;
 
   let replace_socket () = 
-    printf "REFLECT:server socket closed due to errors, creating a new one\n"; 
+    if !verbose then 
+      printf "REFLECT:server socket closed due to errors, creating a new one\n"; 
     Alarm.rmv_sock_recv alarm !sock_r ;
     Hsys.close !sock_r;
     let new_sock = create_server_sock port in
@@ -153,7 +164,15 @@ let intf alarm initial_sock port =
 		if !verbose then
 		  printf "REFLECT:warning:%s\n" (Util.error exn)
 	    | _ -> 
-		printf "Unix.error=%s" (Util.error exn);
+		(* This happens only on win32 systems. 
+		 * 
+		 * The problem is that a UDP socket can give errors if it things
+		 * there is an error on the side that sending it packets. This is
+		 * a connection-oriented behavior which is correct for TCP but should
+		 * not occur with a connection-less protocol like UDP. 
+		 *)
+		if !verbose then
+		  printf "Unix.error=%s" (Util.error exn);
 		replace_socket ()
     in
     recv_gossip_r := recv_gossip ;

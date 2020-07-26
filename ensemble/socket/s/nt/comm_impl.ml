@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* COMM_IMPL.ML *)
 (* Authors: Robbert vanRenesse and Mark Hayden, 4/95 *)
 (* Ohad Rodeh :                                       *)
@@ -231,7 +241,7 @@ external setsockopt_ttl : socket -> int -> unit
   = "skt_setsockopt_ttl" 
 external setsockopt_loop : socket -> bool -> unit 
   = "skt_setsockopt_loop" 
-external setsockopt_join : socket -> Unix.inet_addr -> unit 
+external setsockopt_join : socket -> Unix.inet_addr -> mcast_send_recv -> unit 
   = "skt_setsockopt_join" 
 external setsockopt_leave : socket -> Unix.inet_addr -> unit 
   = "skt_setsockopt_leave" 

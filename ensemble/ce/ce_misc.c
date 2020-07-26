@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_VIEW.H */
 /* Author: Ohad Rodeh 8/2001 */
 /* Based on code by Mark Hayden in the CEnsemble system */
@@ -86,7 +96,7 @@ ce_st_create_intf(ce_env_t env,
     intf->env = env;
     intf->id = id_counter++;
 
-	intf->magic = CE_MAGIC;
+    intf->magic = CE_MAGIC;
     intf->joining = 0;
     intf->leaving = 0;
     intf->blocked = 0;

@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_APPL_INTF.H: application interface */
 /* Author: Ohad Rodeh 8/2001 */
 /* Based on code by  Mark Hayden from the CEnsemble system */
@@ -57,8 +67,7 @@ struct ce_action_t {
 	APPL_REKEY,
 	APPL_PROTOCOL,
 	APPL_PROPERTIES,
-	
-	APPL_BLOCK  // For internal use only!
+	APPL_BLOCK_OK
     } type;
     union {
 	struct {
@@ -82,6 +91,7 @@ struct ce_action_t {
 	} suspect;
 	char proto[CE_PROTOCOL_MAX_SIZE] ;
 	char properties[CE_PROPERTIES_MAX_SIZE] ;
+	ce_bool_t block_ok;
     } u ;
 };
 
@@ -151,6 +161,6 @@ void ce_action_xfer_done(ce_pool_t *pool, ce_queue_t *q) ;
 void ce_action_rekey(ce_pool_t *pool, ce_queue_t *q) ;
 void ce_action_protocol(ce_pool_t *pool, ce_queue_t *q, char *proto) ;
 void ce_action_properties(ce_pool_t *pool, ce_queue_t *q, char *properties) ;
-void ce_action_block(ce_pool_t *pool, ce_queue_t *q);
+void ce_action_block_ok(ce_pool_t *pool, ce_queue_t *q, ce_bool_t flag);
 
 #endif /* __CE_ACTIONS_H__ */

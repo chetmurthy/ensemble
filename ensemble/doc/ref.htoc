@@ -60,68 +60,77 @@
 \tocitem \@locref{htoc41}{\begin{@norefs}\@print{6.3}\quad{}Values and Types\end{@norefs}}
 \end{tocenv}
 \tocitem \@locref{htoc42}{\begin{@norefs}\@print{7}\quad{}Event Handlers: Standard\end{@norefs}}
-\tocitem \@locref{htoc43}{\begin{@norefs}\@print{8}\quad{}The Ensemble Security Architecture (by Ohad Rodeh)\end{@norefs}}
+\tocitem \@locref{htoc43}{\begin{@norefs}\@print{8}\quad{}Heterogeneous Transports\end{@norefs}}
 \begin{tocenv}
-\tocitem \@locref{htoc44}{\begin{@norefs}\@print{8.1}\quad{}Cryptographic Infrastructure\end{@norefs}}
-\tocitem \@locref{htoc45}{\begin{@norefs}\@print{8.2}\quad{}Rekeying\end{@norefs}}
-\tocitem \@locref{htoc46}{\begin{@norefs}\@print{8.3}\quad{}A secure stack\end{@norefs}}
-\tocitem \@locref{htoc47}{\begin{@norefs}\@print{8.4}\quad{}Security events\end{@norefs}}
-\tocitem \@locref{htoc48}{\begin{@norefs}\@print{8.5}\quad{}Using Security\end{@norefs}}
-\tocitem \@locref{htoc49}{\begin{@norefs}\@print{8.6}\quad{}Checking that things work\end{@norefs}}
-\tocitem \@locref{htoc50}{\begin{@norefs}\@print{8.7}\quad{}Using security from HOT and EJava\end{@norefs}}
+\tocitem \@locref{htoc44}{\begin{@norefs}\@print{8.1}\quad{}Code walk-through\end{@norefs}}
+\tocitem \@locref{htoc45}{\begin{@norefs}\@print{8.2}\quad{}Design of the routers\end{@norefs}}
+\end{tocenv}
+\tocitem \@locref{htoc46}{\begin{@norefs}\@print{9}\quad{}The Ensemble Security Architecture (by Ohad Rodeh)\end{@norefs}}
+\begin{tocenv}
+\tocitem \@locref{htoc47}{\begin{@norefs}\@print{9.1}\quad{}Cryptographic Infrastructure\end{@norefs}}
+\tocitem \@locref{htoc48}{\begin{@norefs}\@print{9.2}\quad{}Rekeying\end{@norefs}}
+\tocitem \@locref{htoc49}{\begin{@norefs}\@print{9.3}\quad{}A secure stack\end{@norefs}}
+\tocitem \@locref{htoc50}{\begin{@norefs}\@print{9.4}\quad{}Security events\end{@norefs}}
+\tocitem \@locref{htoc51}{\begin{@norefs}\@print{9.5}\quad{}Using Security\end{@norefs}}
+\tocitem \@locref{htoc52}{\begin{@norefs}\@print{9.6}\quad{}Checking that things work\end{@norefs}}
+\tocitem \@locref{htoc53}{\begin{@norefs}\@print{9.7}\quad{}Using security from HOT and EJava\end{@norefs}}
+\end{tocenv}
+\tocitem \@locref{htoc54}{\begin{@norefs}\@print{10}\quad{}Outboard messaging\end{@norefs}}
+\begin{tocenv}
+\tocitem \@locref{htoc55}{\begin{@norefs}\@print{10.1}\quad{}Locating the service\end{@norefs}}
+\tocitem \@locref{htoc56}{\begin{@norefs}\@print{10.2}\quad{}Communicating with the service\end{@norefs}}
+\tocitem \@locref{htoc57}{\begin{@norefs}\@print{10.3}\quad{}Messages from server to client\end{@norefs}}
+\tocitem \@locref{htoc58}{\begin{@norefs}\@print{10.4}\quad{}Messages from client to server\end{@norefs}}
 \end{tocenv}
 \end{tocenv}
-\tocitem \@locref{htoc51}{\begin{@norefs}\@print{Part&nbsp;II}\quad{}The \ensemble\ Protocols\end{@norefs}}
+\tocitem \@locref{htoc59}{\begin{@norefs}\@print{Part&nbsp;II}\quad{}The \ensemble\ Protocols\end{@norefs}}
 \begin{tocenv}
-\tocitem \@locref{htoc52}{\begin{@norefs}\@print{9}\quad{}Layers and Stacks\end{@norefs}}
+\tocitem \@locref{htoc60}{\begin{@norefs}\@print{11}\quad{}Layers and Stacks\end{@norefs}}
 \begin{tocenv}
-\tocitem \@locref{htoc53}{\begin{@norefs}\@print{9.1}\quad{}{ANYLAYER}\end{@norefs}}
-\tocitem \@locref{htoc54}{\begin{@norefs}\@print{9.2}\quad{}{CREDIT}\end{@norefs}}
-\tocitem \@locref{htoc55}{\begin{@norefs}\@print{9.3}\quad{}{RATE}\end{@norefs}}
-\tocitem \@locref{htoc56}{\begin{@norefs}\@print{9.4}\quad{}{BOTTOM}\end{@norefs}}
-\tocitem \@locref{htoc57}{\begin{@norefs}\@print{9.5}\quad{}{CAUSAL}\end{@norefs}}
-\tocitem \@locref{htoc58}{\begin{@norefs}\@print{9.6}\quad{}{ELECT}\end{@norefs}}
-\tocitem \@locref{htoc59}{\begin{@norefs}\@print{9.7}\quad{}{ENCRYPT}\end{@norefs}}
-\tocitem \@locref{htoc60}{\begin{@norefs}\@print{9.8}\quad{}{HEAL}\end{@norefs}}
-\tocitem \@locref{htoc61}{\begin{@norefs}\@print{9.9}\quad{}{INTER}\end{@norefs}}
-\tocitem \@locref{htoc62}{\begin{@norefs}\@print{9.10}\quad{}{INTRA}\end{@norefs}}
-\tocitem \@locref{htoc63}{\begin{@norefs}\@print{9.11}\quad{}{LEAVE}\end{@norefs}}
-\tocitem \@locref{htoc64}{\begin{@norefs}\@print{9.12}\quad{}{MERGE}\end{@norefs}}
-\tocitem \@locref{htoc65}{\begin{@norefs}\@print{9.13}\quad{}{MFLOW}\end{@norefs}}
-\tocitem \@locref{htoc66}{\begin{@norefs}\@print{9.14}\quad{}{MNAK}\end{@norefs}}
-\tocitem \@locref{htoc67}{\begin{@norefs}\@print{9.15}\quad{}{OPTREKEY}\end{@norefs}}
-\tocitem \@locref{htoc68}{\begin{@norefs}\@print{9.16}\quad{}{PERFREKEY}\end{@norefs}}
-\tocitem \@locref{htoc69}{\begin{@norefs}\@print{9.17}\quad{}{PRIMARY}\end{@norefs}}
-\tocitem \@locref{htoc70}{\begin{@norefs}\@print{9.18}\quad{}{PT2PT}\end{@norefs}}
-\tocitem \@locref{htoc71}{\begin{@norefs}\@print{9.19}\quad{}{PT2PTW}\end{@norefs}}
-\tocitem \@locref{htoc72}{\begin{@norefs}\@print{9.20}\quad{}{PT2PTWP}\end{@norefs}}
-\tocitem \@locref{htoc73}{\begin{@norefs}\@print{9.21}\quad{}{REALKEYS}\end{@norefs}}
-\tocitem \@locref{htoc74}{\begin{@norefs}\@print{9.22}\quad{}{REKEY}\end{@norefs}}
-\tocitem \@locref{htoc75}{\begin{@norefs}\@print{9.23}\quad{}{REKEY\_DT}\end{@norefs}}
-\tocitem \@locref{htoc76}{\begin{@norefs}\@print{9.24}\quad{}{REKEY\_DIAM}\end{@norefs}}
-\tocitem \@locref{htoc77}{\begin{@norefs}\@print{9.25}\quad{}{SECCHAN}\end{@norefs}}
-\tocitem \@locref{htoc78}{\begin{@norefs}\@print{9.26}\quad{}{SEQUENCER}\end{@norefs}}
-\tocitem \@locref{htoc79}{\begin{@norefs}\@print{9.27}\quad{}{SLANDER}\end{@norefs}}
-\tocitem \@locref{htoc80}{\begin{@norefs}\@print{9.28}\quad{}{STABLE}\end{@norefs}}
-\tocitem \@locref{htoc81}{\begin{@norefs}\@print{9.29}\quad{}{SUSPECT}\end{@norefs}}
-\tocitem \@locref{htoc82}{\begin{@norefs}\@print{9.30}\quad{}{SYNC}\end{@norefs}}
-\tocitem \@locref{htoc83}{\begin{@norefs}\@print{9.31}\quad{}{TOTEM}\end{@norefs}}
-\tocitem \@locref{htoc84}{\begin{@norefs}\@print{9.32}\quad{}{WINDOW}\end{@norefs}}
-\tocitem \@locref{htoc85}{\begin{@norefs}\@print{9.33}\quad{}{XFER}\end{@norefs}}
-\tocitem \@locref{htoc86}{\begin{@norefs}\@print{9.34}\quad{}{ZBCAST}\end{@norefs}}
-\tocitem \@locref{htoc87}{\begin{@norefs}\@print{9.35}\quad{}{VSYNC}\end{@norefs}}
+\tocitem \@locref{htoc61}{\begin{@norefs}\@print{11.1}\quad{}{ANYLAYER}\end{@norefs}}
+\tocitem \@locref{htoc62}{\begin{@norefs}\@print{11.2}\quad{}{CREDIT}\end{@norefs}}
+\tocitem \@locref{htoc63}{\begin{@norefs}\@print{11.3}\quad{}{RATE}\end{@norefs}}
+\tocitem \@locref{htoc64}{\begin{@norefs}\@print{11.4}\quad{}{BOTTOM}\end{@norefs}}
+\tocitem \@locref{htoc65}{\begin{@norefs}\@print{11.5}\quad{}{CAUSAL}\end{@norefs}}
+\tocitem \@locref{htoc66}{\begin{@norefs}\@print{11.6}\quad{}{ELECT}\end{@norefs}}
+\tocitem \@locref{htoc67}{\begin{@norefs}\@print{11.7}\quad{}{ENCRYPT}\end{@norefs}}
+\tocitem \@locref{htoc68}{\begin{@norefs}\@print{11.8}\quad{}{HEAL}\end{@norefs}}
+\tocitem \@locref{htoc69}{\begin{@norefs}\@print{11.9}\quad{}{INTER}\end{@norefs}}
+\tocitem \@locref{htoc70}{\begin{@norefs}\@print{11.10}\quad{}{INTRA}\end{@norefs}}
+\tocitem \@locref{htoc71}{\begin{@norefs}\@print{11.11}\quad{}{LEAVE}\end{@norefs}}
+\tocitem \@locref{htoc72}{\begin{@norefs}\@print{11.12}\quad{}{MERGE}\end{@norefs}}
+\tocitem \@locref{htoc73}{\begin{@norefs}\@print{11.13}\quad{}{MFLOW}\end{@norefs}}
+\tocitem \@locref{htoc74}{\begin{@norefs}\@print{11.14}\quad{}{MNAK}\end{@norefs}}
+\tocitem \@locref{htoc75}{\begin{@norefs}\@print{11.15}\quad{}{PRIMARY}\end{@norefs}}
+\tocitem \@locref{htoc76}{\begin{@norefs}\@print{11.16}\quad{}{PT2PT}\end{@norefs}}
+\tocitem \@locref{htoc77}{\begin{@norefs}\@print{11.17}\quad{}{PT2PTW}\end{@norefs}}
+\tocitem \@locref{htoc78}{\begin{@norefs}\@print{11.18}\quad{}{PT2PTWP}\end{@norefs}}
+\tocitem \@locref{htoc79}{\begin{@norefs}\@print{11.19}\quad{}{REKEY}\end{@norefs}}
+\tocitem \@locref{htoc80}{\begin{@norefs}\@print{11.20}\quad{}{REKEY\_DT}\end{@norefs}}
+\tocitem \@locref{htoc81}{\begin{@norefs}\@print{11.21}\quad{}{SECCHAN}\end{@norefs}}
+\tocitem \@locref{htoc82}{\begin{@norefs}\@print{11.22}\quad{}{SEQUENCER}\end{@norefs}}
+\tocitem \@locref{htoc83}{\begin{@norefs}\@print{11.23}\quad{}{SLANDER}\end{@norefs}}
+\tocitem \@locref{htoc84}{\begin{@norefs}\@print{11.24}\quad{}{STABLE}\end{@norefs}}
+\tocitem \@locref{htoc85}{\begin{@norefs}\@print{11.25}\quad{}{SUSPECT}\end{@norefs}}
+\tocitem \@locref{htoc86}{\begin{@norefs}\@print{11.26}\quad{}{SYNC}\end{@norefs}}
+\tocitem \@locref{htoc87}{\begin{@norefs}\@print{11.27}\quad{}{TOPS}\end{@norefs}}
+\tocitem \@locref{htoc88}{\begin{@norefs}\@print{11.28}\quad{}{TOTEM}\end{@norefs}}
+\tocitem \@locref{htoc89}{\begin{@norefs}\@print{11.29}\quad{}{WINDOW}\end{@norefs}}
+\tocitem \@locref{htoc90}{\begin{@norefs}\@print{11.30}\quad{}{XFER}\end{@norefs}}
+\tocitem \@locref{htoc91}{\begin{@norefs}\@print{11.31}\quad{}{ZBCAST}\end{@norefs}}
+\tocitem \@locref{htoc92}{\begin{@norefs}\@print{11.32}\quad{}{VSYNC}\end{@norefs}}
 \end{tocenv}
-\tocitem \@locref{htoc88}{\begin{@norefs}\@print{A}\quad{}Appendix: ML Does Not Allow Segmentation Faults\end{@norefs}}
-\tocitem \@locref{htoc89}{\begin{@norefs}\@print{B}\quad{}\ensemble\ Membership Service TCP Interface\end{@norefs}}
+\tocitem \@locref{htoc93}{\begin{@norefs}\@print{A}\quad{}Appendix: ML Does Not Allow Segmentation Faults\end{@norefs}}
+\tocitem \@locref{htoc94}{\begin{@norefs}\@print{B}\quad{}\ensemble\ Membership Service TCP Interface\end{@norefs}}
 \begin{tocenv}
-\tocitem \@locref{htoc90}{\begin{@norefs}\@print{B.1}\quad{}Locating the service\end{@norefs}}
-\tocitem \@locref{htoc91}{\begin{@norefs}\@print{B.2}\quad{}Communicating with the service\end{@norefs}}
+\tocitem \@locref{htoc95}{\begin{@norefs}\@print{B.1}\quad{}Locating the service\end{@norefs}}
+\tocitem \@locref{htoc96}{\begin{@norefs}\@print{B.2}\quad{}Communicating with the service\end{@norefs}}
 \end{tocenv}
-\tocitem \@locref{htoc92}{\begin{@norefs}\@print{C}\quad{}Bimodal Multicast (by Ken Birman, Mark Hayden, and Zhen
+\tocitem \@locref{htoc97}{\begin{@norefs}\@print{C}\quad{}Bimodal Multicast (by Ken Birman, Mark Hayden, and Zhen
 Xiao)\end{@norefs}}
 \begin{tocenv}
-\tocitem \@locref{htoc93}{\begin{@norefs}\@print{C.1}\quad{}Protocol description\end{@norefs}}
-\tocitem \@locref{htoc94}{\begin{@norefs}\@print{C.2}\quad{}Usage\end{@norefs}}
+\tocitem \@locref{htoc98}{\begin{@norefs}\@print{C.1}\quad{}Protocol description\end{@norefs}}
+\tocitem \@locref{htoc99}{\begin{@norefs}\@print{C.2}\quad{}Usage\end{@norefs}}
 \end{tocenv}
 \end{tocenv}
 \end{tocenv}

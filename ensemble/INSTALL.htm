@@ -6,17 +6,18 @@
 <body text="#000000" bgcolor="#FFFFFF">
 
 <center>
-<h1>Ensemble 1.34</h1></center>
+<h1>Ensemble 1.42</h1></center>
 
 <center><h2>
 Release Notes and Installation Instructions
 </h2></center>
 
 <center>Copyright &copy;1997 Cornell University, Ithaca, NY, USA,
-Hebrew University 2000, Jerusalem Israel.
+Hebrew University 2000, Jerusalem Israel, 
+IBM Israel Science and Technology 2002
 <br>All rights reserved.</center>
 
-<br><i>Maintainers</i>:
+<br><i>Maintainer</i>:
 <a href="mailto:orodeh@il.ibm.com">Ohad Rodeh</a>,
 <hr><a NAME="intro"></a>
 <h2>Introduction</h2>
@@ -43,7 +44,7 @@ only significant when Ensemble is used in high-performance settings.
 <a NAME="software"></a>
 <h2>Required Software</h2>
 <p>
-To compile Ensemble you need <b>Version 3.04</b> of the Objective
+To compile Ensemble you need <b>Version 3.06</b> of the Objective
 Caml (O'Caml) compiler. For unix systems, you also need the make
 version by GNU, also known as GNU-make. For windows, you'll need the
 Visual Studio compiler verion 6 and the nmake tool.
@@ -55,10 +56,10 @@ you have the correct version. See the instructions below on how to
 obtain it. This is a different compiler version than required by
 previous versions of Ensemble! Version 0.40 of Ensemble used
 ocaml-1.05; Version 0.50 of Ensemble used ocaml-1.07; version 0.60
-used ocaml-2.01; and we are now up to ocaml-3.04.
+used ocaml-2.01; and we are now up to ocaml-3.06.
 <p>
 On Unix platforms, to compile the HOT C interface, you need a POSIX
-compliant threads package. (On Solaris, you can use the native
+compliant threads package. (On Solaris and HPUX you can use the native
 threads library). 
 To compile the <a
 href="http://www.cs.cornell.edu/Info/Projects/Ensemble/doc/Maestro/Maestro.html">Maestro</a>
@@ -73,72 +74,82 @@ in your path.
 <a NAME="licensing"></a>
 <h2>Licensing</h2>
 <p>
-Ensemble code has a BSD-type license. It is copyrighted by Cornell
-and the Hebrew universities. Ensemble is freely available software,
+Ensemble code has a BSD-type license. It is copyrighted by Cornell,
+the Hebrew universitie, and IBM research. Ensemble is freely available software,
 but you must agree to the terms of the license before you can install
 it. We ask that you read the licensing agreement before installing
 Ensemble.  It can be found in <b>ensemble/LICENSE</b>.
 <p>
 <hr>
+
 <a NAME="installation"></a>
 <h2>Installation</h2>
-<p>
-Install Ensemble by following the step-by-step instructions. You need to
-get the O'Caml compiler, extract the Ensemble software, and then compile
-the portions you wish to use.
+
+In order to compile the system you'll need to setup some environment
+variables. These will help tell the build-scripts which operating
+system you're using and where to find the OCaml libraries. 
+
 <ul>
   <li>
-      Make sure you have <a href="#ocaml">Objective Caml version 3.04</a>
-      installed.
+      Set the environment variables <b>ENS_MACHTYPE
+      </b>and <b>ENS_OSTYPE</b>.
+      These environment variables are only used in
+      compilation as well as in file naming, therefore, it is important to
+      set them correctly. On some architectures, the variables MACHTYPE and
+      OSTYPE are predefined. To be compatible with naming
+      of the platform-dependent libraries we distribute, you should use values
+      such as these: 
   <li>
-      Set the <b>CAMLLIB</b> environment variable, and put the path to the
-      Ocaml binaries in your PATH.
+      <b>ENS_MACHTYPE : sparc, i386, rs6000, alpha, ...</b>
   <li>
-      Download and extract the <a href="#download">Ensemble</a> software.
+      <b>ENS_OSTYPE : solaris, aix, hpux, linux, osf1, ...</b>
+      <p>
+      On WIN32 the configuration files already set the PLATFORM to nt.
+      Make sure that these variables are set correctly, values such as i686
+      are not handled correctly by the makefiles. With a Pentium processor,
+      make sure to set the ENS_MACHTYPE to i386, and not i486/i586/i686.
+      
+      In <b>sh</b>, you set them like this:
+      <pre>
+      &nbsp;&nbsp;&nbsp; ENS_MACHTYPE=i386
+      &nbsp;&nbsp;&nbsp; export ENS_MACHTYPE
+      &nbsp;&nbsp;&nbsp; ENS_OSTYPE=linux
+      &nbsp;&nbsp;&nbsp; export ENS_OSTYPE
+      </pre>
   <li>
-      Installation for WIN32 and Unix platforms is similar, the 
-      difference being that on windows one needs to use 
-      'nmake -f Makefile.nt' instead of 'make'. There are also
-      specific instructions for building Ensemble on <a
-      href="#multiple-platforms">multiple platforms</a>.
+      Make sure the Ocaml binaries are in your <b>PATH</b>.
+  <li>
+      Set the <b>OCAMLLIB</b> environment variable to the directory where you
+      installed the O'Caml libraries. O'Caml will give you the correct value
+      for this if you type:
+      <pre>
+      &nbsp;&nbsp;&nbsp; % ocamlc -v
+      &nbsp;&nbsp;&nbsp; The Objective Caml compiler, version 3.06
+      &nbsp;&nbsp;&nbsp; Standard library directory: /usr/local/lib/ocaml
+      </pre>
+      The second line printed out by this is the location where O'Caml installed
+      the libraries. In sh, you set the OCAMLLIB variable like this:
+      <pre>
+      &nbsp;&nbsp;&nbsp; OCAMLLIB=/usr/local/lib/ocaml
+      &nbsp;&nbsp;&nbsp; export OCAMLLIB
+      </pre>
+      We recommend you add these to your '.tcshrc' or equivalent for your shell.
+
+      If you have some other version, then obtain version 3.06 and install
+      it.  O'Caml is freely available from <a
+      href="http://caml.inria.fr/ocaml">http://caml.inria.fr/ocaml</a>
+      and is easy to install (precompiled binaries are available for
+      Windows NT). You do not need the native code compiler, although you
+      can compile Ensemble with it.
 </ul>
-<p>
-<hr>
 
-<a NAME="ocaml"></a>
-<h2>How to obtain Objective Caml 3.04</h2>
-<p>
-To compile Ensemble you need Objective Caml version 3.04. <b>Other
-versions of the compiler may NOT work.</b> This is because the O'Caml
-bytecode format and libraries are not guaranteed to be compatible
-across versions.
-<p>
-If you already have OCaml you can check which version you have by typing:
-<pre>
-&nbsp;&nbsp;&nbsp; ocamlc -v
-</pre>
-This gives you the version of the compiler in your path (if there is
-one).  The first line of the output should be:
-<pre>
-&nbsp;&nbsp;&nbsp; The Objective Caml compiler, version 3.04
-</pre>
-If you have some other version, then obtain version 3.04 and install
-it.  O'Caml is freely available from <a
-href="http://caml.inria.fr/ocaml">http://caml.inria.fr/ocaml</a>
-and is easy to install (precompiled binaries are available for
-Windows NT). You do not need the native code compiler, although you
-can compile Ensemble with it.
-<p>
+<p> Install Ensemble by following the step-by-step instructions. You
+need to get the O'Caml compiler, <a href="#download">extract</a> the
+Ensemble software, and then compile the portions you wish to
+use. Installation for WIN32 and Unix platforms is similar, the
+difference being that on windows one needs to use 'nmake -f
+Makefile.nt' instead of 'make'.
 
-<h3>The O'Caml Tcl/Tk Interface</h3>
-<p>
-Previously, the Tcl/Tk caml library was distributed separately from
-the compiler. However, it now comes with the main distribution, under
-the name LablTk. You'll need this library for building the 
-whiteboard and game-of-life demos. Both can be found in the demo subdirectory.
-<p>
-<a href="#installation">Back to installation guide.</a>
-<hr>
 <a NAME="download"></a>
 <h2>How to download and extract the Ensemble software</h2>
 <p>
@@ -151,18 +162,16 @@ you can use the winzip program. On Unix platforms, do it this way:
 &nbsp;&nbsp;&nbsp; gunzip ensemble-1_0.tar.gz
 &nbsp;&nbsp;&nbsp; tar xvf ensemble.tar
 </pre>
-<a href="#installation">Back to installation guide.</a>
 <p>
 <hr>
+
 <h2>Building Ensemble</h2>
-Ensemble is supported on Unix (and Unix like systems), and WIN32
-platforms. It is tested mainly on Linux and WIN2000, but also on
-sparc-solaris and NT4.
+Ensemble is supported on Unix (and Unix like systems), and win32
+platforms. It is tested mainly on Linux and WinXP, but also on
+sparc-solaris, HP-UX, NT4, WIN2000.
 
 <p>
-First, make sure the <b>CAMLLIB</b> environment variable is set, and the
-Ocaml binaries are accessible from your PATH. Then compile the Ensemble
-system and demonstration programs as follows:
+Compile the Ensemble system and demonstration programs as follows:
 <pre>
 &nbsp;&nbsp;&nbsp; # make the Ensemble system dependencies
 &nbsp;&nbsp;&nbsp; # directory: ensemble
@@ -181,18 +190,31 @@ clean up the object files do:
 &nbsp;&nbsp;&nbsp; # directory: ensemble
 &nbsp;&nbsp;&nbsp; make clean
 </pre>
-This will leave only the binaries (in bin) and libraries (in lib).
+This will leave only the binaries (in bin/PLATFORM) and libraries (in lib/PLATFORM).
+
+<p> The build process automatically builds CE, HOT, and
+Maestro. Cejava requires Java installed and is therefore optional. To
+see the details for the rest of the optional packages read further
+down.
 
 <p>
 <h3>How to run applications</h3>
 <p>
-You can now refer to the tutorial, <b>ensemble/doc/tut.ps</b>, for instructions
+You can now refer to the tutorial, <b>ensemble/doc/tut.pdf</b>, for instructions
 on executing the demo applications. This involves setting a few environment
 variables and then executing the applications. Come back to here to install
 additional parts of Ensemble.
+
+
+<hr>
 <p>
 <a NAME="tk"></a>
-<h3>Graphical Demos</h3>
+<h3>Graphical Demos using the OCaml Tcl/Tk interface</h3>
+<p>Previously, the Tcl/Tk caml library was distributed separately from
+the compiler. However, it now comes with the main distribution, under
+the name LablTk. You'll need this library for building the 
+whiteboard and game-of-life demos. Both can be found in the demo subdirectory.
+
 <p>
 Compile the white board demo and "Game of Life" demo.  <i>Note</i>:
 your platform must support the LablTk library. These applications will
@@ -212,69 +234,13 @@ not compile if the Ocaml TK interface has not been installed.
 </pre>
 To make the optimized version of the tk library do 'make tk_opt'.
 
-<a NAME="env"></a>
-<h3>Environment variables</h3>
-<p>
-In order to compile platform-dependent parts (the Socket library, the native
-code, the HOT C interface, and the Maestro C++ interface) some configuration
-needs to be done.
-<ul>
-<li>
-Set the environment variables <b>ENS_MACHTYPE
-</b>and <b>ENS_OSTYPE</b>.
-These environment variables are only used in
-compilation as well as in file naming, therefore, it is important to
-set them correctly. On some architectures, the variables MACHTYPE and
-OSTYPE are predefined. To be compatible with naming
-of the platform-dependent libraries we distribute, you should use values
-such as these:
-<li>
-<b>ENS_MACHTYPE : sparc, i386, rs6000, alpha, ...</b>
-<li>
-<b>ENS_OSTYPE : sunos4, solaris, aix, linux, osf1, ...</b>
-<p>
-On WIN32 the configuration files already set the PLATFORM to nt.
-Make sure that these variables are set correctly, values such as i686
-are not handled correctly by the makefiles. With a Pentium processor,
-make sure to set the ENS_MACHTYPE to i386, and not i486/i586/i686.
-    
-In <b>sh</b>, you set them like this:
-<pre>
-&nbsp;&nbsp;&nbsp; ENS_MACHTYPE=i386
-&nbsp;&nbsp;&nbsp; export ENS_MACHTYPE
-&nbsp;&nbsp;&nbsp; ENS_OSTYPE=linux
-&nbsp;&nbsp;&nbsp; export ENS_OSTYPE
-</pre>
-<li>
-Make sure the Ocaml binaries are in your <b>PATH</b>.
-<li>
-Set the <b>CAMLLIB</b> environment variable to the directory where you
-installed the O'Caml libraries. O'Caml will give you the correct value
-for this if you type:
-<pre>
-&nbsp;&nbsp;&nbsp; % ocamlc -v
-&nbsp;&nbsp;&nbsp; The Objective Caml compiler, version 3.04
-&nbsp;&nbsp;&nbsp; Standard library directory: /usr/local/lib/ocaml
-</pre>
-The second line printed out by this is the location where O'Caml installed
-the libraries. In sh, you set the CAMLLIB variable like this:
-<pre>
-&nbsp;&nbsp;&nbsp; CAMLLIB=/usr/local/lib/ocaml
-&nbsp;&nbsp;&nbsp; export CAMLLIB
-</pre>
-We recommend you add these to your '.tcshrc' or equivalent for your shell.
-</ul>
-
-There are several other environment variables that are useful when
-using the system. A glossary appears <a href="#env_glossary">here</a>.
-
 <a NAME="socket"></a>
-<h3>Building the Socket library</h3>
+<h3>Using the "Unix" library instead of the default Socket library</h3>
 <p>
 The Socket library supports extensions to the Unix library concerned with
 communication. Strictly speaking, the optimized socket library is not
 necessary, because the basic communication functionality comes with
-CAML. However, it contains many features not found in the basic Caml
+OCAML. However, it contains many features not found in the basic Caml
 library: IP-multicast, handling C iovecs, and more.
 Using the Socket library increases Ensemble performance and decreases
 memory usage. The default is to use it, however, if you wish to use
@@ -284,7 +250,7 @@ non-optimized interface to the Caml Unix interface.
 &nbsp;&nbsp;&nbsp; # In ensemble/mk/config.mk, edit the macro definition for HSYS_TYPE to be "unix".
 &nbsp;&nbsp;&nbsp; # directory: ensemble
 &nbsp;&nbsp;&nbsp; make depend
-&nbsp;&nbsp;&nbsp; make 
+&nbsp;&nbsp;&nbsp; make all
 </pre>
 
 <p>
@@ -293,7 +259,7 @@ non-optimized interface to the Caml Unix interface.
 The native C interface is automatically built as part of the build
 process. There is no need for special actions on the user part.
 The source files are in directory <b>ce</b>, 
-atutorial appears as a chapter in the doc/tut.ps.
+a tutorial appears as a chapter in the doc/tut.pdf.
 Documentation for the header files appears under 'doc/ce' as well.
 The build process generates the file
 <b>ensemble/lib/PLATFORM/libce.so</b>
@@ -307,14 +273,56 @@ On Unix this requires setting the LD_LIBRARY_PATH, on windows this
 requires adding it to the path. Note that on win32 you'll need to link
 your application with libce.lib, while the real DLL is libce.dll. 
 
+<a NAME="cejava"></a>
+<h3>Building the CEJava Interface</h3>
+<p> CEJava was built and tested using Sun Microsystem's <b>JDK1.4</b>
+using the. CEJava provides an API similar to CE in the Java programming
+language, with performance similar to CE. This is achieved by hooking
+up the CE-calls directly to Java by means of the Java Native Interface
+(JNI).
+
+To build cejava you will need to first setup the </b>JAVA_HOME</b> environment
+variable to point to the root of the JAVA distribution. Then do:
+<pre>
+&nbsp;&nbsp;&nbsp; # directory: ensemble/cejava
+&nbsp;&nbsp;&nbsp; make all
+</pre>
+The build process generates the file
+<b>ensemble/lib/PLATFORM/libcejava.so</b>
+(where PLATFORM is the name of your platform) and installs the CE
+library files into 'ensemble/lib/PLATFORM'. The demos are installed in
+'ensemble/bin/PLATFORM/java_demo'. Since Java will try to dynamically
+link with <b>libcejava.so</b> you will need to add the
+ensemble/lib/PLATFORM directory to you load path. On Unix this
+requires setting the LD_LIBRARY_PATH, on windows this requires adding
+it to the path. Note that on win32 you'll need to link your
+application with libce.lib, while the real DLL is libce.dll. You'll
+also need to set the CLASSPATH environment variable to include the
+<code>ensemble.jar</code> file that is located in
+<code>ensemble/lib/PLATFORM</code>. The CLASSPATH is the list of
+directories searched by java for its libraries and classes. A
+resonable setting is
+<pre>
+&nbsp;&nbsp;&nbsp; CLASSPATH=".:ensemble/lib/PLATFORM/ensemble.jar"
+&nbsp;&nbsp;&nbsp; export OCAMLLIB
+</pre>
+On win32 this will be: 
+<pre>
+&nbsp;&nbsp;&nbsp; CLASSPATH=".;ensemble\lib\PLATFORM\ensemble.jar"
+</pre>
+
 <a NAME="hot"></a>
 <h3>Building the HOT tools</h3>
 <p>
-The HOT library is also automatically built as part of the build
+The Horus Object Tools (HOT) is a legacy interface that is used to
+support applications written for Ensemble's predecessor -- Horus. We
+still support HOT but encourage you to migrate to the newer CE API. 
+
+<p> The HOT library is automatically built as part of the build
 process. The build process generates the file
 <b>ensemble/lib/PLATFORM/libhot.a</b>
 (where PLATFORM is the name of your platform) and installs the HOT library
-files into 'ensemble/lib/PLATFORM'. The demos are installed in
+files into 'ensemble/lib/PLATFORM'. The <b>hot_test</b> program is installed in
 'ensemble/bin/PLATFORM'.
 
 <p>
@@ -337,82 +345,46 @@ and recompile.
 
 <p>
 <a NAME="maestro"></a>
-<h3>Building the <a href="http://www.cs.cornell.edu/Info/Projects/Ensemble/doc/Maestro/Maestro.html">Maestro</a>
+<h3>Building the <a
+href="http://www.cs.cornell.edu/Info/Projects/Ensemble/doc/Maestro/Maestro.html">Maestro</a>
 tools</h3>
 <p>
-You need to have compiled the HOT library before compiling the <a href="http://www.cs.cornell.edu/Info/Projects/Ensemble/doc/Maestro/Maestro.html">Maestro</a>
-C++ interface. You need a C++ compiler in order to compile Maestro. This
-step generates the file <b>ensemble/maestro/conf/PLATFORM/libmae.a</b>
-(where platform is the name of your platform).
+Maestro is a legacy C++ API that we are still supporting. However, we
+discourage its use and encourage you to use the newer CE API. 
+
+The Maestro library is automatically built as part of the build
+process after HOT. HOT is a prerequisit for Maestro. You need a C++
+compiler in order to compile Maestro. This step generates the file
+<b>ensemble/maestro/conf/PLATFORM/libmae.a</b> (where platform is the
+name of your platform). The <b>maestro-test</b> program is installed in
+'ensemble/bin/PLATFORM'.
+
 <pre>
-&nbsp;&nbsp;&nbsp; # build the Maestro and IIOP libraries and utilities
-&nbsp;&nbsp;&nbsp; # directory: ensemble/def
-&nbsp;&nbsp;&nbsp; make maestro
-&nbsp;&nbsp;&nbsp;
-&nbsp;&nbsp;&nbsp; # build the Maestro and IIOP test applications
-&nbsp;&nbsp;&nbsp; # directory: ensemble/def
-&nbsp;&nbsp;&nbsp; make maestro_test
+&nbsp;&nbsp;&nbsp; # build the Maestro library and tests
+&nbsp;&nbsp;&nbsp; # directory: ensemble/maestro
+&nbsp;&nbsp;&nbsp; make 
 </pre>
-(**NOTE** You can also run "make" in the maestro directory)
-<p>
-You should now have five test programs,
-<ul> 
-<li>
-<b>ensemble/maestro/test/maestro-test</b>
-<li>
-<b>ensemble/maestro/test/maestro-perf</b>
-<li>
-<b>ensemble/maestro/test/test-replicated</b>
-<li>
-<b>ensemble/maestro/test/test-simple</b>
-<li>
-<b>ensemble/maestro/test/group</b>
+
+<p> You should now have three test programs, <ul>
+  <li>
+      <b>ensemble/maestro/test/maestro-test</b>
+  <li>
+      <b>ensemble/maestro/test/maestro-perf</b>
+  <li>
+      <b>ensemble/maestro/test/maestro-group-test</b>
 </ul>
 <b>maestro-test</b> is a single process sanity test in which several
 group-member objects are created which then randomly send messages
 and leave/rejoin the group.  <b>maestro-perf</b> is a two-process RPC
 performance test.  Both test-replicated and test-simple are Maestro
-IIOP test applications. group is an application which tests the
-<b>new, simpler</b> state transfer algorithm. See
-ensemble/maestro/REF.ps for more information on the Maestro IIOP
-tools. To get started with Maestro and Ensemble, we also recommend
+IIOP test applications. <b>maestro-group-test</b> is an application which tests the
+<b>new, simpler</b> state transfer algorithm. 
+To get started with Maestro and Ensemble, we also recommend
 you read the <a
 href="http://www.cs.cornell.edu/Info/Projects/Ensemble/doc/Maestro/Maestro.html">Maestro
 documentation</a> and start from the test programs (in the
 corresponding .C files) -- you can modify and experiment with them.
 <p>
-
-<a NAME="maestro"></a>
-<h3>Building the <a href="http://www.cs.cornell.edu/Info/Projects/Ensemble/doc/Maestro/Maestro.html">Maestro</a>
-tools for Windows NT</h3>
-<b>**NOTE**</b>The Maestro IIOP software, built when compiling
-on Unix, has not yet been ported to NT.
-<br>You need to have compiled the HOT library before compiling the <a href="http://www.cs.cornell.edu/Info/Projects/Ensemble/doc/Maestro/Maestro.html">Maestro</a>
-C++ interface. This step generates the file <b>ensemble\maestro\maestro-nt\libmae-nt.lib</b>
-as well as the maestro test programs:
-<pre>
-&nbsp;&nbsp;&nbsp; # build the Maestro tools
-&nbsp;&nbsp;&nbsp; # directory: ensemble\opt
-&nbsp;&nbsp;&nbsp; nmake -f Makefile.nt maestro-nt
-</pre>
-You should now have three test programs:
-<ul>
-<li>
-<b>ensemble\maestro\maestro-nt\maestro_test.exe</b>
-<li>
-<b>ensemble\maestro\maestro-nt\maestro_perf.exe</b>
-<li>
-<b>ensemble\maestro\maestro-nt\group.exe</b>
-</ul>
-<b>maestro_test</b> is a single process sanity test in which several
-group-member objects are created which then randomly send messages
-and leave/rejoin the group. <b>maestro_perf</b> is a two-process RPC
-performance test.  group is an application which tests the <b>new,
-simpler</b> state transfer algorithm. To get started with Maestro and
-Ensemble, we recommend you read the <a
-href="http://www.cs.cornell.edu/Info/Projects/Ensemble/doc/Maestro/Maestro.html">Maestro
-documentation</a> and start from the test programs (in the
-corresponding .C files) -- you can modify and experiment with them.
 
 <a NAME="native"></a>
 <h3>Building the native code version</h3>
@@ -421,7 +393,7 @@ Compilation for your native instruction set results in faster code,
 and reduction in memory use. The build process in this case also 
 generates optimized versions of the CE, HOT, and socket libraries.
 This step compiles all of the Ensemble sources (including
-the demos) and will take awhile.
+the demos) and will take a while.
 <pre>
 &nbsp;&nbsp;&nbsp; # make the Ensemble system dependencies
 &nbsp;&nbsp;&nbsp; # directory: ensemble
@@ -432,13 +404,18 @@ the demos) and will take awhile.
 &nbsp;&nbsp;&nbsp; make opt
 </pre>
 
-<a NAME="java"></a>
+
+
+<a NAME="ejava"></a>
 <h3>Building the EJava Interface</h3>
 <p>
-The EJava interface to Ensemble was built and tested using Sun Microsystem's
-<b>JDK1.2</b>. Things should also work with the newer 1.3 and 1.4 JDKs.
-Before trying to build this interface, please check and make sure you have
-access to JDK1.2. Then follow these steps:
+The EJava interface uses a socket to connect a Java process to a
+remote Ensemble server remote, it provides to the application an API
+similar to HOT. Ejava was built and tested using Sun Microsystem's
+<b>JDK1.2</b>. Things should also work with the newer 1.3 and 1.4
+JDKs. Before trying to build this interface, please check and make
+sure you have access to JDK1.2. Then follow these steps:
+
 <pre>
 &nbsp;&nbsp;&nbsp; # build the EJava interface
 &nbsp;&nbsp;&nbsp; # directory: ensemble/ejava
@@ -464,7 +441,6 @@ test on 2 machines (or 2 consoles) as follows:
 <p>
 This concludes the instructions for building Ensemble on Unix systems.
 <br>
-<a href="#installation">Back to installation guide.</a>
 
 <hr>
 <a NAME="multiple-platforms"></a>
@@ -486,12 +462,11 @@ native code libraries).
 
 <p>
 All the demos are install in </b>bin/PLATFORM</b>, this includes the
-ML, CE, and HOT demos. The Ejava and Maestro demos are built within
+ML, CE, CEJava, HOT, and Maestro demos. The Ejava demos are built within
 there own directories.
 
 <p>
 This concludes the instructions for building Ensemble on multiple platforms.
-<br><a href="#installation">Back to installation guide.</a>
 <br>
 
 <h2>"Make Clean" </h2>
@@ -501,30 +476,6 @@ object files in the system, and leave just the libraries and
 executables in the <b>lib</b> and <b>bin</b> directories. Calling
 'make realclean' will erase these as well. When compiling for multiple
 platforms make sure to call 'make clean' between builds. 
-
-<hr><a NAME="fsu-threads"></a>
-<h2>POSIX threads</h2>
-<p>
-If your system does not have a native POSIX threads library, install the
-FSU pthreads.tar.gz package. You can get it from:
-<ul>
-<li>
-<a href="http://www.cs.fsu.edu/~mueller/pthreads/">http://www.cs.fsu.edu/~mueller/pthreads/
-</a>(USA)
-<li>
-<a href="http://www.informatik.hu-berlin.de/~mueller/pthreads/">http://www.informatik.hu-berlin.de/~mueller/pthreads/</a>
-(Europe)
-</ul>
-After installing the library. Update in <b>ensemble/mk/config</b> the
-macros GTHREADS, GTHREADS_INC to point to your installation. If
-necessary, add new HOT_CFLAGS_arch_os, HOT_MLLINK_arch_os,
-HOT_LINK_arch_os, and HOT_THREAD_OBJ_arch_os macros to
-<b>ensemble/mk/config.mk</b> for your platform (and send them to us
-so we can add them to the next distribution).
-<p>
-<br><a
-href="#installation">Back to installation guide.</a>
-<br>
 
 <hr>
 <h2>SECURITY</h2>
@@ -665,53 +616,80 @@ moment. However, this only effects authentication, which occurs rarely.
 Common operations such as Diffie-Hellman exchanges, symmetric encrtyption/decryption, and MD5 hashing are performed using the OpenSSL toolkit. 
 
 <a NAME="env_glossary"></a>
-<h3> Glossary of environment variables</h3>
+<h3> Configuration and environment variables</h3>
 Here is a list of environment variables that one needs to set for
-Ensemble to work. The complete description can be found in the
-tutorial. 
+Ensemble to compile correctly.
+
+<pre>
+# machine and operating-system types. Used for compilation settings.
+setenv ENS_MACHTYPE i386
+setenv ENS_OSTYPE linux
+
+# where the source distribution of Java is located. Used to compile
+# the CEJava and EJava
+setenv JAVA_HOME 
+
+# where the outboard executable resides. Used by the hot outboard mode.
+setenv ENS_OUTBOARD "/home/orodeh/e/1.20a/ensemble/demo/outboard"
+
+# where the Ensemble configuration file is located
+setenv ENS_CONFIG_FILE $HOME/.ensemble
+</pre>
+
+<p> There are many configuration options for the system's runtime. They
+have all been moved into a configuration-file so as not to cluter the
+environment variable system. Below is an example that includes the
+default values. Note that the configuration file is optional and the
+system will run with the defaults correctly. 
 
 <pre>
 # The set of communication transports.
-setenv ENS_MODES "DEERING" #"UDP:TCP"
+ENS_MODES=DEERING 
 
 # The user-id
-setenv ENS_ID    $USER
+ENS_ID=orodeh
 
 # The port number used by the system
-setenv ENS_PORT  6789
+ENS_PORT=6789
 
 # The port number of the gossip service
-setenv ENS_GOSSIP_PORT 6788
+ENS_GOSSIP_PORT=6788
 
 # The set of gossip hosts.
-setenv ENS_GOSSIP_HOSTS "127.0.0.1" #"hfstore1:hfstore2:hfstore4:hfstore5"
+ENS_GOSSIP_HOSTS=localhost
 
 # The set of groupd hosts
-setenv ENS_GROUPD_HOSTS "hfstore1"
+ENS_GROUPD_HOSTS=localhost
 
 #the port number of the group-daemon service
-setenv ENS_GROUPD_PORT 6790
+ENS_GROUPD_PORT=6790
 
 #The port used for IP-multicast
-setenv ENS_DEERING_PORT 6793
+ENS_DEERING_PORT=6793
+</pre>
 
+<p> The additional configuration below is for PGP
+<pre>
 #The pgp password
-setenv ENS_PGP_PASS "Wild Boar"
+ENS_PGP_PASS=Wild Boar
 
 #The pgp version used (2.6,5.0,6.5)
-setenv ENS_PGP_VERSION "2.6"
+ENS_PGP_VERSION=2.6
+</pre>
 
-#where the outboard executable resides
-setenv ENS_OUTBOARD "/home/orodeh/e/1.20a/ensemble/demo/outboard"
+The format of the configuration file is:
+<pre>
+# comment line
+key = value
+# empty lines are also acceptable
 
 </pre>
 
 <br>
 <hr>
-<a href="#installation">Back to installation guide.</a>
 <br>
 </body>
 <!-- hhmts start -->
-Last modified: Thu Sep 26 10:56:07 Pacific Daylight Time 2002
+Last modified: Fri Jun  6 11:59:27 JDT 2003
 <!-- hhmts end -->
 </html>

@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* MULTICAST.C: support for IPMC operations. */
 /* Author: Ohad Rodeh 7/2001 */
 /* Based on code by Mark Hayden */
@@ -50,12 +60,16 @@ value skt_setsockopt_ttl(
 }
 
 
+int multicast_options_list [] = {
+    JL_RECEIVER_ONLY, JL_SENDER_ONLY, JL_BOTH
+};
 
 /* Join an IP multicast group.
  */
 value skt_setsockopt_join(		
 		      value sock_v,
 		      value group_inet_v,
+		      value send_recv_v,
 		      value port_v
 ) {
   ocaml_skt_t sock = Socket_val(sock_v);
@@ -65,7 +79,8 @@ value skt_setsockopt_join(
   char dummy[4];
   int ret_dummy;
   struct sockaddr_in addr;
-
+  DWORD flags = 0;
+  
   if (!(IN_MULTICAST(ntohl(group_inet))))
     serror("setsockopt:join address is not a class D address");
 
@@ -82,11 +97,14 @@ value skt_setsockopt_join(
   addr.sin_family = AF_INET;
   addr.sin_port = htons((u_short) Int_val(port_v));
   addr.sin_addr.s_addr = GET_INET_ADDR(group_inet_v);
-				
+
+  SKTTRACE(( "flag_in=%d, translation=%d\n", Int_val(send_recv_v),
+	    multicast_options_list[Int_val(send_recv_v)] ));
+	  
   ret = WSAJoinLeaf(sock, (struct sockaddr*)&addr, sizeof(struct sockaddr_in),
-		     NULL, NULL, NULL, NULL,
-		     JL_BOTH  /* both send and recv */
-		     );
+		    NULL, NULL, NULL, NULL,
+		    JL_BOTH /*multicast_options_list[Int_val(send_recv_v)]*/  /* send/recv/both */
+      );
   if (ret < 0) {
     printf("Error=%d, sock=%d\n", h_errno, sock);
     serror("setsockopt:join");

@@ -155,9 +155,9 @@ ENSCONF		= $(ENSCONF_$(HSYS_TYPE))
 # OCAML_LIB should point to the library directory.  For
 # Unix, OCAML_LIB is only necessary for the socket library
 # and the C interface.  By default, it is set to the value
-# of the environment variable CAMLLIB, which normally is set
+# of the environment variable OCAMLLIB, which normally is set
 # to the O'Caml library directory.  It is usually preferable
-# to set OCAML_LIB indirectly through the CAMLLIB
+# to set OCAML_LIB indirectly through the OCAMLLIB
 # environment variable.  Be careful, $(OCAML_LIB)/caml needs
 # to identify the correct location of the config.h header
 # file.  A copy may also be found in ocaml/byterun, but you
@@ -178,11 +178,22 @@ CP	= cp -f
 MV	= mv
 LN	= ln
 RM	= rm -f
+RM_REC	= 
 MAKE	= gmake	
 MAKE_BASE = gmake	
 MKLIB   = ar cr 		# comment forces spaces
 RANLIB  = ranlib
 MKLIBO  =
+
+# Relative library paths 
+# For example, instead of:
+#     -lce
+# We have:
+#      $(LIB_PREF)ce$(LIB_SUFF)
+LIB_PATH = -L
+LIB_PREF = -l
+LIB_SUFF = 
+
 #*************************************************************#
 ## Shared libraryies
 

@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* TOP.ML *)
 (* Top-most layer.  Handles default group behavior *)
 (* Author: Mark Hayden, 7/95 *)
@@ -175,6 +185,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       s.suspects <- Arrayf.map2 (||) s.suspects s.failed ;
 
   | EMergeRequest ->
+      log (fun () -> "got EMergeRequest");
       if s.state <> NextView then (
 	let mergers = getViewState ev in
 	let mview = Lset.inject mergers.view in

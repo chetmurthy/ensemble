@@ -1,5 +1,15 @@
 #*************************************************************#
 #
+#   Ensemble, 1_42
+#   Copyright 2003 Cornell University, Hebrew University
+#           IBM Israel Science and Technology
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+#*************************************************************#
+#
 # Main HOT Makefile
 #
 # Author: Ohad Rodeh 11/2001
@@ -173,22 +183,20 @@ CRYPTO_CLIBS =
 HOT_LINK_FULL = $(CRYPTO_CLIBS) $(HOT_LINK)  
 
 all : \
-	libhot$(ARC)	\
-	libhoto$(ARC)	\
-	outboard$(EXE)	\
-	hot_testo$(EXE) \
-	hot_test$(EXE)
+	$(ENSLIB)/libhot$(ARC)	\
+	$(ENSLIB)/libhoto$(ARC)	\
+	$(ENSBIN)/outboard$(EXE) \
+	$(ENSBIN)/hot_testo$(EXE) \
+	$(ENSBIN)/hot_test$(EXE) \
+	install
+
+install : 
+	$(CP) include/*.h 	$(ENSLIB)
+
 
 opt : 
 	$(MAKE) OPT=yes all
 
-install : 
-	$(CP) include/*.h 	$(ENSLIB)
-	$(CP) libhot$(ARC)	$(ENSLIB)
-	$(CP) libhoto$(ARC)	$(ENSLIB)
-	$(CP) outboard$(EXE)	$(ENSBIN)
-	$(CP) hot_testo$(EXE)	$(ENSBIN)
-	$(CP) hot_test$(EXE)	$(ENSBIN)
 
 
 # Create an object file containing the ML code
@@ -199,7 +207,7 @@ hot$(OBJ): $(HOT_INBOARDOBJ)
 	$(MLCOMP) -output-obj -o hot$(OBJ) $(BASIC_ENSCONF_skt) $(HOT_INBOARDOBJ) $(HOT_MLLINK)
 
 # Put all the libraries, ML code, and runtime into one library
-libhot$(ARC): $(HOT_INBOARDCOBJ) hot$(OBJ) $(ENSLIB)/libsock$(ARC)
+$(ENSLIB)/libhot$(ARC): $(HOT_INBOARDCOBJ) hot$(OBJ) $(ENSLIB)/libsock$(ARC)
 	$(PARTIALLD) $(PARTIALLDO) libhot$(OBJ) \
 	  hot$(OBJ)	\
 	  $(HOT_INBOARDCOBJ)	\
@@ -207,89 +215,42 @@ libhot$(ARC): $(HOT_INBOARDCOBJ) hot$(OBJ) $(ENSLIB)/libsock$(ARC)
 	  $(OCAML_LIB)/libunix$(ARCS) \
 	  $(CLIBS) \
 	  $(MLRUNTIME)
-	$(MKLIB) $(MKLIBO)libhot$(ARC) libhot$(OBJ)
-	$(RANLIB) libhot$(ARC)
+	$(MKLIB) $(MKLIBO)$(ENSLIB)/libhot$(ARC) libhot$(OBJ)
+	$(RANLIB) $(ENSLIB)/libhot$(ARC)
 
 # Put HOT objects into one library
-libhoto$(ARC): $(HOT_OUTBOARDCOBJ)
-	$(MKLIB) $(MKLIBO)libhoto$(ARC) $(HOT_OUTBOARDCOBJ) 
-	$(RANLIB) libhoto$(ARC)
+$(ENSLIB)/libhoto$(ARC): $(HOT_OUTBOARDCOBJ)
+	$(MKLIB) $(MKLIBO)$(ENSLIB)/libhoto$(ARC) $(HOT_OUTBOARDCOBJ) 
+	$(RANLIB) $(ENSLIB)/libhoto$(ARC)
 
 # Generate the outboard executable
-outboard$(EXE): $(ENSCONFDEP) $(HOT_OUTBOARDOBJ)
-	$(MLLINK) $(MLLINKFLAGS) -o outboard$(EXE) $(LIBSYS) $(ENSCONF) $(CRYPTO_LINK) $(HOT_OUTBOARDOBJ)
+$(ENSBIN)/outboard$(EXE): $(ENSCONFDEP) $(HOT_OUTBOARDOBJ)
+	$(MLLINK) $(MLLINKFLAGS) -o $(ENSBIN)/outboard$(EXE) $(LIBSYS) $(ENSCONF) $(CRYPTO_LINK) $(HOT_OUTBOARDOBJ)
 
 
 # Generate the hot_test executable
-hot_test$(EXE): libhot$(ARC) hot_test$(OBJ)
-	$(CC)  -o hot_test$(EXE) \
+$(ENSBIN)/hot_test$(EXE): $(ENSLIB)/libhot$(ARC) hot_test$(OBJ)
+	$(CC)  -o $(ENSBIN)/hot_test$(EXE) \
 	  hot_test$(OBJ) \
-	  libhot$(ARC) \
+	  $(ENSLIB)/libhot$(ARC) \
 	  $(HOT_LINK_FULL)
 
 # Generate the outboard test
-hot_testo$(EXE): libhoto$(ARC) hot_test$(OBJ)
-	$(CC)  -o hot_testo$(EXE) \
+$(ENSBIN)/hot_testo$(EXE): $(ENSLIB)/libhoto$(ARC) hot_test$(OBJ)
+	$(CC)  -o $(ENSBIN)/hot_testo$(EXE) \
 	  hot_test$(OBJ) \
-	  libhoto$(ARC) \
+	  $(ENSLIB)/libhoto$(ARC) \
 	  $(HOT_LINK_FULL)
 
 # Generate the performance test
-hot_perf$(EXE): libhoto$(ARC) hot_perf$(OBJ) 
-	$(CC)  -o hot_perf$(EXE) \
+$(ENSBIN)/hot_perf$(EXE): $(ENSLIB)/libhoto$(ARC) hot_perf$(OBJ) 
+	$(CC)  -o $(ENSBIN)/hot_perf$(EXE) \
 	  hot_perf$(OBJ) \
-	  libhoto$(ARC) \
+	  $(ENSLIB)/libhoto$(ARC) \
 	  $(HOT_LINK_FULL)
-
-# Purified version of outboard test
-p_test$(EXE): libhoto$(ARC) hot_test$(OBJ) 
-	$(PURIFY) $(CC)  -o p_test$(EXE) \
-	  hot_test$(OBJ) \
-	  libhoto$(ARC) \
-	  $(HOT_LINK_FULL) $(PURIFY_LIB)
-
-# Generate the hot_test executable
-hot_test2$(EXE): libhot$(ARC) hot_test2$(OBJ)
-	$(CC)  -o hot_test2$(EXE) \
-	  hot_test2$(OBJ) \
-	  libhot$(ARC) \
-	  $(HOT_LINK_FULL)
-
-hot_test2o$(EXE): libhoto$(ARC) hot_test2$(OBJ)
-	$(CC)  -o hot_test2o$(EXE) \
-	  hot_test2$(OBJ) \
-	  libhoto$(ARC) \
-	  $(HOT_LINK_FULL)
-
-hot_test3$(EXE): libhot$(ARC) hot_test3$(OBJ)
-	$(CC)  -o hot_test3$(EXE) \
-	  hot_test3$(OBJ) \
-	  libhot$(ARC) \
-	  $(HOT_LINK_FULL)
-
-hot_ping$(EXE): libhot$(ARC) hot_ping$(OBJ)
-	$(CC)  -o hot_ping$(EXE) \
-	  hot_ping$(OBJ) \
-	  libhot$(ARC) \
-	  $(HOT_LINK_FULL)
-
-hot_pingo$(EXE): libhoto$(ARC) hot_ping$(OBJ) outboard$(EXE)
-	$(CC)  -o hot_pingo$(EXE) \
-	  hot_ping$(OBJ) \
-	  libhoto$(ARC) \
-	  $(HOT_LINK_FULL)
-
-# Purified version of hot_test
-phot_test: libhot$(ARC) hot_test$(OBJ)
-	purify $(CC)  -o hot_test$(EXE) \
-	  hot_test$(OBJ) \
-	  libhot$(ARC) \
-	  $(HOT_LINK_FULL)
-
 
 #*************************************************************#
 clean:
-	$(RM) *.exe outboard hot_test hot_testo
 	$(CLEANDIR)
 
 depend:

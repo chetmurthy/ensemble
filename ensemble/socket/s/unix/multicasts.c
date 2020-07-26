@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* MULTICAST.C: support for IPMC operations. */
 /* Author: Ohad Rodeh 7/2001 */
 /* Based on code by Mark Hayden */
@@ -57,6 +67,7 @@ value skt_setsockopt_ttl(
 value skt_setsockopt_join(		
 		      value sock_v,
 		      value group_inet_v,
+		      value send_recv_v,  // Unsed in the Unix case
 		      value port_v  // Unused here.
 ) {
   int sock = Int_val(sock_v);

@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* ARGE.ML *)
 (* Author: Mark Hayden, 4/96 *)
 (**************************************************************)
@@ -15,8 +25,6 @@ let filter = ref ident
 let arg_filter f = filter := f
 
 (**************************************************************)
-
-(*type 'a data = Ok of 'a | Error of exc*)
 
 type 'a t = 
   { name : name ;
@@ -50,9 +58,80 @@ let check debug v =
       exit 1
 
 (**************************************************************)
+(* Code to read the variables from the configuration file
+*)
+let conf_table = Hashtbl.create 11
 
+(* a wrapper for getting key-value bindings from the configuration *)
+let conf_getenv key = 
+  try 
+(*    printf "(conf_getenv %s)" key;*)
+    let binding = Hashtbl.find conf_table key in
+    Some binding
+  with Not_found -> None
+
+(* parse an input line *)
+let parse_line line = 
+  let len = String.length line in
+  if len = 0 then (
+    (* empty line *)
+    () 
+  ) 
+  else if line.[0] = '#' then (
+    (* This line is a comment *)
+    ()
+  ) 
+  else (
+    try 
+      let idx = String.index line '=' in
+      let len = String.length line in
+      if idx > 0 
+	&& len <> idx+1 then (
+	  let key = String.sub line 0 idx in
+	  let data = String.sub line (idx+1) (len - idx - 1) in
+	  if data <> String.make (len -idx-1) ' ' then 
+	    (* if [data] is not empty then add key/value tuple to the hashtable *)
+	    Hashtbl.add conf_table key data
+	)
+    with Not_found -> ()
+  )
+    
+let read_config_file conf_file = 
+  try 
+    begin 
+      let chan = open_in conf_file in
+      (* read the whole file, line by line, parsing the input *)
+      try 
+	while true do 
+	  parse_line (input_line chan)
+	done
+      with End_of_file -> ()
+    end
+  with Sys_error err -> 
+    raise Not_found
+
+(* read definitions from the configuration file. This -must- be done -prior- to 
+ * any operation that tries to read from the environment variable list. Hence, this is
+ * performed first in the module
+ *)
+let _ = 
+  try 
+    let fname = match Hsys.getenv "ENS_CONFIG_FILE" with 
+	None -> (
+	  match Hsys.getenv "HOME" with 
+	      None -> raise Not_found
+	    | Some user -> user ^ "/.ensemble.conf" 
+	)
+      | Some fname -> fname in
+    read_config_file fname
+  with Not_found -> 
+    eprintf "Warning: could not find a configuration file (ensemble.conf), using defaults. The search path was $ENS_CONFIG and $HOME.\n" ;
+    eprintf "To correct this, define HOME or ENS_CONFIG_FILE and create a configuration file.\n\n"
+    
+(**************************************************************)
+      
 let param_args = ref (Some [])
-
+  
 (* General case argument manager.  All the others use this.
  *)
 let general unit_arg val_of_string conv default name info =
@@ -60,7 +139,7 @@ let general unit_arg val_of_string conv default name info =
     let environ_prefix = "ENS_" in
     let key = string_uppercase name in
     let key = environ_prefix^key in
-    match Hsys.getenv key with
+    match conf_getenv key with
     | None -> 
 	default
     | Some s ->
@@ -223,22 +302,25 @@ let aggregate    = bool set_ident false "aggregate" "aggregate messages"
 let alarm        = string set_ident "REAL" "alarm" "set alarm package to use"
 let force_modes  = bool set_ident false "force_modes" "disable transport modes checking"
 let glue         = string set_glue Glue.Imperative "glue" "set layer glue to use"
-let gossip_hosts = string set_string_list_option None "gossip_hosts" "set hosts for gossip servers"
-let gossip_port  = int set_option None "gossip_port" "set port for gossip server"
-let port  = int set_option (Some(0)) "port" "set default ensemble port"
+let gossip_hosts = string set_string_list_option (Some ["localhost"]) "gossip_hosts" "set hosts for gossip servers"
+let gossip_port  = int set_option (Some 6788) "gossip_port" "set port for gossip server"
+let port  = int set_option (Some 6793) "port" "set default ensemble port"
 let group_name	 = string set_ident "ensemble" "group_name" "set default group name"
 let groupd_balance = bool set_ident false "groupd_balance" "load balance groupd servers"
-let groupd_hosts = string set_string_list_option None "groupd_hosts" "set hosts for groupd servers"
-let groupd_port  = int set_option None "groupd_port" "set port for groupd server"
+let groupd_hosts = string set_string_list_option (Some ["localhost"]) "groupd_hosts" "set hosts for groupd servers"
+let groupd_port  = int set_option (Some 6790) "groupd_port" "set port for groupd server"
 let groupd_repeat = bool set_ident false "groupd_repeat" "try multiple times to connect to groupd"
 let protos_port  = int set_option None "protos_port" "set port for protos server"
 let protos_test  = bool set_ident false "protos_test" "used for testing protos"
-let id           = string set_ident "" "id" "set 'user id' of process"
+let id           = string set_ident (match Hsys.getenv "USER" with 
+    None -> ""
+  | Some x -> x
+) "id" "set 'user id' of process"
 let key          = string set_option None "key" "set security key"
 let log          = bool set_ident false "log" "use remote log server"
 let log_port     = int set_option None "log_port" "set port for log server"
-let modes        = string set_modes [Addr.Udp] "modes" "set default transport modes"
-let deering_port = int set_option None "deering_port" "set port for Deering IPMC"
+let modes        = string set_modes [Addr.Deering] "modes" "set default transport modes"
+let deering_port = int set_option (Some 6789) "deering_port" "set port for Deering IPMC"
 let properties   = string set_properties Property.vsync "properties" "set default stack properties"
 let groupd       = bool set_ident false "groupd" "use groupd server"
 let protos       = bool set_ident false "protos" "use protos server"
@@ -246,11 +328,10 @@ let roots        = bool set_ident false "roots" "print information about Ensembl
 let pgp          = string set_option None "pgp" "set my id for using pgp"
 let pgp_pass     = string set_option None "pgp_pass" "set my passphrase for using pgp"
 let pollcount    = int set_ident 10 "pollcount" "number of polling operations before blocking"
-let refcount     = bool set_ident false "refcount" "use reference counting"
 let multiread    = bool set_ident false "multiread" "read all data from sockets before delivering"
 let ranking      = string set_ranking Addr.default_ranking "ranking" "ranking of communication modes"
 let sched_step   = int set_pos_int 200 "sched_step" "number of events to schedule before reading from network"
-let udp_host     = string set_option None "udp_host" "override host for UDP communication"
+let host_ip      = string set_option None "host_ip" "override host for host IP address"
 let udp_port     = int set_option (Some 0) "udp_port" "override port for UDP communication"
 let traces       = string set_ident "" "traces" "set modules to trace"
 let netsim_socks = bool set_ident false "netsim_socks" "allow socks with Netsim"
@@ -522,22 +603,17 @@ let badarg name s =
   exit 1
 
 let parse app_args badarg doc =
-  try
-    let no_command_line_args = "ENS_NO_COMMAND_LINE_ARGS" in
-    ignore (Sys.getenv no_command_line_args) ;
-    eprintf "ARGE:parse:%s set\n" no_command_line_args
-  with Not_found ->
-    let args = app_args @ (args ()) in
-    let args = List.sort (fun (a,_,_) (b,_,_) -> compare a b) args in
-    parse (app_args @ args) badarg doc (!filter Sys.argv) ;
-
-    begin
-      let traces = get traces in
-      let traces = string_split " \t" traces in
-      List.iter trace traces
-    end
-
- (**************************************************************)
+  let args = app_args @ (args ()) in
+  let args = List.sort (fun (a,_,_) (b,_,_) -> compare a b) args in
+  parse (app_args @ args) badarg doc (!filter Sys.argv) ;
+  
+  begin
+    let traces = get traces in
+    let traces = string_split " \t" traces in
+    List.iter trace traces
+  end
+  
+(**************************************************************)
 (* The following was added by Roy Friedman to allow dynamic   *)
 (* changes to the gossip hosts and cluster servers            *)
 

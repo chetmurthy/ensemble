@@ -1,3 +1,13 @@
+#*************************************************************#
+#
+#   Ensemble, 1_42
+#   Copyright 2003 Cornell University, Hebrew University
+#           IBM Israel Science and Technology
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
 socksupp.cmo: socksupp.cmi 
 socksupp.cmx: socksupp.cmi 
 u/socket.cmo: socksupp.cmi 
@@ -12,5 +22,3 @@ s/socket.cmx: s/unix/comm_impl.cmx s/common_impl.cmx s/natiov_impl.cmx \
     socksupp.cmx 
 s/unix/comm_impl.cmo: s/natiov_impl.cmo socksupp.cmi 
 s/unix/comm_impl.cmx: s/natiov_impl.cmx socksupp.cmx 
-s/unix/socket.cmo: s/common_impl.cmo socksupp.cmi 
-s/unix/socket.cmx: s/common_impl.cmx socksupp.cmx 

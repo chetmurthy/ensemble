@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_MTALK_MT.C */
 /* Author: Ohad Rodeh 5/2002 */
 /* A simple program implementing a multi-person talk, */
@@ -44,7 +54,7 @@ main_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs)
 	s->blocked =0;
 	s->joining =0;
 	
-	printf("%s nmembers=%d\n", ls->endpt.name, ls->nmembers);
+	printf("%s nmembers=%d\n", ls->endpt.name, ls->nmembers); fflush(stdout);
 	TRACE2("main_install",ls->endpt.name); 
     } ce_lck_Unlock(s->mutex);
 }

@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* SOCKOPT.C: socket operations not supported natively by Caml */
 /* Author: Ohad Rodeh  10/2002 */
 /* Based on code by Mark Hayden */
@@ -181,15 +191,14 @@ extern value alloc_sockaddr(union sock_addr_union * adr /*in*/,
 value skt_accept(value sock_v){
     SOCKET news;
     union sock_addr_union addr;
-    socklen_param_type addr_len;
+    socklen_param_type addr_len = sizeof(struct sockaddr_in);
     CAMLparam1(sock_v);
     CAMLlocal3(pair_v, addr_v, news_v);
     
-    SKTTRACE(("skt_accept(\n"));
     news = accept(Socket_val(sock_v),  (struct sockaddr*)&addr.s_inet, &addr_len);
-    SKTTRACE2((")\n"));
     
-    if (news == INVALID_SOCKET) serror("accept");
+    if (news == INVALID_SOCKET)
+	serror("accept");
     
     addr_v = alloc_sockaddr(&addr, addr_len);
     news_v = Val_socket(news);

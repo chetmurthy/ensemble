@@ -1,0 +1,44 @@
+%*************************************************************%
+%
+%    Ensemble, 1_42
+%    Copyright 2003 Cornell University, Hebrew University
+%           IBM Israel Science and Technology
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\begin{Layer}{TOPS}
+
+This layer implements a lexicographic total ordering protocol.  (This is
+a variation on the protocol developed as part of the Transis project.)
+
+\begin{Protocol}
+The protocol works by lexigraphically ordering messages. For example,
+if group members are $\{ A, B, C \}$ and they send messages $A_1,
+B_1,$ and $C_1,$ then the ordering will be $A_1 < B_1 < C_1$. Since
+the ordering is fixed the protocol can get stuck if a member does not
+send a message every timeout. For example, if the application messages
+are $A_1$ and $C_1$ then the protocol would wait indefinitely for
+$B_1$ and never deliver $C_1$. Hence, every member multicasts a null
+message every timeout to maintain liveness. Currently, the timeout is
+hardcoded to one second.
+
+This protocol is not normally used because it has high latency 
+if members do not multicast messages often. 
+\end{Protocol}
+
+\begin{Parameters}
+\item None
+\end{Parameters}
+
+\begin{Properties}
+\item
+Requires VSYNC properties, implements the AGREE property. 
+\end{Properties}
+
+\begin{Sources}
+\sourcesfile{tops.ml}
+\end{Sources}
+
+\end{Layer}

@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* HSYSSUPP.ML *)
 (* Author: Mark Hayden, 6/96 *)
 (* Rewritten by Ohad Rodeh 10/2001 *)
@@ -80,7 +90,7 @@ let create_state () = {
   connected = true 
 } 
 
-let max_msg_len =  Buf.max_msg_len
+let max_msg_len =  Buf.len_of_int (8 * 4096) (*Buf.max_msg_len*)
 
 let tcp debug alarm sock deliver disable =
   Util.disable_sigpipe () ;
@@ -392,6 +402,7 @@ let tcp debug alarm sock deliver disable =
 let server debug alarm port client =
   let sock = Hsys.socket_stream () in
   Hsys.setsockopt sock Hsys.Reuse ;
+  Hsys.setsockopt sock (Hsys.Nonblock true);
 
   if not !quiet then
     eprintf "%s:server binding to port %d\n" debug port ;

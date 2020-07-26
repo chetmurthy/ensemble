@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* USOCKET *)
 (* Author: Mark Hayden, 4/97 *)
 (* Massive changes: Ohad Rodeh 10/2001 *)
@@ -178,7 +188,6 @@ let setsockopt_nonblock s b =
     Unix.clear_nonblock s
 
 (**************************************************************)
-
 let stdin () = Unix.stdin
 let read = Unix.read
 let sendto_info s a = (s,a)
@@ -187,6 +196,12 @@ let has_ip_multicast () = false
 let in_multicast _ = failwith "in_multicast"
 let setsockopt_ttl _ _ = failwith "setsockopt_multicast"
 let setsockopt_loop _ _ = failwith "setsockopt_loop"
+
+type mcast_send_recv = Socksupp.mcast_send_recv = 
+  | Recv_only
+  | Send_only
+  | Both
+
 let setsockopt_join _ _ = failwith "setsockopt_join"
 let setsockopt_leave _ _ = failwith "setsockopt_leave"
 let setsockopt_sendbuf _ _ = failwith "setsockopt_sendbuf"
@@ -200,7 +215,7 @@ let socket dom typ proto =
   (*printf "sock=%d\n" (int_of_socket s);*)
   s
 
-let socket_mcast = Unix.socket
+let socket_mcast = Unix.socket 
 let connect = Unix.connect
 let bind = Unix.bind
 let close = Unix.close

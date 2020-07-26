@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* PROPERTY.ML *)
 (* Author: Mark Hayden, 12/96 *)
 (**************************************************************)
@@ -46,6 +56,7 @@ type id =
 (**************************************************************)
 
 let mapping = [|
+  "AGREE", Agree ;
   "GMP", Gmp ;
   "SYNC", Sync ;
   "TOTAL", Total ;

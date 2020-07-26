@@ -4,7 +4,7 @@
 *.a
 *.lib
 .err
-maestro_test maestro_test_threads
+maestro_test maestro_test_threads maestro-group-test maestro-test maestro-perf maestro-test2
 elec
 conf
 .depend.nt

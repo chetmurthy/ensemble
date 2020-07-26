@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_ACTIONS_MT.C */
 /* Author: Ohad Rodeh 8/2001 */
 /* Based in part on code by Mark Hayden from the CEnsemble system. */
@@ -26,27 +36,6 @@ ce_mt_action_t *ce_mt_appl_join(ce_mt_queue_t *q, ce_appl_intf_t *c_appl,
     return a ;
 }
 				       
-ce_mt_action_t *ce_mt_appl_AddSockRecv(
-    ce_mt_queue_t *q,
-    CE_SOCKET socket, ce_handler_t handler, ce_env_t env
-    )
-{
-    ce_mt_action_t *a = ce_mt_queue_alloc(q);
-    a->type = MT_ADDSOCKRECV;
-    a->u.add_sock.socket = socket;
-    a->u.add_sock.handler = handler;
-    a->u.add_sock.env = env;
-    return a ;
-}
-
-ce_mt_action_t *ce_mt_appl_RmvSockRecv(ce_mt_queue_t *q,  CE_SOCKET socket)
-{
-    ce_mt_action_t *a = ce_mt_queue_alloc(q);
-    a->type = MT_RMVSOCKRECV;
-    a->u.rmv_sock.socket = socket;
-    return a ;
-}
-
 /**************************************************************/
 /* This implements an efficient queue, that is implemented
  * using an extendible array.

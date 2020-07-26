@@ -1,9 +1,13 @@
-\newenvironment{FormatTable}{%
-\begin{quote}\begin{tabular}{|l|l|} \hline
-}{\end{tabular}\end{quote}
-}
-\newcommand {\formatentry}[2]    {#1 & #2 \\ \hline}
-
+%*************************************************************%
+%
+%    Ensemble, 1_42
+%    Copyright 2003 Cornell University, Hebrew University
+%           IBM Israel Science and Technology
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
 \section{\ensemble\ Membership Service TCP Interface}
 \label{section:memership}
 
@@ -20,7 +24,7 @@ interface instead.  See \sourceappl{maestro/*.mli} for the source
 code for the interface to this service.
 
 \subsection{Locating the service}
-The membership service uses the environment variable
+The membership service uses the configuration variable
 \mlval{ENS\_GROUPD\_PORT} to select a TCP port number to use.  Client
 processes connect to this port in the normal fashion for TCP
 services.  Client processes can join any number of groups over a

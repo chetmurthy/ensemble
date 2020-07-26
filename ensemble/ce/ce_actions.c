@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_QUEUE.C */
 /* Author: Ohad Rodeh 8/2001 */
 /* Based in part on code by Mark Hayden from the CEnsemble system. */
@@ -256,11 +266,12 @@ void ce_action_properties(ce_pool_t *pool, ce_queue_t *q, char* properties)
     memcpy(a->u.properties, properties, strlen(properties));
 }
 
-void ce_action_block(ce_pool_t *pool, ce_queue_t *q)
+void ce_action_block_ok(ce_pool_t *pool, ce_queue_t *q, ce_bool_t flag )
 {
     ce_action_t *a = ce_action_alloc_from_pool(pool);
     ce_queue_add_tail(q, a);
-    a->type = APPL_BLOCK;
+    a->type = APPL_BLOCK_OK;
+    a->u.block_ok = flag;
 }
 
 /**************************************************************/

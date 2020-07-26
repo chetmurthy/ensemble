@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* IPMC.ML *)
 (* Author: Mark Hayden, 5/95 *)
 (**************************************************************)
@@ -77,13 +87,13 @@ let very_first port () =
   log (fun () -> sprintf "port=%d" port) ;
   
   let addr =
-    match Arge.get Arge.udp_host with
-    | None -> Hsys.inet_any()
-    | Some host -> Arge.inet_of_string Arge.udp_host host
+    match Arge.get Arge.host_ip with
+      | None -> Hsys.inet_any()
+      | Some host -> Arge.inet_of_string Arge.host_ip host
   in
 
   begin try
-    Hsys.bind sock addr port ;
+    Hsys.bind sock (Hsys.inet_any ()) port ;
   with e ->
     eprintf "IPMC:error:binding to port %d:%s\n" port (Util.error e) ;
     exit 1
@@ -116,7 +126,7 @@ let sockets = Resource.create
 let first_join (inet,port) () =
   try
     log (fun () -> sprintf "joining:(%s,%d)" (Hsys.string_of_inet inet) port) ;
-    Hsys.setsockopt (sock "first_join" port) (Hsys.Join inet)
+    Hsys.setsockopt (sock "first_join" port) (Hsys.Join (inet,Hsys.Both))
   with e ->
     eprintf "IPMC:joining multicast group:%s, exiting\n" (Util.error e) ;
     eprintf "  (this probably means this host does not support IP multicast)\n" ;

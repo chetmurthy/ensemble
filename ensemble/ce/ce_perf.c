@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_PERF.C: performance test. */
 /* Author: Ohad Rodeh 8/2001 */
 /* Tests two scenarios: ping latency, and bandwith */
@@ -53,7 +63,7 @@ void rpc_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs)
     s->start_time = -1;
     s->total = 0;
     s->phase = START;
-    printf("%s nmembers=%d\n", ls->endpt.name, ls->nmembers);
+    printf("%s nmembers=%d\n", ls->endpt.name, ls->nmembers); fflush(stdout);
     TRACE2("rpc_install",ls->endpt.name);
 }
 
@@ -177,7 +187,7 @@ void throu_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs)
     s->flow_blocked = 0;
     s->total = 0;
     s->phase = START;
-    printf("%s nmembers=%d\n", ls->endpt.name, ls->nmembers);
+    printf("%s nmembers=%d\n", ls->endpt.name, ls->nmembers); fflush(stdout);
     TRACE2("throu_install",ls->endpt.name);
 }
 
@@ -226,7 +236,7 @@ void throu_heartbeat(void *env, ce_time_t time) {
 	    s->phase = BEGIN;
 	    s->start_time = time + 2.0;
 	    s->next = time + 2.0;
-	    printf("Starting in 2 seconds\n");
+	    printf("Starting in 2 seconds\n");  fflush(stdout);
 	}
 	
 	if (s->phase == BEGIN
@@ -249,6 +259,7 @@ void throu_heartbeat(void *env, ce_time_t time) {
 	printf("total=%d\n", s->total);
 	printf("time=%5.3f\n", terminate_time);
 	printf("throughput=%5.3f(K/sec)\n", s->total/(1024 * (time - s->start_time)));
+	exit(0);
     }
 }
 
@@ -262,7 +273,7 @@ void throu_join(void)
      * conversion code should be able to handle this. 
      */
     memset(&jops, 0, sizeof(ce_jops_t));
-    memcpy(jops.transports, "DEERING", strlen("DEERING"));
+//    memcpy(jops.transports, "DEERING", strlen("DEERING"));
     memcpy(jops.group_name, "ce_perf", strlen("ce_perf"));
     memcpy(jops.properties, CE_DEFAULT_PROPERTIES, strlen(CE_DEFAULT_PROPERTIES));
     jops.use_properties = 1;

@@ -1,5 +1,15 @@
 #*************************************************************#
 #
+#   Ensemble, 1_42
+#   Copyright 2003 Cornell University, Hebrew University
+#           IBM Israel Science and Technology
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+#*************************************************************#
+#
 # MAKEFILE: socket library 
 #
 # Author: Ohad Rodeh  10/2002
@@ -52,25 +62,27 @@ SOCKCOBJ = \
 	s/$(KIND)/select$(OBJ) 
 
 
-#*************************************************************#
-LIBS = usocket$(CMA) ssocket$(CMA) libsock$(ARC)  
+H_FILES = \
+	$(ENSLIB)/sockfd.h \
+	$(ENSLIB)/e_iovec.h \
+	$(ENSLIB)/mm_so.h \
+	$(ENSLIB)/mm.h \
+	$(ENSLIB)/mm_basic.h \
+	$(ENSLIB)/socket$(CMI) 
 
-all : $(LIBS)
+#*************************************************************#
+
+all : \
+	$(ENSLIB)/usocket$(CMA) \
+	$(ENSLIB)/ssocket$(CMA) \
+	$(ENSLIB)/libsock$(ARC) \
+	u/socket$(CMI) \
+	$(H_FILES)
 
 # Call ourselves with the optimizing compiler switch
 #
 opt : 
 	$(MAKE) OPT=yes all
-
-install : $(LIBS) 
-	$(CP) usocket.*    	$(ENSLIB)
-	$(CP) ssocket.*    	$(ENSLIB)
-	$(CP) libsock$(ARC)  	$(ENSLIB)
-	$(CP) s/$(KIND)/sockfd.h $(ENSLIB)
-	$(CP) s/$(KIND)/e_iovec.h $(ENSLIB)
-	$(CP) s/mm_so.h	$(ENSLIB)
-	$(CP) s/mm.h	$(ENSLIB)
-	$(CP) s/mm_basic.h $(ENSLIB)
 
 
 clean : 
@@ -80,21 +92,40 @@ clean :
 #*************************************************************#
 # Actual rules for making the libraries
 #
+$(ENSLIB)/sockfd.h : s/$(KIND)/sockfd.h
+	$(CP) s/$(KIND)/sockfd.h $(ENSLIB)/sockfd.h
+
+$(ENSLIB)/e_iovec.h : s/$(KIND)/e_iovec.h
+	$(CP) s/$(KIND)/e_iovec.h $(ENSLIB)/e_iovec.h
+
+$(ENSLIB)/mm_so.h : s/mm_so.h
+	$(CP) s/mm_so.h	$(ENSLIB)/mm_so.h
+
+$(ENSLIB)/mm.h : s/mm.h
+	$(CP) s/mm.h	$(ENSLIB)/mm.h
+
+$(ENSLIB)/mm_basic.h : s/mm_basic.h
+	$(CP) s/mm_basic.h $(ENSLIB)/mm_basic.h
+
+$(ENSLIB)/socket$(CMI) : u/socket$(CMI)
+	$(CP) u/socket$(CMI) $(ENSLIB)/socket$(CMI)
+
+
 u/socket.mli : socket.mli
 	$(CP) socket.mli u/
 
 s/socket.mli : socket.mli
 	$(CP) socket.mli s/
 
-usocket$(CMA) : socksupp$(CMI) u/socket.mli u/socket$(CMI) $(USOCKOBJ) 
-	$(MLLIBR) -o usocket$(CMA) -linkall $(USOCKOBJ)
+$(ENSLIB)/usocket$(CMA) : socksupp$(CMI) u/socket.mli u/socket$(CMI) $(USOCKOBJ) 
+	$(MLLIBR) -o $(ENSLIB)/usocket$(CMA) -linkall $(USOCKOBJ)
 
-ssocket$(CMA) :  socksupp$(CMI) s/socket.mli s/socket$(CMI) $(SSOCKOBJ) 
-	$(MLLIBR) -o ssocket$(CMA) -linkall $(SSOCKOBJ)
+$(ENSLIB)/ssocket$(CMA) :  socksupp$(CMI) s/socket.mli s/socket$(CMI) $(SSOCKOBJ) 
+	$(MLLIBR) -o $(ENSLIB)/ssocket$(CMA) -linkall $(SSOCKOBJ)
 
-libsock$(ARC): $(SOCKCOBJ)
-	$(MKLIB) $(MKLIBO)libsock$(ARC) $(SOCKCOBJ)
-	$(RANLIB) libsock$(ARC)
+$(ENSLIB)/libsock$(ARC): $(SOCKCOBJ)
+	$(MKLIB) $(MKLIBO)$(ENSLIB)/libsock$(ARC) $(SOCKCOBJ)
+	$(RANLIB) $(ENSLIB)/libsock$(ARC)
 
 
 #*************************************************************#

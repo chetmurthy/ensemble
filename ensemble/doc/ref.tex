@@ -1,8 +1,24 @@
+%*************************************************************%
+%
+%    Ensemble, 1_42
+%    Copyright 2003 Cornell University, Hebrew University
+%           IBM Israel Science and Technology
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
 \documentclass[11pt]{article}
 \usepackage{fullpage}
 \usepackage{alltt}
 \usepackage{hyperref}
 \input{def}
+
+\newenvironment{FormatTable}{%
+\begin{quote}\begin{tabular}{|l|l|} \hline
+}{\end{tabular}\end{quote}
+}
+\newcommand {\formatentry}[2]    {#1 & #2 \\ \hline}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%pdf-latex stuff
@@ -105,8 +121,9 @@ Source for combined hypertext code/text documentation of \ensemble.
 \include{layer_model}
 \include{layer_antmy}
 \include{layer_hdlrs}
-%\include{transport}
+\include{transport}
 \include{security}
+\include{outboard}
 \newpage
 \part{The \ensemble\ Protocols}
 \input{layer_ref}

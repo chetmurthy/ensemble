@@ -1,13 +1,25 @@
+%*************************************************************%
+%
+%    Ensemble, 1_42
+%    Copyright 2003 Cornell University, Hebrew University
+%           IBM Israel Science and Technology
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
 \section{Configuration}
+
+%----------------------------------------------------------------------
 
 \subsection{Command-line Arguments and Environment Variables}
 \label{subsect:config}
 \ensemble\ applications typically support a variety of configuration
 parameters.  Most of these can be configured through command-line options as
 well as through setting environment variables.  In all cases, command-line
-options override environment variables.  Look in \sourceappl{harg.ml} for the
+options override environment variables.  Look in \sourceappl{arg.ml} for the
 authoritative list of the configuration parameters.  Some are listed below as
-command-line options.  The corresponding environment variable for
+command-line options.  The corresponding configuration variable for
 \mlval{-group\_name} (for example) is \mlval{ENS\_GROUP\_NAME} (the name is
 capitalized and the `-' is replace with \mlval{ENS\_}).
 \begin{description}
@@ -22,6 +34,11 @@ number \ensemble\ first tries to bind to for UDP communication (if it
 is already in use Ensemble will then fail).  It can be set to any
 value.  The default is to let the operating system choose a port to
 use.
+\item
+[\mlval{-host\_ip} IP address:] set the default IP address of the host for \ensemble\
+applications. This allows overriding the default IP-address of the
+machine, a useful option if the machine is connected to several
+network interface cards (NICs) and has several IP addresses. 
 \item
 [\mlval{-deering\_port} port :] This is the port that \ensemble\ will
 use for Deering IP multicast communication (if enabled).  All
@@ -77,11 +94,6 @@ traditional limit on Unix).  If you are using \ensemble\ in
 high-performance setting and are experiencing message loss, this is a
 parameter that should be increased.
 \item
-[\mlval{-refcount} :] Enables reference counting of message buffers.
-The default is to rely on the garbage collector to detect when a
-message is no longer needed.  Setting this will improve performance,
-but may expose reference counting bugs in \ensemble.
-\item 
 [\mlval{-multiread} :] Enable multiple reads on sockets.  The default
 is to receive and process one message from the operating system
 at a time.  Setting this will cause all available messages to be read
@@ -100,6 +112,8 @@ a longer time before blocking.
 transport mechanisms. This is useful if you wish to use TCP as a
 transport instead of UDP (the default). Using {\tt -ranking TCP} will
 cause TCP to be ranked higher than any other transport. 
+[\mlval{-trace} module\_name:] Trace a specific module, it is possible
+to trace several modules. Module naming is insensitive to lower/upper casing.
 \end{description}
 
 The following configuration parameter can only be set as an
@@ -118,9 +132,70 @@ enables you to narrow the problem down to one module.
 %you have to read the source code in \sourceappl{log} in order to use it now.}
 \end{description}
 
+Prior to version 1.42 all configuration variables were defined in the
+environment. This meant that the environment-variable system was
+tainted with the various Ensemble configuration options. Starting with
+version 1.42 configuration is handled using a configuration-file which is
+by default {\tt \$USER/ensemble.conf}. To set this to a
+different file use the {\tt ENS\_CONFIG\_FILE} environment variable. 
+
+Each line in the configuration file is either (1) a comment starting with \# (2) an
+empty line (3) a value binding where $ensemble\_variable=value$. For
+example: 
+
+\vspace{1mm}
+\hrule{}
+\begin{verbatim}
+# Ensemble ID
+ENS_ID=orodeh
+
+# The port used by Ensemble for transport
+ENS_PORT=6790
+\end{verbatim}
+\hrule{}
+\vspace{1mm}
+
+The first operation an Ensemble process performs is to open and parse
+the configuration file. Note that an option set in the configuration
+file takes effect for all your Ensemble processes.
+
+\subsection{Gossip service configuration}
+Not all platforms support IP-multicast. Furthermore, if you compile
+Ensemble without the default native socket library you'll be using
+OCaml's networking library which, up to version 3.06, did not 
+support multicast. If you fall under any of these categories you'll need to
+use the gossip service to allow applications to locate each other.
+
+\mlval{ENS\_GOSSIP\_PORT} must be set to a port number that
+is not used by other applications.  Normally, user applications
+cannot use port numbers below 1000.  \mlval{ENS\_GOSSIP\_HOSTS} must
+be set to a list of colon-separated host names where the gossip
+server may be found.  If you wish to use port 7500 for the gossip
+server on hosts ``ely'' and ``natasha,'' you would set these
+configuration variables as follows (in the configuration file):
+\begin{verbatim}
+ENS_GOSSIP_PORT=7500
+ENS_GOSSIP_HOSTS=ely:natasha
+\end{verbatim}
+
+Applications will require a gossip server process to be running
+in order to contact each other. Before executing an application, a
+gossip server must be started on one of the hosts listed in
+\mlval{ENS\_GOSSIP\_HOSTS}:
+\begin{verbatim}
+% gossip
+ ...
+\end{verbatim}
+On the same or other hosts execute several instances of an
+application, such as \sourcedemo{mtalk}:
+\begin{verbatim}
+% mtalk
+ ...
+\end{verbatim}
+
 \subsection{Transports}
 
-\note{If you are only using regular UDP sockets for communication,
+\note{If you are only using regular IP-multicast sockets for communication,
 then you do not need to read this section.}
 
 Perhaps the most confusing part of running \ensemble\ applications
@@ -194,39 +269,27 @@ Application setting: a particular application may differ from the
 Environment variable: \mlval{ENS\_MODES} variable (see the environment
 variable documentation below).
 \item
-\ensemble\ defaults: \mlval{UDP}.
+\ensemble\ defaults: \mlval{DEERING}.
 \end{enumerate}
 
-2\subsection{Using Deering IP Multicast}
-
-The method described above for running the mtalk demo is the best way
-to first run mtalk because it uses \mlval{UDP} for both
-transports. \mlval{UDP} does not use IP multicast communication,
-which can be a source of problems because of variations in how it is
-configured at different sites.  \note{IP multicast is only available
-when using the Socket library on Unix.  It is not currently supported
-by Ensemble on Windows NT.}  If your machines support Deering IP
+\subsection{Using Deering IP Multicast}
+Deering IP Multicast is the default configuration. If your machines support IP
 multicast communication, it is preferable to use \mlval{DEERING}
 transports because you will then not have to run the gossip server
-with \ensemble\ applications.  You can try out the IP multicast
-transport by using the command-line arguments.  (Note the problems
-section at the end of this section, however, which describes some of
-the problems you may have.)  This is done by executing the
-applications with the \mlval{-modes} command-line arguments.  With IP
-multicast you no longer need to have a gossip server running.  Run
-the application on the hosts with these arguments (see below for a
-description of the arguments):
+with \ensemble\ applications. IP multicast is only available
+when using the Socket library. It is not currently supported
+by the native OCaml library. The configuration parameters pertaining
+to Deering are ENS\_MODES and ENS\_DEERING\_PORT. To modify their
+default settings use:
+\begin{verbatim}
+ENS_DEERING_PORT=1234
+ENS_MODES=DEERING
+\end{verbatim}
+ 
+You can try out the IP multicast transport by using the command-line arguments.  
+For example: 
 \begin{verbatim}
 % mtalk -modes DEERING
-\end{verbatim}
-To always use IP multicast by default, modify the ENS\_MODES
-environment variable so that it includes DEERING.  Also set the
-ENS\_DEERING\_PORT environment variable to an unused port number.
-You will probably wish to add these to your standard shell
-environment:
-\begin{verbatim}
-setenv ENS_DEERING_PORT 1234
-setenv ENS_MODES DEERING:UDP
 \end{verbatim}
 
 \subsection{Notes and Problems}
@@ -237,6 +300,26 @@ See also the problems mentioned in the \ensemble\ reference manual.
 [IP Multicast problems :] Some problems may occur with IP Multicast.
 The time-to-live value for multicast messages may be too small in
 some environments, preventing multicast messages from reaching all
-members.  The TTL value can be adjusted by editing the file
-\sourcecode{socket/multicasts.c}.
+members. The TTL value can be adjusted by editing the file \newline
+\sourcecode{socket/s/PLATFORM/multicasts.c}.
+\item
+[Variation in site configuraiton :]
+IP-multicast may be misconfigured or disabled for security reasons on
+your site. You'll need to use the gossip service in this case. 
+\item
+[Multiple transports:]
+Note that you can configure ENS\_MODES with serveral transports and let
+Ensemble choose the best one. For example: 
+\begin{verbatim}
+ENS_MODES=UDP:TCP
+\end{verbatim}
+will cause Ensemble to use UDP or TCP, whichever is appropriate. The
+system ranks Deering the best transport, then UDP, and finally TCP. In
+order to modify this use the -ranking flag. For example: 
+\begin{verbatim}
+% mtalk -modes UDP:TCP -ranking TCP
+\end{verbatim}
+will use UDP for gossip and TCP for all other communication. 
 \end{description}
+
+

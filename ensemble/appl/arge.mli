@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* ARGE.MLI *)
 (* Author: Mark Hayden, 4/96 *)
 (**************************************************************)
@@ -48,7 +58,6 @@ val log_port     : port option t	(* TCP port to use for log *)
 val modes	 : Addr.id list t	(* default modes to use *)
 val deering_port : port option t	(* deering port *)
 val properties   : Property.id list t	(* default protocol properties *)
-val refcount     : bool t		(* use reference counts for iovecs *)
 val roots	 : bool t		(* output resource info? *)
 val glue         : Glue.glue t		(* selected layer glue. *)
 val pgp          : string option t	(* are we using pgp? *)
@@ -57,7 +66,7 @@ val pollcount    : int t		(* number of failed polls before blocking *)
 val multiread    : bool t		(* do we read all data from sockets? *)
 val ranking      : (Addr.id -> int) t	(* "ranking" of communication modes *)
 val sched_step   : int t		(* number of events to schedule per step *)
-val udp_host     : string option t	(* hostname override to use for UDP communication *)
+val host_ip      : string option t	(* hostname override to a specific IP address *)
 val udp_port     : port option t	(* port override for UDP communication *)
 val netsim_socks : bool t		(* allow socks with Netsim *)
 val debug_real   : bool t		(* use real time for debugging logs *)

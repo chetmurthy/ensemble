@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_MTALK.H */
 /* Author: Ohad Rodeh 8/2001 */
 /* A simple program implementing a multi-person talk. */
@@ -156,7 +166,8 @@ main(int argc, char **argv)
     
     
     join();
-    
+
+//    printf("before ce_Main_loop\n");fflush(stdout);
     ce_Main_loop ();
     return 0;
 }

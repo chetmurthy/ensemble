@@ -16,6 +16,9 @@ CE_LNKLIB = .lib
 
 CE_LINK_FLAGS = WS2_32.lib
 
+# We don't need a specific threads library for windows
+CE_THREAD_LIB =              
+
 !ifdef CE_DEBUG
 CFLAGS = \
     -DINLINE=__inline \

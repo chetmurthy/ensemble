@@ -1,0 +1,291 @@
+%*************************************************************%
+%
+%    Ensemble, 1_42
+%    Copyright 2003 Cornell University, Hebrew University
+%           IBM Israel Science and Technology
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\section{Outboard messaging}
+
+The {\tt ce\_outboard} program allows clients to work with a remote Ensemble server
+that implements the CE library calls. The description here is of the
+nuts-and-bolts TCP interface to the {\tt ce\_outboard} service.
+
+
+\subsection{Locating the service}
+The CE outboard service uses TCP port 5002. Client
+processes connect to this port on the local-host in the normal fashion for TCP
+services. Client processes can join any number of groups and perform
+any number of operations over a single connection to a server. If {\tt
+  ce\_outboard} is not running on the local machine then processes
+will not be able to connect to it. Currently, we do not support 
+connecting to a remote service. 
+
+If the TCP connection breaks, the CE outboard service will fail the
+member from all groups that it joined.  However, a client can
+reconnect to the same server and rejoin the groups it was in. 
+
+\subsection{Communicating with the service}
+Communication with the service is done through specially formatted
+messages.  We describe the message types and their format here.
+
+\begin{description}
+\item
+[messages:] Messages in both directions are formatted as follows.
+Both directions of the TCP streams are broken into variable-length
+{\it packets}.  A packet has a header of size $8$ consisting of two
+integers in network byte order (NBO). The first integer gives the
+length of the message header, the second integer gives the length of
+message body. The next message follows immediately after
+the body.
+\item
+[integers:] Integers are unsigned and are formatted as $4$ bytes in
+NBO.
+\item
+[booleans:] Booleans are formatted the same as integers where $1$ equals true and
+$0$ equals false.
+\item
+[strings:] Strings have a somewhat more complex format.
+The first $4$ bytes are an integer length (unsigned, NBO).  
+The body of the string immidiately follows
+the length.
+\item
+[endpoint and group identifiers:] These types have the same format as
+strings.  For non-Ensemble applications, the contents can contain
+whatever the transport service you are using requires.  \ensemble\
+only tests the contents of endpoint and group identifiers for
+equality with other endpoints and groups.
+\item
+[time:] Time is formatted as two integers; the first counts 10s of seconds, the
+second counts 10s of microseconds.
+\item
+[lists:] Lists have two parts.  The first is an integer giving the
+number of elements in the list.  Immediately following that are the
+elements in the list, one after the other and adjacent to
+one-another.  It is assumed that the application knows the formats of
+the items in the list in order to break them up.
+\item
+[iovec:] Message body, a seqence of bytes that is bulk data.
+\end{description}
+
+The actual messages sent between the client and the server are
+composed of integers and strings.  The first field of a message is an
+integer that denotes the group id, the second field is an integer
+\emph{tag} value from which the format of the remainder of the message
+can be determined.
+
+%\vspace{2.5mm}
+%\hrule{}
+%\vspace{1.5mm}
+
+\subsection{Messages from server to client}
+
+\begin{itemize}
+\item{View} : A new view is being installed. The view is a
+list of Endpt.id's.  A member who just sent a Join message may not be
+included in the view, in which case it should await the next View
+message.  The ltime is the logical time of the view.  The first entry
+in the view and the ltime uniquely identify the view.  The ltime's
+that a member sees grow monotonicly.  In addition, a boolean value is
+sent specifying whether this view is a primary view.  The primary bit
+is based on the primary bit of the group daemon's being used.
+
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{View = 0}
+\formatentry{endpoint}{my endpoint}
+\formatentry{string}{my address}
+\formatentry{integer}{rank}
+\formatentry{string}{my name}
+\formatentry{int}{number of members}
+\formatentry{view\_id}{current view id}
+\formatentry{boolean}{am I the coordinator''}
+\formatentry{string}{Ensemble verion number}
+\formatentry{string}{group}
+\formatentry{string}{protocol stack}
+\formatentry{string}{group coordinator rank}
+\formatentry{int}{logical time of the view}
+\formatentry{boolean}{is this the primary partition?}
+\formatentry{boolean}{are we using the group-daemon?}
+\formatentry{boolean}{is this a state-transfer view?}
+\formatentry{string}{The group key}
+\formatentry{list}{previous view-ids, those that merged to form this view}
+\formatentry{string}{parameters}
+\formatentry{time}{uptime of this endpoint}
+\formatentry{list}{view of this group}
+\formatentry{list}{addresses of group members}
+\formatentry{iovec}{an empty message body}
+\end{FormatTable}
+
+\item{Cast} : A mulitcast message has been received on this group. 
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{Cast = 1}
+\formatentry{integer}{origin}
+\formatentry{iovec}{message body}
+\end{FormatTable}
+
+\item{Send} : A point-to-point message has been received for this
+  endpoint. 
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{Send = 2}
+\formatentry{integer}{origin}
+\formatentry{iovec}{message body}
+\end{FormatTable}
+
+\item{Heartbeat} : A periodic heartbeat. Is about to be {\bf deprecated}. 
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{Heartbeat = 3}
+\formatentry{time}{the current time}
+\formatentry{iovec}{empty}
+\end{FormatTable}
+
+\item{Block} : Block the endpoint as preperation for a view
+  change. After receiving the Block message the client needs to
+  (asynchronously) reply with a BlockOk message. After sending a
+  BlockOk no messages can be sent in this view. 
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{Block = 4}
+\formatentry{iovec}{empty}
+\end{FormatTable}
+
+\item{Exit} : this endpoint is no longer valid. After receiving this
+  message the client can discard any outstanding state for this
+  endpoint. 
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{Exit = 5}
+\formatentry{iovec}{empty}
+\end{FormatTable}
+
+\end{itemize}
+
+
+%\vspace{2.5mm}
+%\hrule{}
+%\vspace{1.5mm}
+
+\subsection{Messages from client to server}
+\begin{itemize}
+\item{Join} : Join a group with a set of options. The use-properties
+  flag indicates whether to use the properties field to derive a stack
+  or use the raw set of layers requested in the protocol field. The
+  group-id must be unique across this socket-connection and is
+  chosen by the client. 
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{Join = 0}
+\formatentry{integer}{heartbeat rate}
+\formatentry{string}{transports}
+\formatentry{string}{protocol}
+\formatentry{string}{group-name}
+\formatentry{string}{properties}
+\formatentry{bool}{use the properties?}
+\formatentry{bool}{use the groupd service?}
+\formatentry{string}{parameters}
+\formatentry{string}{is this a light-weight client?}
+\formatentry{string}{use a debugging stack?}
+\formatentry{string}{principal}
+\formatentry{string}{group security key}
+\formatentry{bool}{secure stack?}
+\end{FormatTable}
+
+\item{Cast} : Multicast a message in this group.
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{Cast = 1}
+\formatentry{iovec}{message body}
+\end{FormatTable}
+
+\item{Send} : Send a point-to-point message to a subset of the
+  group. The client must make sure that the target ranks are within
+  the group, the server will exit with an error otherwise. 
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{Send = 2}
+\formatentry{list}{target ranks}
+\formatentry{iovec}{message body}
+\end{FormatTable}
+
+
+\item{Send1} : Send a point-to-point message to a single destination. 
+The client must make sure that the destination is within
+  the group, the server will exit with an error otherwise. 
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{Send1 = 3}
+\formatentry{iovec}{message body}
+\end{FormatTable}
+
+\item{Suspect} : Suspect a list of members. The client must make sure
+  that the suspected members are valid member ranks; the server will exit with an error otherwise. 
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{Suspect = 4}
+\formatentry{list}{suspect rank list}
+\formatentry{iovec}{message body}
+\end{FormatTable}
+
+\item{XferDone} : Indicate that state-trasfer has completed. 
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{XferDone = 5}
+\formatentry{iovec}{empty}
+\end{FormatTable}
+
+\item{Protocol} : Request a stack change. Ask for a specific set of
+  layers. 
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{Protocol = 6}
+\formatentry{string}{protocol}
+\formatentry{iovec}{empty}
+\end{FormatTable}
+
+\item{Property} : Request a stack change. Ask for a set of
+  properties. Ensemble will derive a stack from the set of
+  properties. 
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{Property = 7}
+\formatentry{string}{protocol}
+\formatentry{iovec}{empty}
+\end{FormatTable}
+
+\item{Leave} : Request to leave the group. The endpoint is valid until
+  the Exit message is received from the server. 
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{Leave = 8}
+\formatentry{iovec}{empty}
+\end{FormatTable}
+
+\item{Prompt} : Ask for an immediate view change. 
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{Prompt = 9}
+\formatentry{iovec}{empty}
+\end{FormatTable}
+
+\item{Rekey} : Rekey the group. 
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{Rekey = 10}
+\formatentry{iovec}{empty}
+\end{FormatTable}
+
+\item{BlockOk} : A response to the Block message. After sending the
+  BlockOk no new messages can be sent in the view. 
+\begin{FormatTable}
+\formatentry{integer}{group-id}
+\formatentry{integer}{BlockOk = 11}
+\formatentry{iovec}{empty}
+\end{FormatTable}
+\end{itemize}
+

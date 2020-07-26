@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_OUTBOARD_COMM.C */
 /* Author: Ohad Rodeh 3/2002 */
 /* Based on code by Mark Hayden and Alexey Vaysbrud. */
@@ -35,7 +45,7 @@ static init_winsock()
     WSADATA         wsaData;
 
     if (done == 0) {
-	printf("initializing winsock2\n");
+	//printf("initializing winsock2\n");
 	/* Call Windows socket initialization function */
 	if (WSAStartup(0x202,&wsaData) == SOCKET_ERROR) {
 	    fprintf(stderr,"WSAStartup failed with error %d",WSAGetLastError());
@@ -148,9 +158,9 @@ ens_tcp_init(void *env, char * argv[], /*OUT*/ int *fd)
     sin.sin_port = ntohs(OUTBOARD_TCP_PORT);
     sinlen = sizeof(sin);  
     
-    ce_trace("TCP connect to %s port %d", inet_ntoa(sin.sin_addr), ntohs(sin.sin_port)); fflush(stdout);
+    printf("TCP connect to %s port %d", inet_ntoa(sin.sin_addr), ntohs(sin.sin_port)); fflush(stdout);
     
-    /* Now call connect in a loop, waiting for accept */
+    /* Now call connect, waiting for accept */
     
     {
 	int sock ;
@@ -169,7 +179,7 @@ ens_tcp_init(void *env, char * argv[], /*OUT*/ int *fd)
 	*fd = (int)sock;
     }
     
-    ce_trace(NAME, "TCP connected");
+    ce_trace(NAME, "TCP connected"); 
 }
 
 /**************************************************************/

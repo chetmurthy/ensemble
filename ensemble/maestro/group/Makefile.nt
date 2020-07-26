@@ -1,3 +1,0 @@
-ENSROOT = ..\..
-!include $(ENSROOT)\mk\config.nmk
-!include $(ENSROOT)\mk\sub.nmk

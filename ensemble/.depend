@@ -1,19 +1,13 @@
-appl/appl_aggr.cmo: type/appl_intf.cmi mm/iovecl.cmi util/queuee.cmi \
-    type/time.cmi util/util.cmi type/view.cmi appl/appl_aggr.cmi 
-appl/appl_aggr.cmx: type/appl_intf.cmx mm/iovecl.cmx util/queuee.cmx \
-    type/time.cmx util/util.cmx type/view.cmx appl/appl_aggr.cmi 
-appl/appl_debug.cmo: type/appl_intf.cmi type/proto.cmi type/time.cmi \
-    util/trace.cmi util/trans.cmi util/util.cmi type/view.cmi \
-    appl/appl_debug.cmi 
-appl/appl_debug.cmx: type/appl_intf.cmx type/proto.cmx type/time.cmx \
-    util/trace.cmx util/trans.cmx util/util.cmx type/view.cmx \
-    appl/appl_debug.cmi 
-appl/appl_lwe.cmo: type/alarm.cmi type/appl_intf.cmi util/arrayf.cmi \
-    infr/async.cmi util/lset.cmi util/trace.cmi util/trans.cmi util/util.cmi \
-    type/view.cmi appl/appl_lwe.cmi 
-appl/appl_lwe.cmx: type/alarm.cmx type/appl_intf.cmx util/arrayf.cmx \
-    infr/async.cmx util/lset.cmx util/trace.cmx util/trans.cmx util/util.cmx \
-    type/view.cmx appl/appl_lwe.cmi 
+#*************************************************************#
+#
+#   Ensemble, 1_42
+#   Copyright 2003 Cornell University, Hebrew University
+#           IBM Israel Science and Technology
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
 appl/appl.cmo: type/addr.cmi type/alarm.cmi appl/appl_debug.cmi \
     type/appl_intf.cmi appl/arge.cmi util/arrayf.cmi infr/async.cmi \
     type/auth.cmi mm/buf.cmi type/domain.cmi type/endpt.cmi type/group.cmi \
@@ -32,6 +26,22 @@ appl/appl.cmx: type/addr.cmx type/alarm.cmx appl/appl_debug.cmx \
     type/security.cmx type/shared.cmx infr/stacke.cmx type/time.cmx \
     util/trace.cmx util/trans.cmx type/unique.cmx util/util.cmx \
     type/version.cmx type/view.cmx appl/appl.cmi 
+appl/appl_aggr.cmo: type/appl_intf.cmi mm/iovecl.cmi util/queuee.cmi \
+    type/time.cmi util/util.cmi type/view.cmi appl/appl_aggr.cmi 
+appl/appl_aggr.cmx: type/appl_intf.cmx mm/iovecl.cmx util/queuee.cmx \
+    type/time.cmx util/util.cmx type/view.cmx appl/appl_aggr.cmi 
+appl/appl_debug.cmo: type/appl_intf.cmi type/proto.cmi type/time.cmi \
+    util/trace.cmi util/trans.cmi util/util.cmi type/view.cmi \
+    appl/appl_debug.cmi 
+appl/appl_debug.cmx: type/appl_intf.cmx type/proto.cmx type/time.cmx \
+    util/trace.cmx util/trans.cmx util/util.cmx type/view.cmx \
+    appl/appl_debug.cmi 
+appl/appl_lwe.cmo: type/alarm.cmi type/appl_intf.cmi util/arrayf.cmi \
+    infr/async.cmi util/lset.cmi util/trace.cmi util/trans.cmi util/util.cmi \
+    type/view.cmi appl/appl_lwe.cmi 
+appl/appl_lwe.cmx: type/alarm.cmx type/appl_intf.cmx util/arrayf.cmx \
+    infr/async.cmx util/lset.cmx util/trace.cmx util/trans.cmx util/util.cmx \
+    type/view.cmx appl/appl_lwe.cmi 
 appl/appl_multi.cmo: type/appl_intf.cmi appl/arge.cmi util/hsys.cmi \
     type/time.cmi util/trace.cmi util/trans.cmi util/util.cmi type/view.cmi \
     appl/appl_multi.cmi 
@@ -86,13 +96,13 @@ appl/timestamp.cmo: util/hsys.cmi util/queuee.cmi type/time.cmi \
     util/trace.cmi util/util.cmi appl/timestamp.cmi 
 appl/timestamp.cmx: util/hsys.cmx util/queuee.cmx type/time.cmx \
     util/trace.cmx util/util.cmx appl/timestamp.cmi 
+appl/appl.cmi: type/addr.cmi type/alarm.cmi type/appl_intf.cmi type/endpt.cmi \
+    type/group.cmi type/layer.cmi groupd/manage.cmi type/property.cmi \
+    type/proto.cmi type/security.cmi util/trans.cmi type/view.cmi 
 appl/appl_aggr.cmi: type/appl_intf.cmi 
 appl/appl_debug.cmi: type/appl_intf.cmi util/trans.cmi 
 appl/appl_lwe.cmi: type/alarm.cmi type/appl_intf.cmi type/endpt.cmi \
     mm/iovecl.cmi type/view.cmi 
-appl/appl.cmi: type/addr.cmi type/alarm.cmi type/appl_intf.cmi type/endpt.cmi \
-    type/group.cmi type/layer.cmi groupd/manage.cmi type/property.cmi \
-    type/proto.cmi type/security.cmi util/trans.cmi type/view.cmi 
 appl/appl_multi.cmi: type/appl_intf.cmi 
 appl/appl_power.cmi: type/appl_intf.cmi util/trans.cmi 
 appl/arge.cmi: type/addr.cmi infr/glue.cmi util/hsys.cmi type/property.cmi \
@@ -282,15 +292,21 @@ layers/debug/chk_sync.cmo: util/arrayf.cmi type/event.cmi mm/iovecl.cmi \
 layers/debug/chk_sync.cmx: util/arrayf.cmx type/event.cmx mm/iovecl.cmx \
     type/layer.cmx util/once.cmx util/trace.cmx util/trans.cmx util/util.cmx \
     type/view.cmx 
-layers/debug/chk_total_fifo.cmo: type/endpt.cmi type/event.cmi type/layer.cmi \
-    util/trace.cmi util/trans.cmi util/util.cmi type/view.cmi 
-layers/debug/chk_total_fifo.cmx: type/endpt.cmx type/event.cmx type/layer.cmx \
-    util/trace.cmx util/trans.cmx util/util.cmx type/view.cmx 
 layers/debug/chk_total.cmo: util/arrayf.cmi type/event.cmi mm/iovecl.cmi \
     type/layer.cmi util/queuee.cmi util/trace.cmi util/trans.cmi \
     util/util.cmi type/view.cmi 
 layers/debug/chk_total.cmx: util/arrayf.cmx type/event.cmx mm/iovecl.cmx \
     type/layer.cmx util/queuee.cmx util/trace.cmx util/trans.cmx \
+    util/util.cmx type/view.cmx 
+layers/debug/chk_total_fifo.cmo: type/endpt.cmi type/event.cmi type/layer.cmi \
+    util/trace.cmi util/trans.cmi util/util.cmi type/view.cmi 
+layers/debug/chk_total_fifo.cmx: type/endpt.cmx type/event.cmx type/layer.cmx \
+    util/trace.cmx util/trans.cmx util/util.cmx type/view.cmx 
+layers/debug/dbg.cmo: type/alarm.cmi util/dtbl.cmi type/event.cmi \
+    util/hsys.cmi type/layer.cmi type/param.cmi util/trace.cmi util/trans.cmi \
+    util/util.cmi type/view.cmi 
+layers/debug/dbg.cmx: type/alarm.cmx util/dtbl.cmx type/event.cmx \
+    util/hsys.cmx type/layer.cmx type/param.cmx util/trace.cmx util/trans.cmx \
     util/util.cmx type/view.cmx 
 layers/debug/dbgbatch.cmo: type/alarm.cmi util/dtblbatch.cmi type/event.cmi \
     type/layer.cmi type/param.cmi util/priq.cmi type/time.cmi util/trace.cmi \
@@ -298,12 +314,6 @@ layers/debug/dbgbatch.cmo: type/alarm.cmi util/dtblbatch.cmi type/event.cmi \
 layers/debug/dbgbatch.cmx: type/alarm.cmx util/dtblbatch.cmx type/event.cmx \
     type/layer.cmx type/param.cmx util/priq.cmx type/time.cmx util/trace.cmx \
     util/trans.cmx util/util.cmx type/view.cmx 
-layers/debug/dbg.cmo: type/alarm.cmi util/dtbl.cmi type/event.cmi \
-    util/hsys.cmi type/layer.cmi type/param.cmi util/trace.cmi util/trans.cmi \
-    util/util.cmi type/view.cmi 
-layers/debug/dbg.cmx: type/alarm.cmx util/dtbl.cmx type/event.cmx \
-    util/hsys.cmx type/layer.cmx type/param.cmx util/trace.cmx util/trans.cmx \
-    util/util.cmx type/view.cmx 
 layers/debug/dbm.cmo: type/event.cmi type/layer.cmi type/param.cmi \
     type/time.cmi util/trace.cmi util/trans.cmi util/util.cmi type/view.cmi 
 layers/debug/dbm.cmx: type/event.cmx type/layer.cmx type/param.cmx \
@@ -458,18 +468,18 @@ layers/other/subcast.cmo: type/event.cmi mm/iovecl.cmi type/layer.cmi \
     util/trace.cmi util/trans.cmi util/util.cmi type/view.cmi 
 layers/other/subcast.cmx: type/event.cmx mm/iovecl.cmx type/layer.cmx \
     util/trace.cmx util/trans.cmx util/util.cmx type/view.cmx 
-layers/other/top_appl.cmo: type/appl_intf.cmi util/arrayf.cmi mm/buf.cmi \
-    type/event.cmi mm/iovecl.cmi type/layer.cmi type/time.cmi util/trace.cmi \
-    util/trans.cmi util/util.cmi type/view.cmi 
-layers/other/top_appl.cmx: type/appl_intf.cmx util/arrayf.cmx mm/buf.cmx \
-    type/event.cmx mm/iovecl.cmx type/layer.cmx type/time.cmx util/trace.cmx \
-    util/trans.cmx util/util.cmx type/view.cmx 
 layers/other/top.cmo: type/addr.cmi util/arrayf.cmi type/event.cmi \
     type/layer.cmi util/lset.cmi util/once.cmi type/param.cmi type/time.cmi \
     util/trace.cmi util/trans.cmi util/util.cmi type/view.cmi 
 layers/other/top.cmx: type/addr.cmx util/arrayf.cmx type/event.cmx \
     type/layer.cmx util/lset.cmx util/once.cmx type/param.cmx type/time.cmx \
     util/trace.cmx util/trans.cmx util/util.cmx type/view.cmx 
+layers/other/top_appl.cmo: type/appl_intf.cmi util/arrayf.cmi mm/buf.cmi \
+    type/event.cmi mm/iovecl.cmi type/layer.cmi type/time.cmi util/trace.cmi \
+    util/trans.cmi util/util.cmi type/view.cmi 
+layers/other/top_appl.cmx: type/appl_intf.cmx util/arrayf.cmx mm/buf.cmx \
+    type/event.cmx mm/iovecl.cmx type/layer.cmx type/time.cmx util/trace.cmx \
+    util/trans.cmx util/util.cmx type/view.cmx 
 layers/other/xfer.cmo: util/arrayf.cmi type/event.cmi mm/iovecl.cmi \
     type/layer.cmi util/lset.cmi util/trace.cmi util/util.cmi type/view.cmi 
 layers/other/xfer.cmx: util/arrayf.cmx type/event.cmx mm/iovecl.cmx \
@@ -484,16 +494,16 @@ layers/trans/causal.cmo: type/event.cmi type/layer.cmi util/mcausal.cmi \
     util/queuee.cmi util/trace.cmi util/trans.cmi util/util.cmi type/view.cmi 
 layers/trans/causal.cmx: type/event.cmx type/layer.cmx util/mcausal.cmx \
     util/queuee.cmx util/trace.cmx util/trans.cmx util/util.cmx type/view.cmx 
-layers/trans/frag_abv.cmo: type/addr.cmi util/arrayf.cmi mm/buf.cmi \
-    type/event.cmi mm/iovecl.cmi type/layer.cmi type/param.cmi util/trace.cmi \
-    util/trans.cmi util/util.cmi type/view.cmi 
-layers/trans/frag_abv.cmx: type/addr.cmx util/arrayf.cmx mm/buf.cmx \
-    type/event.cmx mm/iovecl.cmx type/layer.cmx type/param.cmx util/trace.cmx \
-    util/trans.cmx util/util.cmx type/view.cmx 
 layers/trans/frag.cmo: type/addr.cmi util/arrayf.cmi mm/buf.cmi \
     type/event.cmi mm/iovecl.cmi type/layer.cmi type/param.cmi util/trace.cmi \
     util/trans.cmi util/util.cmi type/view.cmi 
 layers/trans/frag.cmx: type/addr.cmx util/arrayf.cmx mm/buf.cmx \
+    type/event.cmx mm/iovecl.cmx type/layer.cmx type/param.cmx util/trace.cmx \
+    util/trans.cmx util/util.cmx type/view.cmx 
+layers/trans/frag_abv.cmo: type/addr.cmi util/arrayf.cmi mm/buf.cmi \
+    type/event.cmi mm/iovecl.cmi type/layer.cmi type/param.cmi util/trace.cmi \
+    util/trans.cmi util/util.cmi type/view.cmi 
+layers/trans/frag_abv.cmx: type/addr.cmx util/arrayf.cmx mm/buf.cmx \
     type/event.cmx mm/iovecl.cmx type/layer.cmx type/param.cmx util/trace.cmx \
     util/trans.cmx util/util.cmx type/view.cmx 
 layers/trans/mnak.cmo: util/arrayf.cmi type/event.cmi mm/iovecl.cmi mm/iq.cmi \
@@ -514,12 +524,12 @@ layers/trans/stable.cmo: util/arrayf.cmi type/event.cmi mm/iovec.cmi \
 layers/trans/stable.cmx: util/arrayf.cmx type/event.cmx mm/iovec.cmx \
     type/layer.cmx type/param.cmx type/time.cmx util/trace.cmx util/trans.cmx \
     util/util.cmx type/view.cmx 
-layers/gossip/heal.cmo: appl/arge.cmi util/arrayf.cmi type/endpt.cmi \
-    type/event.cmi mm/iovecl.cmi type/layer.cmi util/lset.cmi util/once.cmi \
-    util/trace.cmi util/trans.cmi util/util.cmi type/view.cmi 
-layers/gossip/heal.cmx: appl/arge.cmx util/arrayf.cmx type/endpt.cmx \
-    type/event.cmx mm/iovecl.cmx type/layer.cmx util/lset.cmx util/once.cmx \
-    util/trace.cmx util/trans.cmx util/util.cmx type/view.cmx 
+layers/gossip/heal.cmo: type/addr.cmi appl/arge.cmi util/arrayf.cmi \
+    type/endpt.cmi type/event.cmi mm/iovecl.cmi type/layer.cmi util/lset.cmi \
+    util/once.cmi util/trace.cmi util/trans.cmi util/util.cmi type/view.cmi 
+layers/gossip/heal.cmx: type/addr.cmx appl/arge.cmx util/arrayf.cmx \
+    type/endpt.cmx type/event.cmx mm/iovecl.cmx type/layer.cmx util/lset.cmx \
+    util/once.cmx util/trace.cmx util/trans.cmx util/util.cmx type/view.cmx 
 layers/gossip/switch.cmo: type/event.cmi mm/iovecl.cmi type/layer.cmi \
     type/proto.cmi type/time.cmi util/trace.cmi util/util.cmi type/view.cmi 
 layers/gossip/switch.cmx: type/event.cmx mm/iovecl.cmx type/layer.cmx \
@@ -574,48 +584,24 @@ layers/security/exchange.cmx: type/addr.cmx type/auth.cmx mm/buf.cmx \
     type/endpt.cmx type/event.cmx type/layer.cmx util/mexchange.cmx \
     type/param.cmx type/security.cmx type/shared.cmx type/time.cmx \
     util/trace.cmx util/trans.cmx util/util.cmx type/view.cmx 
-layers/security/optrekey.cmo: util/arrayf.cmi type/endpt.cmi type/event.cmi \
-    type/layer.cmi groupd/member.cmi util/once.cmi type/shared.cmi \
-    type/tdefs.cmi util/trace.cmi util/trans.cmi util/tree.cmi util/util.cmi \
-    type/view.cmi 
-layers/security/optrekey.cmx: util/arrayf.cmx type/endpt.cmx type/event.cmx \
-    type/layer.cmx groupd/member.cmx util/once.cmx type/shared.cmx \
-    type/tdefs.cmx util/trace.cmx util/trans.cmx util/tree.cmx util/util.cmx \
-    type/view.cmx 
 layers/security/perfrekey.cmo: type/alarm.cmi type/event.cmi type/layer.cmi \
     util/once.cmi type/param.cmi type/security.cmi type/shared.cmi \
     type/time.cmi util/trace.cmi util/trans.cmi util/util.cmi type/view.cmi 
 layers/security/perfrekey.cmx: type/alarm.cmx type/event.cmx type/layer.cmx \
     util/once.cmx type/param.cmx type/security.cmx type/shared.cmx \
     type/time.cmx util/trace.cmx util/trans.cmx util/util.cmx type/view.cmx 
-layers/security/realkeys.cmo: mm/buf.cmi type/event.cmi type/layer.cmi \
-    groupd/member.cmi util/once.cmi type/security.cmi type/shared.cmi \
-    type/tdefs.cmi util/trace.cmi util/trans.cmi util/tree.cmi util/util.cmi \
-    type/view.cmi 
-layers/security/realkeys.cmx: mm/buf.cmx type/event.cmx type/layer.cmx \
-    groupd/member.cmx util/once.cmx type/security.cmx type/shared.cmx \
-    type/tdefs.cmx util/trace.cmx util/trans.cmx util/tree.cmx util/util.cmx \
-    type/view.cmx 
-layers/security/rekey_diam.cmo: type/alarm.cmi util/arrayf.cmi mm/buf.cmi \
-    util/diamond.cmi type/event.cmi type/layer.cmi util/lset.cmi \
-    util/queuee.cmi type/security.cmi type/shared.cmi type/time.cmi \
-    util/trace.cmi util/trans.cmi util/util.cmi type/view.cmi 
-layers/security/rekey_diam.cmx: type/alarm.cmx util/arrayf.cmx mm/buf.cmx \
-    util/diamond.cmx type/event.cmx type/layer.cmx util/lset.cmx \
-    util/queuee.cmx type/security.cmx type/shared.cmx type/time.cmx \
-    util/trace.cmx util/trans.cmx util/util.cmx type/view.cmx 
-layers/security/rekey_dt.cmo: util/arrayf.cmi type/event.cmi type/layer.cmi \
-    util/lset.cmi util/mrekey_dt.cmi type/security.cmi type/shared.cmi \
-    util/trace.cmi util/trans.cmi util/util.cmi type/view.cmi 
-layers/security/rekey_dt.cmx: util/arrayf.cmx type/event.cmx type/layer.cmx \
-    util/lset.cmx util/mrekey_dt.cmx type/security.cmx type/shared.cmx \
-    util/trace.cmx util/trans.cmx util/util.cmx type/view.cmx 
 layers/security/rekey.cmo: type/event.cmi type/layer.cmi util/once.cmi \
     type/param.cmi type/security.cmi type/shared.cmi util/trace.cmi \
     util/trans.cmi util/util.cmi type/view.cmi 
 layers/security/rekey.cmx: type/event.cmx type/layer.cmx util/once.cmx \
     type/param.cmx type/security.cmx type/shared.cmx util/trace.cmx \
     util/trans.cmx util/util.cmx type/view.cmx 
+layers/security/rekey_dt.cmo: util/arrayf.cmi type/event.cmi type/layer.cmi \
+    util/lset.cmi util/mrekey_dt.cmi type/security.cmi type/shared.cmi \
+    util/trace.cmi util/trans.cmi util/util.cmi type/view.cmi 
+layers/security/rekey_dt.cmx: util/arrayf.cmx type/event.cmx type/layer.cmx \
+    util/lset.cmx util/mrekey_dt.cmx type/security.cmx type/shared.cmx \
+    util/trace.cmx util/trans.cmx util/util.cmx type/view.cmx 
 layers/security/secchan.cmo: util/arrayf.cmi mm/buf.cmi type/endpt.cmi \
     type/event.cmi mm/iovecl.cmi type/layer.cmi util/lset.cmi type/param.cmi \
     type/security.cmi type/shared.cmi util/trace.cmi util/trans.cmi \
@@ -626,21 +612,21 @@ layers/security/secchan.cmx: util/arrayf.cmx mm/buf.cmx type/endpt.cmx \
     util/util.cmx type/view.cmx 
 mm/buf.cmo: util/trace.cmi util/trans.cmi util/util.cmi mm/buf.cmi 
 mm/buf.cmx: util/trace.cmx util/trans.cmx util/util.cmx mm/buf.cmi 
-mm/iovecl.cmo: util/arrayf.cmi mm/buf.cmi mm/iovec.cmi util/trace.cmi \
-    util/trans.cmi util/util.cmi mm/iovecl.cmi 
-mm/iovecl.cmx: util/arrayf.cmx mm/buf.cmx mm/iovec.cmx util/trace.cmx \
-    util/trans.cmx util/util.cmx mm/iovecl.cmi 
 mm/iovec.cmo: mm/buf.cmi socket/socket.cmi util/trace.cmi util/trans.cmi \
     mm/iovec.cmi 
 mm/iovec.cmx: mm/buf.cmx socket/socket.cmi util/trace.cmx util/trans.cmx \
     mm/iovec.cmi 
+mm/iovecl.cmo: util/arrayf.cmi mm/buf.cmi mm/iovec.cmi util/trace.cmi \
+    util/trans.cmi util/util.cmi mm/iovecl.cmi 
+mm/iovecl.cmx: util/arrayf.cmx mm/buf.cmx mm/iovec.cmx util/trace.cmx \
+    util/trans.cmx util/util.cmx mm/iovecl.cmi 
 mm/iq.cmo: mm/buf.cmi mm/iovec.cmi mm/iovecl.cmi util/trace.cmi \
     util/trans.cmi util/util.cmi mm/iq.cmi 
 mm/iq.cmx: mm/buf.cmx mm/iovec.cmx mm/iovecl.cmx util/trace.cmx \
     util/trans.cmx util/util.cmx mm/iq.cmi 
 mm/buf.cmi: util/trans.cmi 
-mm/iovecl.cmi: util/arrayf.cmi mm/buf.cmi mm/iovec.cmi util/trans.cmi 
 mm/iovec.cmi: mm/buf.cmi socket/socket.cmi util/trans.cmi 
+mm/iovecl.cmi: util/arrayf.cmi mm/buf.cmi mm/iovec.cmi util/trans.cmi 
 mm/iq.cmi: mm/iovecl.cmi util/trans.cmi 
 route/bypassr.cmo: route/bypassr.cmi 
 route/bypassr.cmx: route/bypassr.cmi 
@@ -777,14 +763,14 @@ type/event.cmx: type/addr.cmx util/arrayf.cmx type/auth.cmx mm/buf.cmx \
     util/trans.cmx util/tree.cmx util/util.cmx type/view.cmx type/event.cmi 
 type/group.cmo: util/trace.cmi type/unique.cmi util/util.cmi type/group.cmi 
 type/group.cmx: util/trace.cmx type/unique.cmx util/util.cmx type/group.cmi 
-type/layer.cmo: type/addr.cmi type/appl_intf.cmi util/diamond.cmi \
-    type/endpt.cmi type/event.cmi util/mrekey_dt.cmi type/security.cmi \
-    type/shared.cmi type/tdefs.cmi type/time.cmi util/trace.cmi \
-    util/trans.cmi util/tree.cmi util/util.cmi type/view.cmi type/layer.cmi 
-type/layer.cmx: type/addr.cmx type/appl_intf.cmx util/diamond.cmx \
-    type/endpt.cmx type/event.cmx util/mrekey_dt.cmx type/security.cmx \
-    type/shared.cmx type/tdefs.cmx type/time.cmx util/trace.cmx \
-    util/trans.cmx util/tree.cmx util/util.cmx type/view.cmx type/layer.cmi 
+type/layer.cmo: type/addr.cmi type/appl_intf.cmi type/endpt.cmi \
+    type/event.cmi util/mrekey_dt.cmi type/security.cmi type/shared.cmi \
+    type/tdefs.cmi type/time.cmi util/trace.cmi util/trans.cmi util/util.cmi \
+    type/view.cmi type/layer.cmi 
+type/layer.cmx: type/addr.cmx type/appl_intf.cmx type/endpt.cmx \
+    type/event.cmx util/mrekey_dt.cmx type/security.cmx type/shared.cmx \
+    type/tdefs.cmx type/time.cmx util/trace.cmx util/trans.cmx util/util.cmx \
+    type/view.cmx type/layer.cmi 
 type/param.cmo: type/time.cmi util/trace.cmi util/trans.cmi util/util.cmi \
     type/param.cmi 
 type/param.cmx: type/time.cmx util/trace.cmx util/trans.cmx util/util.cmx \
@@ -845,10 +831,9 @@ type/event.cmi: type/addr.cmi util/arrayf.cmi type/auth.cmi mm/buf.cmi \
     type/security.cmi type/tdefs.cmi type/time.cmi util/trans.cmi \
     util/tree.cmi type/view.cmi 
 type/group.cmi: type/unique.cmi 
-type/layer.cmi: type/addr.cmi type/appl_intf.cmi util/diamond.cmi \
-    type/endpt.cmi type/event.cmi util/mrekey_dt.cmi type/security.cmi \
-    type/shared.cmi type/tdefs.cmi type/time.cmi util/trans.cmi util/tree.cmi \
-    type/view.cmi 
+type/layer.cmi: type/addr.cmi type/appl_intf.cmi type/endpt.cmi \
+    type/event.cmi util/mrekey_dt.cmi type/security.cmi type/shared.cmi \
+    type/tdefs.cmi type/time.cmi util/trans.cmi type/view.cmi 
 type/param.cmi: type/time.cmi util/trans.cmi 
 type/property.cmi: type/proto.cmi 
 type/proto.cmi: util/trans.cmi 
@@ -866,20 +851,14 @@ util/arrayf.cmo: util/arraye.cmi util/util.cmi util/arrayf.cmi
 util/arrayf.cmx: util/arraye.cmx util/util.cmx util/arrayf.cmi 
 util/arrayop.cmo: util/arrayf.cmi util/util.cmi util/arrayop.cmi 
 util/arrayop.cmx: util/arrayf.cmx util/util.cmx util/arrayop.cmi 
-util/diamond_aux.cmo: util/diamond.cmi util/trans.cmi util/util.cmi 
-util/diamond_aux.cmx: util/diamond.cmx util/trans.cmx util/util.cmx 
-util/diamond.cmo: util/trace.cmi util/trans.cmi util/util.cmi \
-    util/diamond.cmi 
-util/diamond.cmx: util/trace.cmx util/trans.cmx util/util.cmx \
-    util/diamond.cmi 
-util/dtblbatch.cmo: util/trace.cmi util/trans.cmi util/util.cmi \
-    util/dtblbatch.cmi 
-util/dtblbatch.cmx: util/trace.cmx util/trans.cmx util/util.cmx \
-    util/dtblbatch.cmi 
 util/dtbl.cmo: mm/buf.cmi util/hsys.cmi util/trace.cmi util/trans.cmi \
     util/util.cmi util/dtbl.cmi 
 util/dtbl.cmx: mm/buf.cmx util/hsys.cmx util/trace.cmx util/trans.cmx \
     util/util.cmx util/dtbl.cmi 
+util/dtblbatch.cmo: util/trace.cmi util/trans.cmi util/util.cmi \
+    util/dtblbatch.cmi 
+util/dtblbatch.cmx: util/trace.cmx util/trans.cmx util/util.cmx \
+    util/dtblbatch.cmi 
 util/fqueue.cmo: util/trace.cmi util/fqueue.cmi 
 util/fqueue.cmx: util/trace.cmx util/fqueue.cmi 
 util/hashtble.cmo: util/hashtble.cmi 
@@ -942,7 +921,6 @@ util/util.cmo: util/printe.cmi util/util.cmi
 util/util.cmx: util/printe.cmx util/util.cmi 
 util/arrayf.cmi: util/arraye.cmi util/trans.cmi 
 util/arrayop.cmi: util/arrayf.cmi 
-util/diamond.cmi: util/trans.cmi 
 util/dtbl.cmi: util/hsys.cmi 
 util/hsys.cmi: mm/buf.cmi mm/iovec.cmi mm/iovecl.cmi socket/socket.cmi 
 util/lset.cmi: util/arrayf.cmi 

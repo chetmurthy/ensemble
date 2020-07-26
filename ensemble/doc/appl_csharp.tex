@@ -1,0 +1,250 @@
+%*************************************************************%
+%
+%    Ensemble, 1_42
+%    Copyright 2003 Cornell University, Hebrew University
+%           IBM Israel Science and Technology
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\section{Csharp Application Interface}
+
+The C-sharp API allows applications written in C\# to use the Ensemble
+messaging system. Currently, only an outboard interface is
+supported. This means that in order to use Ensemble a CE-outboard
+server must be running on the local machine. A C\# program can then
+connect to this server through the client library provided. 
+
+An attempt was made to improve the original CE/HOT APIs and therefore
+the C\# interface has a very different flavour. It is based on an
+event-queue abstraction rather than callbacks. 
+
+In order to use the client-library the user application must first
+connect to the server. It can then create group members and perform
+Ensemble {\it actions}: Leave, Cast, Send, Send1, Prompt, Suspect,
+XferDone, Rekey, ChangeProtocol, and ChangeProperties.
+
+The application must poll Ensemble periodically to see if there are any
+pending messages, and receive them. Currently, it is possible
+for the application not to receive messages while continuing to create
+new actions. This is considered {\it non-friendly} behaviour and is something we
+intend to prevent in the future. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The API abstractions. 
+
+The API is constructed from a namespace named Ensemble and several
+public classes the major of which are: {\tt View, JoinOps, Message,
+  Connection}, and {\tt Member}. 
+
+\begin{description}
+\item[View:] The {\tt View} class describes a
+group membership view. 
+
+\item[JoinOps:] The {\tt JoinOps} class contains a
+specification for a new member for Ensemble to create. 
+
+\item[Message:] The {\tt Message} class describes a message received
+  from Ensemble. A Message can be: a new View, a multicast message, a
+  point-to-point message, a heartbeat, a block notification, or an
+  exit notification. 
+
+\item[Connection:] The {\tt Connection} class implements the actual
+  socket communication between the client and the server. It has three
+  public methods the application has to use.
+
+  \begin{codebox}
+   public class Connection \{
+       public bool Poll();	  
+       public Message Recv();
+       public void Connect ();
+  \}
+  \end{codebox}
+
+  The application can open several Ensemble connections, however, a
+  single connection should suffice. No action can be taken on a
+  connection that has not connected to the server through the {\tt
+  Connect} call. Once connected the application can receive messages
+  through the {\tt Recv} method. {\tt Recv} is a blocking call, in
+  order to check first that there are pending messages the
+  non-blocking {\tt Poll} method should be used. 
+  
+
+\item[Member:] The {\tt Member} class embodies an Ensemble group
+  member. A member can join a single group, no more. A Member can be in several states: 
+  \begin{description}
+    \item[Pre:] The initial status in which all members are
+      created. The class constructor sets this as the default.
+    \item[Joining:] Joining a group is an asynchronous operation. A
+      member is in the {\tt Joining} state from the time it attempts to join,
+      until when it receives a View message with the initial group
+      membership. 
+    \item[Normal:] Normal operation state. The member is a regular
+      resident in the group. It can send/mcast messages and
+      perform all other Ensemble operations. 
+    \item[Blocked:] The member is currently blocked, and temporarily cannot 
+      perfrom any action. This state is achieved by sending a {\tt BlockOk}
+      in response to a {\tt Block} request. 
+    \item[Leaving:] The member has requested to leave the group. {\tt Leave}
+      is an asynchronous operation, the {\tt Leaving} state captures
+      the time between the {\tt Leave} request and the final leaving
+      of the group.
+    \item[Left:] The member has left the group and are in an invalid state
+  \end{description}
+
+  \begin{codebox}
+  public class Member \{
+      public enum Status \{
+          Pre,        // the initial status
+          Joining,    // we joining the group
+          Normal,     // Normal operation state, can send/mcast messages
+          Blocked,    // we are blocked
+          Leaving,    // we are leaving
+          Left        // We have left the group and are in an invalid state
+      \};
+
+      public View current\_view ;		       // The current view
+      public Status current\_status = Status.Pre; // Our current status
+  \end{codebox}
+
+  The member state can be learned by examining the {\tt
+  current\_status} field. The current view the member is part of is in 
+  the {\tt current\_view} field. 
+
+  Prior to any action, the member has to join a group.
+  \begin{codebox}
+  // Join a group with the specified options. 
+  public void Join(JoinOps ops);
+  \end{codebox}
+
+  The set of operations allowed on a member in Normal state is:
+  \begin{description}
+    \item[Leave:] Leave a group. This should be the last call made to the member
+    It is possible for messages to be delivered to this member after the call
+    returns. However, it is illegal to initiate new actions on this member.
+    \begin{codebox}
+      public void Leave();
+    \end{codebox}
+
+    \item[Cast:]
+      Send a multicast message to the group.
+      \begin{codebox}
+	public void Cast(byte[] data);
+      \end{codebox}
+    
+    \item[Send:]
+      Send a point-to-point message to a list of members.
+      \begin{codebox}
+	public void Send(int[] dests, byte[] data);
+      \end{codebox}
+    
+    \item[Send1:]
+      Send a point-to-point message to the specified group member.
+      \begin{codebox}
+	public void Send1(int dest, byte[] data);
+      \end{codebox}
+      
+    \item[Suspect:]
+      Report group members as failure-suspected.
+      \begin{codebox}
+	public void Suspect(int[] suspects);
+      \end{codebox}
+      
+    \item[XferDone:]
+      Inform Ensemble that the state-transfer is complete. 
+      \begin{codebox}
+	public void XferDone();
+      \end{codebox}
+      
+    \item[ChangeProtocol:]
+      Request a protocol change.
+      \begin{codebox}
+	public void ChangeProtocol(string protocol\_name);
+      \end{codebox}
+      
+    \item[ChangeProperties:]
+      Request a protocol change specifying properties.
+      \begin{codebox}
+	public void ChangeProperties(string properties);
+      \end{codebox}
+      
+    \item[Prompt:]
+      Request a new view to be installed.
+      \begin{codebox}
+	public void Prompt();
+      \end{codebox}
+      
+    \item[Rekey:]
+      Request a Rekey operation.
+      \begin{codebox}
+	public void Rekey();
+      \end{codebox}
+      
+      \item[BlockOk:]
+	Send a BlockOk
+	\begin{codebox}
+	  public void BlockOk();
+	\end{codebox}
+  \end{description}
+\end{description}
+
+
+% The client state-machine. 
+\subsection{The client state-machine}
+
+Each group member moved inside a state-machine that has a very clear set
+of rules. Initially, it is in the {\tt Pre} state. After asking to
+join a group, it is in the {\tt Joining} state. When the first view
+arrives it is in the {\tt Normal} state. In the {\tt Normal} state and
+prior to a view-change Ensemble will send a {\tt Block} message to the
+member. The member has to reply with a {\tt BlockOk} action. After the {\tt BlockOk} the
+member is in the {\tt Blocked} state until the next view. When the
+next view is received is moves back to the {\tt Normal} state. Upon a
+{\tt Leave} request the member moves to the {\tt Leaving} state which
+turns into {\tt Left} after the {\tt Exit} message arrives. 
+
+% FIXME: Insert a figure here. 
+
+\subsection{Locking}
+All {\tt Connection} and {\tt Member} method calls are
+thread-safe. However, accessing the public Member fields such as the
+{\tt current\_view} and {\tt current\_status} should be done while
+holding the connection lock. Most Ensemble actions can be performed
+only on a group-member that is in the {\tt Normal} state. For example, the
+application may need to lock the member to ensure it's state does not
+change while multicasting a message. To do this, the connection
+instance must be locked using the {\tt lock} C\# idiom.
+
+For example:
+\begin{codebox}
+  lock (conn) 
+  \{
+      if (memb.current_status == Member.Status.Normal)
+          memb.Cast("hello world");
+       else
+           Console.WriteLine("Blocked currently, please try again later");
+  \}
+\end{codebox}
+
+Replying to {\tt Block} message with a {\tt BlockOk} and moving to the
+{\tt Blocked} state can be done asynchronously. This gives the
+application a chance to send any pending messages 
+prior to moving to the {\tt Blocked} state. Depending on the
+application, this may allow the programmer to avoid locking. 
+
+
+
+\subsection{Current limitations}
+Currently, the maximal message size is limited to 32K. We intend to
+review this in the future with respect to application needs.
+
+
+
+
+
+
+
+
+
+

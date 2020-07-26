@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* HEAL.ML *)
 (* Author: Mark Hayden, 6/95 *)
 (* Based on code by Robbert vanRenesse & Dalia Malki *)
@@ -119,7 +129,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       if not vs.primary
       && (bc_nmem, bc_view_id) > (s.merge_nmem, s.merge_vid)
       then (
-	log (fun () -> sprintf "suggesting merge with %s" (View.string_of_id bc_view_id)) ;
+	log (fun () -> sprintf "suggesting merge with %s , con=%s" 
+	  (View.string_of_id bc_view_id)
+	  (Addr.string_of_set (snd bc_con))
+	) ;
 	s.merge_vid <- bc_view_id ;
 	s.merge_con <- bc_con ;
 	s.merge_nmem <- bc_nmem ;

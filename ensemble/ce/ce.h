@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE.H */
 /* Author: Ohad Rodeh */
 /* Based on code by Mark Hayden and Alexey Vaysburd. */
@@ -224,6 +234,19 @@ typedef struct ce_jops_t {
     char key[CE_KEY_SIZE] ;                    /*!< The security key, has to be either all zerosL, or
 						      of CE_KEY_SIZE */
     ce_bool_t secure ;                         /*!< Do we want a secure stack (encryption + authentication? */
+
+    /*!< Do we want to send block-ok by hand?
+     *
+     *  Normally, at the end of the install callback the application
+     * can no longer send messages in the current view. This tell
+     * Ensemble that it is ok to stabilize this group and move on to
+     * the next view. By raising this flag the application is saying
+     * it wants to use a different scheme to signal that the view is
+     * complete. After a view-change the application will -have- to
+     * send Ensemble a BlockOk action and refrain from performing any
+     * actions later in the view. 
+     */
+    ce_bool_t async_block_ok;                  
 } ce_jops_t ;
 
 /*!  
@@ -463,6 +486,15 @@ LINKDLL void ce_ChangeProperties(
     char *properties
     ) ;
 
+/*!  Tell the system we will no longer send messages in this view. Should
+ * be used only when the group has joined with the flag async_block_ok.
+ *
+ * @param c_appl The C-interface.
+ */
+LINKDLL void ce_BlockOk(
+    ce_appl_intf_t *c_appl
+    ) ;
+
 /**************************************************************/
 /*!  Auxiliary functions.
  */
@@ -498,6 +530,9 @@ typedef void (*ce_handler_t)(void*);
 /*! This call adds a socket to the list Ensemble listens to. 
  * When input on the socket occurs, this handler will be invoked
  * on the specified environment variable.
+ *
+ * note: this call is valid only for the single-threaded version.
+ * 
  * @param socket The socket to listen to.
  * @param handler A handler.
  * @param env An envrionment variable. 
@@ -509,7 +544,10 @@ LINKDLL void ce_AddSockRecv(
     );
 
 /*! Remove a socket from the list Ensemble listens to.
- *@param socket The socket to remove. 
+ * 
+ * note: this call is valid only for the single-threaded version.
+ * 
+ * @param socket The socket to remove. 
  */
 LINKDLL void ce_RmvSockRecv(
     CE_SOCKET socket

@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* MM.C */
 /* Author: Ohad Rodeh, 9/2001 */
 /* The basic memory management functions. Used to manage user allocated */
@@ -90,7 +100,7 @@ value mm_copy_raw_into_string(value iov_v, value buf_v, value ofs_v){
     SKTTRACE2(("mm_copy_raw_into_string("));
     len = Int_val(Field(iov_v,0));
     cbuf = mm_Cbuf_val(Field(iov_v,1));
-    SKTTRACE2(("raw= (ptr=%d,len=%d) (strlen=%d,ofs=%d)", (int)cbuf, len, string_length(buf_v), (int) Int_val(ofs_v)));
+    SKTTRACE2(("raw= (ptr=%d,len=%d) (strlen=%ld,ofs=%d)", (int)cbuf, len, string_length(buf_v), (int) Int_val(ofs_v)));
     memcpy(String_val(buf_v) + Int_val(ofs_v), cbuf, len);
     SKTTRACE2((")\n"));
     

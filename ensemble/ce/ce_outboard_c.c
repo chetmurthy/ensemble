@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_OUTBOARD_C.C */
 /* Author: Ohad Rodeh 3/2002 */
 /* Based on code by Mark Hayden and Alexey Vaysbrud. */
@@ -83,27 +93,27 @@ static void mt_unlock(void)
 INLINE static void
 begin_write(void)
 {
-  g.write_hdr_len = 0 ;
-  g.write_iov_len = 0 ;
+    g.write_hdr_len = 0 ;
+    g.write_iov_len = 0 ;
 }
 
 INLINE static void
 do_write(void *buf,int len)
 {
-
-  if (len > g.write_size - g.write_pos) {
-    if (g.write_size <= 1024)
-      g.write_size = 1024 ;
-    while (len > g.write_size - g.write_pos)
-      g.write_size *= 2 ;
-    if (!g.write_buf)
-      g.write_buf = (char*) ce_malloc(g.write_size) ;
-    else
-      g.write_buf = (char*) ce_realloc(g.write_buf, g.write_size) ;
-  }
-
-  memcpy(((char*)g.write_buf)+g.write_pos, buf, len) ;
-  g.write_pos += len ;
+    
+    if (len > g.write_size - g.write_pos) {
+	if (g.write_size <= 1024)
+	    g.write_size = 1024 ;
+	while (len > g.write_size - g.write_pos)
+	    g.write_size *= 2 ;
+	if (!g.write_buf)
+	    g.write_buf = (char*) ce_malloc(g.write_size) ;
+	else
+	    g.write_buf = (char*) ce_realloc(g.write_buf, g.write_size) ;
+    }
+    
+    memcpy(((char*)g.write_buf)+g.write_pos, buf, len) ;
+    g.write_pos += len ;
 }
 
 /* Take note to first write the ML length, and then
@@ -577,12 +587,11 @@ read_view_id(ce_view_id_t *vid)
 }
 
 static ce_view_id_t*
-read_view_id_array(void)
+read_view_id_array(int num)
 {
     ce_view_id_t *a;
-    int i, num;
+    int i;
 
-    num = read_int ();
     if (0 == num) return NULL;
     a = (ce_view_id_t*) ce_malloc(num * sizeof(ce_view_id_t));
     memset(a, 0, sizeof(num * sizeof(ce_view_id_t)));
@@ -643,7 +652,7 @@ cb_View(ce_ctx_t *s)
     TRACE("\t key:"); 
     vs->num_ids = read_int ();
     TRACE_D("\t num_ids:", vs->num_ids); 
-    vs->prev_ids = read_view_id_array ();
+    vs->prev_ids = read_view_id_array (vs->num_ids);
     read_string (vs->params, CE_PARAMS_MAX_SIZE);
     TRACE2("\t params: ", vs->params);
     vs->uptime = read_time ();
@@ -711,15 +720,14 @@ static void
 cb_Block(ce_ctx_t *s)
 {
     (s->intf->block)(s->intf->env);
-    s->blocked = 1;
 
-    /* Write the block_ok downcall.
-     */
-    mt_lock();
-    begin_write(); {
-	write_hdr(s,DN_BLOCK_OK) ;
-    } end_write();
-    mt_unlock();
+    if (!s->intf->async_block_ok) {
+	/* Write the block_ok downcall.
+	 */
+	ce_st_BlockOk(s->intf);
+    } else {
+	// The application is suppose to send the BlockOk command later on.
+    }
 }
 
 static void
@@ -832,15 +840,17 @@ ce_st_RmvSockRecv(CE_SOCKET sock)
 void 
 ce_st_Init(int argc, char *argv[])
 {
-//    ce_trace(NAME, "ce_Init");
+    ce_trace(NAME, "ce_Init");
 
     /* Process command line arguments. 
      */
     ce_process_args(argc, argv);
     
     /* Start Ensemble in an outboard mode.
-     */ 
+     */
+    ce_trace(NAME, "tcp_init(");
     ens_tcp_init(0, argv, &g.fd);
+    ce_trace(NAME, ")");
 
     g.initialized = 1;
     g.ctx_tbl = ce_ctx_tbl_t_create();
@@ -887,7 +897,7 @@ lookup_context(ce_ctx_id_t id)
 /* Join a group.  The group context is returned in *contextp.  
  */
 void
-ce_st_Join(ce_jops_t *ops,	ce_appl_intf_t *c_appl) 
+ce_st_Join(ce_jops_t *ops, ce_appl_intf_t *c_appl) 
 {
     ce_ctx_t *ctx ;
 
@@ -897,6 +907,11 @@ ce_st_Join(ce_jops_t *ops,	ce_appl_intf_t *c_appl)
 	printf("CE_OUTBOARD: must initialise Ensemble.");
 	exit(1);
     }
+    /* Pass the async_block_ok flag into the c_appl state. This will allow
+     * using it in the next uses of the endpoint. 
+     */
+    c_appl->async_block_ok = ops->async_block_ok ;
+    
     begin_write(); {   
 	/* Allocate a new group context 
 	 * Initialize the group record.
@@ -1135,6 +1150,28 @@ ce_st_Rekey(ce_appl_intf_t *c_appl)
     begin_write(); {
 	write_hdr(s,DN_REKEY);
     } end_write();
+}
+
+void
+ce_st_BlockOk(ce_appl_intf_t *c_appl)
+{
+    ce_ctx_t *s = lookup_context(c_appl->id);
+
+    check_valid(c_appl, "ce_st_BlockOk");
+
+//    if (!c_appl->async_block_ok)
+//	ce_panic("the application sent a BlockOk although it hasn't joined with an async_block_ok flag");
+    
+    /* Can't set the blocked flag twice. At this point we know that we are not
+     * blocked. 
+     */
+    s->blocked = 1;
+
+    mt_lock();
+    begin_write(); {
+	write_hdr(s,DN_BLOCK_OK) ;
+    } end_write();
+    mt_unlock();
 }
 
 /*****************************************************************************/

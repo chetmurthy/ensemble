@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* LAYER.ML *)
 (* Author: Mark Hayden, 4/95 *)
 (**************************************************************)
@@ -75,10 +85,7 @@ type state = {
   switch	   : Time.t saved ;
   exchange         : (Addr.set -> bool) option ;
   secchan          : (Endpt.id * Security.cipher) list ref ; (* State for SECCHAN *)
-  tree             : Tree.z ref ;          (* State for OPTREKEY *)
-  key_list         : (Key.t * Security.cipher option) list ref ; (* State for REALKEYS *)
   dyn_tree         : Mrekey_dt.t ref ;   (* State for REKEY_DT *)
-  diam             : Diamond.appl_state option ref ; (* State for REKEY_DIAM *)
   dh_key           : Shared.DH.key option ref ;
   next_cleanup     : Time.t ref
 }
@@ -88,10 +95,7 @@ let new_state interface = {
   exchange      = None ;
   switch	= ref None ;
   secchan       = ref [] ;
-  tree          = ref Tree.zempty ;
-  key_list      = ref [] ;
   dyn_tree      = ref Mrekey_dt.empty ;
-  diam          = ref None ;
   dh_key        = ref None ;
   next_cleanup  = ref Time.zero
 }
@@ -101,10 +105,7 @@ let set_exchange exchange s = {
   exchange      = exchange ;
   switch	= s.switch ;
   secchan       = s.secchan ;
-  tree          = s.tree ;
-  key_list      = s.key_list ;
   dyn_tree      = s.dyn_tree ;
-  diam          = s.diam ;
   dh_key        = s.dh_key ;
   next_cleanup  = s.next_cleanup
 }

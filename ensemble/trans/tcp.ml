@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* TCP.ML *)
 (* Author: Mark Hayden, 7/96 *)
 (**************************************************************)
@@ -63,8 +73,13 @@ let domain alarm =
   in
       
   let nconns = ref 0 in
-  let host = Hsys.gethost () in
-  let (server, port) = init (Hsys.inet_any()) in
+
+  let bind_addr = 
+    match Arge.get Arge.host_ip with
+      | None -> Hsys.inet_any()
+      | Some host -> Arge.inet_of_string Arge.host_ip host
+  in
+  let (server, port) = init bind_addr in
 
   let break c =
     log (fun () -> "breaking connection") ;
@@ -161,6 +176,13 @@ let domain alarm =
       failwith "error occurred while accepting"
   in
 
+  let host = Hsys.gethost () in
+
+  let host = 
+    match Arge.get Arge.host_ip with
+      | None -> Hsys.gethost () 
+      | Some host -> Arge.inet_of_string Arge.host_ip host
+  in
   let addr = Addr.TcpA(host,port) in
   let addr _ = addr in
 

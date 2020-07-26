@@ -1,5 +1,15 @@
 #*************************************************************#
 #
+#   Ensemble, 1_42
+#   Copyright 2003 Cornell University, Hebrew University
+#           IBM Israel Science and Technology
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+#*************************************************************#
+#
 # MAKEFILE: root Ensemble Makefile
 #
 # Author: Ohad Rodeh  12\2001
@@ -34,11 +44,11 @@ INCLUDE =\
 
 
 LIBS =\
-	libenscore$(CMA)\
-	libensmin$(CMA)\
-	libensrest$(CMA)\
-	ensemble$(CMI)\
-	ensemble.mli 
+	$(ENSLIB)\libenscore$(CMA)\
+	$(ENSLIB)\libensmin$(CMA)\
+	$(ENSLIB)\libensrest$(CMA)\
+	$(ENSLIB)\ensemble$(CMI)\
+	$(ENSLIB)\ensemble.mli 
 
 #*************************************************************#
 
@@ -50,14 +60,6 @@ all : $(LIBS)
 opt : 
 	$(MAKE_BASE) -f Makefile.top.nt OPT=yes all
 
-# Install Ensemble stuff
-install: 
-	$(CP) libenscore.* 	$(ENSLIB)
-	$(CP) libensmin.* 	$(ENSLIB)
-	$(CP) libensrest.*  	$(ENSLIB)
-	$(CP) ensemble$(CMI)   	$(ENSLIB)
-	$(CP) ensemble.mli     	$(ENSLIB)
-
 # Make and install Tk library
 tk : libhtk$(CMA)
 	$(CP) trans\htk$(CMI) $(ENSLIB)
@@ -68,21 +70,21 @@ tk : libhtk$(CMA)
 #
 #Special tools
 
-$(EMRG): tools\emrg.ml 
+$(ENSBIN)\$(EMRG): tools\emrg.ml 
 	ocamlc -c -I tools tools\emrg.ml 
-	ocamlc -o $(EMRG) tools\emrg.cmo
+	ocamlc -o $(ENSBIN)\$(EMRG) tools\emrg.cmo
 
 #*************************************************************#
 # Make libraries and global interface files.
 
-libenscore$(CMA): $(ENSCOREOBJ)
-	$(MLLIBR) -o libenscore$(CMA) -linkall $(ENSCOREOBJ)
+$(ENSLIB)\libenscore$(CMA): $(ENSCOREOBJ)
+	$(MLLIBR) -o $(ENSLIB)\libenscore$(CMA) -linkall $(ENSCOREOBJ)
 
-libensmin$(CMA): $(ENSMINOBJ)
-	$(MLLIBR) -o libensmin$(CMA) -linkall $(ENSMINOBJ)
+$(ENSLIB)\libensmin$(CMA): $(ENSMINOBJ)
+	$(MLLIBR) -o $(ENSLIB)\libensmin$(CMA) -linkall $(ENSMINOBJ)
 
-libensrest$(CMA): $(ENSRESTOBJ)
-	$(MLLIBR) -o libensrest$(CMA) -linkall $(ENSRESTOBJ)
+$(ENSLIB)\libensrest$(CMA): $(ENSRESTOBJ)
+	$(MLLIBR) -o $(ENSLIB)\libensrest$(CMA) -linkall $(ENSRESTOBJ)
 
 libhtk$(CMA): trans\htk.ml trans\htk.mli
 	$(ENSCOMP) -c -I $(ENSLIB) -I +labltk trans\htk.mli
@@ -93,19 +95,19 @@ libhtk$(CMA): trans\htk.ml trans\htk.mli
 # The obj\ensemble.ml* files are generated from exported .mli
 # files
 
-ensemble.mli: socket\socket$(CMI) $(ENSEMBLEMLI) $(EMRG)
+$(ENSLIB)\ensemble.mli: $(ENSLIB)\socket$(CMI) $(ENSEMBLEMLI) $(ENSBIN)\$(EMRG)
 	$(RM) ensemble.mli
-	$(ENSROOT)\$(EMRG) -mli $(ENSEMBLEMLI) -o ensemble.mli
+	$(ENSBIN)\$(EMRG) -mli $(ENSEMBLEMLI) -o $(ENSLIB)\ensemble.mli
 
-ensemble.ml: socket\socket$(CMI) $(ENSEMBLEMLI) $(EMRG)
+$(ENSLIB)\ensemble.ml: socket\socket$(CMI) $(ENSEMBLEMLI) $(ENSBIN)\$(EMRG)
 	$(RM) ensemble.ml
-	$(ENSROOT)\$(EMRG) -ml $(ENSEMBLEMLI) -o ensemble.ml
+	$(ENSBIN)\$(EMRG) -ml $(ENSEMBLEMLI) -o $(ENSLIB)\ensemble.ml
 
-ensemble$(CMI): ensemble.mli 
-	$(ENSCOMP) -c ensemble.mli
+$(ENSLIB)\ensemble$(CMI): $(ENSLIB)\ensemble.mli 
+	$(ENSCOMP) -c $(ENSLIB)\ensemble.mli
 
-ensemble$(CMO): ensemble$(CMI) ensemble.ml ensemble.mli 
-	$(ENSCOMP) -c $(INCLUDE) ensemble.ml
+$(ENSLIB)\ensemble$(CMO): $(ENSLIB)\ensemble$(CMI) $(ENSLIB)\ensemble.ml $(ENSLIB)\ensemble.mli 
+	$(ENSCOMP) -c $(INCLUDE) $(ENSLIB)\ensemble.ml
 
 #*************************************************************#
 

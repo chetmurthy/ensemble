@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_OUTBOARD_C_MT.C */
 /* Author: Ohad Rodeh 03/2002 */
 /**************************************************************/
@@ -106,46 +116,6 @@ destroy_mt_env(mt_env_t *e)
 
 /**************************************************************/
 
-/* Unsafe, you need to take g.sema first. 
- */
-static void
-_check_pending(void)
-{
-    int i;
-    ce_mt_action_t *a;
-
-    TRACE("_check_pending");
-    if (g.req == 1
-	|| g.q->len > 0) {
-	/* Dispatch all pending events. 
-	 */
-	for(i=0; i<g.q->len; i++){
-	    a = (ce_mt_action_t *) &(g.q->arr[i]);
-	    switch (a->type){
-	    case MT_ADDSOCKRECV:
-		ce_st_AddSockRecv(a->u.add_sock.socket,
-				     a->u.add_sock.handler, a->u.add_sock.env);
-		ce_sema_Inc(g.wait_AddSockRecv);
-		break;
-	    case MT_RMVSOCKRECV:
-		ce_st_RmvSockRecv(a->u.rmv_sock.socket);
-		ce_sema_Inc(g.wait_RmvSockRecv);
-		break;
-	    default:
-		ce_panic("OUTBOARD_MT: inserted a bad event into the queue");
-		break;
-	    }
-	}
-	/* cleanup
-	 */
-	ce_mt_queue_clear (g.q);
-	g.req = 0;
-    }
-}
-
-/**************************************************************/
-
-
 static void
 mt_exit(ce_env_t env)
 {
@@ -223,50 +193,7 @@ ce_mt_create_intf(ce_env_t env,
 				mt_block, mt_cast, mt_send, mt_heartbeat);
 }
 
-/* Send one byte on the socket to Ensemble. This call is unsafe, must
- * be protected by taking g.sema.
- */
-void
-_req_attention(void)
-{
-    int result = 0;
-    char buf[1];
-    
-//    printf("in_heartbeat=%d, g.req=%d\n", g.in_heartbeat, g.req);
-    if (g.req == 0) {
-	result = sendto(g.sock, buf, 1, 0, (struct sockaddr *) &g.to,
-			sizeof(g.to));
-	
-	if (result <= 0)
-	    ce_panic("socket is broken\n");
-	g.req = 1;
-    }
-}
-
 /**************************************************************/
-static void
-sock_handler(void *dummy)
-{
-    char buf[1];
-    
-    TRACE("sock_handler");
-    /* Receive one byte, this should be thread-safe.
-     */
-    recv(g.sock, (char*)&buf, 1, 0);
-    
-    if (g.checking == 1) {
-	TRACE("already checking pending");
-	return;
-    }
-    g.checking = 1;
-    
-    ce_lck_Lock(g.mutex);
-    _check_pending();
-    ce_lck_Unlock(g.mutex);
-    
-    g.checking = 0;
-}
-
 /* The code running inside the Ensemble thread. Listen to a socket, when
  * a byte arrives:
  * (1) grab the global semaphore
@@ -277,8 +204,6 @@ static void
 ens_thread (void *dummy)
 {
     ce_trace(NAME, "thread:(");
-    ce_st_AddSockRecv((CE_SOCKET)g.sock, sock_handler, NULL);
-    ce_trace(NAME, "thread:.");
     ce_st_Main_loop();
     ce_trace(NAME, "thread:)");
 }
@@ -449,30 +374,19 @@ ce_mt_MLUncaughtException(void (*handler)(char *info))
 void
 ce_mt_AddSockRecv(CE_SOCKET socket, ce_handler_t handler, ce_env_t env)
 {
-    ce_lck_Lock(g.mutex);
-    ce_mt_appl_AddSockRecv(g.q, socket, handler, env);
-    _req_attention();
-    ce_lck_Unlock(g.mutex);
-
-    /* Go to sleep until ce_AddSockRecv is actually invoked.
-     */
-    ce_sema_Dec(g.wait_AddSockRecv);
+    ce_panic ("ce_AddSockRecv is not supported for the multi-threaded version\n");
 }
 
 /*! Remove a socket from the list Ensemble listens to.
+ *
+ * Illegal in the multi-threaded version.
+ * 
  *@param socket The socket to remove. 
  */
 void
 ce_mt_RmvSockRecv(CE_SOCKET socket)
 {
-    ce_lck_Lock(g.mutex);
-    ce_mt_appl_RmvSockRecv(g.q, socket);
-    _req_attention();
-    ce_lck_Unlock(g.mutex);
-
-    /* Go to sleep until ce_RmvSockRecv is actually invoked.
-     */
-    ce_sema_Dec(g.wait_RmvSockRecv);
+    ce_panic ("ce_RmvSockRecv is not supported for the multi-threaded version\n");
 }
 
 /**************************************************************/

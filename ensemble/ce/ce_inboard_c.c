@@ -1,3 +1,13 @@
+/**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
 /****************************************************************************/
 /* CE_INBOARD_C.C */
 /* Author:  Ohad Rodeh, Aug. 2001. */
@@ -29,6 +39,12 @@ ce_pool_t *ce_st_get_allocation_pool(void)
 {
     return pool;
 }
+
+// Forward declaration
+static void ce_BlockOk_full(
+    ce_appl_intf_t *c_appl,
+    ce_bool_t flag
+    );
 /****************************************************************************/
 
 value ce_actions_of_queue(ce_queue_t *q)
@@ -89,12 +105,11 @@ value ce_Install_cbd (value c_appl_v, value ls_v, value vs_v)
     c_appl->req_heartbeat = 1;
     c_appl->blocked = 0;
     if (c_appl->joining == 1) c_appl->joining = 0;
-    TRACE("."); 
     (c_appl->install) (c_appl->env, ls, vs);
-    TRACE(".");
     ce_view_full_free(ls,vs);
     c_appl->req_heartbeat = 0;
-    TRACE(")"); 
+    TRACE(")");
+
     return (ce_actions_of_queue(c_appl->aq));
 }
 
@@ -129,10 +144,23 @@ value ce_Block_cbd(value c_appl_v)
     
     assert(check_queue(c_appl->aq));
 //    TRACE("ce_Block_cbd"); 
+
     c_appl->req_heartbeat = 1;
     (c_appl->block) (c_appl->env);
     c_appl->req_heartbeat = 0;
-    c_appl->blocked = 1;
+
+    /* The application is going to send a BlockOk by itself. We tell
+     * Ensemble to wait for the application to do so.
+     *
+     * Note: in this case, it is still legal for the application to
+     * send messages.
+
+     */
+    if (c_appl->async_block_ok
+	&& 0 == c_appl->blocked) 
+	ce_BlockOk_full(c_appl, 0);
+    else
+	c_appl->blocked = 1;
 
     return (ce_actions_of_queue(c_appl->aq));
 }
@@ -406,6 +434,34 @@ void ce_st_ChangeProperties(
     ce_action_properties(pool, c_appl->aq, properties);
 }
 
+/* The application is now blocked
+ */
+void ce_st_BlockOk(
+    ce_appl_intf_t *c_appl
+    )
+{
+    if (!c_appl->async_block_ok)
+	ce_panic("the application sent a BlockOk although it hasn't joined with an async_block_ok flag");
+    if (c_appl->blocked)
+	ce_panic("application is already blocked. Second BlockOk.");
+    check_valid(c_appl);
+    ce_st_check_heartbeat(c_appl);
+    c_appl->blocked = 1;
+
+    TRACE("block_ok");
+    ce_action_block_ok(pool, c_appl->aq, 1);
+}
+
+
+static void ce_BlockOk_full(
+    ce_appl_intf_t *c_appl,
+    ce_bool_t flag
+    )
+{
+    TRACE("block_ok_full");
+    ce_action_block_ok(pool, c_appl->aq, flag);
+}
+
 /*****************************************************************************/
 /* Listening to sockets. 
  */
@@ -489,6 +545,11 @@ ce_st_Join(ce_jops_t *jops, ce_appl_intf_t *c_appl)
     
     check_valid(c_appl);
     TRACE("ce_st_Join");
+
+    /* Pass the async_block_ok flag into the c_appl state. This will allow
+     * using it in the next uses of the endpoint. 
+     */
+    c_appl->async_block_ok = jops->async_block_ok ;
     c_appl->joining = 1;
     if (ce_join_v == NULL){
 	printf("Main loop callback not initialized yet. You need to do"

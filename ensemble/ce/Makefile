@@ -1,5 +1,15 @@
 #*************************************************************#
 #
+#   Ensemble, 1_42
+#   Copyright 2003 Cornell University, Hebrew University
+#           IBM Israel Science and Technology
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+#*************************************************************#
+#
 # Main CE Makefile
 #
 # Author: Ohad Rodeh 11/2001
@@ -96,27 +106,22 @@ MLIOBJ =\
 	ce_util$(CMI)
 
 #*************************************************************#
-DEMOS_CLEAN = \
-	ce_perf ce_rand ce_fifo ce_mtalk \
-	ce_perfo ce_rando ce_fifoo ce_mtalko \
-	ce_perf_mt ce_mtalk_mt ce_rand_mt ce_rando_mt \
-	*.exe ce_outboard
 
 DEMOS = \
-	ce_rand$(EXE) \
-	ce_perf$(EXE) \
-	ce_fifo$(EXE) \
-	ce_mtalk$(EXE) \
-	ce_rand_mt$(EXE) \
-	ce_perf_mt$(EXE) \
-	ce_mtalk_mt$(EXE) 
+	$(ENSBIN)/ce_rand$(EXE) \
+	$(ENSBIN)/ce_perf$(EXE) \
+	$(ENSBIN)/ce_fifo$(EXE) \
+	$(ENSBIN)/ce_mtalk$(EXE) \
+	$(ENSBIN)/ce_rand_mt$(EXE) \
+	$(ENSBIN)/ce_perf_mt$(EXE) \
+	$(ENSBIN)/ce_mtalk_mt$(EXE)
 
 DEMOSO = \
-	ce_mtalko$(EXE) \
-	ce_rando$(EXE) \
-	ce_perfo$(EXE) \
-	ce_fifoo$(EXE) \
-	ce_rando_mt$(EXE) 
+	$(ENSBIN)/ce_mtalko$(EXE) \
+	$(ENSBIN)/ce_rando$(EXE) \
+	$(ENSBIN)/ce_perfo$(EXE) \
+	$(ENSBIN)/ce_fifoo$(EXE) \
+	$(ENSBIN)/ce_rando_mt$(EXE) 
 
 #*************************************************************#
 # For windows, we use only static libraries. This is due to the
@@ -127,9 +132,12 @@ DEMOSO = \
 #	gcc -o tst tst.c -lpthread
 
 all: \
-	libce$(CE_LIB) libceo$(CE_LIB) \
-	libce_mt$(CE_LIB) libceo_mt$(CE_LIB) \
-	ce_outboard$(EXE) $(DEMOSO) $(DEMOS)
+	$(ENSLIB)/libce$(CE_LIB) $(ENSLIB)/libceo$(CE_LIB) \
+	$(ENSLIB)/libce_mt$(CE_LIB) $(ENSLIB)/libceo_mt$(CE_LIB) \
+	$(ENSBIN)/ce_outboard$(EXE) \
+	$(ENSLIB)/ce.h $(ENSLIB)/ce_threads.h \
+	$(DEMOSO) \
+	$(DEMOS)
 
 opt : 
 	$(MAKE) OPT=yes all
@@ -155,19 +163,19 @@ ce$(OBJ): $(MLIOBJ) $(MLOBJ) $(ENSLIBS)
 #*************************************************************#
 
 # Put all the libraries, ML code, and runtime into one library
-libce$(SO): $(INBOARD_OBJ) ce$(OBJ)
+$(ENSLIB)/libce$(SO): $(INBOARD_OBJ) ce$(OBJ)
 	$(RM) ce.c
-	$(MKSHRLIB) $(MKSHRLIBO)libce$(SO) \
+	$(MKSHRLIB) $(MKSHRLIBO)$(ENSLIB)/libce$(SO) \
 	  ce$(OBJ)\
 	  $(INBOARD_OBJ)\
-	  ../lib/$(PLATFORM)/libsock$(ARC)\
+	  $(ENSROOT)/lib/$(PLATFORM)/libsock$(ARC)\
 	  $(OCAML_LIB)/libunix$(ARCS)\
 	  $(MLRUNTIME) \
 	$(CE_LINK_FLAGS)
 
 # Put C outboard objects into one library
-libceo$(SO): $(OUTBOARD_OBJ)
-	$(MKSHRLIB) $(MKSHRLIBO)libceo$(SO) \
+$(ENSLIB)/libceo$(SO): $(OUTBOARD_OBJ)
+	$(MKSHRLIB) $(MKSHRLIBO)$(ENSLIB)/libceo$(SO) \
 	  $(OUTBOARD_OBJ)\
 	$(CE_LINK_FLAGS)
 
@@ -176,153 +184,137 @@ libceo$(SO): $(OUTBOARD_OBJ)
 ##
 
 # Put all the libraries, ML code, and runtime into one library
-libce_mt$(SO): $(INBOARD_MT_OBJ) ce$(OBJ)
+$(ENSLIB)/libce_mt$(SO): $(INBOARD_MT_OBJ) ce$(OBJ)
 	$(RM) ce.c
-	$(MKSHRLIB) $(MKSHRLIBO)libce_mt$(SO) \
+	$(MKSHRLIB) $(MKSHRLIBO)$(ENSLIB)/libce_mt$(SO) \
 	  ce$(OBJ)\
 	  $(INBOARD_MT_OBJ)\
-	  ../lib/$(PLATFORM)/libsock$(ARC)\
+	  $(ENSROOT)/lib/$(PLATFORM)/libsock$(ARC)\
 	  $(OCAML_LIB)/libunix$(ARCS)\
 	  $(MLRUNTIME)\
-	$(CE_LINK_FLAGS)
+	$(CE_LINK_FLAGS) $(CE_THREAD_LIB)
 
 # Put C outboard objects into one library
-libceo_mt$(SO): $(OUTBOARD_MT_OBJ)
-	$(MKSHRLIB) $(MKSHRLIBO)libceo_mt$(SO)\
+$(ENSLIB)/libceo_mt$(SO): $(OUTBOARD_MT_OBJ)
+	$(MKSHRLIB) $(MKSHRLIBO)$(ENSLIB)/libceo_mt$(SO)\
 	  $(OUTBOARD_MT_OBJ) \
-	$(CE_LINK_FLAGS)
+	$(CE_LINK_FLAGS) $(CE_THREAD_LIB)
 
 #*************************************************************#
 # static libraries for the above
 #
-libce$(ARC): $(INBOARD_OBJ) ce$(OBJ)
+$(ENSLIB)/libce$(ARC): $(INBOARD_OBJ) ce$(OBJ)
 	$(RM) ce.c
-	$(PARTIALLD) $(PARTIALLDO) libce$(OBJ) \
+	$(PARTIALLD) $(PARTIALLDO) $(ENSLIB)/libce$(OBJ) \
 	  ce$(OBJ)\
 	  $(INBOARD_OBJ)\
 	  ../lib/$(PLATFORM)/libsock$(ARC)\
 	  $(OCAML_LIB)/libunix$(ARCS)\
 	  $(MLRUNTIME)
-	$(MKLIB) $(MKLIBO)libce$(ARC) libce$(OBJ) 
+	$(MKLIB) $(MKLIBO)$(ENSLIB)/libce$(ARC) libce$(OBJ) 
 	$(RANLIB) libce$(ARC)
 
-libceo$(ARC): $(OUTBOARD_OBJ)
-	$(PARTIALLD) $(PARTIALLDO) libceo$(OBJ) \
+$(ENSLIB)/libceo$(ARC): $(OUTBOARD_OBJ)
+	$(PARTIALLD) $(PARTIALLDO) $(ENSLIB)/libceo$(OBJ) \
 	  $(OUTBOARD_OBJ) 
-	$(MKLIB) $(MKLIBO)libceo$(ARC) libceo$(OBJ)
-	$(RANLIB) libceo$(ARC)
+	$(MKLIB) $(MKLIBO)$(ENSLIB)/libceo$(ARC) libceo$(OBJ)
+	$(RANLIB) $(ENSLIB)/libceo$(ARC)
 
-libce_mt$(ARC): $(INBOARD_MT_OBJ) ce$(OBJ)
+$(ENSLIB)/libce_mt$(ARC): $(INBOARD_MT_OBJ) ce$(OBJ)
 	$(RM) ce.c
-	$(PARTIALLD) $(PARTIALLDO) libce_mt$(OBJ) \
+	$(PARTIALLD) $(PARTIALLDO) $(ENSLIB)/libce_mt$(OBJ) \
 	  ce$(OBJ)\
 	  $(INBOARD_MT_OBJ)\
 	  ../lib/$(PLATFORM)/libsock$(ARC)\
 	  $(OCAML_LIB)/libunix$(ARCS)\
 	  $(MLRUNTIME)
-	$(MKLIB) $(MKLIBO)libce_mt$(ARC) libce_mt$(OBJ)
-	$(RANLIB) libce_mt$(ARC)
+	$(MKLIB) $(MKLIBO)$(ENSLIB)/libce_mt$(ARC) libce_mt$(OBJ)
+	$(RANLIB) $(ENSLIB)/libce_mt$(ARC)
 
-libceo_mt$(ARC): $(OUTBOARD_MT_OBJ)
-	$(PARTIALLD) $(PARTIALLDO) libceo_mt$(OBJ) \
+$(ENSLIB)/libceo_mt$(ARC): $(OUTBOARD_MT_OBJ)
+	$(PARTIALLD) $(PARTIALLDO) $(ENSLIB)/libceo_mt$(OBJ) \
 	  $(OUTBOARD_MT_OBJ)
-	$(MKLIB) $(MKLIBO)libceo_mt$(ARC) libceo_mt$(OBJ)
-	$(RANLIB) libceo_mt$(ARC)
+	$(MKLIB) $(MKLIBO)l$(ENSLIB)/ibceo_mt$(ARC) libceo_mt$(OBJ)
+	$(RANLIB) $(ENSLIB)/libceo_mt$(ARC)
 
 #*************************************************************#
 
 # Generate the outboard executable
-ce_outboard$(EXE): $(MLIOBJ) ce_util$(CMO) ce_outboard$(CMO) 
-	$(MLLINK) -o ce_outboard$(EXE) \
+$(ENSBIN)/ce_outboard$(EXE): $(MLIOBJ) ce_util$(CMO) ce_outboard$(CMO) 
+	$(MLLINK) -o $(ENSBIN)/ce_outboard$(EXE) \
 	$(LIBSYS) $(ENSCONF) ce_util$(CMO) ce_outboard$(CMO) 
 
 
-ce_rando$(EXE): ce_rand$(OBJ) ce_md5$(OBJ) libceo$(CE_LIB)
-	$(CC) $(CFLAGS) -o ce_rando$(EXE)\
+$(ENSBIN)/ce_rando$(EXE): ce_rand$(OBJ) ce_md5$(OBJ) $(ENSLIB)/libceo$(CE_LIB)
+	$(CC) $(CFLAGS) -o $(ENSBIN)/ce_rando$(EXE)\
 	  ce_rand$(OBJ)\
 	  ce_md5$(OBJ)\
-	  libceo$(CE_LNKLIB) $(CE_LINK_FLAGS)
+	  $(LIB_PATH)$(ENSLIB) $(LIB_PREF)ceo$(LIB_SUFF) $(CE_LINK_FLAGS)
 
-ce_rando_mt$(EXE):  ce_rand_mt$(OBJ) ce_md5$(OBJ) libceo_mt$(CE_LIB)
-	$(CC) $(CFLAGS) -o ce_rando_mt$(EXE)\
+$(ENSBIN)/ce_rando_mt$(EXE):  ce_rand_mt$(OBJ) ce_md5$(OBJ) $(ENSLIB)/libceo_mt$(CE_LIB)
+	$(CC) $(CFLAGS) -o $(ENSBIN)/ce_rando_mt$(EXE)\
 	  ce_rand_mt$(OBJ)\
 	  ce_md5$(OBJ)\
-	  libceo_mt$(CE_LNKLIB) $(CE_LINK_FLAGS)
+	  $(LIB_PATH)$(ENSLIB) $(LIB_PREF)ceo_mt$(LIB_SUFF) $(CE_LINK_FLAGS) $(CE_THREAD_LIB)
 
-ce_mtalko$(EXE):  ce_mtalk$(OBJ) libceo$(CE_LIB)
-	$(CC) $(CFLAGS) -o ce_mtalko$(EXE)\
+$(ENSBIN)/ce_mtalko$(EXE):  ce_mtalk$(OBJ) $(ENSLIB)/libceo$(CE_LIB)
+	$(CC) $(CFLAGS) -o $(ENSBIN)/ce_mtalko$(EXE)\
 	  ce_mtalk$(OBJ)\
-	  libceo$(CE_LNKLIB) $(CE_LINK_FLAGS)
+	  $(LIB_PATH)$(ENSLIB) $(LIB_PREF)ceo$(LIB_SUFF) $(CE_LINK_FLAGS) 
 
-ce_fifoo$(EXE):  ce_fifo$(OBJ) libceo$(CE_LIB)
-	$(CC) $(CFLAGS) -o ce_fifoo$(EXE)\
+$(ENSBIN)/ce_fifoo$(EXE):  ce_fifo$(OBJ) $(ENSLIB)/libceo$(CE_LIB)
+	$(CC) $(CFLAGS) -o $(ENSBIN)/ce_fifoo$(EXE)\
 	  ce_fifo$(OBJ)\
-	  libceo$(CE_LNKLIB) $(CE_LINK_FLAGS)
+	  $(LIB_PATH)$(ENSLIB) $(LIB_PREF)ceo$(LIB_SUFF) $(CE_LINK_FLAGS)
 
-ce_perfo$(EXE):  ce_perf$(OBJ) libceo$(CE_LIB)
-	$(CC) $(CFLAGS) -o ce_perfo$(EXE)\
+$(ENSBIN)/ce_perfo$(EXE):  ce_perf$(OBJ) $(ENSLIB)/libceo$(CE_LIB)
+	$(CC) $(CFLAGS) -o $(ENSBIN)/ce_perfo$(EXE)\
 	  ce_perf$(OBJ)\
-	  libceo$(CE_LNKLIB) $(CE_LINK_FLAGS)
+	  $(LIB_PATH)$(ENSLIB) $(LIB_PREF)ceo$(LIB_SUFF) $(CE_LINK_FLAGS)
 
-ce_rand$(EXE):  ce_rand$(OBJ) ce_md5$(OBJ) libce$(CE_LIB)
-	$(CC) $(CFLAGS) -o ce_rand$(EXE)\
+$(ENSBIN)/ce_rand$(EXE):  ce_rand$(OBJ) ce_md5$(OBJ) $(ENSLIB)/libce$(CE_LIB)
+	$(CC) $(CFLAGS) -o $(ENSBIN)/ce_rand$(EXE)\
 	  ce_rand$(OBJ)\
 	  ce_md5$(OBJ)\
-	  libce$(CE_LNKLIB) $(CE_LINK_FLAGS)
+	  $(LIB_PATH)$(ENSLIB) $(LIB_PREF)ce$(LIB_SUFF) $(CE_LINK_FLAGS)
 
-ce_mtalk$(EXE):  ce_mtalk$(OBJ) libce$(CE_LIB)
-	$(CC) $(CFLAGS) -o ce_mtalk$(EXE)\
+$(ENSBIN)/ce_mtalk$(EXE):  ce_mtalk$(OBJ) $(ENSLIB)/libce$(CE_LIB)
+	$(CC) $(CFLAGS) -o $(ENSBIN)/ce_mtalk$(EXE)\
 	  ce_mtalk$(OBJ)\
-	  libce$(CE_LNKLIB) $(CE_LINK_FLAGS)
+	  $(LIB_PATH)$(ENSLIB) $(LIB_PREF)ce$(LIB_SUFF) $(CE_LINK_FLAGS)
 
-ce_fifo$(EXE):  ce_fifo$(OBJ) libce$(CE_LIB)
-	$(CC) $(CFLAGS) -o ce_fifo$(EXE)\
+$(ENSBIN)/ce_fifo$(EXE):  ce_fifo$(OBJ) $(ENSLIB)/libce$(CE_LIB)
+	$(CC) $(CFLAGS) -o $(ENSBIN)/ce_fifo$(EXE)\
 	  ce_fifo$(OBJ)\
-	  libce$(CE_LNKLIB) $(CE_LINK_FLAGS)
+	  $(LIB_PATH)$(ENSLIB) $(LIB_PREF)ce$(LIB_SUFF) $(CE_LINK_FLAGS)
 
-ce_perf$(EXE):  ce_perf$(OBJ) libce$(CE_LIB)
-	$(CC) $(CFLAGS) -o ce_perf$(EXE)\
+$(ENSBIN)/ce_perf$(EXE):  ce_perf$(OBJ) $(ENSLIB)/libce$(CE_LIB)
+	$(CC) $(CFLAGS) -o $(ENSBIN)/ce_perf$(EXE)\
 	  ce_perf$(OBJ)\
-	  libce$(CE_LNKLIB) $(CE_LINK_FLAGS)
+	  $(LIB_PATH)$(ENSLIB) $(LIB_PREF)ce$(LIB_SUFF) $(CE_LINK_FLAGS)
 
-
-ce_rand_mt$(EXE):  ce_rand_mt$(OBJ) ce_md5$(OBJ) libce_mt$(CE_LIB)
-	$(CC) $(CFLAGS) -o ce_rand_mt$(EXE)\
+$(ENSBIN)/ce_rand_mt$(EXE):  ce_rand_mt$(OBJ) ce_md5$(OBJ) $(ENSLIB)/libce_mt$(CE_LIB)
+	$(CC) $(CFLAGS) -o $(ENSBIN)/ce_rand_mt$(EXE)\
 	  ce_rand_mt$(OBJ)\
 	  ce_md5$(OBJ)\
-	  libce_mt$(CE_LNKLIB) $(CE_LINK_FLAGS)
+	  $(LIB_PATH)$(ENSLIB) $(LIB_PREF)ce_mt$(LIB_SUFF) $(CE_LINK_FLAGS) $(CE_THREAD_LIB)
 
-ce_mtalk_mt$(EXE):  ce_mtalk_mt$(OBJ) libce_mt$(CE_LIB)
-	$(CC) $(CFLAGS) -o ce_mtalk_mt$(EXE)\
+$(ENSBIN)/ce_mtalk_mt$(EXE):  ce_mtalk_mt$(OBJ) $(ENSLIB)/libce_mt$(CE_LIB)
+	$(CC) $(CFLAGS) -o $(ENSBIN)/ce_mtalk_mt$(EXE)\
 	  ce_mtalk_mt$(OBJ)\
-	  libce_mt$(CE_LNKLIB) $(CE_LINK_FLAGS)
+	  $(LIB_PATH)$(ENSLIB) $(LIB_PREF)ce_mt$(LIB_SUFF) $(CE_LINK_FLAGS) $(CE_THREAD_LIB)
 
-ce_perf_mt$(EXE):  ce_perf$(OBJ) libce_mt$(CE_LIB)
-	$(CC) $(CFLAGS) -o ce_perf_mt$(EXE)\
+$(ENSBIN)/ce_perf_mt$(EXE):  ce_perf$(OBJ) $(ENSLIB)/libce_mt$(CE_LIB)
+	$(CC) $(CFLAGS) -o $(ENSBIN)/ce_perf_mt$(EXE)\
 	  ce_perf$(OBJ)\
-	  libce_mt$(CE_LNKLIB) $(CE_LINK_FLAGS)
-
+	  $(LIB_PATH)$(ENSLIB) $(LIB_PREF)ce_mt$(LIB_SUFF) $(CE_LINK_FLAGS) $(CE_THREAD_LIB)
 
 #*************************************************************#
-# Get's around a difference between forall syntax between
-# WIN32 and Unix.
-#
-ifeq ("$(PLATFORM)" , "nt")
-install : 
-	$(CP) libce*.lib $(ENSLIB)
+$(ENSLIB)/ce.h : ce.h
 	$(CP) ce.h $(ENSLIB)
-	$(CP) ce_threads.h $(ENSLIB)
-	for %%d in ($(DEMOS) $(DEMOSO) ce_outboard$(EXE)) do ( $(CP) %%d $(ENSBIN) )
-	$(CP) libce*.exp $(ENSLIB)
-	$(CP) libce*.dll $(ENSLIB)
 
-else
-install : 
-	$(CP) libce*$(CE_LIB) $(ENSLIB)
-	$(CP) ce.h $(ENSLIB)
+$(ENSLIB)/ce_threads.h : ce_threads.h
 	$(CP) ce_threads.h $(ENSLIB)
-	$(CP) $(DEMOS) $(DEMOSO) ce_outboard$(EXE) $(ENSBIN)
-endif
 
 #*************************************************************#
 

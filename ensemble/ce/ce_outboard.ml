@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* CE_OUTBOARD.ML *)
 (* Author:  Ohad Rodeh, 03/2002 *)
 (* Based on code by Mark Hayden and Alexey Vaysburd *)
@@ -37,6 +47,7 @@ let write_view_id m (ltime,endpt) =
   write_endpt m endpt
 let write_view_id_array m = write_array m (write_view_id m)
 let write_timeval m time = 
+  log (fun () -> sprintf "sec10=%d  usec=%d" time.Hsys.sec10 time.Hsys.usec);
   write_int m time.Hsys.sec10;
   write_int m time.Hsys.usec
 
@@ -78,12 +89,15 @@ let marsh_upcall id msg =
 	  write_bool m c_vs.c_primary;
 	  write_bool m c_vs.c_groupd;
 	  write_bool m c_vs.c_xfer_view;
+	  log (fun () -> sprintf "c_key (len=%d)" (String.length c_vs.c_key));
 	  write_string m c_vs.c_key;
-	  write_int m c_vs.c_num_ids;
+	  log (fun () -> sprintf "view_id (len=%d)" (Array.length c_vs.c_prev_ids));
   	  write_view_id_array m c_vs.c_prev_ids ;
+	  log (fun () -> sprintf "params=%s" c_vs.c_params);
   	  write_string m c_vs.c_params ;
 	  let time = Time.to_timeval (Time.of_float c_vs.c_uptime) in
 	  write_timeval m time;
+	  log (fun () -> sprintf "c_view (%d)" (Array.length c_vs.c_view));
 	  write_string_array m c_vs.c_view;
 	  write_string_array m c_vs.c_address;
 	  Iovecl.empty
@@ -205,10 +219,12 @@ let dncall_unmarsh buf iovl =
     | 5 ->                              (* XferDone *)
 	Dncall(id,Control XferDone)
     | 6 ->				(* Protocol *)
+	log (fun () -> "Protocol");
 	let proto = read_string () in
 	Dncall(id,Control(Protocol(Proto.id_of_string proto)))
     | 7 ->				(* Property *)
 	let props = read_string () in
+	log (fun () -> sprintf "Property (%s)" props);
 	let protocol =
 	  let props = 
 	    let props_l = Util.string_split ":" props in

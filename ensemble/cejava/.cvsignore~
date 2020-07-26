@@ -1,7 +1,0 @@
-classes
-lib
-javadoc
-ensemble_Group.h
-*.o *.obj *.class
-Makefile.nt
-

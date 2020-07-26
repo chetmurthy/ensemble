@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_INBOARD_C_MT.C */
 /* Author: Ohad Rodeh 03/2002 */
 /**************************************************************/
@@ -38,8 +48,6 @@ static struct global {
     int checking ;
     ce_mt_queue_t *q;
     ce_mt_queue_t *internal_q;
-    ce_sema_t *wait_AddSockRecv;
-    ce_sema_t *wait_RmvSockRecv;
     struct sockaddr_in to;
     ce_pool_t *mt_pool;                /* The action pool used by MT */
     ce_pool_t *st_pool;                /* The action pool used by ST */
@@ -58,8 +66,6 @@ init_g (void)
     g.internal_q = ce_mt_queue_create ();
     g.req = 0;
     g.checking = 0;
-    g.wait_AddSockRecv = ce_sema_Create(1);
-    g.wait_RmvSockRecv = ce_sema_Create(1);
     g.mt_pool = ce_pool_create();
     g.st_pool = ce_st_get_allocation_pool();
     g.appl_env_list = ce_appl_env_list_create();
@@ -191,15 +197,8 @@ static void check_pending(void)
 	    ce_st_Join(a->u.join.ops, a->u.join.c_appl);
 	    ce_jops_free(a->u.join.ops);
 	    break;
-	case MT_ADDSOCKRECV:
-	    ce_st_AddSockRecv(a->u.add_sock.socket,
-			      a->u.add_sock.handler, a->u.add_sock.env);
-	    ce_sema_Inc(g.wait_AddSockRecv);
-	    break;
-	case MT_RMVSOCKRECV:
-	    ce_st_RmvSockRecv(a->u.rmv_sock.socket);
-	    ce_sema_Inc(g.wait_RmvSockRecv);
-	    break;
+	default:
+	    ce_panic("ce_inboard_mt: bad event type\n");
 	}
     }
     /* cleanup
@@ -546,6 +545,19 @@ ce_mt_ChangeProperties(ce_appl_intf_t *c_appl,  char *properties)
     req_attention();
 }
 
+
+void
+ce_mt_BlockOk(ce_appl_intf_t *c_appl)
+{
+    mt_env_t *env = c_appl->env;
+
+    TRACE("ce_BlockOk");
+    ce_lck_Lock(g.mutex);
+    ce_action_block_ok(g.mt_pool, env->mt_aq, 1);
+    ce_lck_Unlock(g.mutex);
+    req_attention();
+}
+
 /**************************************************************/
 /*!  Auxiliary functions.
  */
@@ -579,30 +591,19 @@ ce_mt_MLUncaughtException(void (*handler)(char *info))
 void
 ce_mt_AddSockRecv(CE_SOCKET socket, ce_handler_t handler, ce_env_t env)
 {
-    ce_lck_Lock(g.mutex);
-    ce_mt_appl_AddSockRecv(g.q, socket, handler, env);
-    ce_lck_Unlock(g.mutex);
-    req_attention();
-
-    /* Go to sleep until ce_AddSockRecv is actually invoked.
-     */
-    ce_sema_Dec(g.wait_AddSockRecv);
+    ce_panic ("ce_AddSockRecv is not supported for the multi-threaded version\n");
 }
 
 /*! Remove a socket from the list Ensemble listens to.
+ * 
+ * Illegal in the multi-threaded version.
+ * 
  *@param socket The socket to remove. 
  */
 void
 ce_mt_RmvSockRecv(CE_SOCKET socket)
 {
-    ce_lck_Lock(g.mutex);
-    ce_mt_appl_RmvSockRecv(g.q, socket);
-    ce_lck_Unlock(g.mutex);
-    req_attention();
-
-    /* Go to sleep until ce_RmvSockRecv is actually invoked.
-     */
-    ce_sema_Dec(g.wait_RmvSockRecv);
+    ce_panic ("ce_RmvSockRecv is not supported for the multi-threaded version\n");
 }
 
 /**************************************************************/

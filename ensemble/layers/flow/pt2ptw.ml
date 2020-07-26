@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* PT2PTW.ML : Point-to-point window-based flow control. *)
 (* Author: Mark Hayden, 3/96 *)
 (* Note that the window-cost of a message here is 1 more

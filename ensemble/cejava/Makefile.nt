@@ -1,5 +1,15 @@
 #*************************************************************#
 #
+#   Ensemble, 1_42
+#   Copyright 2003 Cornell University, Hebrew University
+#           IBM Israel Science and Technology
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+#*************************************************************#
+#
 # Main CEJAVA Makefile
 #
 # Author: Ohad Rodeh 7\2002
@@ -59,14 +69,15 @@ compileJni:
 
 buildLibrary:
 	$(MKDIR) lib
-	$(MKSHRLIB) $(MKSHRLIBO)$(LIBCEJAVA)$(SO) ensemble_Ce$(OBJS) $(ENSLIB)\libce_mt$(CELIB) $(CEJAVA_LINK_FLAGS)
+	$(CP) $(ENSLIB)\libce_mt$(CELIB) libce_mt$(CELIB)
+	$(MKSHRLIB) $(MKSHRLIBO)$(LIBCEJAVA)$(SO) ensemble_Ce$(OBJS) libce_mt$(CELIB) $(CEJAVA_LINK_FLAGS)
 	$(MV) $(LIBCEJAVA).* lib\
 
 doc :
 	javadoc -public -classpath classes -d docs Callbacks.java JoinOps.java Group.java View.java
 
 clean:
-	$(RM) ensemble_Ce.h hs_err* core* *.class *.o *.obj lib\* *.jar 
+	$(RM) ensemble_Ce.h hs_err* core* *.class *.o *.obj lib\* *.jar $(LIBCEJAVA).*
 	$(RMDIR) classes\ensemble  classes\*
 	$(RMDIR) docs
 
@@ -76,15 +87,15 @@ clean:
 #
 # The classpath should include ensemble.jar, and the library path should include libcejava.lib\libcejava.so
 #
-run_rand:
-	$(JAVA) RandTest -n 5 -t 3 
+#run_rand:
+#	$(JAVA) RandTest -n 5 -t 3 
 
 run_perf:
 	$(JAVA) PerfTest -prog rpc -s 1000 -r 0.01
 
 
-#run_rand:
-#	$(JAVA) -jar Rand -Djava.class.path=".&classes\ensemble.jar" -Djava.library.path=lib -n 5 -t 3  
+run_rand:
+	$(JAVA) -jar Rand -Djava.class.path=".&classes\ensemble.jar" -Djava.library.path=lib -n 5 -t 3  
 #        -trace CE_INBOARD -ctrace CE_INBOARD_C -ctrace CE_INBOARD_MT 
 
 

@@ -1,3 +1,13 @@
+/**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
 /********************************************************************/
 /* trace.h --- Transis Direct (C) Interface
  * Author: Ohad Rodeh 10/98
@@ -17,6 +27,7 @@ LINKDLL void trace_add(char* s) ;
 LINKDLL int am_traced(char *name);
 LINKDLL void ce_trace(char *name, const char *s, ...);
 
+//#define CE_TRACE
 
 #ifdef CE_TRACE
 /* Slower code, with trace support

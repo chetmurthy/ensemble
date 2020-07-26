@@ -1,18 +1,40 @@
-     RELEASE_NOTES for Ensemble version 1.41
+     RELEASE_NOTES for Ensemble version 1.42
 
 Author: Ohad Rodeh
-Last updated: 28/April/2003
+Last updated: 29/August/2003
 
 RELEASE_NOTES
 
-  This release primarily cleans up the maestro code-base. There is now
-just one code for all platforms with relatively few "ifdefs". From the
-next release the CORBA/GIOP code included in Maestro will not be
-supported. Aside from a maestro cleanup several bugs have been fixed: 
-1. A maestro bug due to a miscalculation of the previous group leader
-2. A total-ordering bug in the Seqbb protocol
-3. A bug that prevented the use of a user-specified IP address for an Ensemble process
 
+* Migrated to using a configuration file (.ensemble.conf) instead of using environment
+  variables. 
+
+* Removed CORBA stuff from Maestro
+
+* Removed the more esoteric rekeying protocols. 
+
+* CE: Added an option for asynchronous block/blockOk. 
+  Removed socket add/remove from multi-threaded CE API. This is supported only for 
+  the single-threaded API. 
+
+* Added an outboard C# client with a new API. 
+
+* Fixed bad handling of TCP sockets. Such sockets were opened in blocking instead 
+  of non-blocking mode.
+
+* Improved build sequence
+
+* Small bugs:
+   - Updated TCP mode to use the Arge.host_ip option
+   - Changed command line option 'udp_host' to 'host_ip'
+   - Migrated from CAMLLIB environment variable to the newer OCAMLLIB.
+   - Fixed a bug with the AGREE property.
+
+* Updated documentation: 
+   - Described how to trace modules.  "-trace <module_name>"
+   - Added a document describing outboard messaging. This should all enable people 
+     to build their own clients. 
+   - Added a document for the TOPS layer that implements the AGREE property
 
 OCAML COMPILER VERSION
   We are using version 3.06 for this version. 

@@ -32,7 +32,6 @@ ENSEMBLEMLI = \
 	util/tree.mli	\
 	type/tdefs.mli	\
 	util/mrekey_dt.mli	\
-	util/diamond.mli	\
 \
 	util/hsys.mli	\
 	util/lset.mli	\
@@ -106,7 +105,6 @@ ENSCOREOBJ = \
 	util/tree$(CMO)		\
 	type/tdefs$(CMO)	\
 	util/mrekey_dt$(CMO)	\
-	util/diamond$(CMO)	\
 \
 	type/proto$(CMO)	\
 	type/stack_id$(CMO)	\
@@ -172,7 +170,7 @@ ENSCOREOBJ = \
 \
 	appl/reflect$(CMO)	\
 \
-	ensemble$(CMO)
+	$(ENSLIB)/ensemble$(CMO)
 
 #*************************************************************#
 # These are an almost minimal set of additional modules to link with
@@ -218,7 +216,6 @@ ENSRESTOBJ = \
 	layers/security/exchange$(CMO)	\
 	layers/security/rekey$(CMO)	\
 	layers/security/rekey_dt$(CMO)	\
-	layers/security/rekey_diam$(CMO)\
 	layers/security/secchan$(CMO)	\
 \
 	layers/other/local$(CMO)	\
@@ -226,8 +223,6 @@ ENSRESTOBJ = \
 	layers/other/xfer$(CMO)	\
 	layers/other/subcast$(CMO)	\
 	layers/other/migrate$(CMO)	\
-	layers/security/optrekey$(CMO)	\
-	layers/security/realkeys$(CMO)	\
 	layers/security/perfrekey$(CMO)	\
 	layers/security/encrypt$(CMO)	\
 	layers/other/primary$(CMO)	\
@@ -258,7 +253,6 @@ ENSRESTOBJ = \
 	layers/scale/zbcast$(CMO)	\
 	layers/debug/chk_causal$(CMO) \
 	util/mcausal$(CMO)	\
-	util/diamond_aux$(CMO) \
 	layers/trans/causal$(CMO)	\
 \
 	util/dtbl$(CMO)	\

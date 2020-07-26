@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* SOCKSUPP.ML *)
 (* Author: Mark Hayden, 8/97 *)
 (**************************************************************)
@@ -12,6 +22,11 @@ type timeval = {
   mutable sec10 : int ;
   mutable usec : int
 } 
+
+type mcast_send_recv = 
+  | Recv_only
+  | Send_only
+  | Both
 
 type win = 
     Win_3_11

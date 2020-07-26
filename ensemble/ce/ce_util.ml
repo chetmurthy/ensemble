@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* CE_UTIL.ML *)
 (* Author : Ohad Rodeh 8/2001 *)
 (* Based on code by: Alexey Vaysburd, Mark Hayden *)
@@ -27,13 +37,11 @@ type c_action =
   | C_XferDone of unit
   | C_Rekey of unit
   | C_Protocol of string
-
-(*  | C_Timeout of time
-  | C_Dump
-  | C_Block of bool
+(*  | C_Timeout of time 
+  | C_Dump 
   | C_No_op*)
-
   | C_Properties of string  (* For backward compatibility with HOT *)
+  | C_BlockOk of bool
 
 let string_of_c_action = function
     C_Cast _ -> "C_Cast"
@@ -46,6 +54,7 @@ let string_of_c_action = function
   | C_Rekey _ -> "C_Rekey"
   | C_Protocol _ -> "C_Protocol"
   | C_Properties _ -> "C_Properties"
+  | C_BlockOk _ -> "C_BlockOk"
 
 let of_iovec_array = Iovecl.of_iovec_raw_array
 
@@ -95,6 +104,9 @@ let dncall_of_c (ls,vs) =
 	    Property.choose props
 	  in
 	  Control (Protocol protocol)
+      | C_BlockOk flag -> 
+	  log (fun () -> sprintf "BlockOk(%b)" flag);
+	  Control(Block flag)
 
 (**************************************************************)
 
@@ -121,7 +133,6 @@ type c_view_state = {
   c_groupd : bool ;
   c_xfer_view : bool ;
   c_key : string ;
-  c_num_ids : int ;
   c_prev_ids : c_view_id array ; 
   c_params :   string ;
   c_uptime : float ;
@@ -336,7 +347,6 @@ let c_view_full (ls,vs) =
     c_groupd = vs.View.groupd ;
     c_xfer_view = vs.View.xfer_view ;
     c_key  =  key ;
-    c_num_ids = Array.length c_prev_ids ;
     c_prev_ids = c_prev_ids ;
     c_params = string_of_list Param.to_string vs.params ;
     c_uptime = Time.to_float vs.uptime ;

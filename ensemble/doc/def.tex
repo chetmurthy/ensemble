@@ -1,10 +1,17 @@
-\usepackage{/usr/lib/hevea/hevea}
-\long\def\omitit#1{}
-
-\newcommand{\ensemble}          {Ensemble}
-\newcommand{\horus}             {Horus}
-\newcommand{\caml}              {Objective Caml}
-\newcommand{\chk}               {$\surd$}
+%*************************************************************%
+%
+%    Ensemble, 1_42
+%    Copyright 2003 Cornell University, Hebrew University
+%           IBM Israel Science and Technology
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\newcommand {\ensemble}		{Ensemble}
+\newcommand {\horus}		{Horus}
+\newcommand {\caml}		{Objective Caml}
+\newcommand {\chk}		{$\surd$}
 
 \newcommand{\hide}[1]           {~}
 \newcommand{\note}[1]           {{\bf [#1]}}
@@ -12,19 +19,19 @@
 \newcommand{\mlval}[1]          {{\bf {#1}}}
 \newcommand{\cval}[1]           {{\tt {#1}}}
 
-\newcommand{\incgraphics}[1]    {\includegraphics{fig/#1}}
+\newcommand {\incgraphics}[1]   {\includegraphics{fig/#1}}
 
-\newcommand{\sourcecode}[1]    {{\bf {#1}}}
-%\newcommand{\sourcelayer}[1]  {{\htmladdnormallink{#1}{../../layers/#1}}}
-%\newcommand{\sourceutil}[1]   {{\htmladdnormallink{#1}{../../util/#1}}}
-\newcommand{\sourcelayer}[1]   {\sourcecode{layers/#1}}
-\newcommand{\sourcedemo}[1]    {\sourcecode{demo/#1}}
-\newcommand{\sourceutil}[1]    {\sourcecode{util/#1}}
-\newcommand{\sourcetrans}[1]   {\sourcecode{trans/#1}}
-\newcommand{\sourcetype}[1]    {\sourcecode{type/#1}}
-\newcommand{\sourceappl}[1]    {\sourcecode{appl/#1}}
-\newcommand{\sourcece}[1]      {\sourcecode{ce/#1}}
-\newcommand{\sourcehot}[1]     {\sourcecode{hot/#1}}
+\newcommand {\sourcecode}[1]    {{\bf {#1}}}
+%\newcommand {\sourcelayer}[1]  {{\htmladdnormallink{#1}{../../layers/#1}}}
+%\newcommand {\sourceutil}[1]   {{\htmladdnormallink{#1}{../../util/#1}}}
+\newcommand {\sourcelayer}[1]   {\sourcecode{layers/#1}}
+\newcommand {\sourcedemo}[1]    {\sourcecode{demo/#1}}
+\newcommand {\sourceutil}[1]    {\sourcecode{util/#1}}
+\newcommand {\sourcetrans}[1]   {\sourcecode{trans/#1}}
+\newcommand {\sourcetype}[1]    {\sourcecode{type/#1}}
+\newcommand {\sourceappl}[1]    {\sourcecode{appl/#1}}
+\newcommand {\sourcece}[1]      {\sourcecode{ce/#1}}
+\newcommand {\sourcehot}[1]     {\sourcecode{hot/#1}}
 
 \newcommand {\ECast}[0]         {\mlval{ECast}}
 \newcommand {\ESend}[0]         {\mlval{ESend}}
@@ -74,36 +81,25 @@
 \newcommand {\Dn}[1]               {\mlval{Dn(E{#1})}}
 \newcommand {\Up}[1]               {\mlval{Up(E{#1})}}
 
-%The original command was this:
-%{\scalebox{#1}{\includegraphics{#2}}}
-%But this does not work well, so I just use vanilla \epsfig
-\newcommand{\putfig}[2]{%
-\begin{toimage}
-{\scalebox{#1}{\includegraphics{#2}}}
-\end{toimage}%
-\imageflush}
-
-\newcommand{\putexactfig}[3]{%
-\begin{toimage}
-{\epsfig{figure=#1,width=#2,height=#3}}
-\end{toimage}%
-\imageflush}
-
-\newcommand{\putfigfbox}[2]     {%
-\begin{toimage}
-\fbox
-{ \scalebox{#1}{\includegraphics{#2}} } 
-\end{toimage}%
-\imageflush}
-
-
+\newlength{\figurewidth}
+\newsavebox{\figurebox}
 \newenvironment{codebox}{
+\figurewidth\hsize
+\addtolength{\figurewidth}{-4\fboxsep}
+\addtolength{\figurewidth}{-4\fboxrule}
+
 \begin{alltt}
+\sbox{\figurebox}\bgroup
+\begin{minipage}{\figurewidth}
 }{
+\end{minipage}
+\egroup
+\fbox{\usebox{\figurebox}}
 \end{alltt}
 }
 
-%
-%Figure commands
-%
-\newenvironment{proof}{\noindent{\bf Proof:}}{\par}
+% Ohad.
+% A macro for putting scaled figures in boxes.
+\newcommand{\putfigfbox}[2]     {\fbox { \scalebox{#1}{\includegraphics{#2}} } }
+
+

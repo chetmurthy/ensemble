@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* SOCKTEST.ML: A test program for the native socket library. *)
 (* Author: Ohad Rodeh 7/2001 *)
 (**************************************************************)
@@ -55,7 +65,8 @@ let setup_recv_sock rmtaddr =
 	  port
     | _ -> failwith "Sanity"
   in
-  let sock = Hsys.socket_dgram () in
+  let sock = Hsys.socket_mcast () in
+  Hsys.setsockopt sock (Hsys.Loopback true);
   Hsys.setsockopt sock Hsys.Reuse;
   Hsys.bind sock Unix.inet_addr_any port;
   Hsys.setsockopt sock (Hsys.Nonblock true);
@@ -157,7 +168,7 @@ let input_handler xmitsock line =
 		  addr = ipm_addr;
 		  recv_sock = recv_sock
 		} in
-		Hsys.setsockopt recv_sock (Hsys.Join ipm_addr) ;
+		Hsys.setsockopt recv_sock (Hsys.Join (ipm_addr,Hsys.Both)) ;
 		add_new_group recv_sock ipm_rec ;
 		()
 
@@ -307,7 +318,7 @@ let run () =
   printf "setup_xmit_sock Ok.\n"; flush ();
 
   begin try 
-    Hsys.setsockopt xmitsock (Hsys.Loopback true);
+    Hsys.setsockopt xmitsock (Hsys.Loopback false);
     Hsys.setsockopt xmitsock (Hsys.Ttl 1);
   with _ -> 
     let os_t_v = Socket.os_type_and_version () in

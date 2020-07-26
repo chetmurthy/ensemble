@@ -1,3 +1,13 @@
+%*************************************************************%
+%
+%    Ensemble, 1_42
+%    Copyright 2003 Cornell University, Hebrew University
+%           IBM Israel Science and Technology
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
 \section{The Programs}
 
 Notes:
@@ -14,7 +24,7 @@ into a single group.  Input typed at one process is broadcast to the rest of the
 processes in the group.
 
 \subsection{Wbml: Distributed Whiteboard}
-This is a graphical white board demo.  It uses the CamlTk library to implement a
+This is a graphical white board demo.  It uses the LablTk library to implement a
 graphical user interface\footnote{not supported under Windows/NT}.  When members are
 in the same group, lines drawn on one instance are broadcast to the rest of the
 group, who also draw the lines.  It supports the switching of protocols.  Initially,
@@ -112,7 +122,7 @@ the \mlval{gossip} servers.  This sends messages to the \mlval{gossip}
 servers.  The \mlval{gossip} servers then forward the message to all
 processes they have heard from recently to simulate a broadcast.  When
 an application is using the \mlval{UDP} transport and not the
-\mlval{DEERING} transport (\mlval{UDP} is the default), it is
+\mlval{DEERING} transport (\mlval{DEERING} is the default), it is
 necessary for a \mlval{gossip} process to be running somewhere in the
 system.
 
@@ -299,7 +309,7 @@ to beings of a population and cells of the rectangular grid
 interchangeably.''  In this implementation, each cell of the grid is
 implemented by a separate endpoint and all communication is through
 asynchronous Ensemble communication.  Anyway, this program requires
-the CamlTk library and should be self-explanatory to run (note that
+the LablTk library and should be self-explanatory to run (note that
 you only need to run one Life process: it creates multiple endpoints
 within the process).
 

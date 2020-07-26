@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* SOCKET.MLI *)
 (* Authors: Robbert vanRenesse and Mark Hayden, 4/95  *)
 (* Ohad Rodeh :                                       *)
@@ -176,7 +186,12 @@ val setsockopt_loop : socket -> bool -> unit
 
 (* Join an IP multicast group. 
  *)
-val setsockopt_join : socket -> Unix.inet_addr -> unit 
+type mcast_send_recv = 
+  | Recv_only
+  | Send_only
+  | Both
+
+val setsockopt_join : socket -> Unix.inet_addr -> mcast_send_recv -> unit 
 
 (* Leave an IP multicast group. 
  *)

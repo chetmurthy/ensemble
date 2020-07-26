@@ -1,3 +1,13 @@
+(**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
 (* Modified version of printf.ml to automatically flush after every print.
  *)
 
@@ -12,7 +22,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: printe.ml,v 1.4 2002/10/13 10:06:47 orodeh Exp $ *)
+(* $Id: printe.ml,v 1.1.1.1 2003/08/24 06:52:17 nystrom Exp $ *)
 
 external format_int: string -> int -> string = "format_int"
 external format_float: string -> float -> string = "format_float"

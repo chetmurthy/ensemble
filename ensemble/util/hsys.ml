@@ -1,4 +1,14 @@
 (**************************************************************)
+(*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* HSYS.ML *)
 (* Author: Mark Hayden, 5/95 *)
 (**************************************************************)
@@ -38,6 +48,11 @@ type timeval = Socket.timeval = {
   mutable usec : int
 } 
 
+type mcast_send_recv = Socket.mcast_send_recv = 
+  | Recv_only
+  | Send_only
+  | Both
+
 type handler =
   | Handler0 of (unit -> unit)
   | Handler1
@@ -45,7 +60,7 @@ type handler =
 type socket_option =
   | Nonblock of bool
   | Reuse
-  | Join of inet
+  | Join of inet * mcast_send_recv
   | Leave of inet
   | Ttl of int 
   | Loopback of bool
@@ -93,7 +108,6 @@ let gettimeofdaya 	= Socket.gettimeofday
 let has_ip_multicast 	= Socket.has_ip_multicast
 let inet_any () 	= Unix.inet_addr_any
 let int_of_socket 	= Socket.int_of_socket
-(*let int_of_substring	= Socket.int_of_substring*)
 let listen sock i	= Socket.listen sock i
 let select      	= Socket.select
 let poll        	= Socket.poll
@@ -257,7 +271,7 @@ let gettimeofday () =
 let setsockopt sock = function
   | Reuse       -> Socket.setsockopt_reuse sock true
   | Nonblock f  -> Socket.setsockopt_nonblock sock f
-  | Join inet   -> Socket.setsockopt_join sock inet
+  | Join (inet,send_recv) -> Socket.setsockopt_join sock inet send_recv
   | Leave inet  -> Socket.setsockopt_leave sock inet
   | Ttl i       -> Socket.setsockopt_ttl sock i
   | Loopback onoff -> Socket.setsockopt_loop sock onoff
@@ -306,9 +320,9 @@ let inet_table_size = ref 0
 
 (* Time constants used below.  We use the gettimeofday directly.
  *)
-let timeout_good = 15 * 60             (* 15 minutes *)
-let timeout_bad = 12 * 60 * 60         (* 12 hours *)
-let timeout_init = -1                  (* hack *)
+let timeout_good = 15 * 60 /10            (* 15 minutes *)
+let timeout_bad = 12 * 60 * 60 /10        (* 12 hours *)
+let timeout_init = -1                     (* hack *)
 
 (**************************************************************)
 
@@ -316,7 +330,7 @@ let inet_of_string name =
   (* Get the current time and use this to check for expired
    * entries.  
    *)
-  let now = ((gettimeofday ()).sec10 * 10) + ((gettimeofday ()).usec / 1000000) in
+  let now = (gettimeofday ()).sec10 in
   if now < 0 then 
     failwith "sanity:gettimeofday < 0" ;
 

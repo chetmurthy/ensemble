@@ -1,4 +1,14 @@
 /**************************************************************/
+/*
+ *  Ensemble, 1_42
+ *  Copyright 2003 Cornell University, Hebrew University
+ *           IBM Israel Science and Technology
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
 /* CE_VIEW.H */
 /* Author: Ohad Rodeh  8/2001 */
 /* Internal definitions and include files. */
@@ -49,11 +59,16 @@ struct ce_appl_intf_t {
     ce_env_t env;
     ce_ctx_id_t id;
 
-	int magic; // Used for debugging only
+    int magic; // Used for debugging only
     int joining;
     int leaving;
     int blocked;
 
+    /* Does the application say BlockOk explicitly, or is this part of the
+     * install handler. 
+     */
+    int async_block_ok;
+    
     ce_queue_t *aq; /*  Contains the current set of queued actions */
     ce_bool_t req_heartbeat;   /*  Have we already requested a heartbeat? */
     ce_bool_t req_async;       /*  Is this an async-request? */
@@ -171,6 +186,8 @@ void ce_st_ChangeProtocol(ce_appl_intf_t *c_appl, char *protocol_name) ;
 
 void ce_st_ChangeProperties(ce_appl_intf_t *c_appl, char *properties) ;
 
+void ce_st_BlockOk(ce_appl_intf_t *c_appl);
+
 void ce_st_MLPrintOverride(void (*handler)(char *msg)) ;
     
 void ce_st_MLUncaughtException(void (*handler)(char *info)) ;
@@ -212,6 +229,8 @@ void ce_mt_Rekey(ce_appl_intf_t *c_appl) ;
 void ce_mt_ChangeProtocol(ce_appl_intf_t *c_appl, char *protocol_name) ;
 
 void ce_mt_ChangeProperties(ce_appl_intf_t *c_appl, char *properties) ;
+
+void ce_mt_BlockOk(ce_appl_intf_t *c_appl);
 
 void ce_mt_MLPrintOverride(void (*handler)(char *msg)) ;
     
