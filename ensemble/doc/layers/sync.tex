@@ -1,0 +1,72 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\begin{Layer}{SYNC}
+
+This layer implements a protocol for blocking a group during view changes.  One
+member initiates the SYNC protocol by delivering a \DnBlock\ event from above.
+Other members will receive an \UpBlock\ event.  After replying with a
+\DnBlockOk, the layers above the SYNC layer should not broadcast any further
+messages.  Eventually, after all members have responded to the \UpBlock\ and
+all broadcast messages are stable, the member that delivered the \DnBlock\
+event will recieve an \UpBlockOk\ event.
+
+\begin{Protocol}
+This protocol is very inefficient and needs to be reimplemented at some
+point.  The Block request is broadcast by the coordinator.  All members
+respond with another broadcast.  When the coordinator gets all replies, it
+delivers up an \UpBlockOk.
+\end{Protocol}
+
+\begin{Parameters}
+\item None
+\end{Parameters}
+
+\begin{Properties}
+\item
+Requires FIFO, reliable broadcasts with stability detection.
+\item
+Expects at most one \DnBlock\ from above.
+\item
+Always delivers at most one \UpBlockOk\ event.  Only delivers an \UpBlockOk\ if
+a \DnBlock\ was recieved from above.
+\item
+When at least one member recieves a \DnBlock\ event, all live members will
+eventually deliver an \UpBlock\ event.
+\item
+Expects at most one \DnBlockOk\ event from above.  Expects a \DnBlockOk\ from
+above only if an \UpBlock\ event was previously delivered by this layer.
+\item
+Expects a \DnBlock\ to the layers below will be replied with an \UpBlock\ from
+below.
+\item
+When all members have delivered a \DnBlockOk\ event from above and all
+broadcast messages have been acknowledged (by non-failed members),
+eventually all members who delivered a \DnBlock\ event will receive an
+\UpBlockOk\ event from this layer.
+\end{Properties}
+
+\begin{Sources}
+\sourcesfile{sync.ml}
+\end{Sources}
+
+\begin{GenEvent}
+\genevent{\UpBlockOk}
+\genevent{\DnAck}
+\genevent{\DnBlock}
+\genevent{DnCast}
+\end{GenEvent}
+
+\begin{Testing}
+\item
+The CHK\_SYNC protocol layer checks for SYNC safety conditions.
+\item 
+see also the VSYNC stack
+\end{Testing}
+\end{Layer}

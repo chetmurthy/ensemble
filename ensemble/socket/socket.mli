@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -12,7 +12,7 @@
 (* Authors: Robbert vanRenesse and Mark Hayden, 4/95 *)
 (**************************************************************)
 
-type socket
+type socket = Unix.file_descr
 
 type buf = string
 type ofs = int
@@ -99,35 +99,43 @@ val sendtovs : sendto_info -> string refcnt iovec array -> string -> unit
  *)
 val has_ip_multicast : unit -> bool 
 
-(* Setup a socket for multicast operation. 
+(* Is this a class D address ?
+*)
+val in_multicast : Unix.inet_addr -> bool
+
+(* Setup the TTL value
  *)
-val setsock_multicast : socket -> bool -> unit 
+val setsockopt_ttl : socket -> int -> unit 
+
+(* Setup the loopback switch
+ *)
+val setsockopt_loop : socket -> bool -> unit 
 
 (* Join an IP multicast group. 
  *)
-val setsock_join : socket -> Unix.inet_addr -> unit 
+val setsockopt_join : socket -> Unix.inet_addr -> unit 
 
 (* Leave an IP multicast group. 
  *)
-val setsock_leave : socket -> Unix.inet_addr -> unit 
+val setsockopt_leave : socket -> Unix.inet_addr -> unit 
 
 (**************************************************************)
 
 (* Set size of sending buffers.
  *)
-val setsock_sendbuf : socket -> int -> unit
+val setsockopt_sendbuf : socket -> int -> unit
 
 (* Set size of receiving buffers.
  *)
-val setsock_recvbuf : socket -> int -> unit
+val setsockopt_recvbuf : socket -> int -> unit
 
 (* Set socket to be blocking/nonblocking.
  *)
-val setsock_nonblock : socket -> bool -> unit
+val setsockopt_nonblock : socket -> bool -> unit
 
 (* Set socket ICMP error reporting.  See sockopt.c.
  *)
-val setsock_bsdcompat : socket -> bool -> unit
+val setsockopt_bsdcompat : socket -> bool -> unit
 
 (**************************************************************)
 
@@ -135,6 +143,7 @@ val setsock_bsdcompat : socket -> bool -> unit
  *)
 type md5_ctx
 val md5_init : unit -> md5_ctx
+val md5_init_full : string -> md5_ctx
 val md5_update : md5_ctx -> buf -> ofs -> len -> unit
 val md5_final : md5_ctx -> Digest.t
 
@@ -168,34 +177,6 @@ val gettimeofday : timeval -> unit
 
 (**************************************************************)
 
-type process_handle
-
-(* Create a socket that can be used in spawn_process().  It
- * is used to receive termination events on.  
- *)
-val process_socket : unit -> socket
-
-(* Usage: spawn_process "name-of-executable" arguments
- * socket.  E.g.: spawn_process "echo.exe" "echo hello
- * world" (Some skt).  Returns a handle on the process, and
- * eventually sends a termination event to the given socket.
- *)
-val spawn_process : string -> string array -> socket option -> process_handle option
-
-(* Returns the process handle and the termination status of
- * the next process (that was started using spawn_process on
- * the given socket) to terminate.  Unless the
- * process_status is WSTOPPED, the process handle is no
- * longer valid after this.  
- *)
-val wait_process : socket -> (process_handle * Unix.process_status)
-
-(* Terminates the given process immediately.
- *)
-val terminate_process : process_handle -> unit
-
-(**************************************************************)
-
 val recv : socket -> buf -> ofs -> len -> len
 val send : socket -> buf -> ofs -> len -> len
 
@@ -225,8 +206,20 @@ val minor_words : unit -> int
 val frames : unit -> int array array
 
 (**************************************************************)
-val socket_of_fd : Unix.file_descr -> socket
-val fd_of_socket : socket -> Unix.file_descr
+type win = 
+    Win_3_11
+  | Win_95_98
+  | Win_NT_3_5
+  | Win_NT_4
+  | Win_2000
+
+type os_t_v = 
+    OS_Unix
+  | OS_Win of win
+
+(* Return the version of the windows OS.
+ *)
+val os_type_and_version : unit -> os_t_v
 (**************************************************************)
 
 (* Ethernet addresses.

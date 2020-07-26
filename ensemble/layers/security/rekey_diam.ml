@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -248,7 +248,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       | Recon r -> 
 	  log (fun () -> "recv_commit");
 	  s.phase <- Compl;
-	  s.diam <- r.new_diam
+	  s.diam <- r.new_diam;
+	  dnnm (create name ERekeyPrcl2[])
       | Compl -> 
 	  failwith "recv_commit: Compl phase"
   in

@@ -1,36 +1,30 @@
 
-     RELEASE_NOTES for Ensemble version 1.00
+     RELEASE_NOTES for Ensemble version 1.10
 
-   **** Final Cornell University Supported Release ****
+Author: Ohad Rodeh
+Last updated: 31/07/2001
 
-Author: Tim Clark
-Last updated: 8/16/2000
+CHANGES
 
-FINAL RELEASE NOTICE
+1. The socket library was rewritten so as to be compatible with 
+   the OCaml Unix library. This allows ML programs to freely
+   intermix code and data structures from the Ensemble Socket library
+   with code written for the Unix library. 
 
-This release, 1.00, is the final release from Cornell University.
-We believe Ensemble has become stable and robust enough that it 
-no longer needs full-time support.  As a result, Cornell will no
-longer provide support for Ensemble.  Support will, however, be
-continued via the Ensemble developers' listsrv, HORUS-L@cornell.edu.
+2. Final touches for the security code. The diamond rekey protocol, and 
+   the key-tree rekey protocol are complete. All known security holes have
+   been plugged. The system should now be completly secure, please send us
+   any possible attack scenarios. 
 
+3. Port to WIN2000 is complete. In fact, the code works better on WIN2000 
+   than on NT. 
 
-OCAML COMPILER VERSION
+4. Revised all the makefiles. 
 
-This distribution of Ensemble should be compiled with the Ocaml 3.00 
-compiler.  See INSTALL.htm for instructions on downloading this version 
-of Ocaml.
-
-
-ADDED FUNCTIONALITY
-
-* Updated security features have been added to this release.  The
-  security protocols are documented in the ensemble/doc/ref.ps file.
-  Support for security has been added to the HOT and Ejava interfaces.
-  With this release, we believe the security work is complete.
-
-* The security documentation has been updated.
-
+5. Various bug fixes:
+   - Thread race conditions in maestro were fixed.
+   - 15 second delays while merging. 
+   - etc.
 
 KNOWN PROBLEMS/BUGS
 
@@ -60,5 +54,7 @@ NT:
   be available in the near future.  If this is a problem for your 
   application, and you would like more information, please contact 
   Tim Clark at (tclark@cs.cornell.edu).
+
+
 
 

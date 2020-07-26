@@ -1,0 +1,64 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\begin{Layer}{MFLOW} 
+
+This layer implements window-based flow control for multicast messages.
+Multicast messages from each sender are transmitted only if the number of send
+credit left is greater than zero.  The protocol attempts to avoid situations
+where all recievers send credit at the same time, so that a sender is not
+flooded with credit messages.
+
+\begin{Protocol}
+Whenever the amount of send credits drops to zero, messages are buffered without
+being sent.  On receipt of acknowledgement credit, the amount of send credits
+are recalculated and buffered messages are sent based on the new credit.
+\end{Protocol}
+
+\begin{Parameters}
+\item mflow\_window : the maximum amount on unacknowledged messages or the size of the
+window.
+\item mflow\_ack\_thresh : The acknowledge threshold.  After receiving this number of
+bytes of data from a sender, the receiver acknowledged previous credit.
+\end{Parameters}
+
+\begin{Properties}
+\item
+This protocol bounds the number of unrecieved multicast messages a member has
+sent.
+\item
+The amount of received credits are initialized to different values for
+avoiding many members sending back acknowledge at the same time. 
+\item
+This protocol requires reliable multicast and point-to-point properties from
+underlying protocol layers.
+\end{Properties}
+
+\begin{Notes}
+\item
+As opposed to most of the \ensemble\ protoocols, this protocol implements flow
+control on bytes and not on messages.  It only considers the data in the
+application payload portion of the message (the \mlval{iov} field of the
+event).
+\item
+Because of the EBlockOk events, this layer needs to be below the
+broadcast stability layer.
+\end{Notes}
+
+\begin{Sources}
+\sourcesfile{mflow.ml}
+\end{Sources}
+
+\begin{Testing}
+\item
+Some testing has been carried out.
+\end{Testing}
+
+\emph{This layer and its documentation were written with Zhen Xiao.}
+\end{Layer}

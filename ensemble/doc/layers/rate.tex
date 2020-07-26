@@ -1,0 +1,41 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\begin{Layer}{RATE}
+
+This layer implements a sender rate based flow control.  Multicast messages
+from each sender are sent at a rate not exceeding some prescribed value.
+
+\begin{Protocol}
+All the messages to be sent are buffered initially.  Buffered messages are
+sent on periodic timeouts that are set based on the sender's rate.
+\end{Protocol}
+
+\begin{Parameters}
+\item
+rate\_n, rate\_t: the pair determines the rate.  At most \mlval{rate\_n}
+messages are allowed to sent over any time period of \mlval{rate\_t}.  This
+is ensured by having two consecutive messages sent with a inter-send time
+of at least $(rate\_t / rate\_n)$ apart.
+\end{Parameters}
+
+%\begin{Properties}
+%\end{Properties}
+
+\begin{Notes}
+\item Future implementation should support dynamic rate adjustment.
+\item Alternative flow control layers include CREDIT and WINDOW.
+\end{Notes}
+
+\begin{Sources}
+\sourcesfile{rate.ml}
+\end{Sources}
+
+\emph{This layer and its documentation were written by Takako Hickey.}
+\end{Layer}

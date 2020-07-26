@@ -1,0 +1,90 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\begin{Layer}{INTER}
+
+This protocol handles view changes that involve more than one
+partition (see also INTRA).
+
+\begin{Protocol}
+Group merges are the more complicated part of the group membership
+protocol.  However, we constrain the problem so that:
+\begin{itemize}
+\item
+Groups cannot be both merging and accepting mergers at the same time.
+This eliminates the potential for cycles in the ``merge-graph.''
+\item
+A view (i.e. view\_id) can only attempt to merge once, and only if no
+failures have occured.  Each merge attempt is therefore uniquely
+identified by the view\_id of the merging group.  Note also that by
+requiring no failures to have occured for a merge to happen, this
+prevents a member from being failed in one view and then reappearing
+in the next view.  There has to be an intermediate view without the
+failed member: this is a desirable property.
+\end{itemize}
+The merge protocol works as follows:
+\begin{enumerate}
+\item
+The merging coordinator blocks its group,
+\item
+The merging coordinator sends a merge request to the remote group's
+coordinator.
+\item
+The remote coordinator blocks its group,
+\item
+The remote coordinator installs a new view (with the mergers in it) and
+sends the view to the merging coordinator (through a merge-granted
+message).
+\item
+The merging coordinator installs the view in its group.
+\end{enumerate}
+If the merging coordinator times out on the merged coordinator then it
+immediately installs a new view in its partition (without the other members
+even finding out about the merge attempt).
+\end{Protocol}
+
+\begin{Parameters}
+\item None
+\end{Parameters}
+
+\begin{Properties}
+\item
+When another partition is merging, a View message is also sent to the coordinator of
+the merging group, which then forwards the message to the rest of its group.
+\item 
+Requires that \DnMerge\ events only be delivered by the original coordinator of views
+(in which no failures have yet occured).  Otherwise, the partition should first form
+a new view and then attempt the merge.
+\item
+\DnMerge\ causes a \DnMerge\ event to be delivered to the layer below.  This
+will be replied with either an \UpView, \UpMergeFailed, or \UpMergeDenied\
+event, depending on the outcome of the merge attempt.
+\item
+\UpMergeRequest's are only delivered at the coordinator.  And only if the
+group is not currently blocking and only if the mergers list does not
+contain members that are/were in this view or in previous merge requests in
+this view.
+\end{Properties}
+
+\begin{Sources}
+\sourcesfile{inter.ml}
+\end{Sources}
+
+\begin{GenEvent}
+\genevent{\DnMerge}
+\genevent{\DnMergeDenied}
+\genevent{\DnSuspect}
+\end{GenEvent}
+
+\begin{Testing}
+\item
+see the VSYNC stack
+\end{Testing}
+\end{Layer}
+

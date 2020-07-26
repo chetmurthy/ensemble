@@ -1,7 +1,7 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -17,7 +17,7 @@
 
 /* Set size of send buffers.
  */
-value skt_setsock_sendbuf(	/* ML */
+value skt_setsockopt_sendbuf(	/* ML */
 	value sock_v,
 	value size_v
 ) {
@@ -35,7 +35,7 @@ value skt_setsock_sendbuf(	/* ML */
 
 /* Set size of receive buffers.
  */
-value skt_setsock_recvbuf(	/* ML */
+value skt_setsockopt_recvbuf(	/* ML */
 	value sock_v,
 	value size_v
 ) {
@@ -54,7 +54,7 @@ value skt_setsock_recvbuf(	/* ML */
 /* Set/reset nonblocking flag on a socket.  
  * Author: JYH.
  */
-value skt_setsock_nonblock(	/* ML */
+value skt_setsockopt_nonblock(	/* ML */
         value sock_v,
 	value blk_v
 ) {
@@ -96,7 +96,7 @@ value skt_setsock_nonblock(	/* ML */
  *   (linux/net/ipv4/udp.c, line ~545)
 	 
  */
-value skt_setsock_bsdcompat(	/* ML */
+value skt_setsockopt_bsdcompat(	/* ML */
         value sock_v,
 	value bool_v
 ) {
@@ -116,9 +116,9 @@ value skt_setsock_bsdcompat(	/* ML */
 
 #else /* HAS_SOCKETS */
 
-value skt_setsock_sendbuf() { invalid_argument("setsock_sendbuf not implemented"); }
-value skt_setsock_recvbuf() { invalid_argument("setsock_recvbuf not implemented"); }
-value skt_setsock_nonblock() { invalid_argument("setsock_nonblock not implemented"); }
+value skt_setsockopt_sendbuf() { invalid_argument("setsockopt_sendbuf not implemented"); }
+value skt_setsockopt_recvbuf() { invalid_argument("setsockopt_recvbuf not implemented"); }
+value skt_setsockopt_nonblock() { invalid_argument("setsockopt_nonblock not implemented"); }
 
 #endif /* HAS_SOCKETS */
 

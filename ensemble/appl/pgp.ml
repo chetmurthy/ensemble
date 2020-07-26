@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -79,29 +79,31 @@ let sign_cmd sender receiver =
 let read_sock debug alarm sock f =
   log2 (fun () -> "read_sock");
   let l = ref [] in
+  let finalize () = 
+    log2 (fun () -> "finalizing socket");
+    Alarm.rmv_sock_recv alarm sock ;
+    f (String.concat "" (List.rev !l))
+  in
   let read () =
     let buf = String.create 10000 in
     try 
       let len = Hsys.read sock buf 0 (String.length buf) in
       log2 (fun () -> sprintf "%s:len=%d" debug len);
-      if len = 0 then (
-	Alarm.rmv_sock_recv alarm sock ;
-	Hsys.close sock ;
-	f (String.concat "" (List.rev !l))
-      ) ;
+      if len = 0 then finalize ();
       l := (String.sub buf 0 len) :: !l
     with End_of_file -> 
-      f (String.concat "" (List.rev !l))
+      finalize ()
   in
   Alarm.add_sock_recv alarm name sock (Hsys.Handler0 read)
 
 let select_process alarm notify cmd input =
   log2 (fun () -> sprintf "%s %s" cmd input);
-  let (pid,in_read,err_read) = Hsys.background_process cmd (Lazy.force env_array) input in
+  let handle,in_read,err_read = 
+    Hsys.background_process cmd (Lazy.force env_array) input in
   let counter = ref 0 in
   let kill_proc () = 
     incr counter;
-    if !counter = 2 then ignore (Unix.waitpid [] pid);
+    if !counter = 2 then ignore (Unix.close_process_full handle)
   in    
   read_sock "get_error" alarm  err_read (fun s -> 
     kill_proc ();

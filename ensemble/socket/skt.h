@@ -1,7 +1,7 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -17,6 +17,8 @@
 #include <windows.h>
 #include <winsock.h>
 #include <io.h>
+#include <stdio.h>
+//#include <ws2tcpip.h>
 #else
 #include <fcntl.h>
 #define h_errno errno
@@ -96,10 +98,6 @@ mlsize_t string_length(value);
 #endif
 
 
-void skt_get_sockaddr(value);
-value skt_alloc_sockaddr(void);
-value skt_alloc_inet_addr(unsigned int);
-
 #define GET_INET_ADDR(v) (*((uint32 *) (v)))
 
 /*#define MSG_UNKNOWN_FLAG	0x20000000*/
@@ -115,7 +113,9 @@ typedef SOCKET ocaml_skt ;
  * in terms of Handle_val() to make it clear what is going on here.
  */
 #define Handle_val(v) (*((HANDLE *)(v))) /* from unixsupport.h */
-#define Socket_val(v) ((SOCKET) Handle_val(v))
+
+#define Val_socket(sock) (skt_win_alloc_handle(sock))
+#define Socket_val(sock_v) ((SOCKET) (Handle_val(sock_v)))
 
 #else
 
@@ -123,12 +123,10 @@ typedef int ocaml_skt ;
 
 /* Get the file descriptor inside the wrapper.
  */
-#define Socket_val(sock_v) (Int_val(Field((sock_v),0)))
+#define Socket_val(sock_v) (Int_val(sock_v))
+#define Val_socket(sock)   (Val_int(sock))
 
 #endif
-
-ocaml_skt socket_val(value v) ;
-value skt_socket_of_fd(value fd_v) ;
 
 void skt_recv_error(void) ;
 #define ENSEMBLE_ETH_PROTO (0x08ff)

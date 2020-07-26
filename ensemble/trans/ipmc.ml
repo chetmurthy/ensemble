@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -66,10 +66,18 @@ let very_first port () =
   (* Do any other initialization required.  Enable loopback.
    *)
   begin try
-    Hsys.setsockopt sock (Hsys.Multicast true)
+    Hsys.setsockopt sock (Hsys.Ttl 4) ;
+    Hsys.setsockopt sock (Hsys.Loopback true)
   with e ->
-    eprintf "IPMC:error:setsockopt:Multicast:%s\n" (Hsys.error e) ;
-    exit 1
+    eprintf "IPMC:error:setsockopt:TTL and LOOPBACK:%s\n" (Hsys.error e) ;
+    let os_t_v = Socket.os_type_and_version () in
+    match os_t_v with 
+	Socket.OS_Unix -> exit 1
+      | Socket.OS_Win v -> 
+	  match v with 
+	      Socket.Win_2000 -> exit 1
+	    | _ -> 
+		eprintf "On Win32 (other than win2000) this is ok, continuing\n"
   end ;
       
   (* Bind it to the port.

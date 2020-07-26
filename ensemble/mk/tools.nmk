@@ -1,12 +1,3 @@
-#*************************************************************#
-#
-#   Ensemble, (Version 1.00)
-#   Copyright 2000 Cornell University
-#   All rights reserved.
-#
-#   See ensemble/doc/license.txt for further information.
-#
-#*************************************************************#
 # -*- Mode: makefile -*-
 #*************************************************************#
 #
@@ -44,7 +35,7 @@ $(ECAMLDEP): ..\tools\ecamldep.mll ..\tools\misc.ml $(ECP)
 	$(ECPC) ..\tools\ecamldep.mll -o $(OBJD)\ecamldep.mll
 	$(ECPC) ..\tools\misc.ml -o $(OBJD)\misc.ml
 	ocamllex $(OBJD)\ecamldep.mll
-	ocamlc -I $(OBJD) -o $(ECAMLDEP) $(OBJD)\misc.ml $(OBJD)\ecamldep.ml
+	ocamlc -I $(OBJD) -custom -o $(ECAMLDEP) unix.cma $(OBJD)\misc.ml $(OBJD)\ecamldep.ml
 
 $(OBJD)\echeck.ml: ..\tools\echeck.ml $(ECP)
 	$(ECPC) ..\tools\echeck.ml -o $(OBJD)\echeck.ml

@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -31,7 +31,7 @@ let f mbuf =
   let recv pack key secureh insecureh = 
     let key = match key with 
       | Security.NoKey -> failwith "recv: NoKey"
-      | Security.Common key -> Security.buf_of_mac key.Security.mac in 
+      | Security.Common key' -> Security.buf_of_mac key'.Security.mac in 
     let handler rbuf ofs len =
       if len <|| hdr_len then (
 	Route.drop (fun () -> sprintf "%s:size below minimum:len=%d\n" name (int_of_len len)) ;
@@ -43,12 +43,24 @@ let f mbuf =
 	  Route.drop (fun () -> sprintf "%s:rest of Conn.id did not match" name) ;
 	) else (
 	  (* Calculate the signature for the message
+	   * Use md5_init_full, so as to conform to RFC2104 (HMAC standard).
+	   * This means initialize the MD5 context to a cryptographically
+	   * strong random key. 
 	   *)
+	  (*
 	  let sign_cpt =
 	    let ctx = Hsys.md5_init () in
 	    Buf.md5_update ctx buf ofs (len -|| hdr_len) ;
 	    Buf.md5_update ctx buf (ofs +|| len -|| md5len_plus_8) md5len_plus_8 ;
 	    Buf.md5_update ctx key len0 md5len ;
+	    Buf.md5_final ctx
+	  in
+	    *)
+
+	  let sign_cpt =
+	    let ctx = Hsys.md5_init_full (Buf.break key) in
+	    Buf.md5_update ctx buf ofs (len -|| hdr_len) ;
+	    Buf.md5_update ctx buf (ofs +|| len -|| md5len_plus_8) md5len_plus_8 ;
 	    Buf.md5_final ctx
 	  in
 
@@ -111,7 +123,9 @@ let f mbuf =
   let blast (_,_,xmitvs) key pack conn =
     let ints_s = Buf.create len8 in
     let suffix = Buf.append ints_s pack in
-    let key = Security.buf_of_key key in
+    let key = match key with 
+      | Security.NoKey -> failwith "send: NoKey"
+      | Security.Common key' -> Security.buf_of_mac key'.Security.mac in 
 
     let xmit mo mi mv =
       let mo = match mo with
@@ -125,12 +139,22 @@ let f mbuf =
 
       (* Calculate the signature.
        *)
+      (*
       let sign =
 	let ctx = Hsys.md5_init () in
 	Iovecl.md5_update name ctx mv ;
 	Iovecl.md5_update name ctx mo ;
 	Buf.md5_update ctx suffix len0 (Buf.length suffix) ;
 	Buf.md5_update ctx key len0 md5len ;
+	let sign = Buf.md5_final ctx in
+	Mbuf.allocl name mbuf sign len0 md5len
+      in
+      *)
+      let sign =
+	let ctx = Hsys.md5_init_full (Buf.break key) in
+	Iovecl.md5_update name ctx mv ;
+	Iovecl.md5_update name ctx mo ;
+	Buf.md5_update ctx suffix len0 (Buf.length suffix) ;
 	let sign = Buf.md5_final ctx in
 	Mbuf.allocl name mbuf sign len0 md5len
       in

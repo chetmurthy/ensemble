@@ -1,7 +1,7 @@
 #*************************************************************#
 #
-#   Ensemble, (Version 1.00)
-#   Copyright 2000 Cornell University
+#   Ensemble, 1.10
+#   Copyright 2001 Cornell University, Hebrew University
 #   All rights reserved.
 #
 #   See ensemble/doc/license.txt for further information.
@@ -9,10 +9,10 @@
 #*************************************************************#
 # script for building Ensemble on Linux 
 
-set OSTYPE=linux
-set MACHTYPE=i386
-export OSTYPE
-export MACHTYPE
+set ENS_OSTYPE=linux
+set ENS_MACHTYPE=i386
+export ENS_OSTYPE
+export ENS_MACHTYPE
 
 ( cd opt ; make )
 ( cd opt ; make socket )

@@ -10,7 +10,7 @@ CCC		= g++
 SYSNAME_linux	= LINUX
 SYSNAME_solaris	= SOLARIS
 SYSNAME_sunos4	= SUN4
-SYSNAME		= $(SYSNAME_$(OSTYPE))
+SYSNAME		= $(SYSNAME_$(ENS_OSTYPE))
 
 #**********************************************************
 
@@ -30,7 +30,7 @@ AR		= ar r
 
 .SUFFIXES: .C.o .c.o 
 
-PLATFORM	= $(MACHTYPE)-$(OSTYPE)
+PLATFORM	= $(ENS_MACHTYPE)-$(ENS_OSTYPE)
 OBJDIR		= $(ROOT)/conf/$(PLATFORM)
 
 HOTLIB		= $(ENS)/lib/$(PLATFORM)/libhot.a

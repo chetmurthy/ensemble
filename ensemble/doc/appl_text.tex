@@ -1,0 +1,22 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\section{Text-based Application Interface}
+
+This is the simplest of the \ensemble\ application interfaces in the
+sense that it is totally language independent.  Read
+section~\ref{section:ensemble-demo} describing the
+\sourcedemo{ensemble} tool.  A text-based application can easily be
+built using this tool.  The idea is to run the \sourcedemo{ensemble}
+program as a sub-process of an application, connected via a pair of
+pipes.  The \ensemble\ sub-process will manage the communication.
+This way the application be built in just about any programming
+language, especially languages such as Tcl, Perl, and Python.  This
+method suffers from considerably higher communication overheads than
+single-process solutions.

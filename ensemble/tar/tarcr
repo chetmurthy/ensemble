@@ -1,0 +1,111 @@
+#!/bin/tcsh
+
+if ( $#argv <> 2 ) then 
+  echo "usage: $0 version tardir
+  exit -1
+endif
+
+set version     = "$argv[1]"
+set year	= `date +%Y`
+set tardir      = "$argv[2]"
+set tmp         = /tmp/tarcr$$
+/bin/rm -f .unknown
+touch .unknown
+
+set files = `find $tardir -print`
+
+foreach i ( $files )
+  if ( ( -d $i ) || ( ! ( -w $i ) ) ) continue
+
+  set base = `basename $i`
+  set type = ""
+  switch($base)
+    case .cvsignore:
+    case Repository:
+    case Entries:
+    case Root:
+#      echo "Removing: $i"
+#      rm -f $i
+      set type = ""
+      continue
+      breaksw
+
+    case *.ml:
+    case *.mli:
+    case *.mll:
+      set type = ML
+      breaksw
+
+    case *.[Cch]:
+    case *.cc:
+    case *.hh:
+      set type = C
+      breaksw
+
+    case *.sed:
+    case ntify.bat:
+    case ntify.csh:
+    case *_DOC:
+    case FUTURE:
+    case *.html:
+    case *.htm:
+    case *.jpg:
+    case rpm.spec:
+    case dbdefault:
+      set type = ""
+      breaksw
+
+    case Sources:
+    case Makefile:
+    case Makefile.*:
+    case *.sh:
+    case README:
+    case INSTALL*:
+    case .path:
+    case .depend:
+    case depend.nt:
+    case license.txt:
+    case BUGS:
+    case TODO:
+    case LOG:
+    case PROBLEMS:
+      set type = mk
+      breaksw
+
+    case *.tex:
+      set type = tex
+      breaksw
+
+    default:
+      if ( `dirname $i` == ensemble/mk ) then
+        set type = mk
+      else
+        set type = ""
+        echo $i >> .unknown
+      endif
+      breaksw
+  endsw
+
+  echo "File: $i ($type)"
+  if ( $type != "" ) then
+    (sed -e "s|%%VERSION%%|$version|" -e "s|%%DATE%%|$year|" copyright.$type ;\
+     cat $i) > $tmp
+    mv -f $tmp $i
+  endif
+end
+
+foreach i ( $files )
+  if ( ! ( -d $i ) ) continue
+
+  set dirname = `basename $i`
+
+  if ( "$dirname" == CVS ) then
+    echo "Removing CVS directory: $i"
+    rm -f -r $i
+    continue
+  endif
+end
+
+echo "Unknown files:"
+cat .unknown
+/bin/rm -f .unknown

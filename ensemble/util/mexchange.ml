@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -24,13 +24,14 @@ type src = (*Endpt.id*) string
 type dst = (*Endpt.id*) string
 type bignum = (*Shared.DH.bigum*) string 
 type key = string
-type nonce = int * string
+type nonce = int * string 
 
 (* The message types we are working on. 
 *)
 type inner_msg = 
   | Piece of src * Addr.set * nonce * dst * Addr.set * nonce * bignum
   | Reply of src * Addr.set * nonce * dst * Addr.set * bignum * Buf.t
+
 
 (* My id is used just to discard messages from myself. 
  *)
@@ -41,27 +42,30 @@ type msg =
 exception Bad_format of string
   
 type t = {
-  max_diff   : int ;
-  encrypt    : Buf.t -> Buf.t ;
-  nonce_init : Buf.t
+  max_diff    : int ;
+  encrypt     : Buf.t -> Buf.t ;
+  nonce_init  : Buf.t ;
+  view_id_buf : Buf.t    (* Used in the computation of nonces *)
 }
 
 
-let init max_diff = 
+let init max_diff view_id_str = 
   let nonce_init = Prng.create_buf (Buf.len_of_int 16) in 
   let idea_key = Prng.create_cipher () in
   let shared = Cipher.lookup "OpenSSL/IDEA" in
   let encrypt = Cipher.single_use shared idea_key true in
+  let view_id_buf = Buf.pad_string view_id_str in
   {
-    max_diff   = max_diff ;    
-    encrypt    = encrypt ;
-    nonce_init = nonce_init ;
+    max_diff    = max_diff ;    
+    encrypt     = encrypt ;
+    nonce_init  = nonce_init ;
+    view_id_buf = view_id_buf
   }
        
 (* Create a nonce of the type : (time,f(time)).
  * Inflate the localtime to 128bits by concatenation, concatenate that
- * to a random string. Digest the random pattern, and encrypt it under
- * IDEA.
+ * to a random string. Concatentate the result to the view_id. 
+ * Digest the random pattern, and encrypt it under IDEA.
  *)
 let create_nonce t ct = 
   let s1 = string_of_int ct in
@@ -69,7 +73,9 @@ let create_nonce t ct =
     if String.length s >= 16 then String.sub s 0 16 
     else loop (s^s) 
   in
-  let s1 = Buf.append t.nonce_init (Buf.of_string name (loop s1)) in
+  let s1 = loop s1 in
+  let s1 = Buf.append t.nonce_init (Buf.of_string name s1) in
+  let s1 = Buf.append t.view_id_buf s1 in
   let res = Buf.digest_sub s1 Buf.len0 (Buf.length s1) in
   (ct, hex_of_string (Buf.to_string (t.encrypt res)))
   
@@ -83,7 +89,6 @@ let check_nonce t my_time (ctime,nonce) =
     false 
       
 let diff_nonce t my_time (ctime,nonce) = my_time - ctime 
-  
 
 (* Safe marshaling.
 *)

@@ -1,7 +1,16 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ */
+/**************************************************************/
+/**************************************************************/
+/*
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.

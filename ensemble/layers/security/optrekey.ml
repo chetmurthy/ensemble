@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -60,7 +60,10 @@ type state = {
   mutable ts         : tree_state ;
   mutable xfer_vct   : Tree.z list ;
   sent_final         : Once.t ;
-  xfer_orig          : bool array 
+  xfer_orig          : bool array ;
+
+  (* For PERF measurements *)
+  mutable init_time  : float
 }
 	       
 (**************************************************************)
@@ -106,7 +109,9 @@ the regular rekeying protocol";
     };
     xfer_vct       = [] ;
     sent_final     = Once.create "sent_final" ;
-    xfer_orig      = Array.create ls.nmembers false 
+    xfer_orig      = Array.create ls.nmembers false ;
+
+    init_time      = 0.0
   }
   with e -> eprintf "OPTREKEY exception in init\n"; exit 0
 
@@ -118,7 +123,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let log = Trace.log2 name (string_of_int ls.rank) in
   let log1 = Trace.log2 (name^"1") "" in
   let log2 = Trace.log2 (name^"2") "" in
-  let logm = Trace.log2 (" "^name) "" in
+  let logm = Trace.log2 (name^"M") "" in
 
   (* [translate view view_new old_tree] 
    * Translate a tree from the current view to a new 
@@ -173,7 +178,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   
   let send_final_tree view_type new_tree inst = 
     log (fun () -> sprintf "%d FinalTree=%s" ls.rank (Tree.string_of_z new_tree));
-    logm (fun () -> sprintf " %d FinalTree= %d\n" ls.nmembers 
+    logm (fun () -> sprintf " %d FinalTree= %d" ls.nmembers 
       (String.length (Marshal.to_string (FinalTree (view_type,new_tree,inst)) [])));
     recv_final_tree view_type new_tree inst ;
     dnlm (castEv name) (FinalTree (view_type, new_tree, inst))
@@ -188,6 +193,14 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       s.xfer_vct <- tree :: s.xfer_vct;
       List.iter (function i -> s.xfer_orig.(i) <- true) rl; 
       if array_for_all Util.ident s.xfer_orig then (
+
+	(*
+	let now = Unix.gettimeofday () in
+	logm (fun () -> sprintf "%d Waited for %d components :%1.5f." 
+	    ls.nmembers (List.length s.xfer_vct) (now -. s.init_time ));
+	s.init_time <- now;
+*)
+
 	log (fun () -> "Recv all");
 	Once.set s.sent_final ;
 	let new_tree,al = Tree.merge (List.map Tree.unzip s.xfer_vct) in
@@ -236,6 +249,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       send_final_tree false (Tree.zip new_tree) (actions_h,bad_set)
     ) else (
       log (fun () -> "Start"); 
+      (*s.init_time <- Unix.gettimeofday ();*)
       dnlm (castEv name) Start ;
       send_component_to_leader ()
     )

@@ -1,0 +1,168 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\documentclass{article}
+\usepackage{fullpage}
+\newcommand {\note}[1]		{{\bf [#1]}}
+\newcommand {\sourcecode}[1]	{{\bf {#1}}}
+\newcommand {\mlval}[1]		{{\bf {#1}}}
+\newcommand {\hide}[1]
+
+\newcommand {\ensemble}[0]	{Ensemble}
+\newcommand {\horus}[0]		{Horus}
+\newcommand {\caml}[0]		{Objective Caml}
+\newcommand {\project}[1]	{\subsection{#1}}
+
+\title{Some projects related to \ensemble}
+\author{Mark Hayden}
+
+\begin{document}
+\maketitle
+This is a list of potential projects related to \ensemble.
+
+\section{Distributed Systems}
+
+\project{Rendezvous/Instrumentation} 
+From its start, the Isis toolkit has had mechanisms for ``rendezvous'ing''
+with already-running Isis application processes to get state dumps.
+Implementing a similar mechanism for \ensemble\ to allow connecting with
+\ensemble\ processes and investigating the protocol states would be a very
+useful tool.
+
+\project{``Universal'' Load Generator}
+Currently, performance tests are difficult to run on \ensemble\ because we
+do not have any testing infrastructure.  I propose building a suite of test
+programs for generating different kinds of communication loads on the
+system, monitoring system load, and testing a variety of performance
+metrics.  This would make \ensemble\ much more useful for doing protocol
+research.  This is not just ``make work'': this could be good research
+because performance evaluation of distributed systems is a recurring
+problem.
+
+\project{Buffer Pool Management} 
+With protocol layer bypassing, the main costs of using virtual synchrony
+with \ensemble\ are (1) extra communication to detect broadcast stability and
+(2) loss of memory locality due to the buffering of messages while awaiting
+stability.  This project would involve building a special buffer management
+system in C to decrease the impact of (2).  The buffer management system
+should optimize for buffering and deallocation operations, and not for
+buffer-lookup operations: the normal case is for a message to be buffered
+and then later dropped, without ever looking it up.  It should find ways to
+make sure buffered messages are packed closely together in memory.  One
+more note: with the protocol bypass code, the buffering operation is the
+only operation that involves memory allocation: if we can do this in C we
+should dramatically reduce the number of garbage collections.
+
+\project{Common Transport}
+The C and ML implementations of \ensemble\ should have very similar requirements
+on their communication transports.  This project would involve building a
+common transport system in C and then interfacing it with ML so that we
+could run both C and ML protocol stacks in the same address space.  Should
+also improve the performance of the ML implementation considerably.
+
+\project{Weak Virtual Synchrony}
+Protocol stack switches on view changes support an easy implementation of
+weak virtual synchrony.  The idea is to not wait until the group is blocked
+before starting the new view.  Instead, create the new view and associated
+protocol stacks immediately.  The application can then send and recieve
+messages in the new view immediately, but has to be able to handle
+receiving of messages in the old view until that becomes stable.
+Implementing this probably require a new protocol layer or two and
+extensions to the application interface.
+
+\project{Unimplemented Protocol Layers} 
+
+Some of the original \horus\ protocol layers are currently unimplemented in
+\ensemble.  These include LWG (lightweight groups), CAUSAL (causal ordering),
+PRIMARY (primary views).
+
+\project{Textbook Protocols}
+Our protocols are getting surprisingly simple.  It would be interesting to
+try to find some ``textbook'' protocols that directly translate to the
+\ensemble\ framework.  The more interesting possibilities for this are probably
+the MNAK and the GMP protocols.
+
+\section{Distributed Applications}
+
+\project{Predicate Detection Server}
+
+Developing and verifying new protocols is difficult because a protocol's
+state is distributed across several processes.  A predicate detection
+system is a mechanism for collecting all of the states in the system and
+testing predicates against the states in a meaningful fashion (for example,
+only against consistent cuts of the system).  Implementing and using such a
+server in ML is facilitated by the general purpose marshaling primitives.
+Some ideas here:
+\begin{itemize}
+\item
+Allow different predicate detection policies to be used to determine which
+cuts of the system the predicate is detected against.
+\item
+Incorporate this with a rendezvous mechanism to allow predicate detection
+to be started on already-running groups.
+\end{itemize}
+
+\project{Reliable/Load-balanced Web Server}
+\note{todo}
+
+\project{Connection ID Server}
+
+This is an application that will have to be built at some point.  The new
+version of the \ensemble\ transports use hashed connection identifiers for
+message routing.  These are assumed to be unique, and if they are not big
+problems result.  A connection ID server would allocate new IDs and ensure
+that they are unique.  It probably should not have to hand out new IDs for
+every group view, but instead provide ``seeds'' with which groups can
+generate guaranteed unique IDs on their own.
+
+\section{Programming Language Related Projects}
+\project{Compiling to C}
+The protocol layers use only a simple subset of the ML language.  We should
+be able to compile the protocol layers directly to C in a rather
+straightforward fashion.  Some goals: (1) maintain formatting of the
+original source, including comments, (2) detect message allocation and
+generate inlined marshaling and unmarshaling code.
+
+\project{Compiling Bypass Layers}
+Layering introduces several performance problems in \ensemble\ (as well as other
+systems).  Under certain conditions, stacks of layer perform staticly
+determined sets of operations on events.  Special bypass layers can be
+built which test for these conditions and then optimize out almost all the
+layering overhead that protocol stacks normally suffer from.  Experiments
+doing this by hand show that:
+\begin{enumerate}
+\item
+The fast-path code can be made very small.
+\item 
+When the whole stack is being bypassed, state updates can be delayed until
+after messages are sent.
+\item
+Event queuing can be optimized out.
+\item
+Events can be ``virtualized'' to eliminate their allocation and
+deallocation.
+\item 
+Small, fixed size headers can be statically determined and used at runtime.
+\end{enumerate}
+Building a compiler to automate this process would involve:
+\begin{enumerate}
+\item 
+Building a state machine representation of all layers to be bypassed.
+\item 
+Determining event traces through the layers that are suitable for bypass.
+\item 
+Using event traces for code generation.
+\end{enumerate}
+
+\project{Annotating ML Programs}
+ML's static scoping should allow all variable references to be determined
+at compile time.  We should be able to take a set of ML modules and
+generate html files for each in which all references have be converted to
+hyper-text links to the definition of the value or type.
+\end{document}

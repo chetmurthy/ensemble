@@ -1,0 +1,46 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\begin{Layer}{HEAL}
+
+This protocol is used to merge partitions of a group.
+
+\begin{Protocol}
+The coordinator occasionally broadcasts the existence of this partition via
+\DnGossipExt\ events.  These are delivered unreliably to coordinators of other
+partitions.  If a coordinator decides to merge partitions, then it prompts a
+view change and inserts the name of the remote coordinator in the \UpBlockOk\
+event.  The INTER protocol takes over from there.  Merge cycles are prevented
+by only allowing merges to be made from smaller view id's to larger view id's.
+\end{Protocol}
+
+\begin{Parameters}
+\item
+heal\_wait\_stable : whether or not to wait for a first broadcast message to
+become stable before starting the protocol.  This ensures that all the members
+are in the group.
+\end{Parameters}
+
+\begin{Properties}
+\item \todo{}
+\end{Properties}
+
+\begin{Sources}
+\sourcesfile{heal.ml}
+\end{Sources}
+
+\begin{GenEvent}
+\genevent{\UpPrompt}
+\genevent{\DnGossipExt}
+\end{GenEvent}
+
+\begin{Testing}
+\item see the VSYNC stack
+\end{Testing}
+\end{Layer}

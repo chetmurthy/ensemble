@@ -1,7 +1,7 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -121,7 +121,8 @@ value hot_ml_copy_string(const char *s) {
   
   len = strlen(s);
   res = alloc_string(len);
-  bcopy(s, String_val(res), len);
+  //  bcopy(s, String_val(res), len);
+  memcpy(String_val(res), s, len);
   return res;
 }
 

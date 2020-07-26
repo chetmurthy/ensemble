@@ -1,0 +1,93 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+'\begin{Layer}{PT2PTWP} 
+
+This layer implements an adaptive window-based flow control protocol 
+for point-to-point communication between the group members. 
+
+In this protocol the receiver's buffer space is shared between all group
+members. This is accomplished by dividing the receiver's window among 
+the senders according to the bandwidth of the data being received from each 
+sender. Such way of sharing attempts to minimize the number of ack messages, 
+i.e.\ to increase message efficiency.
+
+\begin{Protocol}
+In the following, the term acknowledgement is used with the meaning 
+of flow control protocols and not that of reliable communication protocols.
+
+This protocol uses \emph{credits} to measure the available buffer space 
+at the receiver's side. Each sender maintains a \emph{window} per each 
+destination, which is used to bound the unacknowledged data a process 
+can send point-to-point to the given destination. For each message it 
+sends, the process deducts a certain amount of credit based on the size 
+of the message. Messages are transmitted only if the sender has enough 
+credit for them. Otherwise, messages are buffered at the sender.
+
+A receiver keeps track of the amount of unacknowledged data it has 
+received from each sender. Whenever it decides to acknowledge a sender,
+it sends a message containing new amount of credit for this sender.
+On receipt of an acknowledgement message, sender recalculates the amount 
+of credit for this receiver, and the buffered messages are sent based 
+on the new credit.
+
+The receiver measures the bandwidth of the data being received from each 
+sender. It starts with zero bandwidth, and adjusts it periodically with 
+timeout \emph{pt2ptwp\_sweep}. 
+
+On receipt of a point-to-point message, the receiver checks if the sender 
+has passed threshold of its window, i.e. if the amount of data in
+point-to-point messages received from this sender since the last ack was
+sent to it has exceeded a certain ratio, \emph{pt2ptwp\_ack\_thresh}, 
+of the sender's window. If it is, an ack with some credit has to be sent 
+to the sender. In order to adjust processes' windows according to their 
+bandwidth, the receiver attempts to steal some credit from an appropriate 
+process and add it to the sender's window. The receiver looks for a process 
+with maximal \( \frac{window}{\sqrt{bandwidth}} \) ratio, decreases its window 
+by certain amount of credit and increases the window of the sender appropriately. 
+Then the receiver sends the sender ack with the new amount of credit. When the 
+process from which the credit was stolen passes theshold of its new, smaller 
+window, the receiver sends ack to it.
+\end{Protocol}
+
+\begin{Parameters}
+\item pt2ptwp\_window : size of the receiver's window, reflects the receiver's 
+buffer space.
+\item pt2ptwp\_ack\_thresh : the ratio used by the receiver while deciding 
+to acknowledge senders.
+\item pt2ptwp\_min\_credit : minimal amount of credit each process must have.
+\item pt2ptwp\_bw\_thresh : credit may be stolen for processes with greater 
+bandwidth only.
+\item pt2ptwp\_sweep : the timeout of periodical adjustment of bavdwidth.
+\end{Parameters}
+
+\begin{Properties}
+\item
+This protocol requires reliable point-to-point properties from underlying 
+protocol layers.
+\end{Properties}
+
+\begin{Notes}
+\item
+As opposed to most of the \ensemble\ protocols, this protocol implements flow
+control on bytes and not on messages. It only considers the data in the
+application payload portion of the message (the \mlval{iov} field of the
+event).
+\end{Notes}
+
+\begin{Sources}
+\sourcesfile{pt2ptwp.ml}
+\end{Sources}
+
+\begin{Testing}
+\item
+Correctness and performance testing has been carried out.
+\end{Testing}
+
+\end{Layer}

@@ -1,0 +1,35 @@
+#*************************************************************#
+#
+#   Ensemble, 1.10
+#   Copyright 2001 Cornell University, Hebrew University
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+CC = javac
+
+.SUFFIXES: .java .class
+.java.class:
+	javac $<
+
+CLASSFILES= \
+	ensemble\hot\Hot_Buffer.class \
+	ensemble\hot\Hot_Callbacks.class \
+	ensemble\hot\Hot_Endpoint.class \
+	ensemble\hot\Hot_Ensemble.class \
+	ensemble\hot\Hot_Error.class \
+	ensemble\hot\Hot_GroupContext.class \
+	ensemble\hot\Hot_JoinOps.class \
+	ensemble\hot\Hot_Message.class \
+	ensemble\hot\Hot_ViewID.class \
+	ensemble\hot\Hot_ViewState.class \
+	ensemble\hot\Hot_ObjectMessage.class \
+	ensemble\hot\Hot_IO_Controller.class
+
+all: $(CLASSFILES) EnsDemoOutboard.class
+	copy ..\demo\outboard.exe .
+
+clean:
+	-del /Q ensemble\hot\*.class
+	-del /Q *.class

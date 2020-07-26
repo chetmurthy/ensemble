@@ -1,12 +1,3 @@
-#*************************************************************#
-#
-#   Ensemble, (Version 1.00)
-#   Copyright 2000 Cornell University
-#   All rights reserved.
-#
-#   See ensemble/doc/license.txt for further information.
-#
-#*************************************************************#
 # -*- Mode: makefile -*-
 #*************************************************************#
 #
@@ -533,31 +524,46 @@ clean:
 realclean: clean
 	$(RMDIR) obj
 	$(MKDIR) obj
-	(cd ../lib; $(MAKE) realclean)
-	(cd ../demo; $(MAKE) realclean)
-	(cd ../maestro; $(MAKE) realclean)
+
+
+#	(cd ../lib; $(MAKE) realclean)
+#	(cd ../demo; $(MAKE) realclean)
+#	(cd ../maestro; $(MAKE) realclean)
 
 #*************************************************************#
 
-SRCDIRS = util appl route infr trans type buffer \
+ML_SRCDIRS = util appl route infr trans type buffer \
   trans/atm trans/mpi rpc socket hot groupd \
   layers/trans layers/other layers/flow layers/bypass	 \
   layers/total layers/gossip layers/debug layers/vsync	 \
   layers/scale layers/security \
   crypto crypto/isaac crypto/OpenSSL
 
+C_SRCDIRS = socket hot crypto/isaac crypto/OpenSSL
+
 depend: $(OBJD) $(ECAMLDEP)
-	$(ECAMLDEPC) $(DEPFLAGS)	\
-	  -com '$$(ENSCOMP)'		\
-	  -depend '$$(ECAMLC)'		\
-	  -I $(ENSROOT)/hsys		\
-	  $(SRCDIRS:%=-I $(ENSROOT)/%)	\
-	  $(ENSROOT)/socket/*.c		\
-	  $(ENSROOT)/hot/*.c		\
-	  $(ENSROOT)/crypto/*.c		\
-	  $(ENSROOT)/crypto/*/*.c	\
-	  $(ENSROOT)/atm/atm_ocaml.c	\
-	  $(SRCDIRS:%=$(ENSROOT)/%/*.mli) \
-	  $(SRCDIRS:%=$(ENSROOT)/%/*.ml) > $(DEPEND)
+	$(ECAMLDEP) $(DEPFLAGS)\
+	  -com "$(ENSCOMP)" \
+	  -cc "$(CC)" \
+	  -dep $(OBJD) \
+	  -depend $(ECAMLC) \
+	  -ensroot $(ENSROOT) \
+	  -mlsrcdirs $(ML_SRCDIRS) \
+	  -csrcdirs $(C_SRCDIRS) > $(DEPEND)
+
+#
+#   OLD version
+#
+#depend: $(OBJD) $(ECAMLDEP)
+#	$(ECAMLDEP) $(DEPFLAGS)	\
+#	  -com '$$(ENSCOMP)'		\
+#	  -depend '$$(ECAMLC)'		\
+#	  $(SRCDIRS:%=-I $(ENSROOT)/%)	\
+#	  $(ENSROOT)/socket/*.c		\
+#	  $(ENSROOT)/hot/*.c		\
+#	  $(ENSROOT)/crypto/*.c		\
+#	  $(ENSROOT)/crypto/*/*.c	\
+#	  $(SRCDIRS:%=$(ENSROOT)/%/*.mli) \
+#	  $(SRCDIRS:%=$(ENSROOT)/%/*.ml) > $(DEPEND)
 
 #*************************************************************#

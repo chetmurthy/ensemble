@@ -1,7 +1,7 @@
 #*************************************************************#
 #
-#   Ensemble, (Version 1.00)
-#   Copyright 2000 Cornell University
+#   Ensemble, 1.10
+#   Copyright 2001 Cornell University, Hebrew University
 #   All rights reserved.
 #
 #   See ensemble/doc/license.txt for further information.
@@ -20,7 +20,7 @@ CCC		= g++
 SYSNAME_linux	= LINUX
 SYSNAME_solaris	= SOLARIS
 SYSNAME_sunos4	= SUN4
-SYSNAME		= $(SYSNAME_$(OSTYPE))
+SYSNAME		= $(SYSNAME_$(ENS_OSTYPE))
 
 #**********************************************************
 
@@ -40,7 +40,7 @@ AR		= ar r
 
 .SUFFIXES: .C.o .c.o 
 
-PLATFORM	= $(MACHTYPE)-$(OSTYPE)
+PLATFORM	= $(ENS_MACHTYPE)-$(ENS_OSTYPE)
 OBJDIR		= $(ROOT)/conf/$(PLATFORM)
 
 sparc-solaris_LIB 	= -lsocket -lposix4 -lthread -lpthread \

@@ -1,123 +1,114 @@
-#*************************************************************#
-#
-#   Ensemble, (Version 1.00)
-#   Copyright 2000 Cornell University
-#   All rights reserved.
-#
-#   See ensemble/doc/license.txt for further information.
-#
-#*************************************************************#
 Maestro_Perf.o: ../../src/type/Maestro_Perf.C \
- ../../src/type/Maestro_Perf.h ../../src/type/Maestro_Types.h \
- ../../../hot/include/hot_sys.h ../../../hot/include/hot_error.h \
- ../../../hot/include/hot_thread.h ../../../hot/include/hot_msg.h \
- ../../../hot/include/hot_ens.h ../../src/type/Maestro_Config.h \
- ../../src/type/Maestro_OrderedSet.h
+  ../../src/type/Maestro_Perf.h ../../src/type/Maestro_Types.h \
+  ../../../hot/include/hot_sys.h ../../../hot/include/hot_error.h \
+  ../../../hot/include/hot_thread.h ../../../hot/include/hot_msg.h \
+  ../../../hot/include/hot_ens.h ../../src/type/Maestro_Config.h \
+  ../../src/type/Maestro_OrderedSet.h
 Maestro_Types.o: ../../src/type/Maestro_Types.C \
- ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
- ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
- ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
- ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h
+  ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
+  ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
+  ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
+  ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h
 Maestro_CORBA.o: ../../src/corba/Maestro_CORBA.C \
- ../../src/corba/Maestro_CORBA.h ../../src/type/Maestro_Types.h \
- ../../../hot/include/hot_sys.h ../../../hot/include/hot_error.h \
- ../../../hot/include/hot_thread.h ../../../hot/include/hot_msg.h \
- ../../../hot/include/hot_ens.h ../../src/type/Maestro_Config.h \
- ../../src/type/Maestro_OrderedSet.h
+  ../../src/corba/Maestro_CORBA.h ../../src/type/Maestro_Types.h \
+  ../../../hot/include/hot_sys.h ../../../hot/include/hot_error.h \
+  ../../../hot/include/hot_thread.h ../../../hot/include/hot_msg.h \
+  ../../../hot/include/hot_ens.h ../../src/type/Maestro_Config.h \
+  ../../src/type/Maestro_OrderedSet.h
 Maestro_ETC.o: ../../src/corba/Maestro_ETC.C \
- ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
- ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
- ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
- ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h \
- ../../src/corba/Maestro_ETC.h ../../src/corba/Maestro_CORBA.h \
- ../../src/corba/Maestro_GIOP.h
+  ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
+  ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
+  ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
+  ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h \
+  ../../src/corba/Maestro_ETC.h ../../src/corba/Maestro_CORBA.h \
+  ../../src/corba/Maestro_GIOP.h
 Maestro_GIOP.o: ../../src/corba/Maestro_GIOP.C \
- ../../src/corba/Maestro_GIOP.h ../../src/corba/Maestro_CORBA.h \
- ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
- ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
- ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
- ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h
+  ../../src/corba/Maestro_GIOP.h ../../src/corba/Maestro_CORBA.h \
+  ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
+  ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
+  ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
+  ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h
 Maestro_IIOPBridge.o: ../../src/corba/Maestro_IIOPBridge.C \
- ../../src/corba/Maestro_IIOPBridge.h ../../src/corba/Maestro_CORBA.h \
- ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
- ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
- ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
- ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h \
- ../../src/corba/Maestro_GIOP.h ../../src/type/Maestro_Perf.h
+  ../../src/corba/Maestro_IIOPBridge.h ../../src/corba/Maestro_CORBA.h \
+  ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
+  ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
+  ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
+  ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h \
+  ../../src/corba/Maestro_GIOP.h ../../src/type/Maestro_Perf.h
 Maestro_ORB.o: ../../src/corba/Maestro_ORB.C \
- ../../src/corba/Maestro_ORB.h ../../src/corba/Maestro_CORBA.h \
- ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
- ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
- ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
- ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h \
- ../../src/corba/Maestro_GIOP.h ../../src/corba/Maestro_IIOPBridge.h \
- ../../src/type/Maestro_Perf.h
+  ../../src/corba/Maestro_ORB.h ../../src/corba/Maestro_CORBA.h \
+  ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
+  ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
+  ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
+  ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h \
+  ../../src/corba/Maestro_GIOP.h ../../src/corba/Maestro_IIOPBridge.h \
+  ../../src/type/Maestro_Perf.h
 newkey.o: ../../src/util/newkey.C ../../src/corba/Maestro_ORB.h \
- ../../src/corba/Maestro_CORBA.h ../../src/type/Maestro_Types.h \
- ../../../hot/include/hot_sys.h ../../../hot/include/hot_error.h \
- ../../../hot/include/hot_thread.h ../../../hot/include/hot_msg.h \
- ../../../hot/include/hot_ens.h ../../src/type/Maestro_Config.h \
- ../../src/type/Maestro_OrderedSet.h ../../src/corba/Maestro_GIOP.h \
- ../../src/corba/Maestro_IIOPBridge.h ../../src/type/Maestro_Perf.h
+  ../../src/corba/Maestro_CORBA.h ../../src/type/Maestro_Types.h \
+  ../../../hot/include/hot_sys.h ../../../hot/include/hot_error.h \
+  ../../../hot/include/hot_thread.h ../../../hot/include/hot_msg.h \
+  ../../../hot/include/hot_ens.h ../../src/type/Maestro_Config.h \
+  ../../src/type/Maestro_OrderedSet.h ../../src/corba/Maestro_GIOP.h \
+  ../../src/corba/Maestro_IIOPBridge.h ../../src/type/Maestro_Perf.h
 read_ior.o: ../../src/util/read_ior.C \
- ../../src/corba/Maestro_IIOPBridge.h ../../src/corba/Maestro_CORBA.h \
- ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
- ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
- ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
- ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h \
- ../../src/corba/Maestro_GIOP.h ../../src/type/Maestro_Perf.h \
- ../../src/corba/Maestro_ETC.h ../../src/corba/Maestro_ORB.h
-Maestro_CSX.o: ../../src/group/Maestro_CSX.C \
- ../../src/group/Maestro_CSX.h ../../src/group/Maestro_ClSv.h \
- ../../src/group/Maestro_GroupMember.h ../../src/type/Maestro_Types.h \
- ../../../hot/include/hot_sys.h ../../../hot/include/hot_error.h \
- ../../../hot/include/hot_thread.h ../../../hot/include/hot_msg.h \
- ../../../hot/include/hot_ens.h ../../src/type/Maestro_Config.h \
- ../../src/type/Maestro_OrderedSet.h
+  ../../src/corba/Maestro_IIOPBridge.h ../../src/corba/Maestro_CORBA.h \
+  ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
+  ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
+  ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
+  ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h \
+  ../../src/corba/Maestro_GIOP.h ../../src/type/Maestro_Perf.h \
+  ../../src/corba/Maestro_ETC.h ../../src/corba/Maestro_ORB.h
 Maestro_ClSv.o: ../../src/group/Maestro_ClSv.C \
- ../../src/group/Maestro_ClSv.h ../../src/group/Maestro_GroupMember.h \
- ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
- ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
- ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
- ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h
-Maestro_ES_ReplicatedUpdates.o: \
+  ../../src/group/Maestro_ClSv.h ../../src/group/Maestro_GroupMember.h \
+  ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
+  ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
+  ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
+  ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h
+Maestro_CSX.o: ../../src/group/Maestro_CSX.C \
+  ../../src/group/Maestro_CSX.h ../../src/group/Maestro_ClSv.h \
+  ../../src/group/Maestro_GroupMember.h ../../src/type/Maestro_Types.h \
+  ../../../hot/include/hot_sys.h ../../../hot/include/hot_error.h \
+  ../../../hot/include/hot_thread.h ../../../hot/include/hot_msg.h \
+  ../../../hot/include/hot_ens.h ../../src/type/Maestro_Config.h \
+  ../../src/type/Maestro_OrderedSet.h
+Maestro_ES_ReplicatedUpdates.o:  \
  ../../src/group/Maestro_ES_ReplicatedUpdates.C \
- ../../src/group/Maestro_CSX.h ../../src/group/Maestro_ClSv.h \
- ../../src/group/Maestro_GroupMember.h ../../src/type/Maestro_Types.h \
- ../../../hot/include/hot_sys.h ../../../hot/include/hot_error.h \
- ../../../hot/include/hot_thread.h ../../../hot/include/hot_msg.h \
- ../../../hot/include/hot_ens.h ../../src/type/Maestro_Config.h \
- ../../src/type/Maestro_OrderedSet.h ../../src/group/Maestro_Prim.h \
- ../../src/corba/Maestro_ORB.h ../../src/corba/Maestro_CORBA.h \
- ../../src/corba/Maestro_GIOP.h ../../src/corba/Maestro_IIOPBridge.h \
- ../../src/type/Maestro_Perf.h ../../src/corba/Maestro_ETC.h \
- ../../src/group/Maestro_Adaptor.h \
- ../../src/group/Maestro_ES_ReplicatedUpdates.h
+  ../../src/group/Maestro_CSX.h ../../src/group/Maestro_ClSv.h \
+  ../../src/group/Maestro_GroupMember.h ../../src/type/Maestro_Types.h \
+  ../../../hot/include/hot_sys.h ../../../hot/include/hot_error.h \
+  ../../../hot/include/hot_thread.h ../../../hot/include/hot_msg.h \
+  ../../../hot/include/hot_ens.h ../../src/type/Maestro_Config.h \
+  ../../src/type/Maestro_OrderedSet.h ../../src/group/Maestro_Prim.h \
+  ../../src/corba/Maestro_ORB.h ../../src/corba/Maestro_CORBA.h \
+  ../../src/corba/Maestro_GIOP.h ../../src/corba/Maestro_IIOPBridge.h \
+  ../../src/type/Maestro_Perf.h ../../src/corba/Maestro_ETC.h \
+  ../../src/group/Maestro_Adaptor.h \
+  ../../src/group/Maestro_ES_ReplicatedUpdates.h
 Maestro_ES_Simple.o: ../../src/group/Maestro_ES_Simple.C \
- ../../src/corba/Maestro_ORB.h ../../src/corba/Maestro_CORBA.h \
- ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
- ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
- ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
- ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h \
- ../../src/corba/Maestro_GIOP.h ../../src/corba/Maestro_IIOPBridge.h \
- ../../src/type/Maestro_Perf.h ../../src/corba/Maestro_ETC.h \
- ../../src/group/Maestro_ES_Simple.h
+  ../../src/corba/Maestro_ORB.h ../../src/corba/Maestro_CORBA.h \
+  ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
+  ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
+  ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
+  ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h \
+  ../../src/corba/Maestro_GIOP.h ../../src/corba/Maestro_IIOPBridge.h \
+  ../../src/type/Maestro_Perf.h ../../src/corba/Maestro_ETC.h \
+  ../../src/group/Maestro_ES_Simple.h
 Maestro_Group.o: ../../src/group/Maestro_Group.C \
- ../../src/group/Maestro_Group.h ../../src/group/Maestro_GroupMember.h \
- ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
- ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
- ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
- ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h
+  ../../src/group/Maestro_Group.h ../../src/group/Maestro_GroupMember.h \
+  ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
+  ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
+  ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
+  ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h
 Maestro_GroupMember.o: ../../src/group/Maestro_GroupMember.C \
- ../../src/group/Maestro_GroupMember.h ../../src/type/Maestro_Types.h \
- ../../../hot/include/hot_sys.h ../../../hot/include/hot_error.h \
- ../../../hot/include/hot_thread.h ../../../hot/include/hot_msg.h \
- ../../../hot/include/hot_ens.h ../../src/type/Maestro_Config.h \
- ../../src/type/Maestro_OrderedSet.h ../../src/type/Maestro_Perf.h
+  ../../src/group/Maestro_GroupMember.h ../../src/type/Maestro_Types.h \
+  ../../../hot/include/hot_sys.h ../../../hot/include/hot_error.h \
+  ../../../hot/include/hot_thread.h ../../../hot/include/hot_msg.h \
+  ../../../hot/include/hot_ens.h ../../src/type/Maestro_Config.h \
+  ../../src/type/Maestro_OrderedSet.h ../../src/type/Maestro_Perf.h
 Maestro_Prim.o: ../../src/group/Maestro_Prim.C \
- ../../src/group/Maestro_Prim.h ../../src/group/Maestro_CSX.h \
- ../../src/group/Maestro_ClSv.h ../../src/group/Maestro_GroupMember.h \
- ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
- ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
- ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
- ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h
+  ../../src/group/Maestro_Prim.h ../../src/group/Maestro_CSX.h \
+  ../../src/group/Maestro_ClSv.h ../../src/group/Maestro_GroupMember.h \
+  ../../src/type/Maestro_Types.h ../../../hot/include/hot_sys.h \
+  ../../../hot/include/hot_error.h ../../../hot/include/hot_thread.h \
+  ../../../hot/include/hot_msg.h ../../../hot/include/hot_ens.h \
+  ../../src/type/Maestro_Config.h ../../src/type/Maestro_OrderedSet.h

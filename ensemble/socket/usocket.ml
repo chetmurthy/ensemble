@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -94,7 +94,7 @@ let flatten il =
 (* These are no-ops in the windows Unix library.
  *)
 
-let setsock_nonblock s b =
+let setsockopt_nonblock s b =
   if b then 
     Unix.set_nonblock s 
   else 
@@ -112,12 +112,14 @@ let static_string_free _ = ()
 let sendto_info s f a = (s,f,a)
 let send_info s f = (s,f)
 let has_ip_multicast () = false
-let setsock_multicast _ _ = failwith "setsock_multicast"
-let setsock_join _ _ = failwith "setsock_join"
-let setsock_leave _ _ = failwith "setsock_leave"
-let setsock_sendbuf _ _ = failwith "setsock_sendbuf"
-let setsock_recvbuf _ _ = failwith "setsock_recvbuf"
-let setsock_bsdcompat _ _ = failwith "setsock_bsdcompat"
+let in_multicast _ = failwith "in_multicast"
+let setsockopt_ttl _ _ = failwith "setsockopt_multicast"
+let setsockopt_loop _ _ = failwith "setsockopt_loop"
+let setsockopt_join _ _ = failwith "setsockopt_join"
+let setsockopt_leave _ _ = failwith "setsockopt_leave"
+let setsockopt_sendbuf _ _ = failwith "setsockopt_sendbuf"
+let setsockopt_recvbuf _ _ = failwith "setsockopt_recvbuf"
+let setsockopt_bsdcompat _ _ = failwith "setsockopt_bsdcompat"
 external int_of_file_descr : Unix.file_descr -> int = "%identity"
 let int_of_socket = int_of_file_descr
 let fd_of_socket s = s
@@ -308,6 +310,8 @@ type md5_ctx = string list ref
 
 let md5_init () = ref []
 
+let md5_init_full init_key = ref [init_key]
+
 let md5_update ctx buf ofs len =
   ctx := (String.sub buf ofs len) :: !ctx
 (*
@@ -335,15 +339,28 @@ let md5_final ctx =
 (* These are not supported at all.
  *)
 
-type process_handle
-let process_socket _ = failwith "process_socket"
-let spawn_process _ _ _ = failwith "spawn_process"
-let wait_process _ = failwith "wait_proces"
 let terminate_process _ = failwith "terminate_proces"
 let heap _ = failwith "heap"
 let frames _ = failwith "frames"
 let addr_of_obj _ = failwith "addr_of_obj"
 let minor_words () = (-1)
+
+
+(**************************************************************)
+type win = 
+    Win_3_11
+  | Win_95_98
+  | Win_NT_3_5
+  | Win_NT_4
+  | Win_2000
+
+type os_t_v = 
+    OS_Unix
+  | OS_Win of win
+
+let os_type_and_version () = 
+  failwith "fcuntion os_type_and_version not supported (under usocket). You need the optimzed socket library."
+(**************************************************************)
 
 type eth
 type eth_sendto_info

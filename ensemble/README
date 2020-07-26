@@ -1,25 +1,7 @@
 #*************************************************************#
 #
-#   Ensemble, (Version 1.00)
-#   Copyright 2000 Cornell University
-#   All rights reserved.
-#
-#   See ensemble/doc/license.txt for further information.
-#
-#*************************************************************#
-#*************************************************************#
-#
-#   Ensemble, (Version 0.71F)
-#   Copyright 2000 Cornell University
-#   All rights reserved.
-#
-#   See ensemble/doc/license.txt for further information.
-#
-#*************************************************************#
-#*************************************************************#
-#
-#   Ensemble, (Version 0.71F)
-#   Copyright 2000 Cornell University
+#   Ensemble, 1.10
+#   Copyright 2001 Cornell University, Hebrew University
 #   All rights reserved.
 #
 #   See ensemble/doc/license.txt for further information.
@@ -27,7 +9,7 @@
 #*************************************************************#
 README: Ensemble Root directory
 Author: Mark Hayden
-Last updated: 3/30/2000, by Tim Clark
+Last updated: 7/29/2001, by Ohad Rodeh
 
   The design of the Ensemble system is based to a large
   degree on the C implementation of Horus at the Cornell

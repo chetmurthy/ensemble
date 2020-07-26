@@ -1,7 +1,7 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -606,7 +606,7 @@ value skt_sendtosv(
 #ifdef ECONNREFUSED
     /* See ensemble/BUGS.
      */
-    if (ret == -1 && h_errno == ECONNREFUSED) {
+    if (ret == -1 && errno_h == ECONNREFUSED) {
       linux_warning("sendtov:sendto") ;
       sendto(sock, buf, len, flags, &msg->sa[i], msg->addrlen) ;      
     }
@@ -650,7 +650,7 @@ value skt_sendtovs(
 #ifdef ECONNREFUSED
     /* See ensemble/BUGS.
      */
-    if (ret == -1 && h_errno == ECONNREFUSED) {
+    if (ret == -1 && errno_h== ECONNREFUSED) {
       linux_warning("sendtov:sendto") ;
       sendto(sock, buf, len, flags, &msg->sa[i], msg->addrlen) ;      
     }

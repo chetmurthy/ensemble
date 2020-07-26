@@ -1,12 +1,3 @@
-#*************************************************************#
-#
-#   Ensemble, (Version 1.00)
-#   Copyright 2000 Cornell University
-#   All rights reserved.
-#
-#   See ensemble/doc/license.txt for further information.
-#
-#*************************************************************#
 # -*- Mode: makefile -*- 
 #*************************************************************#
 #
@@ -19,11 +10,8 @@
 #*************************************************************#
 #MAKE = make #by default, this is already set
 
-# These are set up to be run with gnumake
-MAKE_DEF = $(MAKE) -C $(ENSROOT)/def -k $(ENS_MAKEOPTS)
-MAKE_OPT = $(MAKE) -C $(ENSROOT)/opt #-k $(ENS_MAKEOPTS)
-
-.PHONY: clean def mmm life
+MAKE_DEF = cd $(ENSROOT)/def; $(MAKE) 
+MAKE_OPT = cd $(ENSROOT)/opt; $(MAKE) 
 
 def:
 	$(MAKE_DEF)
@@ -75,7 +63,7 @@ outb_test:
 
 test:
 	$(MAKE_DEF) install
-	$(MAKE) -C ../test
+	cd ../test; $(MAKE) 
 
 socket:
 	$(MAKE_DEF) socket
@@ -87,11 +75,9 @@ rpc:
 	$(MAKE_DEF) rpc
 
 tar:
-	$(MAKE) -C $(ENSROOT)/tar tar
+	cd $(ENSROOT)/tar ; $(MAKE) tar
 
-all:	
-
-clean::
-	$(RM) *~ .*~ *.cm* *.ppo *.aux .err a.out *.o *.a *.lib *.asm *.obj
+clean:
+	$(RM) *.cm* *.ppo *.aux .err a.out *.o *.a *.lib *.asm *.obj *~ .*~ .#?*
 
 #*************************************************************#

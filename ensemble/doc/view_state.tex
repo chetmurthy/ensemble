@@ -1,0 +1,75 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\subsection{View state}
+
+Several callbacks receive as an argument a pair of records with
+information about the new view.  The information is split into two
+parts, a \mlval{View.state} and a \mlval{View.local} record.  The
+first contains information that is common to all the members in the
+view, such as the \mlval{view} of the group.  The same record is
+delivered to all members.  The second record contains information
+local to the member that receives it.  These fields include the
+\mlval{Endpt.id} of the member and its \mlval{rank} in the view.  It
+also contains information that is derived from the \mlval{View.state}
+record, such as \mlval{nmembers} with is merely the length of the
+\mlval{view} field.
+
+\begin{codebox}
+(* VIEW.STATE: a record of information kept about views.
+ * This value should be common to all members in a view.
+ *)
+type state = \{
+  version       : Version.id ;		(* version of Ensemble *)
+  coord         : rank ;		(* initial coordinator *)
+  group		: Group.id ;		(* name of group *)
+  view 		: t ;			(* members in the view *)
+  ltime 	: ltime ;		(* logical time of the view *)
+  address       : Addr.set array ;	(* addresses of members *)
+  params        : Param.tl ;		(* parameters of protocols *)
+  prev_ids      : id list ;             (* identifiers for prev. views *)
+  groupd        : bool ;		(* using groupd server? *)
+  proto_id	: Proto.id ;		(* id of protocol in use *)
+  xfer_view	: bool ;		(* is this an XFER view? *)
+  key		: Security.key ;	(* keys in use *)
+  clients	: bool array ;		(* who are the clients in the group? *)
+  primary       : bool ;		(* primary partition? (only w/some protocols) *)
+  transitional  : bool			(* transitional view (for Transis) *)
+\}
+\end{codebox}
+
+\begin{codebox}
+(* VIEW.LOCAL: information about a view that is particular to 
+ * a member.
+ *)
+type local = \{
+  endpt	        : Endpt.id ;		(* endpoint id *)
+  addr	        : Addr.set ;		(* my address *)
+  view_id 	: id ;			(* unique id of this view *)
+  rank 	        : rank ;		(* rank in the view *)  
+  name		: string ;		(* my string name *)
+  nmembers 	: nmembers ;		(* # members in view *)
+  am_coord      : bool  		(* rank = vs.coord? *)
+\}  
+
+(* LOCAL: create local record based view state and endpt.
+ *)
+val local : debug -> Endpt.id -> state -> local
+\end{codebox}
+
+Most of the fields are moderately self-explanatory.  If
+\mlval{xfer\_view} is true, then this view is only for state transfer
+and all members should take an \mlval{XferDone} action when the state
+transfer is complete.  The view field is defined as \mlval{View.t},
+which is:
+\begin{codebox}
+(* VIEW.T: an array of endpt id's.
+ *)
+type t = Endpt.id array
+\end{codebox}

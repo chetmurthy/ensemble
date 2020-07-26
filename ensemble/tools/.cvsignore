@@ -1,0 +1,8 @@
+*.cm*
+setup
+.depend
+setup.ml
+ecamldep.ml
+ecamldep
+ecamlc
+ecp emv dist emrg elong etouch

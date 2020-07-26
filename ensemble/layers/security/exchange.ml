@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -49,8 +49,8 @@ type state = {
   dhl_key            : DH.key ;
   pub_key            : string ;
   policy             : (Addr.set -> bool) option ;
-  sfmrsh             : Mexchange.t;           (* The state for the SafeMarsh module *)
-  my_endpt           : string ;               (* A string representation of ls.endpt *)
+  sfmrsh             : Mexchange.t;    (* The state for the SafeMarsh module *)
+  my_endpt           : string ;        (* A string representation of ls.endpt *)
   mutable key_sug    : Security.key ;
   mutable blocked    : bool;
   mutable nonce      : int ;
@@ -86,7 +86,7 @@ let init s (ls,vs) =
     key_sug   = vs.key ;
     blocked   = false ;
     policy    = s.exchange;
-    sfmrsh    = Mexchange.init max_diff;
+    sfmrsh    = Mexchange.init max_diff (View.string_of_id ls.view_id);
     my_endpt  = my_endpt ;
     nonce     = 0 ;
     next      = Time.zero ;

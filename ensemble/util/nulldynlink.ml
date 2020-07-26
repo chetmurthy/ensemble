@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -26,6 +26,7 @@ let allow_unsafe_modules _ = failwith "allow_unsafe_modules"
 type linking_error =
     Undefined_global of string
   | Unavailable_primitive of string
+  | Uninitialized_global of string
 type error =
     Not_a_bytecode_file of string
   | Inconsistent_import of string
@@ -33,7 +34,9 @@ type error =
   | Unsafe_file
   | Linking_error of string * linking_error
   | Corrupted_interface of string
-exception Error of error
+  | File_not_found of string
 
+exception Error of error
+  
 let error_message _ = failwith "error_message"
 let digest_interface _ = failwith "digest_interfaces"

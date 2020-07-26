@@ -1,0 +1,104 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\newcommand {\hide}[1]          {~}
+\newcommand {\note}[1]		{{\bf [#1]}}
+\newcommand {\todo}[1]		{{\note{TODO: #1}}}
+\newcommand {\mlval}[1]		{{\bf {#1}}}
+
+\newcommand {\ensemble}[0]	{Ensemble}
+\newcommand {\horus}[0]		{Horus}
+\newcommand {\caml}[0]		{Objective Caml}
+\newcommand {\chk}[0]		{$\surd$}
+
+\newcommand {\incgraphics}[1]   {\includegraphics{fig/#1}}
+
+\newcommand {\sourcecode}[1]	{{\bf {#1}}}
+%\newcommand {\sourcelayer}[1]	{{\htmladdnormallink{#1}{../../layers/#1}}}
+%\newcommand {\sourceutil}[1]	{{\htmladdnormallink{#1}{../../util/#1}}}
+\newcommand {\sourcelayer}[1]	{\sourcecode{layers/#1}}
+\newcommand {\sourcedemo}[1]	{\sourcecode{demo/#1}}
+\newcommand {\sourceutil}[1]	{\sourcecode{util/#1}}
+\newcommand {\sourcetrans}[1]	{\sourcecode{trans/#1}}
+\newcommand {\sourcetype}[1]	{\sourcecode{type/#1}}
+\newcommand {\sourceappl}[1]	{\sourcecode{appl/#1}}
+\newcommand {\sourcecappl}[1]	{\sourcecode{cappl/#1}}
+\newcommand {\sourcehot}[1]	{\sourcecode{hot/#1}}
+
+\newcommand {\DnAck}[0]			{\mlval{Dn(Ack)}}
+\newcommand {\DnBlock}[0]		{\mlval{Dn(Block)}}
+\newcommand {\DnBlockOk}[0]		{\mlval{Dn(BlockOk)}}
+\newcommand {\DnCast}[0]		{\mlval{Dn(Cast)}}
+\newcommand {\DnDump}[0]		{\mlval{Dn(Dump)}}
+\newcommand {\DnExit}[0]		{\mlval{Dn(Exit)}}
+\newcommand {\DnFail}[0]		{\mlval{Dn(Fail)}}
+\newcommand {\DnGossip}[0]		{\mlval{Dn(Gossip)}}
+\newcommand {\DnGossipExt}[0]		{\mlval{Dn(GossipExt)}}
+\newcommand {\DnInvalid}[0]		{\mlval{Dn(Invalid)}}
+\newcommand {\DnLeave}[0]		{\mlval{Dn(Leave)}}
+\newcommand {\DnMergeDenied}[0]		{\mlval{Dn(MergeDenied)}}
+\newcommand {\DnMergeGranted}[0]	{\mlval{Dn(MergeGranted)}}
+\newcommand {\DnMerge}[0]		{\mlval{Dn(Merge)}}
+\newcommand {\DnSend}[0]		{\mlval{Dn(Send)}}
+\newcommand {\DnStable}[0]		{\mlval{Dn(Stable)}}
+\newcommand {\DnSuspect}[0]		{\mlval{Dn(Suspect)}}
+\newcommand {\DnTimer}[0]		{\mlval{Dn(Timer)}}
+\newcommand {\DnView}[0]		{\mlval{Dn(View)}}
+\newcommand {\DnElect}[0]		{\mlval{Dn(Elect)}}
+\newcommand {\DnPrompt}[0]		{\mlval{Dn(Prompt)}}
+
+\newcommand {\UpBlock}[0]		{\mlval{Up(Block)}}
+\newcommand {\UpPrompt}[0]		{\mlval{Up(Prompt)}}
+\newcommand {\UpBlockOk}[0]		{\mlval{Up(BlockOk)}}
+\newcommand {\UpCast}[0]		{\mlval{Up(Cast)}}
+\newcommand {\UpRekey}[0]		{\mlval{Up(Rekey)}}
+\newcommand {\ERekeyPrcl}[0]		{\mlval{ERekeyPrcl}}
+\newcommand {\UpDump}[0]		{\mlval{Up(Dump)}}
+\newcommand {\UpElect}[0]		{\mlval{Up(Elect)}}
+\newcommand {\UpExit}[0]		{\mlval{Up(Exit)}}
+\newcommand {\UpFail}[0]		{\mlval{Up(Fail)}}
+\newcommand {\UpGossip}[0]		{\mlval{Up(Gossip)}}
+\newcommand {\UpInit}[0]		{\mlval{Up(Init)}}
+\newcommand {\UpInvalid}[0]		{\mlval{Up(Invalid)}}
+\newcommand {\UpLeave}[0]		{\mlval{Up(Leave)}}
+\newcommand {\UpLostMessage}[0]		{\mlval{Up(LostMessage)}}
+\newcommand {\UpMergeDenied}[0]		{\mlval{Up(MergeDenied)}}
+\newcommand {\UpMergeFailed}[0]		{\mlval{Up(MergeFailed)}}
+\newcommand {\UpMergeGranted}[0]	{\mlval{Up(MergeGranted)}}
+\newcommand {\UpMergeRequest}[0]	{\mlval{Up(MergeRequest)}}
+\newcommand {\UpOrphan}[0]		{\mlval{Up(Orphan)}}
+\newcommand {\UpSend}[0]		{\mlval{Up(Send)}}
+\newcommand {\UpStable}[0]		{\mlval{Up(Stable)}}
+\newcommand {\UpSuspect}[0]		{\mlval{Up(Suspect)}}
+\newcommand {\UpSystemError}[0]		{\mlval{Up(SystemError)}}
+\newcommand {\UpTimer}[0]		{\mlval{Up(Timer)}}
+\newcommand {\UpView}[0]		{\mlval{Up(View)}}
+
+\newlength{\figurewidth}
+\newsavebox{\figurebox}
+\newenvironment{codebox}{
+\figurewidth\hsize
+\addtolength{\figurewidth}{-4\fboxsep}
+\addtolength{\figurewidth}{-4\fboxrule}
+
+\begin{alltt}
+\sbox{\figurebox}\bgroup
+\begin{minipage}{\figurewidth}
+}{
+\end{minipage}
+\egroup
+\fbox{\usebox{\figurebox}}
+\end{alltt}
+}
+
+% Ohad.
+% A macro for putting scaled figures in boxes.
+\newcommand{\putfigfbox}[2]     {\fbox { \scalebox{#1}{\includegraphics{#2}} } }
+
+

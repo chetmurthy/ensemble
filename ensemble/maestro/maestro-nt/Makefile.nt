@@ -1,16 +1,16 @@
 #*************************************************************#
 #
-#   Ensemble, (Version 1.00)
-#   Copyright 2000 Cornell University
+#   Ensemble, 1.10
+#   Copyright 2001 Cornell University, Hebrew University
 #   All rights reserved.
 #
 #   See ensemble/doc/license.txt for further information.
 #
 #*************************************************************#
-
 ENSLIB = ..\..\lib\nt
 LIBHOT = libhot-nt.lib
 LIBMAE = libmae-nt.lib
+CC = cl /nologo
 LIBCRYPTO =
 #LIBCRYPTO = $(ENSLIB)\libcryptoc-nt.lib
 MAESTRO_OBJ = 	Maestro_Types.obj \
@@ -21,7 +21,7 @@ MAESTRO_OBJ = 	Maestro_Types.obj \
 		Maestro_Group.obj
 
 
-CFLAGS = /TP /I$(ENSLIB) -DWIN32
+CFLAGS = /TP /I$(ENSLIB) 
 LDFLAGS = /link $(LIBMAE) $(LIBCRYPTO) /NODEFAULTLIB \
 	libcmt.lib libcpmt.lib libcimt.lib \
 	oldnames.lib kernel32.lib wsock32.lib
@@ -41,6 +41,9 @@ group.exe: $(LIBMAE) group.c
 	cl $(CFLAGS) group.c $(LDFLAGS)
 
 clean:
-	del /Q *.obj
-	del /Q libmae-nt.lib
-	del /Q maestro_test.exe
+	-del /Q *.obj
+	-del /Q *.exe
+	-del /Q libmae-nt.lib
+
+depend: 
+	@echo "Maestro: (make depend): currently not implemented on WIN32"

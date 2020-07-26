@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -1024,7 +1024,7 @@ module TwoConnect = struct
   open TreeSize
     
   (* [real_balance x l r y sz] 
-   * Take a with non empty first, last, left and right. It
+   * Take a diamond with non empty First, Last, Left and Right. It
    * is possible that the left and right sides are not balanced. This
    * function balances them, at low cost. 
    *)

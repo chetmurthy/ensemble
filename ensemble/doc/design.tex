@@ -1,0 +1,37 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\section{\ensemble\ Design Goals}
+
+\item
+Achieve modularity of protocols by separation of intra-stack communication
+(which uses events) from inter-stack communication (which uses headers
+pushed onto messages).  Protocol layers should communicate in the same
+protocol stack only by passing/receiving events directly to/from adjacent
+layers.  Protocol layers should communicate with other protocol stacks only
+by use of headers on messages which are sent to the equivalent protocol
+layer in the remote protocol stacks.
+\item
+Use simple model of execution for protocol layers.  This model should be
+simple in order to allow flexibility in the design of the infrastructure
+surrounding it.
+\item
+Attempt to make protocol layers configurable in different stacks with
+different configurations of other protocol layers.
+\item
+Separation of messages and membership parts of protocols.  For the
+membership protocols, this does not apply.  For the non-membership
+protocols, this means attempting to isolate aspects of the protocols that
+deal with membership from those that do not, so that they have the
+appearance of being two layers right next to each other.
+\item
+Avoid bouncing of events.  Events should in general traverse the protocol
+stack without interruption.  Membership-related events should be only
+bounced off of the bottom of the protocol stack and actions taken as a
+result of membership changes should only be made on the bounced up event.

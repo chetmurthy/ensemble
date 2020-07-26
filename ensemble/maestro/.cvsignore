@@ -1,0 +1,8 @@
+.depend
+*.o
+*.obj
+*.a
+*.lib
+.err
+maestro_test maestro_test_threads
+elec

@@ -1,7 +1,7 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -9,150 +9,269 @@
 /**************************************************************/
 /**************************************************************/
 /* MULTICAST.C: support for IPMC operations. */
-/* Author: Mark Hayden, 10/96 */
+/* Author: Ohad Rodeh 7/2001 */
+/* Based on code by Mark Hayden */
 /**************************************************************/
+#include "skt.h"
+
+#ifndef _WIN32
+#ifdef HAS_SOCKETS
+
 /* Include these here so that the IPM_BASE
  * option will work.
  */
 #ifdef UNIX
 #include <sys/ioctl.h>
 #endif
+
 /**************************************************************/
-
-#include "skt.h"
-
-#if defined(HAS_SOCKETS) && defined(HAS_IP_MULTICAST) && defined (IP_ADD_MEMBERSHIP)
-
-#ifdef BIG_ENDIAN		/* for SP2 */
-#undef BIG_ENDIAN
-#endif
-
-#ifdef SKT_PROTO
-int setsockopt(int s, int level, int optname, const char *optval, int optlen) ;
-#endif
-
 value skt_has_ip_multicast() {	/* ML */
   return Val_true ; 
 }
 
 /**************************************************************/
-
-/* Do whatever is appropriate to prepare multicast sockets.
+/* Is the address a D class address?
  */
-value skt_setsock_multicast(	/* ML */
-        value sock_v,
-	value loopback_v
-) {
-  ocaml_skt sock = Socket_val(sock_v) ;
-  int ret ;
-  char char_value ;
+value skt_in_multicast(
+		       value inet_addr_v
+		       )
+{
+  int ret;
+  uint32 inet_addr = GET_INET_ADDR(inet_addr_v);
 
-  /* Set the time-to-live value to 4:  only within site.
-   */
-#ifndef WIN32
-  char_value = 4 ;
+  ret = IN_MULTICAST(ntohl(inet_addr));
+ 
+  return Val_bool(ret);
+}	   
+
+/**************************************************************/
+
+value skt_setsockopt_ttl(	
+		     value sock_v,
+		     value ttl_v
+) {
+  int sock = Int_val(sock_v);
+  int ttl = Int_val(ttl_v);
+  int ret ;
+  unsigned char char_value ;
+
+  char_value = (unsigned char) ttl ;
   ret = setsockopt(sock,
 		   IPPROTO_IP, IP_MULTICAST_TTL,
 		   &char_value, sizeof(char_value)) ;
   if (ret < 0) 
-    serror("setsockopt(time-to-live)", Nothing) ;
-#endif
+    serror("setsockopt(time-to-live)", Nothing);
 
-#if 0
-  {
-      /* Set whether or not this socket will have loopback.
-       */
-      unsigned int int_value ;
-      int_value = Bool_val(loopback_v) ;
-      ret = setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP,
-		       (void*) &int_value, sizeof(int_value)) ;
-      if (ret < 0)
-	  serror("setsockopt(loopback)", Nothing);
-  }
-#endif
+  return Val_unit;
+}
 
-  return Val_unit ;
+
+/**************************************************************/
+/* Join an IP multicast group.
+ */
+value skt_setsockopt_join(		
+		      value sock_v,
+		      value group_inet_v
+) {
+  int sock = Int_val(sock_v);
+  uint32 group_inet = GET_INET_ADDR(group_inet_v);
+  struct ip_mreq mreq ;
+  int ret ;
+
+  if (!(IN_MULTICAST(ntohl(group_inet))))
+    serror("setsockopt:join address is not a class D address", Nothing);
+  
+  mreq.imr_multiaddr.s_addr = group_inet;
+  mreq.imr_interface.s_addr = htonl(INADDR_ANY) ;
+
+  ret = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
+		   (void*)&mreq, sizeof(mreq)) ;
+  if (ret < 0) 
+    serror("setsockopt:join", Nothing);
+
+  return Val_unit;
 }
 
 /**************************************************************/
-
-/* Join an IP multicast group.
+/* Set the loopback switch.
  */
-value skt_setsock_join(		/* ML */
-        value sock_v,
-	value group_v
-) {
-  struct ip_mreq mreq ;
-  ocaml_skt sock = Socket_val(sock_v) ;
+value skt_setsockopt_loop(
+		 value sock_v,
+		 value onoff_v)
+{
+  int sock = Int_val(sock_v);
+  int onoff = Int_val(onoff_v);
   int ret ;
+  u_char flag;
 
-  mreq.imr_multiaddr.s_addr = GET_INET_ADDR(group_v) ;
-  mreq.imr_interface.s_addr = INADDR_ANY ;
+  flag = onoff;
+  ret = setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP,
+		   (const char*)&flag, sizeof(flag));
 
-#ifdef NOT_IN_MULTICAST
-  /* I can't figure out what is going wrong here, but
-   * this check does not seem to work correctly.
-   */
-  if (!IN_MULTICAST(mreq.imr_multiaddr.s_addr)) {
-    serror("setsockopt:join:invalid multicast address", Nothing) ;
-  }
-#endif
-  
-  ret = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (void*)&mreq, sizeof(mreq)) ;
-  if (ret < 0) serror("setsockopt:join", Nothing) ;
+  if (ret < 0)
+    serror ("setsockopt:loopback",  Nothing);
 
-
-#ifdef WIN32
-  {
-      int ttl ;
-      ttl = 31;
-      ret = setsockopt(sock,
-		       IPPROTO_IP, IP_MULTICAST_TTL,
-		       (void *)&ttl, sizeof(ttl)) ;
-      if (ret < 0) 
-	  serror("setsockopt(time-to-live)", Nothing) ;
-  }
-#endif
-      
-  return Val_unit ;
+  return Val_unit;
 }
 
 /**************************************************************/
 
 /* Leave an IP multicast group.
  */
-value skt_setsock_leave(	/* ML */
+value skt_setsockopt_leave(	/* ML */
 	value sock_v,
-	value group_v
+	value group_inet_v
 ) {
   struct ip_mreq mreq ;
-  ocaml_skt sock = Socket_val(sock_v) ;
+  uint32 group_inet = GET_INET_ADDR(group_inet_v);
+  int sock = Int_val(sock_v) ;
   int ret ;
   
-  mreq.imr_multiaddr.s_addr = GET_INET_ADDR(group_v) ;
+  mreq.imr_multiaddr.s_addr = group_inet ;
   mreq.imr_interface.s_addr = INADDR_ANY ;
 
-#ifdef NOT_IN_MULTICAST
-  if (!IN_MULTICAST(mreq.imr_multiaddr.s_addr))
-    serror("setsockopt:leave:invalid multicast address", Nothing) ;
-#endif
+  ret = setsockopt(sock, IPPROTO_IP, IP_DROP_MEMBERSHIP,
+		   (void*)&mreq, sizeof(mreq)) ;
+  if (ret < 0)
+    serror("setsockopt:leave", Nothing) ;
 
-  ret = setsockopt(sock, IPPROTO_IP, IP_DROP_MEMBERSHIP, (void*)&mreq, sizeof(mreq)) ;
-  if (ret < 0) serror("setsockopt:leave", Nothing) ;
+  return Val_unit ;
+}
 
-  return Val_int(ret) ;
+
+
+
+/**************************************************************/
+
+#else
+value skt_has_ip_multicast()  { return Val_false ; }
+value skt_setsockopt_ttl() { invalid_argument("setsockopt_ttl not implemented"); }
+value skt_setsockopt_loop() { invalid_argument("setsockopt_loop not implemented"); }
+value skt_setsockopt_join() { invalid_argument("setsockopt_join not implemented"); }
+value skt_setsockopt_leave() { invalid_argument("setsockopt_leave not implemented"); }
+#endif /* HAS_SOCKETS */
+/**************************************************************/
+/**************************************************************/
+/**************************************************************/
+#else /* WIN32 */
+
+#define IN_CLASSD(i)            (((long)(i) & 0xf0000000) == 0xe0000000)
+#define IN_MULTICAST(i)         IN_CLASSD(i)
+
+/**************************************************************/
+
+value skt_has_ip_multicast() {	/* ML */
+  return Val_true ; 
+}
+
+/**************************************************************/
+/* Is the address a D class address?
+ */
+value skt_in_multicast(
+		       value inet_addr_v
+		       )
+{
+  int ret;
+  uint32 inet_addr = GET_INET_ADDR(inet_addr_v);
+
+  ret = IN_MULTICAST(ntohl(inet_addr));
+  return Val_bool(ret);
+}	   
+
+/**************************************************************/
+
+value skt_setsockopt_ttl(	
+		     value sock_v,
+		     value ttl_v
+) {
+  int sock = Socket_val(sock_v);
+  int ttl = Int_val(ttl_v);
+  int ret ;
+
+  return(setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL,
+		    (const char*)&ttl, sizeof(ttl)));
+
+  if (ret < 0) 
+    serror("setsockopt(time-to-live)", Nothing);
+
+  return Val_unit;
+}
+
+
+/**************************************************************/
+/* Join an IP multicast group.
+ */
+value skt_setsockopt_join(		
+		      value sock_v,
+		      value group_inet_v
+) {
+  int sock = Socket_val(sock_v);
+  uint32 group_inet = GET_INET_ADDR(group_inet_v);
+  struct ip_mreq mreq ;
+  int ret ;
+
+  if (!(IN_MULTICAST(ntohl(group_inet))))
+    serror("setsockopt:join address is not a class D address", Nothing);
+
+  mreq.imr_multiaddr.s_addr = group_inet;
+  mreq.imr_interface.s_addr = htonl(INADDR_ANY) ;
+
+  ret = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
+		   (const char *)&mreq, sizeof(mreq));
+
+  if (ret < 0) 
+    serror("setsockopt:join", Nothing);
+
+  return Val_unit;
+}
+
+/**************************************************************/
+/* Set the loopback switch.
+ */
+value skt_setsockopt_loop(
+		 value sock_v,
+		 value onoff_v)
+{
+  int sock = Socket_val(sock_v);
+  int onoff = Int_val(onoff_v);
+  int ret ;
+  BOOL flag;
+
+  flag = (BOOL) onoff;
+  ret = setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP,
+		   (const char*)&flag, sizeof(flag));
+
+  if (ret < 0)
+    serror ("setsockopt:loopback",  Nothing);
+
+  return Val_unit;
 }
 
 /**************************************************************/
 
-#else /* HAS_SOCKETS */
+/* Leave an IP multicast group.
+ */
+value skt_setsockopt_leave(	/* ML */
+	value sock_v,
+	value group_inet_v
+) {
+  struct ip_mreq mreq ;
+  uint32 group_inet = GET_INET_ADDR(group_inet_v);
+  int sock = Socket_val(sock_v) ;
+  int ret ;
+  
+  mreq.imr_multiaddr.s_addr = group_inet ;
+  mreq.imr_interface.s_addr = INADDR_ANY ;
 
-value skt_has_ip_multicast()  { return Val_false ; }
-value skt_setsock_multicast() { invalid_argument("setsock_multicast not implemented"); }
-value skt_setsock_leave()     { invalid_argument("setsock_leave not implemented"); }
-value skt_setsock_join()      { invalid_argument("setsock_join not implemented"); }
+  ret = setsockopt(sock, IPPROTO_IP, IP_DROP_MEMBERSHIP,
+		   (const char*)&mreq, sizeof(mreq)) ;
+  if (ret < 0)
+    serror("setsockopt:leave", Nothing) ;
 
-#endif /* HAS_SOCKETS */
+  return Val_unit ;
+}
+
+#endif /* WIN32 */
 
 /**************************************************************/
 

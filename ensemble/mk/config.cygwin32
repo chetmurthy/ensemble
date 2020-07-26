@@ -1,12 +1,3 @@
-#*************************************************************#
-#
-#   Ensemble, (Version 1.00)
-#   Copyright 2000 Cornell University
-#   All rights reserved.
-#
-#   See ensemble/doc/license.txt for further information.
-#
-#*************************************************************#
 # -*- Mode: makefile -*- 
 #*************************************************************#
 #
@@ -96,9 +87,9 @@ SHELL = /bin/sh
 # your platform and you can use the defaults.  On NT,
 # PLATFORM should be set to be 'nt'.
 
-MACHTYPE = i386
-OSTYPE = win32
-PLATFORM	= $(MACHTYPE)-$(OSTYPE)
+ENS_MACHTYPE = i386
+ENS_OSTYPE = win32
+PLATFORM	= $(ENS_MACHTYPE)-$(ENS_OSTYPE)
 
 #*************************************************************#
 #*************************************************************#

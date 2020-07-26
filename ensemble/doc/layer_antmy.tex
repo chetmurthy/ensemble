@@ -1,0 +1,201 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\section{Layer Anatomy: what are the pieces of a layer?}
+
+This is a description of the standard pieces of a \ensemble\ layer.  This
+description is meant to serve as a general introduction the standard
+``idioms'' that appear in layers.  Because all layers follow the same
+general structure, we present a single documentation of that structure, so
+that comments in a layer describe what is particular to that layer rather
+than repeating the features each has in common with all the others.
+Comments on additional information that would be useful here would be
+appreciated.
+
+\subsection{Design Goals}
+
+A design goal of the protocol layers is to include as little
+\ensemble-specific infrastructure is present in the layers.  For instance,
+none of the layers embody notions of synchronization, messages operations,
+of event scheduling.  In fact, the only \ensemble-specific modules used by
+layers are the Event and the View modules.
+
+%The hope is that this leads to a flexible design in which the
+%implementations of the layers can be shifted between different
+%infrastructures/architectures without modification to the layers.  The can
+%be seen in the different architectures that are compatible with these
+%layers.  They can be compiled with functional, imperative, or ``purifying''
+%event implementations.  They can be compiled with an architecture where
+%messages are tupled together (\sourcelayer{layers\_pair.*}) and also one
+%where messages are composed together as lists
+%(\sourcelayer{layer\_list.*}).  \note{Currently, only the pair version is
+%kept up to date, called \sourcelayer{layer.*}.} Finally, they are
+%independent of the scheduling infrastructure.  As long as the
+%infrastructure satisfies a few fixed assumptions, the layers can be
+%scheduled in many different ways and can even be compiled into a
+%multithreaded implementation.
+
+%The idea is to build a single implementation of a layer, but allow it to be
+%``presented'' in different architectures.  We do this by placing different
+%wrappers around the same core implementation of a layer.  In fact, the
+%layers are never used directly: they always must have some wrapper placed
+%around them (by {\bf layers\_*.ml}.  It is the versions of the layers built
+%in the {\bf layers\_*} modules which are the actual layers that are
+%exported from this directory.
+
+\subsection{Notes}
+
+Some general notes on layers:
+\begin{itemize}
+\item
+All layers are in single files.
+%\item
+%See the {\bf TEMPLATE} layer for an example of a layer that does nothing
+%looks like {\bf[todo:needs updating]}.
+%\item
+%See the {\bf STABLE\_SIMP} layer for an example of a simple layer which has
+%been fully commented. \note{where did I put that?}
+\item
+Usually the only objects exported by a layer are the type ``header'' and
+the value ``l''.  When referred to outside of a layer, these values are
+prefixed with the name of the layer followed by ``.''  and the name of
+the object (either ``header'' or ``l'').  For instance the STABLE layer is
+referenced by the name ``Stable.l''.
+\end{itemize}
+
+
+\subsection{Values and Types}
+Listed below are the values and types commonly found in a layer, listed in
+the usual order of occurrence.  For each object we give a description of
+its typical use and whether or not it is exported out of the layer.
+
+\begin{itemize}
+
+\item
+\mlval{name} : Local variable containing the name of the layer.
+\hide{This is typically used for printing debugging messages and in
+combination with the event debugging event module
+(\sourcemuts{event\_check.ml}).}
+
+\item
+\mlval{failwith} : Typically this standard \caml\ function is redefined to
+prefix the failure message with the name of the layer.  Sometimes it is
+also redefined to dump the state of a layer.
+
+\item
+\mlval{header} : Exported type of the header a layer puts on messages.
+Layers that do not put headers on messages do not have this type defined.
+The type is exported abstractly so it is opaque outside the layer.  This
+type is usually a disjoint union (variant record) of several different
+types.  Some example variants are:
+\newcommand{\stfield}[2]  {\item \mlval{#1} : #2}
+\begin{itemize}
+\stfield{NoHdr}{Almost always one of the values is defined to be
+  \mlval{NoHdr} which is used for messages for which the layer does not put
+  on a (non-trivial) header}
+\stfield{Data}{Put on application data messages from the layer above}
+\stfield{Gossip}{Put on gossip messages (such as by a stability layer)}
+\stfield{Ack/Nak}{Acknowledgement or negative acknowledgements}
+\stfield{Retrans}{Retransmissions of application data messages}
+\stfield{View}{List of members in a new view.}
+\stfield{Fail}{List of members being failed.}
+\stfield{Suspect}{List of members to be suspected.}
+\stfield{Block}{Prepare to synchronize this group.}
+\end{itemize}
+
+\item
+\mlval{nohdr} : exported variable.  This is a variable that only occurs in a few
+layers.  It is always defined to be the value \mlval{NoHdr} of the header type
+of the layer.  It is exported so that the rest of the system can do
+optimizations when layers put trivial headers on a message.
+
+\item
+\mlval{normCastHdr} : exported variable.  This is a variable that is used only
+by special layers that may need to generate a valid header for this layer.
+This variable should have no relevence to the execution of a layer.
+
+\item
+\mlval{state} : Local type that contains the state of an instance of a
+layer.  Some layers do not yet use this, but eventually all of them will.
+\note{layers that do not use a state varable have the state split up
+amongst several local state variables}.  The state then is referenced
+through the local variable \mlval{s}.  A field in a state record is
+referred to by the \caml\ syntax, \mlval{s.field}, where \mlval{field} is
+the name of a field in the state record.
+
+Some example field names used in layer states:
+
+\begin{itemize}
+\stfield{time}{time of last \UpTimer\ event seen}
+\stfield{next\_sweep/next\_gossip}{
+  next time that I want to do something (such as retransmit
+  messages, synchronize clocks, ...)}
+\stfield{sweep}{time between sweeping}
+\stfield{buf}{buffer of some sort}
+\stfield{blocking/blocked}{boolean for whether group is currently blocking}
+\stfield{ltime}{the current ``logical time stamp'' (usually taken from
+  the \mlval{view\_id})}
+\stfield{max\_ltime}{the largest logical time stamp seen by this member}
+\stfield{seqno}{some sequence number}
+\stfield{failed}{
+  information on which members have failed (either a
+  list of ranks or a boolean vector indexed by rank)
+}
+\stfield{elected}{do I think I am the coordinator?}
+\end{itemize}
+
+General notes on fields:
+\begin{itemize}
+\item{\em fields with type vect}: usually array with one entry for each member, indexed by rank
+\item{\em fields with type map}: usually mapping of members eid to some state on the member
+\item{\em fields with ``up'' (or ``dn'') in the name}: refers to some info kept on
+  events that are going up (or down)
+\item{\em fields with ``cast'' (or ``send'') in the name}: refers to state
+  kept about broadcasts (or sends)
+\item{\em fields with ``buf'' in the name}: refers to some buffer
+\item{\em fields with ``dbg'' in the name}: fields used only for debugging puposes
+\item{\em fields with ``acct'' in the name}: fields used only for keeping
+  track of tracing or accounting data for the layer
+\end{itemize}
+
+\item
+\mlval{dump} : Local function that takes a value of type \mlval{state} and
+prints some representation for debugging purposes
+
+\item
+\mlval{member} : Local type that only occurs in some layers.  Defines
+state kept for each member in a group.  Typically, the layer's state will
+have an array of member objects indexed by rank (and this field is usually
+called \mlval{members}).  The notes above fields in state records generally
+apply to the fields in member types as well.
+
+\item
+\mlval{init} : Initialization function for this layer.  Takes two
+arguments.  The first is a tuple containing arguments specific to this
+layer.  The second is a view state record containing arguments general to
+the protocol stack this layer is in.  This function does any initialization
+required and returns a \mlval{state} record for a layer instance.
+
+Some example names of initialization parameters for layers:
+\begin{itemize}
+\stfield{sweep}{float value of how often to carry out some action
+(such as retransmitting messages or pinging other members)}
+\stfield{timeout}{amount of time to use for some timeout (such as how
+long to wait before kicking a non-responsive member out of a group)}
+\stfield{window}{size of window to use for some buffer}
+\end{itemize}
+
+\item
+\mlval{hdlrs} : Function initializing handlers for this layer.  Takes two
+arguments.  The first is a \mlval{state} record for this layer.  The second
+is a record containing all the handlers the layer is to  use for passing
+events out of the layer.  Return value is a set of handlers to be used for
+passing events into this layer.
+
+\end{itemize}

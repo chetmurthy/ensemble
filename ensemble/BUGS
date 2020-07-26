@@ -1,16 +1,7 @@
 #*************************************************************#
 #
-#   Ensemble, (Version 1.00)
-#   Copyright 2000 Cornell University
-#   All rights reserved.
-#
-#   See ensemble/doc/license.txt for further information.
-#
-#*************************************************************#
-#*************************************************************#
-#
-#   Ensemble, (Version 0.71F)
-#   Copyright 2000 Cornell University
+#   Ensemble, 1.10
+#   Copyright 2001 Cornell University, Hebrew University
 #   All rights reserved.
 #
 #   See ensemble/doc/license.txt for further information.
@@ -18,7 +9,9 @@
 #*************************************************************#
 -*- Mode: indented-text -*- 
 Known Ensemble Bugs
-BUGS Author: Mark Hayden
-Last updated: 5/2000
+BUGS Author: Ohad Rodeh
+Last updated: 7/2001
+
+* Multicast does not work on NT very well. 
 
 * the groupd application is still not very stable

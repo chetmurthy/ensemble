@@ -1,0 +1,59 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\begin{Layer}{PT2PTW} 
+
+This layer implements window-based flow control for point to point messages.
+Point-to-point messages from each sender are transmitted only if the window is
+not yet full.
+
+\begin{Protocol}
+Whenever the amount of send credits drops to zero, messages are buffered
+without being sent.  On receipt of acknowledgement credit, the amount of send
+credits are recalculated and buffered messages are sent based on the new
+credit.  Acknowledgements are sent whenever a speicified threshhold is passed.
+\end{Protocol}
+
+\begin{Parameters}
+\item pt2ptw\_window : the maximum amount on unacknowledged messages or the size of the
+window.
+\item pt2ptw\_ack\_thresh : The acknowledge threshold.  After receiving this
+number of bytes of data from a sender, the receiver acknowledges previous
+credit.
+\end{Parameters}
+
+\begin{Properties}
+\item
+This protocol bounds the number of unrecieved point-to-point messages a member
+can send.
+\item
+This protocol requires reliable point-to-point properties from underlying
+protocol layers.
+\end{Properties}
+
+\begin{Notes}
+\item
+As opposed to most of the \ensemble\ protocols, this protocol implements flow
+control on bytes and not on messages.  It only considers the data in the
+application payload portion of the message (the \mlval{iov} field of the
+event).
+\end{Notes}
+
+\begin{Sources}
+\sourcesfile{pt2ptw.ml}
+\end{Sources}
+
+\begin{Testing}
+\item
+Some testing has been carried out.
+\end{Testing}
+
+Last updated: March 21, 1997
+
+\end{Layer}

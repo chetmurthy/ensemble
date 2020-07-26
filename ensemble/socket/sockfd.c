@@ -1,7 +1,7 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -20,27 +20,6 @@ ocaml_skt socket_val(value sock_v) {
 }
 
 #ifndef _WIN32
-/* We wrap file descriptor in an abstract object to get the same
- * behavior for Sockets on Unix as on Windows.  
- */
-value skt_socket_of_fd(value fd_v) { /* ML */
-  value res = alloc(1, Abstract_tag) ;
-  Field(res,0) = fd_v ;
-  return res;
-}
-
-value skt_fd_of_socket(value sock_v) { /* ML */
-  return Field(sock_v,0) ;
-}
-
-#if 0
-/* Get the file descriptor inside the wrapper.
- */
-ocaml_skt Socket_val(value sock_v) {
-  return Int_val(Field(sock_v,0)) ;
-}
-#endif
-
 /* On Unix, these are just Ocaml integers.
  */
 value skt_int_of_file_descr(value fd_v) { /* ML */
@@ -49,19 +28,15 @@ value skt_int_of_file_descr(value fd_v) { /* ML */
 
 #else
 
-/* Sockets and file descriptors are the same thing under Windows.  
+/* Heap-allocation of Windows file handles.
+ * Copied from win32unix/unixsupport.c
  */
-value skt_socket_of_fd(value fd_v) { return fd_v ; } /* ML */
-value skt_fd_of_socket(value sock_v) { return sock_v ; } /* ML */
-
-#if 0
-/* Get the file descriptor inside the wrapper.
- */
-#define Handle_val(v) (*((HANDLE *)(v))) /* from unixsupport.h */
-ocaml_skt Socket_val(value sock_v) {
-  return Handle_val(sock_v) ;
+value skt_win_alloc_handle(HANDLE h)
+{
+  value res = alloc_small(sizeof(HANDLE) / sizeof(value), Abstract_tag);
+  Handle_val(res) = h;
+  return res;
 }
-#endif
 
 /* Return an integer representation of the handle.
  */

@@ -1,0 +1,22 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\section{Appendix: ML Does Not Allow Segmentation Faults}
+
+Normally, \ensemble\ should never experience segmentation faults.  When they occur,
+there are only a few possible causes.  We list these below along with fixes.  Please
+inform Mark Hayden (hayden\@pa.dec.com) if you detect other sources of
+``unsafety'' in \ensemble.
+\begin{itemize}
+\item
+One of the \ensemble\ extensions to \caml\ written in C (in the
+\sourcecode{socket} directory) may have a bug.  Most (all?) extensions have
+equivalent ML implementations.  Use those and see if the bug goes away.
+\end{itemize}
+

@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -34,9 +34,12 @@ type msg =
 exception Bad_format of string
   
 type t 
-    
-val init : int -> t
-    
+
+(* [init max_diff view_id_str]
+ * Initialize a t structure with the maximal allowed difference
+ * in acceptable nonces, and the current view_id in string format. 
+*)    
+val init : int -> string -> t
     
 val create_nonce : t -> int -> nonce
 val check_nonce  : t -> int -> nonce -> bool 

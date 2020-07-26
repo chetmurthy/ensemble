@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -138,7 +138,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let log1 = Trace.log2 (name^"1") (string_of_int ls.rank) in
   let log2 = Trace.log2 (name^"2") (string_of_int ls.rank) in
   let log3 = Trace.log2 (name^"3") "" in
-  let logm = Trace.log2 (" "^name) "" in
+  let logm = Trace.log2 (name^"m") "" in
 
   let shared = Cipher.lookup "OpenSSL/RC4" in
   let encrypt = function

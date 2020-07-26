@@ -1,12 +1,3 @@
-#*************************************************************#
-#
-#   Ensemble, (Version 1.00)
-#   Copyright 2000 Cornell University
-#   All rights reserved.
-#
-#   See ensemble/doc/license.txt for further information.
-#
-#*************************************************************#
 # -*- Mode: makefile -*- 
 #*************************************************************#
 #
@@ -28,16 +19,17 @@ CC	= cl /nologo
 MSDEV	= c:MSDEV\bin
 
 # CFLAGS: used for compilation of C files
-CFLAGS	= /Ox /MT -O -DWIN32 \
-	-I $(ENSROOT)\socket\include	\
-	-I $(ENSROOT)\hot\include	\
-	-I $(OCAML_LIB)			\
-	-I $(MSDEV)\include		\
+#/D_WIN32_WINNT=0x0400 \
+CFLAGS	= /Ox /MT /W3 /DWIN32 \
+	/I$(ENSROOT)\socket\include	\
+	/I$(ENSROOT)\hot\include	\
+	/I$(OCAML_LIB)			\
+	/I$(MSDEV)\include		\
 	$(HOT_CFLAGS_nt)		\
 	$(ETH_CFLAGS)			\
-	-DOSTYPE=$(OSTYPE)		\
-	-DMACHTYPE=$(MACHTYPE)		\
-	-DHAS_IP_MULTICAST
+	/DOSTYPE=nt	  		\
+	/DMACHTYPE=i386			\
+	/DHAS_IP_MULTICAST
 
 
 # Fix problem with libc.lib, pass "-link /NODEFAULTLIB" option
@@ -83,8 +75,8 @@ TKLIBS = # not supported for NT
 # your platform and you can use the defaults.  On NT,
 # PLATFORM should be set to be 'nt'.
 
-# MACHTYPE = # unneeded
-# OSTYPE = # unnneeded
+# ENS_MACHTYPE = # unneeded
+# ENS_OSTYPE = # unnneeded
 # !NOTE! make sure there are no trailing spaces on the next line
 PLATFORM = nt
 
@@ -216,19 +208,19 @@ ARC	= -$(PLATFORM)$(ARCS)
 CP	= copy
 MV	= move
 LN	= copy			# use copy instead
-RM	= del /Q
-MAKE	= nmake
+RM      = -del /Q
+MAKE	= nmake -f Makefile.nt
 MKLIB	= lib /nologo /debugtype:CV
 MKLIBO  = /out:
 RANLIB  = echo			# not needed on NT
-SUBMAKE = "& echo"
-DEPEND  = depend.nt
+SUBMAKE = & $(MAKE)           #SUBMAKE = "& echo"
+DEPEND  = .depend.nt
 PARTIALLD = lib /nologo /debugtype:cv
 PARTIALLDO  = /out:
 ECHO	= echo
 STRIP   = echo
 MKDIR   = mkdir
-RMDIR   = rmdir /S /Q
+RMDIR   = -rmdir /S /Q
 #*************************************************************#
 NTRULE	=
 UNIXRULE = -nt
@@ -299,6 +291,7 @@ HOT_LINK_nt	= #?
 HOT_LINK_nt	= #?
 
 #*************************************************************#
+# cleanall
 
 
 

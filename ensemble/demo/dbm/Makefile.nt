@@ -1,0 +1,41 @@
+#*************************************************************#
+#
+#   Ensemble, 1.10
+#   Copyright 2001 Cornell University, Hebrew University
+#   All rights reserved.
+#
+#   See ensemble\doc\license.txt for further information.
+#
+#*************************************************************#
+ENSROOT = ..\..
+!include $(ENSROOT)\mk\preamble.nmk
+!include $(ENSROOT)\mk\config.nmk
+!include $(ENSROOT)\mk\ocaml.nmk
+#*************************************************************#
+OBJS = db$(CMO) 
+#*************************************************************#
+
+.SUFFIXES: .ml .cmo .mli .cmi
+.ml.cmo:
+	ocamlc -c -I $(ENSROOT)\lib $<
+.mli.cmi:
+	ocamlc -c -I $(ENSROOT)\lib $<
+
+#*************************************************************#
+
+db: $(OBJS) $(ENSCONFDEP) $(ENSTK)
+	$(RM) db$(EXE)
+	ocamlc -custom -o db$(EXE) $(LIBTK) $(ENSCONF) $(ENSTK) str.cma dbm.cma $(OBJS) -cclib -lstr -cclib -lmldbm -cclib -lndbm
+
+#*************************************************************#
+
+clean:
+	$(RM) *~ .*~ *.cm* .err TAGS core
+	$(RM) db
+
+depend:
+	ocamldep -I $(ENSROOT)\lib *.ml* > $(DEPEND)
+
+!include $(DEPEND)
+
+#*************************************************************#

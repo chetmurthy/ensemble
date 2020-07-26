@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -62,7 +62,6 @@ let string_of_addrs addrs =
     (*"[||]"*)
 *)
 (**************************************************************)
-let limit         = ref 100
 let real_pgp      = ref false
 let net           = ref false
 let pa            = ref false
@@ -93,7 +92,7 @@ let create_init_key () =
 (* Sum the parameters so as to check if everyone has the same
  *)
 let sum_params () = 
-  sprintf "limit=%d, real_pgp=%b, net=%b, pa=%b, nmembers=%d, prog=%s, group=%s" !limit !real_pgp !net !pa !nmembers !prog !group
+  sprintf "real_pgp=%b, net=%b, pa=%b, nmembers=%d, prog=%s, group=%s" !real_pgp !net !pa !nmembers !prog !group
 
 (* [perf_default pname param opt] create an initial view_state with the 
  * principal name [pname] parameters [param] and with the optimized rekeying 
@@ -126,6 +125,8 @@ let perf_default principal_name param opt =
 	    Property.OptRekey :: props 
 	| "diamond" -> 
 	    Property.DiamRekey :: props
+	| "none" -> 
+	    props
 	| _ -> 
 	    Property.Rekey :: props in
     let props = if !scale then Property.Scale :: props else props in
@@ -440,12 +441,8 @@ let create_stack_rekey opt prompt i =
       first_time := true;
       rekeying := false;
       time := time2;
-      if !num_view = !limit then 
-	[|Cast Done; Control Leave|]
-      else
-	[||]
-    ) else 
-      [||]
+    );
+    [||]
   in
   eprintf "RUN\n";
   let interface = create_intf htb (float_of_int !htb_rate) viewfun in
@@ -488,12 +485,33 @@ let create_stack_exchange i =
 let _ = Hashtbl.add tests_doc "reg" "Use a regular stack"
 
 let create_stack_reg i = 
-  let htb (ls,vs) = [||]
+  let first_time = ref true 
+  and rekeying = ref false in
+  
+  let htb (ls,vs) = 
+    if ls.am_coord then eprintf "nmembers=%d\n" ls.nmembers;
+    if ls.am_coord && ls.nmembers = !nmembers then (
+      log (fun () -> sprintf "heartbeat first_time=%b" !first_time);
+      if !first_time then (
+	first_time := false;
+	[||]
+      ) else 
+	if not !rekeying then (
+	  log (fun () -> "Rekey");
+	  rekeying := true;
+	  [|Control Prompt|]  
+	) else
+	  [||] 
+    ) else [||]
   and viewfun (ls,vs) = 
-    if ls.am_coord then
-      eprintf "addresses=%s\n" (string_of_addrs vs.address);
+    if ls.am_coord && ls.nmembers = !nmembers then (
+      eprintf "view=%d\n" ls.nmembers;
+      first_time := true;
+      rekeying := false;
+    );
     [||]
   in
+  eprintf "RUN\n";
   let interface = create_intf htb 10.0 viewfun in
   let (ls,vs) = perf_default ("o"^(string_of_int i)) (Some [
     Property.Gmp ;
@@ -504,9 +522,11 @@ let create_stack_reg i =
     Property.Suspect ; 
     Property.Flow ; 
     Property.Slander ;
-  ])  "" in
+  ])  "none" in
   Appl.config_new interface (ls,vs)
     
+
+
 (**************************************************************)
 (* This stack kills all the processes in the group
  *)
@@ -726,7 +746,6 @@ let run ()  =
     "-net",Arg.Set(net),"use the real network";
     "-real_pgp",Arg.Set(real_pgp),"use pgp or simulate it";
     "-group",Arg.String(fun s -> group:=s),"set group name";
-    "-limit",Arg.Int(fun i -> limit:=i), "number of views to run";
     "-terminate_time",Arg.Float(fun x -> time_limit:= Time.of_float x), "Time to run";
     "-times",Arg.Int(fun i -> times:=i), "encrypt rounds";
     "-scale", Arg.Set(scale), "scaleable protocols" ;

@@ -1,7 +1,7 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -16,7 +16,6 @@
  */
 #if defined(linux) && defined(RAW_ETH)
 
-#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -116,7 +115,7 @@ value ens_eth_init(
     }
     memcpy(String_val(addr_v), ifr.ifr_hwaddr.sa_data, ETH_ALEN);
 
-    return skt_socket_of_fd(Val_int(sock)) ;
+    return Val_socket(sock) ;
 }
 
 /* Preprocess information for sending to a set of ethernet
@@ -274,7 +273,7 @@ value ens_eth_sendtovs(
 	iov[0].iov_base = &msg->hdr[i] ;
 	ret = sendmsg(msg->sock, &msg->msghdr, flags) ;
 	if (ret == -1) {
-	    perror("sendmsg(eth)") ;
+	  serror("sendmsg(eth)") ;
 	}
     }
     return Val_unit ;

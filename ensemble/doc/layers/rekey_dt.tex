@@ -1,0 +1,81 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\begin{Layer}{REKEY\_DT}
+\label{layer:rekey_dt}
+
+This is the default rekeying layer. The basic 
+data structure used is a tree of secure channels. This tree
+changes every view-change, therefore the name of the layer. 
+Dynamic Tree REKEY. 
+
+The basic problem in obtaining efficient rekeying is the high cost of
+constructing secure channels. A secure channel is established using a
+two-way handshake using a Diffie-Hellman exchange.  At the time of
+writing, a PentiumIII 500Mhz can perform one side of a Diffie-Hellman
+exchange (using the OpenSSL cryptographic library) in 40 milliseconds.
+This is a heavyweight operation. 
+
+To discuss the set of channels in a group, we shall view it as a graph
+where the nodes are group members, and the edges are secure channels
+connecting them. The strategy employed by REKEY\_DT is to use a tree
+graph. When a rekey request is made by a user, in some view $V$, the
+leader multicasts a tree structure that uses, as much as possible, the
+existing set of edges. 
+
+For example, if the view is composed of several previous
+components, then the leader attempts to merge together existing
+key-trees. If a single member joins, then it is located as close to the
+root as possible, for better tree-balancing. If a member leaves, then
+the tree may, in the worst case, split into three pieces. The leader
+fuses them together using (at most) 2 new secure channels. 
+
+The leader chooses a new key and passes it to its
+children. The key is passed recursively down the tree until it reaches
+the leaves. The leaf nodes send acknowledgments back to the leader.
+
+This protocol has very good performance. It is even possible, that a
+rekey will not require any new secure-channels. For example, in case
+of member leave, where the node was a tree-leaf. 
+
+\begin{Protocol}
+When a member layer gets an \ERekeyPrcl\ event, it sends a message to the
+coordinator to start the rekeying process.  The coordinator checks if
+the view is composed of a single tree-component. If not, it multicasts
+a {\it Start} message. All members that are tree-roots, sends their
+tree-structure to the leader. The leader merges the trees together,
+and multicasts the group-tree. It then chooses a new key and sends it
+down the tree. 
+
+Once a member receives the new key is passes it down to PerfRekey
+using an \mlval{ERekeyPrcl} event.
+
+The PerfRekey layer is responsible for collecting acknowledgments from the
+members and performing a view change with the new key once
+dissemination is complete. 
+\end{Protocol}
+
+\begin{Sources}
+\sourcesfile{rekey\_dt.ml}
+\end{Sources}
+
+\begin{GenEvent}
+\genevent{\DnCast}
+\genevent{\DnSend}
+\end{GenEvent}
+
+\begin{Testing}
+\item 
+The armadillo.ml file in the demo directory tests the security properties
+of \ensemble.
+\end{Testing}
+
+\end{Layer}
+
+

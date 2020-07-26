@@ -1,0 +1,87 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\begin{Layer}{INTRA}
+
+This layer manages group membership within a view (see also the INTER layer).
+There are three related tasks here:
+\begin{itemize}
+\item
+Forwarding of group membership events to the rest of the group
+(without INTRA, normally \DnView\ and \DnFail\ events have only local
+effect).
+\item 
+Filtering of group membership events from remote members (for
+example, when two other group members think they are the coordinator
+and fail each other, the INTRA layer choose one of them and ignores
+the other member).
+\item
+Determining the view\_id of the following view.
+\end{itemize}
+
+\begin{Protocol}
+This is a relatively simple group membership protocol.  We have done our
+best to resist the temptation to ``optimize'' special cases under which the
+group is ``unnecessarily'' partitioned.  We also constrain the conditions
+under which operations such as merges can occur.  The implementation does
+not ``touch'' any data messages: it only handles group membership changes.
+Furthermore, this protocol does not use any timeouts.
+
+Views and failures are forwarded via broadcast to the rest of the members.
+Other members accept the view/failure if they are consistent with their
+current representation of the group's state.  Otherwise, the view/failure
+message is dropped and the sender is suspected of being problematic. 
+\end{Protocol}
+
+\begin{Parameters}
+\item None
+\end{Parameters}
+
+\begin{Properties}
+\item
+\DnView\ events are passed on to the layer below.  They also cause a View message to
+be broadcast to the other members.  On receipt of this View message, the other
+members either accept it (and deliver a \DnView\ event to layer below) or mark the
+sender of the View as problematic, and possibly deliver a \DnSuspect\ event to the
+layer below.
+\item
+Requires FIFO, atomic broadcast delivery from layers below.
+\item
+\DnFail\ events are passed on to the layer below.  They also cause a Fail
+message to be broadcast to the other members.  On receipt of this Fail
+message, the other INTRA instances will either accept it (and deliver a
+\DnFail\ event to the layer beneath them) or mark the sender of the Fail
+message as problematic, and possibly deliver an \DnSuspect\ event to the
+layer below.
+\item
+View and Fail messages from a particular coordinator are delivered in FIFO
+order to the members.
+\item
+Not all members may see same set of \UpFail\ events.  However, the set of
+failed members grows monotonicly with each failure notification.
+\end{Properties}
+
+\begin{Sources}
+\sourcesfile{intra.ml}
+\end{Sources}
+
+\begin{GenEvent}
+\genevent{\DnAck}
+\genevent{\DnCast}
+\genevent{\DnFail}
+\genevent{\DnSuspect}
+\genevent{\DnView}
+\end{GenEvent}
+
+\begin{Testing}
+\item
+see the VSYNC stack
+\end{Testing}
+\end{Layer}
+

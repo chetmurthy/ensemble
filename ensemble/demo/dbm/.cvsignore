@@ -1,0 +1,6 @@
+*.cm*
+db
+.depend
+depend.nt
+Makefile.nt
+hot_test

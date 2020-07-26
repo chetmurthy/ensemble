@@ -1,0 +1,52 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\begin{Layer}{PRIMARY}
+
+Detect primary partition in a group. Usually a primary partition has
+the majority of members or holds some important resources.
+\begin{Protocol}
+Upon \UpInit\ event, a member sends a message to the coordinator,
+claiming that it is in the current view. When a view has the majority
+of members, its coordinator prompts a view change to make itself the
+primary partition if it is not yet.  When a new view is ready, it
+decides whether it is primary and mark it as so.
+\end{Protocol}
+
+\begin{Parameters}
+\item primary\_quorum: how many servers (non-client member) are
+needed to form the primary partition.
+\end{Parameters}
+
+\begin{Properties}
+\item
+Guarantees no two primary partitions can have the same logical timestamp.
+\item
+Optimal in the normal case: no addtional view change is necessary.
+\item
+This protocol requires group membership management from underlying
+protocol layers. 
+\end{Properties}
+
+\begin{Sources}
+\sourcesfile{primary.ml}
+\end{Sources}
+
+\begin{GenEvent}
+\genevent{\DnPrompt}
+\genevent{\DnSend}
+\end{GenEvent}
+
+\begin{Testing}
+\item
+TODO
+\end{Testing}
+
+\emph{This layer and its documentation were written with Zhen Xiao.}
+\end{Layer}

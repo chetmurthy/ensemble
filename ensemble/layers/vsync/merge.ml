@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -79,7 +79,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  && merge_vs.proto_id = vs.proto_id
 	  then (
 	    log (fun () -> "got merge gossip") ;
-	    let (from,saddr),_ = contact in
+	    (*let (from,saddr),_=  contact in*)
+	    let (from,saddr) = View.coord_full merge_vs in
 	    if not (check_policy s saddr) then (
 	      free name ev
 	    ) else (

@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -43,6 +43,7 @@ type header =
   | Cleanup 
   | AckCleanup
   | Ack of int * int
+  | Ack2 of int
   | Rekey of bool 
   | Commit
 
@@ -56,6 +57,7 @@ type state = {
   children           : rank list ;
   mutable commit     : bool ; (* Set only at the leader *)
   mutable acks       : int ;
+  mutable acks2      : int ;
 
  (* For cleanup sub-protocol *)
   mutable cleanup    : bool ;
@@ -63,6 +65,7 @@ type state = {
 
   (* For performance measurments *)
   mutable sum        : int ;
+  mutable sum2       : int ;
   mutable mx         : int ;
 
   (* Cleanup *)
@@ -109,11 +112,13 @@ let init s (ls,vs) =
       children   = children ;
       commit     = false ;
       acks       = 0 ;
+      acks2      = 0 ;
       
       cleanup    = false ;
       init_time  = 0.0 ;
       
       sum        = 0 ;
+      sum2       = 0 ;
       mx         = 0 ;
 
       sweep      = sweep ;
@@ -164,6 +169,12 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	| children, Some father -> 
 	    if s.acks = List.length children then 
 	      dnlm (sendPeer name father) (Ack (s.sum,s.mx))
+  in
+
+
+  let check_done_ack2 () =
+    if s.acks2 = ls.nmembers then
+      logm (fun () -> sprintf " ACK2 done, %d sum=%d" ls.nmembers s.sum2);
   in
 
   let all_ack_cleanup () = 
@@ -219,6 +230,14 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       s.mx <- max s.mx mx;
       check_send_ack ()
 
+  | ESend, Ack2 sum -> 
+      assert (ls.rank = 0);
+      let origin = getPeer ev in
+      log2 (fun () -> sprintf "%d [%d<-%d] Ack2(%d)" ls.nmembers ls.rank origin sum);
+      s.acks2 <- succ s.acks2 ;
+      s.sum2 <- s.sum2 + sum;
+      check_done_ack2 ()
+
   | (ECast|ESend), Cleanup ->
       got_cleanup ()
 
@@ -273,6 +292,21 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       log (fun () -> sprintf "AgreedKey=%s" (Security.string_of_key s.agreed_key));
       check_send_ack ()
 	
+
+  (* Hack. 
+   * 
+   * This is used to measure how many secure channels have
+   * been built so far. 
+   *)
+  | ERekeyPrcl2 -> 
+      let num = getSecStat ev in
+      s.sum2 <- s.sum2 + num;
+      if ls.rank <> 0 then 
+	dnlm (sendPeer name 0) (Ack2 s.sum2)
+      else (
+	s.acks2 <- succ s.acks2 ;
+	check_done_ack2 ()
+      )
 	
   (* EBlock: Mark that we are now blocking.
    *)
@@ -299,9 +333,6 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	    assert (s.agreed_key <> Security.NoKey);
 	    log1 (fun () -> "setting new key (up)");
 
-	    (* HACK !!!, for peformance testing only.
-	     *)
-	    (*let key = Security.Common (Buf.of_string name "1234567812345678") in*)
 	    let key = s.agreed_key in
 	    let vs_new = View.set vs_new [Vs_key key] in
 	    set name ev[ViewState vs_new] 

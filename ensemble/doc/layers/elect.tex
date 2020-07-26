@@ -1,0 +1,43 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\begin{Layer}{ELECT}
+
+This layer implements a leader election protocol.  It determines when a member
+should become the coordinator.  Election is done by delivering an \DnElect\
+event at the new coordinator.
+
+\begin{Protocol}
+When a member suspects all lower ranked members of being faulty, that member elects
+itself as coordinator.
+\end{Protocol}
+
+\begin{Parameters}
+\item None
+\end{Parameters}
+
+\begin{Properties}
+\item
+\UpSuspect\ events may cause a \DnElect\ event to be generated.
+\end{Properties}
+
+\begin{Sources}
+\sourcesfile{elect.ml}
+\end{Sources}
+
+\begin{GenEvent}
+\genevent{\DnElect}
+\end{GenEvent}
+
+\begin{Testing}
+\item
+see also the VSYNC stack
+\end{Testing}
+\end{Layer}
+

@@ -1,12 +1,3 @@
-#*************************************************************#
-#
-#   Ensemble, (Version 1.00)
-#   Copyright 2000 Cornell University
-#   All rights reserved.
-#
-#   See ensemble/doc/license.txt for further information.
-#
-#*************************************************************#
 # -*- Mode: makefile -*-
 #*************************************************************#
 #
@@ -50,6 +41,7 @@ ENSEMBLEMLI =\
 	$(ENSROOT)\type\param.mli\
 	$(ENSROOT)\type\view.mli\
 	$(ENSROOT)\type\conn.mli\
+	$(ENSROOT)\type\version.mli\
 	$(ENSROOT)\route\route.mli\
 	$(ENSROOT)\type\alarm.mli\
 	$(ENSROOT)\type\auth.mli\
@@ -96,6 +88,7 @@ ENSEMBLECMI =\
 	$(OBJD)\param$(CMI)\
 	$(OBJD)\view$(CMI)\
 	$(OBJD)\conn$(CMI)\
+	$(OBJD)\version$(CMI)\
 	$(OBJD)\route$(CMI)\
 	$(OBJD)\alarm$(CMI)\
 	$(OBJD)\auth$(CMI)\
@@ -251,6 +244,7 @@ ENSMINOBJ =\
 	$(OBJD)\intra$(CMO)\
 	$(OBJD)\elect$(CMO)\
 	$(OBJD)\frag$(CMO)\
+	$(OBJD)\frag_abv$(CMO)\
 	$(OBJD)\leave$(CMO)\
 	$(OBJD)\sync$(CMO)\
 	$(OBJD)\vsync$(CMO)\
@@ -381,16 +375,16 @@ USOCKOBJ =\
 SOCKCOBJ =\
 	$(OBJD)\static_string$(OBJ)\
 	$(OBJD)\gettimeofday$(OBJ)\
+	$(OBJD)\miscsupp$(OBJ)\
 	$(OBJD)\heapc$(OBJ)\
 	$(OBJD)\md5c$(OBJ)\
+	$(OBJD)\sendrecv$(OBJ)\
 	$(OBJD)\multicasts$(OBJ)\
 	$(OBJD)\select$(OBJ)\
 	$(OBJD)\sendopt$(OBJ)\
 	$(OBJD)\sockfd$(OBJ)\
 	$(OBJD)\sockopt$(OBJ)\
 	$(OBJD)\ethc$(OBJ)\
-	$(OBJD)\spawn$(OBJ)\
-	$(OBJD)\sendrecv$(OBJ)\
 	$(OBJD)\stdin$(OBJ)
 
 #*************************************************************#

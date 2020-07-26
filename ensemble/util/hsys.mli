@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -18,7 +18,7 @@ type ofs = int
 type len = int
 type port = int
 type inet
-type socket
+type socket = Socket.socket
 
 type timeval = {
   mutable sec10 : int ;
@@ -121,9 +121,12 @@ val max_msg_len : unit -> int
  * second value is the standard output, and the third value
  * is the standard error.  
  *)
+
 val open_process : string -> string array -> string -> (bool * string * string)
 
-val background_process : string -> string array -> string -> (int * socket * socket)
+val background_process : string -> string array -> string -> 
+  (in_channel * out_channel * in_channel) * socket * socket
+
 
 (**************************************************************)
 
@@ -218,7 +221,8 @@ type socket_option =
   | Reuse
   | Join of inet
   | Leave of inet
-  | Multicast of bool
+  | Ttl of int 
+  | Loopback of bool
   | Sendbuf of int
   | Recvbuf of int
   | Bsdcompat of bool
@@ -251,6 +255,7 @@ val substring_eq : string -> ofs -> string -> ofs -> len -> bool
  *)
 type md5_ctx
 val md5_init : unit -> md5_ctx
+val md5_init_full : string -> md5_ctx
 val md5_update : md5_ctx -> buf -> ofs -> len -> unit
 val md5_final : md5_ctx -> Digest.t
 
@@ -304,10 +309,6 @@ val minor_words : unit -> int
 val frames : unit -> int array array
 
 (**************************************************************)
-(* Use these at your own risk.
- *)
-val socket_of_file_descr : Unix.file_descr -> socket
-val file_descr_of_socket : socket -> Unix.file_descr
 
 (* Ohad.
  *)

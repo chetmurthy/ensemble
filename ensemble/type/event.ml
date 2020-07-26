@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -53,6 +53,7 @@ type typ =
   | EProtocol				(* Request a protocol switch *)
   | ERekey				(* Request a rekeying of the group *)
   | ERekeyPrcl				(* The rekey protocol events *)
+  | ERekeyPrcl2				(*                           *)
   | EStable				(* Deliver stability *)
   | EStableReq				(* Request for stability information *)
   | ESuspect				(* Member is suspected to be faulty *)
@@ -345,6 +346,7 @@ let string_of_type = Trace.debug "" (function
   | EProtocol		-> "EProtocol"
   | ERekey              -> "ERekey"
   | ERekeyPrcl          -> "ERekeyPrcl"
+  | ERekeyPrcl2         -> "ERekeyPrcl2"
   | ESend	  	-> "ESend"
   | ESendUnrel	  	-> "ESendUnrel"
   | EStable	  	-> "EStable"

@@ -1,7 +1,7 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -1349,7 +1349,8 @@ hot_err_t ens_spawn_tcp_init(void *env, char *argv[], /*OUT*/ int *fd) {
 
         /* Spawn outboard, then set up a socket to connect to it */
         if ((cid = spawnvp(_P_NOWAIT, outboard, newargv)) == -1) {
-	        hot_sys_Panic("spawnvp");	
+	  printf("Could not start the outboard process: check youe ENS_OUTBOARD variable, and check that the outboard executable is OK.\n");	
+	  hot_sys_Panic("spawnvp");	
         }
     }
 

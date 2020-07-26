@@ -1,0 +1,71 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\begin{Layer}{REKEY}
+
+This layers switches the group key upon request. There may be several 
+reasons for switching the key:
+\begin{itemize}
+\item The key's lifetime has expired --- it is now possible that some
+dedicated attacker has cracked it.
+\item The key has been compromised. 
+\item Application authorization policies have changed and previously trusted
+members need to be excluded from the group. 
+\end{itemize}
+
+This layer also relies on the Secchan layer to create secure
+channels when required. A secure channel is essentially a way
+to pass confidential information between two endpoints. The Secchan
+layer creates secure channels upon demand and caches them for future
+use. This allows the new group key to be disseminated efficiently and
+confidentially through the tree. 
+
+\begin{Protocol}
+When a member layer gets an \ERekeyPrcl\ event, it sends a message to the
+coordinator to start the rekeying process.  The coordinator generates
+a new key and sends it to its children using secure channels. The
+children pass it down the tree. Once a member receives the new key is
+passes it down to PerfRekey using an \mlval{ERekeyPrcl} event.
+
+The PerfRekey layer is responsible for collecting acknowledgments from the
+members and performing a view change with the new key once
+dissemination is complete. 
+\end{Protocol}
+
+\begin{Parameters}
+\item {rekey\_degree:} The degree of the dissemination tree. By
+default it is 2.
+\end{Parameters}
+
+\begin{Properties}
+\item
+Guarantees during a view change, either all members switch to the new
+shared key or none of them do.
+\end{Properties}
+
+\begin{Sources}
+\sourcesfile{rekey.ml}
+\end{Sources}
+
+\begin{GenEvent}
+\genevent{\DnCast}
+\genevent{\DnSend}
+\end{GenEvent}
+
+\begin{Testing}
+\item 
+The armadillo.ml file in the demo directory tests the security properties
+of \ensemble.
+\end{Testing}
+
+\emph{This layer was originally written by Mark Hadyen with Zhen Xiao.
+Ohad Rodeh later rewrote the security layers and related infrastructure.}
+\end{Layer}
+
+

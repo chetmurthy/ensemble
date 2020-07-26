@@ -1,0 +1,30 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\begin{Layer}{PT2PT} 
+
+This layer implements reliable point-to-point message delivery.
+
+\todo{finish this documentation}
+
+\begin{Parameters}
+\item
+pt2pt\_sweep : how often to retransmit messages and send out acknowledgments
+\item 
+pt2pt\_ack\_rate : determines how many messages will be received before an
+acknowledgement is generated.
+\item 
+pt2pt\_sync : boolean determining if point-to-point messages should be
+synchronized with view changes
+\end{Parameters}
+
+\begin{Testing}
+\item see the VSYNC stack
+\end{Testing}
+\end{Layer}

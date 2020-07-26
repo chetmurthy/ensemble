@@ -1,7 +1,7 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -25,16 +25,6 @@
 /***********************************************************************/
 
 #include "skt.h"
-
-void serror(cmdname, cmdarg)
-     const char * cmdname;
-     value cmdarg;
-{
-  /* unix_error is from unixsupport.c */
-  extern void unix_error(int errcode, const char * cmdname, value arg);
-  unix_error(h_errno, cmdname, cmdarg);
-}
-
 
 #if defined(HAS_SOCKETS)
 
@@ -63,23 +53,46 @@ void skt_recv_error(void) {
 #ifdef EPIPE
   case EPIPE:
 #endif
+
+    /* Unix and WIN32 (in errno.h)
+     */
 #ifdef EINTR
   case EINTR:
 #endif
 #ifdef EAGAIN
   case EAGAIN:
 #endif
+
 #ifdef ECONNREFUSED
   case ECONNREFUSED:
 #endif
+    /* WIN32 */
+#ifdef WSAECONNREFUSED
+  case WSAECONNREFUSED:
+#endif
+
 #ifdef ECONNRESET
   case ECONNRESET:
 #endif
+    /* WIN32 */
+#ifdef WSAECONNRESET
+  case WSAECONNRESET:
+#endif
+
 #ifdef ENETUNREACH
   case ENETUNREACH:
 #endif
+    /* WIN32 */
+#ifdef WSAEHOSTUNREACH
+  case WSAEHOSTUNREACH:
+#endif
+
 #ifdef EHOSTDOWN
   case EHOSTDOWN:
+#endif
+    /* WIN32 */
+#ifdef WSAEHOSTDOWN
+  case WSAEHOSTDOWN:
 #endif
     /* Do nothing */
     break ;

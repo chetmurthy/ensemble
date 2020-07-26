@@ -1,13 +1,13 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
  */
 /**************************************************************/
-// $Header: /cvsroot/ensemble/maestro/src/group/Maestro_ClSv.C,v 1.3 1998/10/14 20:16:14 tclark Exp $
+// $Header: /cvsroot/ensemble/maestro/src/group/Maestro_ClSv.C,v 1.4 2001/04/22 13:33:45 orodeh Exp $
 
 /********************************************************************
  *                                                                  *
@@ -595,8 +595,8 @@ Maestro_ClSv::xferDone(Maestro_ClSv_ViewData& vd) {
   else {
     Maestro_Message msg;
     msg << (int) MAESTRO_CLSV_XFER_DONE;
-    Maestro_GroupMember::send(vd.coordinator, msg);
     vd.state = MAESTRO_CLSV_STATE_SERVER_XFER_DONE;
+    Maestro_GroupMember::send(vd.coordinator, msg);
   }
 }
 
@@ -629,8 +629,8 @@ Maestro_ClSv::becomeServer(Maestro_ClSv_ViewData& vd) {
     // send become-server msg to the coordinator (specify requested xfer type)
     msg << (int) vd.myXferType << (int) MAESTRO_CLSV_BECOME_SERVER;
 
-    Maestro_GroupMember::send(vd.coordinator, msg);
     vd.state = MAESTRO_CLSV_STATE_BECOMING_SERVER;
+    Maestro_GroupMember::send(vd.coordinator, msg);
   }
 }
   

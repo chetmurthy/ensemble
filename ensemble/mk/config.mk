@@ -1,12 +1,3 @@
-#*************************************************************#
-#
-#   Ensemble, (Version 1.00)
-#   Copyright 2000 Cornell University
-#   All rights reserved.
-#
-#   See ensemble/doc/license.txt for further information.
-#
-#*************************************************************#
 # -*- Mode: makefile -*- 
 #*************************************************************#
 #
@@ -38,7 +29,8 @@ CC	= gcc
 CRYPTO_LINK = # no crypto by default
 
 # Where to find the OpenSSL cryptographic library. 
-#OPENSSL = /home/users/orodeh/openssl
+#OPENSSL = /cs/phd/orodeh/far/e/openssl/$(PLATFORM)
+#OPENSSL = /cs/phd/orodeh/far/e/openssl/i386-linux
 #OPENSSL_INC = -I $(OPENSSL)/include
 #
 #CRYPTOLIB_ML = \
@@ -57,6 +49,7 @@ CRYPTO_LINK = # no crypto by default
 
 # CFLAGS: used for compilation of C files
 CFLAGS	= -O2 \
+	-Wall \
         $(CODEGEN)                      \
 	-I $(OCAML_LIB)			\
 	-I $(ENSROOT)/hot/include	\
@@ -64,8 +57,8 @@ CFLAGS	= -O2 \
 	$(ENS_CFLAGS)			\
 	$(HOT_CFLAGS)			\
 	$(ETH_CFLAGS)			\
-	-DOSTYPE=$(OSTYPE)		\
-	-DMACHTYPE=$(MACHTYPE)		\
+	-DOSTYPE=$(ENS_OSTYPE)		\
+	-DMACHTYPE=$(ENS_MACHTYPE)	\
 	-DHAS_IP_MULTICAST		\
 	-DHAS_SENDMSG			\
 	$(OPENSSL_INC)
@@ -108,14 +101,14 @@ TKLIBS = \
 # Ensemble, so these do not need to be set.  The default is
 # to use the GNU "standards" of machine_name-os_name.  If
 # you are using the tcsh shell, then the environment
-# variables MACHTYPE and OSTYPE will be set correctly for
+# variables ENS_MACHTYPE and ENS_OSTYPE will be set correctly for
 # your platform and you can use the defaults.  On NT,
 # PLATFORM should be set to be 'nt'.
 
-# MACHTYPE = # type of machine: sparc, i386, rs6000, alpha, ...
-# OSTYPE = # os: sunos4, solaris, aix, osf1, linux
+# ENS_MACHTYPE = # type of machine: sparc, i386, rs6000, alpha, ...
+# ENS_OSTYPE = # os: sunos4, solaris, aix, osf1, linux
 # !NOTE! make sure there are no trailing spaces on the next line
-PLATFORM	= $(MACHTYPE)-$(OSTYPE)
+PLATFORM	= $(ENS_MACHTYPE)-$(ENS_OSTYPE)
 
 #*************************************************************#
 # FOR INITIAL CONFIGURATION, NOTHING BELOW HERE SHOULD NEED TO
@@ -242,7 +235,7 @@ MAKE	= make
 MKLIB   = ar cr 		# comment forces spaces
 MKLIBO  =
 RANLIB  = ranlib
-SUBMAKE = ; $(MAKE) -k
+SUBMAKE = ; $(MAKE)
 DEPEND  = .depend
 PARTIALLD = ld $(CODEGEN) -r
 PARTIALLDO = -o

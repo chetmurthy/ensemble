@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -35,8 +35,6 @@ type len = int
 type port = int
 type socket = Socket.socket
 type md5_ctx = Socket.md5_ctx
-let fos = Socket.fd_of_socket
-let sof = Socket.socket_of_fd
 
 type inet = Unix.inet_addr
 type send_info = Socket.send_info
@@ -64,7 +62,8 @@ type socket_option =
   | Reuse
   | Join of inet
   | Leave of inet
-  | Multicast of bool
+  | Ttl of int 
+  | Loopback of bool
   | Sendbuf of int
   | Recvbuf of int
   | Bsdcompat of bool
@@ -133,9 +132,9 @@ let rec unix_wrap_again debug f =
 	  
 (**************************************************************)
 
-let bind sock inet port = Unix.bind (fos sock) (Unix.ADDR_INET(inet,port))
-let close sock		= Unix.close (fos sock)
-let connect sock inet port = Unix.connect (fos sock) (Unix.ADDR_INET(inet,port))
+let bind sock inet port = Unix.bind sock (Unix.ADDR_INET(inet,port))
+let close sock		= Unix.close sock
+let connect sock inet port = Unix.connect sock (Unix.ADDR_INET(inet,port))
 let eth_init            = Socket.eth_init
 let eth_recv            = Socket.eth_recv
 let eth_sendto_info     = Socket.eth_sendto_info
@@ -150,7 +149,7 @@ let has_ip_multicast 	= Socket.has_ip_multicast
 let inet_any () 	= Unix.inet_addr_any
 let int_of_socket 	= Socket.int_of_socket
 (*let int_of_substring	= Socket.int_of_substring*)
-let listen sock i	= Unix.listen (fos sock) i
+let listen sock i	= Unix.listen sock i
 let max_msg_len () 	= 9*1024	(* suggested by Werner Vogels *)
 (*let pop_nint 		= Socket.pop_nint*)
 (*let push_nint 	= Socket.push_nint*)
@@ -169,8 +168,8 @@ let sendtov             = Socket.sendtov
 let sendtosv            = Socket.sendtosv
 let sendtovs            = Socket.sendtovs
 let set_error_log f     = error_log := f ; Socket.set_error_log f
-let socket_dgram () 	= sof (Unix.socket Unix.PF_INET Unix.SOCK_DGRAM 0)
-let socket_stream () 	= sof (Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0)
+let socket_dgram () 	= Unix.socket Unix.PF_INET Unix.SOCK_DGRAM 0
+let socket_stream () 	= Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0
 let static_string       = Socket.static_string
 let static_string_free  = Socket.static_string_free
 let stdin 		= Socket.stdin
@@ -178,6 +177,7 @@ let string_of_inet_nums = Unix.string_of_inet_addr
 let substring_eq        = Socket.substring_eq
 let udp_recv            = Socket.udp_recv
 let md5_init            = Socket.md5_init
+let md5_init_full       = Socket.md5_init_full
 let md5_update          = Socket.md5_update
 let md5_final           = Socket.md5_final
 
@@ -199,14 +199,14 @@ let select_info a b c = Socket.select_info (sihelp a) (sihelp b) (sihelp c)
 (**************************************************************)
 
 let getsockname sock =
-  match Unix.getsockname (fos sock) with
+  match Unix.getsockname sock with
   | Unix.ADDR_INET(inet,port) -> (inet,port)
   | _ -> raise Not_found
 
 (**************************************************************)
 
 let getpeername sock =
-  match Unix.getpeername (fos sock) with
+  match Unix.getpeername sock with
   | Unix.ADDR_INET(inet,port) -> (inet,port)
   | _ -> raise Not_found
 
@@ -230,19 +230,20 @@ let gettimeofday () =
  *)
 
 let setsockopt sock = function
-  | Reuse       -> Unix.setsockopt (fos sock) Unix.SO_REUSEADDR true
-  | Nonblock f  -> Socket.setsock_nonblock sock f
-  | Join inet   -> Socket.setsock_join sock inet
-  | Leave inet  -> Socket.setsock_leave sock inet
-  | Multicast loopback -> Socket.setsock_multicast sock loopback
-  | Sendbuf len -> Socket.setsock_sendbuf sock len
-  | Recvbuf len -> Socket.setsock_recvbuf sock len
-  | Bsdcompat b    -> Socket.setsock_bsdcompat sock b
+  | Reuse       -> Unix.setsockopt sock Unix.SO_REUSEADDR true
+  | Nonblock f  -> Socket.setsockopt_nonblock sock f
+  | Join inet   -> Socket.setsockopt_join sock inet
+  | Leave inet  -> Socket.setsockopt_leave sock inet
+  | Ttl i       -> Socket.setsockopt_ttl sock i
+  | Loopback onoff -> Socket.setsockopt_loop sock onoff
+  | Sendbuf len -> Socket.setsockopt_sendbuf sock len
+  | Recvbuf len -> Socket.setsockopt_recvbuf sock len
+  | Bsdcompat b    -> Socket.setsockopt_bsdcompat sock b
 
 (**************************************************************)
 
 let recvfrom s b o l = 
-  let l,sa = Unix.recvfrom (fos s) b o l [] in
+  let l,sa = Unix.recvfrom s b o l [] in
   match sa with 
   | Unix.ADDR_INET(i,p) -> (l,i,p)
   | _ -> failwith "recv_from:non-ADDR_INET"
@@ -362,8 +363,8 @@ let getlocalhost () =
 (**************************************************************)
 
 let accept sock =
-  match Unix.accept (fos sock) with
-  | (fd,Unix.ADDR_INET(inet,port)) -> ((sof fd),inet,port)
+  match Unix.accept sock with
+  | (fd,Unix.ADDR_INET(inet,port)) -> (fd,inet,port)
   | _ -> failwith "accept:non-ADDR_INET"
 
 (**************************************************************)
@@ -402,11 +403,6 @@ let string_of_inet_short inet =
     inet
 
 (**************************************************************)
-
-(* Use these at your own risk.
- *)
-let socket_of_file_descr = sof
-let file_descr_of_socket = fos
 
 (* Ohad 
  *)
@@ -476,75 +472,31 @@ let read_ch ch =
   String.concat "" (List.rev !l)
 
 let open_process cmd env input =
-(*
-  log (fun () -> sprintf "open_process %s %s" cmd input) ;
-*)
-  let (in_read, in_write) = Unix.pipe() in
-  let (out_read, out_write) = Unix.pipe() in
-  let (err_read, err_write) = Unix.pipe() in
+  let ((in_read,out_write,in_err) as handle) = 
+    Unix.open_process_full cmd env in
+  output_string out_write input ; 
+  close_out out_write ;
 
-  match Unix.fork() with
-  | 0 ->
-      Unix.dup2 out_read Unix.stdin ;
-      Unix.dup2 in_write Unix.stdout ;
-      Unix.dup2 err_write Unix.stderr ;
-      List.iter Unix.close  [in_read; out_write; err_write; out_read; in_write; err_read] ;
-      Unix.execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env ;
-      exit 127
-  | pid ->
-      let inchan  = Unix.in_channel_of_descr in_read in
-      let outchan = Unix.out_channel_of_descr out_write in
-      let errchan = Unix.in_channel_of_descr err_read in
-      Unix.close out_read;
-      Unix.close in_write;
-      Unix.close err_write;
+  let output = read_ch in_read in
+  let error = read_ch in_err in
+  close_in in_read ;
+  close_in in_err ;
 
-      output_string outchan input ; 
-      close_out outchan ;
+  let stat = Unix.close_process_full handle in
+  let stat = stat = Unix.WEXITED(0) in
+  (stat,output,error)
 
-      let output = read_ch inchan in
-      close_in inchan ;
-      let error = read_ch errchan in
-      close_in errchan ;
-
-      let stat = snd(Unix.waitpid [] pid) in
-      let stat = stat = Unix.WEXITED(0) in
-      (stat,output,error)
 
 let background_process cmd env input =
-(*
-  log (fun () -> sprintf "background_process" ) ;
-*)
-  let (in_read, in_write) = Unix.pipe() in
-  let (out_read, out_write) = Unix.pipe() in
-  let (err_read, err_write) = Unix.pipe() in
-  
-  match Unix.fork() with
-  | 0 ->
-      Unix.dup2 out_read Unix.stdin ;
-      Unix.dup2 in_write Unix.stdout ;
-      Unix.dup2 err_write Unix.stderr ;
-      List.iter Unix.close  [in_read; out_write; err_write; out_read; in_write; err_read] ;
-      Unix.execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env ;
-      exit 127
-  | pid -> 
-      Unix.close out_read;
-      Unix.close in_write;
-      Unix.close err_write;
+  let ((in_read,out_write,in_err) as handle) = 
+    Unix.open_process_full cmd env in
+  output_string out_write input ; 
+  close_out out_write ;
       
-      let outchan = Unix.out_channel_of_descr out_write in
-      output_string outchan input ; 
-      close_out outchan ;
-      
-      (* sockets to listen for replies on.
-       *)
-      (pid, socket_of_file_descr in_read, socket_of_file_descr err_read)
-	
-(*
-	with e -> match e with 
-	|	Unix.Unix_error(err,s1,s2) -> 
-			log (fun () -> sprintf "Hsys.background process %s" (error e));
-			raise e
-	|	e -> raise e
-*)								 
+  (* sockets to listen for replies on.
+   *)
+  (handle,
+   Unix.descr_of_in_channel in_read, 
+   Unix.descr_of_in_channel in_err)
+
 (**************************************************************)

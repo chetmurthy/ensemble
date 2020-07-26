@@ -1,0 +1,23 @@
+#!/bin/csh
+
+set tmp1 = "/tmp/pagecat1.$$"
+
+rm -f $tmp1
+
+touch $tmp1
+foreach i ($*)
+  echo $i >> $tmp1
+end
+
+echo "TABLE OF CONTENTS"
+echo
+echo
+sort $tmp1
+echo ""
+
+foreach i (`sort $tmp1`)
+  cat $i
+  echo ""
+end
+
+rm -f $tmp1

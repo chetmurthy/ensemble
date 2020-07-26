@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -50,17 +50,8 @@ external gettimeofday : timeval -> unit
   = "skt_gettimeofday" "noalloc"
 
 (**************************************************************)
-(*
-type socket = Wrap of Unix.file_descr	(* Not exported *)
-let socket_of_fd x = Wrap x
-let fd_of_socket (Wrap x) = x
-*)
 
-type socket
-external socket_of_fd : Unix.file_descr -> socket 
-  = "skt_socket_of_fd"
-external fd_of_socket : socket -> Unix.file_descr 
-  = "skt_fd_of_socket"
+type socket = Unix.file_descr
 
 (**************************************************************)
 
@@ -72,12 +63,12 @@ external start_input : unit -> Unix.file_descr
 let stdin =
   let stdin = ref None in
   if is_unix then (
-    fun () -> socket_of_fd Unix.stdin 
+    fun () -> Unix.stdin 
   ) else (
     fun () ->
       match !stdin with
       | None ->
-	  let s = socket_of_fd (start_input ()) in
+	  let s = start_input () in
 	  stdin := Some s ;
 	  s
       | Some s -> s
@@ -102,9 +93,9 @@ external frames : unit -> int array array
  *)
 let read =
   if is_unix then 
-    fun s b o l -> Unix.read (fd_of_socket s) b o l
+    fun s b o l -> Unix.read s b o l
   else
-    fun s b o l -> fst (Unix.recvfrom (fd_of_socket s) b o l [])
+    fun s b o l -> fst (Unix.recvfrom s b o l [])
 
 (**************************************************************)
 
@@ -134,8 +125,7 @@ external int_of_file_descr : Unix.file_descr -> int
   = "skt_int_of_file_descr"
 
 let int_of_socket s =
-  let fd = fd_of_socket s in
-  int_of_file_descr fd
+  int_of_file_descr s
 
 (**************************************************************)
 (* Optimized socket operations.
@@ -181,20 +171,24 @@ external sendp : send_info -> buf -> ofs -> len -> len
 
 external has_ip_multicast : unit -> bool 
   = "skt_has_ip_multicast" 
-external setsock_multicast : socket -> bool -> unit 
-  = "skt_setsock_multicast" 
-external setsock_join : socket -> Unix.inet_addr -> unit 
-  = "skt_setsock_join" 
-external setsock_leave : socket -> Unix.inet_addr -> unit 
-  = "skt_setsock_leave" 
-external setsock_sendbuf : socket -> int -> unit
-  = "skt_setsock_sendbuf"
-external setsock_recvbuf : socket -> int -> unit
-  = "skt_setsock_recvbuf"
-external setsock_nonblock : socket -> bool -> unit
-  = "skt_setsock_nonblock"
-external setsock_bsdcompat : socket -> bool -> unit
-  = "skt_setsock_bsdcompat"
+external in_multicast : Unix.inet_addr -> bool 
+  = "skt_in_multicast" 
+external setsockopt_ttl : socket -> int -> unit 
+  = "skt_setsockopt_ttl" 
+external setsockopt_loop : socket -> bool -> unit 
+  = "skt_setsockopt_loop" 
+external setsockopt_join : socket -> Unix.inet_addr -> unit 
+  = "skt_setsockopt_join" 
+external setsockopt_leave : socket -> Unix.inet_addr -> unit 
+  = "skt_setsockopt_leave" 
+external setsockopt_sendbuf : socket -> int -> unit
+  = "skt_setsockopt_sendbuf"
+external setsockopt_recvbuf : socket -> int -> unit
+  = "skt_setsockopt_recvbuf"
+external setsockopt_nonblock : socket -> bool -> unit
+  = "skt_setsockopt_nonblock"
+external setsockopt_bsdcompat : socket -> bool -> unit
+  = "skt_setsockopt_bsdcompat"
 
 (**************************************************************)
 
@@ -204,6 +198,8 @@ external md5_ctx_length : unit -> int
   = "skt_md5_context_length" "noalloc"
 external md5_init : md5_ctx -> unit
   = "skt_md5_init" "noalloc"
+external md5_init_full : md5_ctx -> string -> unit
+  = "skt_md5_init_full" "noalloc"
 external md5_update : md5_ctx -> buf -> ofs -> len -> unit
   = "skt_md5_update" "noalloc"
 external md5_final : md5_ctx -> Digest.t -> unit
@@ -214,10 +210,37 @@ let md5_init () =
   md5_init ret ;
   ret
 
+let md5_init_full init_key =
+  if String.length init_key <> 16 then 
+    raise (Invalid_argument "md5_init_full: initial key value is not of length 16");
+  let ret = String.create (md5_ctx_length ()) in
+  md5_init_full ret init_key;
+  ret
+
+
 let md5_final ctx =
   let dig = String.create 16 in
   md5_final ctx dig ;
   dig
+
+(*
+let _ = 
+  let x = "1234567812345678" in
+  let msg = "abcdefghabcdefgh" in
+  let ctx1 = md5_init_full x in
+  md5_update ctx1 msg 0 16 ;
+  let digest1 = md5_final ctx1 in
+
+  let ctx2 = md5_init_full x in
+  md5_update ctx2 msg 0 16 ;
+  let digest2 = md5_final ctx2 in
+  if digest2 <> digest1 then (
+    print_string "Serious error in MD5\n";
+  );
+  exit 0
+*)
+
+
 
 (**************************************************************)
 (* PUSH_INT/POP_INT: read and write 4-byte integers to
@@ -235,35 +258,6 @@ external pop_nint : buf -> ofs -> int
 external int_of_substring : buf -> ofs -> int
   = "skt_int_of_substring" "noalloc"
 *)
-(**************************************************************)
-
-type process_handle
-
-let process_socket () =
-  let fd = Unix.socket Unix.PF_INET Unix.SOCK_DGRAM 0 in
-  let sock = socket_of_fd fd in
-  let host = Unix.gethostname() in
-  let addr =  
-     try
-        let h = Unix.gethostbyname host in
-           h.Unix.h_addr_list.(0)
-     with
-        Not_found ->
-           print_line ("SOCKET: host "^host^" not found: defaulting to localhost") ;
-           Unix.inet_addr_of_string "127.0.0.1"
-  in
-  Unix.bind fd (Unix.ADDR_INET(addr, 0));
-  sock
-
-external spawn_process : string -> string array -> socket option -> process_handle option
-  = "skt_spawn_process"
-
-external wait_process : socket -> (process_handle * Unix.process_status)
-  = "skt_wait_process"
-
-external terminate_process : process_handle -> unit
-  = "skt_terminate_process"
-
 (**************************************************************)
 
 type recv_info = socket
@@ -295,7 +289,42 @@ let select_info a b c =
   (a,b,c,max)
 
 (**************************************************************)
+type win = 
+    Win_3_11
+  | Win_95_98
+  | Win_NT_3_5
+  | Win_NT_4
+  | Win_2000
 
+type os_t_v = 
+    OS_Unix
+  | OS_Win of win
+
+external win_version : unit -> string = "win_version"
+
+let os_type_and_version () = 
+  let v = ref None in
+  match !v with 
+      Some x -> x
+    | None -> 
+	let ver = 
+	  if is_unix then OS_Unix
+	  else (
+	    let version = 
+	      match win_version () with
+		  "NT3.5" -> Win_NT_3_5
+		| "NT4.0" -> Win_NT_4
+		| "2000" -> Win_2000
+		| "95/98" -> Win_95_98
+		| "3.11" -> Win_3_11
+		| _ -> failwith "Sanity: win_version returned bad value"
+	    in
+	    OS_Win version
+	  ) in
+	v := Some ver;
+	ver
+
+(**************************************************************)
 type eth = string
 
 type eth_sendto_info

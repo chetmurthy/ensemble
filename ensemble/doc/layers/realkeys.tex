@@ -1,0 +1,64 @@
+%*************************************************************%
+%
+%    Ensemble, 1.10
+%    Copyright 2001 Cornell University, Hebrew University
+%    All rights reserved.
+%
+%    See ensemble/doc/license.txt for further information.
+%
+%*************************************************************%
+\begin{Layer}{REALKEYS}
+\label{layer:realkeys}
+This layer is part of the dWGL suite. Together with OptRekey is
+implements the dWGL protocol. This layer's task is to actually
+perform the instructions passed to it from OptRekey, generate and
+pass securely all group subkeys, and finally the group key.
+
+\begin{Protocol}
+When a Rekey operation is performed a complex set of layers and
+protocols is set into motion. Eventually, each group member receives a
+new keygraph and a set of instructions describing how to merge its
+partial keytree with the rest of the group keytrees to achieve
+a unified group tree. The head of the keytree is the group key.
+
+The instructions are implemented in several stages by the subleaders:
+\begin{enumerate}
+\item Choose new keys, and send them securely to peer subleaders
+using secure channels.
+\item Get new keys through secure channels. Disseminate these keys
+by encrypting them with the top subtree key, and sending pt-2-pt to the leader.
+\item When the leader gets all 2nd stage messages, it bundles them
+into a single multicast and sends to the group. 
+\item A member $p$ that receives the multicast, extracts the set of
+keys it should know. Member $p$ creates an \mlval{ERekeyPrcl} event
+with the new group key attached. The event it send down to PerfRekey
+notifing it that the protocol is complete.
+\end{enumerate}
+
+\end{Protocol}
+
+\begin{Properties}
+\item Requires VSYNC properties.
+\end{Properties}
+
+\begin{Sources}
+\sourcesfile{realkeys.ml}
+\sourcesfile{type/tdefs.ml,mli}
+\end{Sources}
+
+\begin{GenEvent}
+\genevent{\mlval{ESecureMsg}}
+\genevent{\DnCast}
+\genevent{\DnSend}
+\end{GenEvent}
+
+\begin{Testing}
+\item 
+The armadillo program (in the demo subdirectory) tests the security properties
+of \ensemble.
+\end{Testing}
+
+\end{Layer}
+
+
+

@@ -1,7 +1,7 @@
 #*************************************************************#
 #
-#   Ensemble, (Version 1.00)
-#   Copyright 2000 Cornell University
+#   Ensemble, 1.10
+#   Copyright 2001 Cornell University, Hebrew University
 #   All rights reserved.
 #
 #   See ensemble/doc/license.txt for further information.
@@ -9,12 +9,11 @@
 #*************************************************************#
 #*************************************************************#
 ENSROOT = ..
-DIR = def
+include $(ENSROOT)/mk/config.mk
 #*************************************************************#
 all: main_all install
 	cd ../demo $(SUBMAKE)
 #*************************************************************#
-include $(ENSROOT)/mk/config.mk
 include $(ENSROOT)/mk/preamble.mk
 include $(ENSROOT)/mk/ocaml.mk
 include $(ENSROOT)/mk/files.mk

@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -143,6 +143,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let log = Trace.log2 name ls_name in
   let log1 = Trace.log2 (name^"1") ls_name in
   let log2 = Trace.log2 (name^"2") ls_name in
+  let log3 = Trace.log2 (name^"2") ls_name in
 
   let shared = Cipher.lookup "OpenSSL/RC4" in
   let cryptFun = Cipher.single_use shared in
@@ -160,7 +161,6 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     dnlm (Event.create name ESend[Peer peer; ForceVsync]) m in
   
   let compute_key bignum = 
-    s.num <- succ s.num;
     let material = DH.compute_key s.dh s.dhl_key bignum in
     if String.length material < 16 then 
       failwith "Generated DH key is too short";
@@ -219,6 +219,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
    * enqueue [msg] to send.
    *)
   let open_chan_to_peer peer msg = 
+    s.num <- 2 + s.num;
     log1 (fun () -> sprintf "open_chan to %d" peer);
     let ch = {
       key = None;
@@ -343,7 +344,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     (* Add statistics to the ERekeyPrcl message. Statistics are
      * used by PERFREKEY, for performance measurements. 
      *)
-    | ERekeyPrcl -> 
+    | ERekeyPrcl 
+    | ERekeyPrcl2 -> 
 	log2 (fun () -> "ERekeyPrcl");
 	let num = s.num in
 	let ev = set name ev [SecStat num] in

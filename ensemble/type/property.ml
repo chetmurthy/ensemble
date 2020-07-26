@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -274,6 +274,7 @@ let choose props =
 	  if p.scale then ["Pr_suspect"] else ["Suspect"]) ::
 	(if p.scale then ["Pr_stable"] else ["Stable"]) ::
 	["Vsync"] ::
+	(["Frag_Abv"]) ::
 
 	(if p.total then ["Partial_appl"] else ["Top_appl"]) ::
 

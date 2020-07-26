@@ -1,0 +1,74 @@
+#*************************************************************#
+#
+#   Ensemble, 1.10
+#   Copyright 2001 Cornell University, Hebrew University
+#   All rights reserved.
+#
+#   See ensemble\doc\license.txt for further information.
+#
+#*************************************************************#
+.SUFFIXES: .ps .dvi .tex
+.dvi.ps:
+	dvips $< -o $@
+.tex.dvi:
+	latex $< 
+
+all: ref.ps tut.ps hot.ps #ref.ps projects.ps
+
+force:
+	rm -f *.dvi *.ps
+	nmake -f Makefile.nt
+
+fix:
+	fixpoint ref.ps tut.ps projects.ps
+
+tut.dvi:\
+	tut.tex\
+	install.tex\
+	config.tex\
+	def.tex\
+	demo.tex\
+	appl_ml.tex\
+	appl_c.tex\
+	appl_text.tex\
+	exec_tut.tex\
+	property.tex\
+	pgp.tex\
+	view_state.tex
+
+ref.dvi:\
+	ref.tex\
+	id.tex\
+	def.tex\
+	event.tex\
+	event_prot.tex\
+	rpc.tex\
+	layer_antmy.tex\
+	layer_model.tex\
+	layer_hdlrs.tex\
+	layer_ref.tex\
+	vsync.tex\
+	exec_ref.tex\
+	membership.tex\
+	bimodal.tex\
+	security.tex\
+	unsafe.tex
+
+projects.dvi: projects.tex
+
+
+ref2.ps: ref.ps
+	2up <ref.ps -o ref2.ps
+
+tut2.ps: tut.ps
+	2up <tut.ps >tut2.ps
+
+clean:
+	rm -f *.dvi *~ *.log *.aux *.toc *.lof *.lot TAGS
+
+realclean: clean
+	rm -f *.ps*
+
+tags:
+	etags *.tex ..\layers\*\*.tex
+

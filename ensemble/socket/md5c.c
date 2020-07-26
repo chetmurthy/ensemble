@@ -1,7 +1,7 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 1.00)
- *  Copyright 2000 Cornell University
+ *  Ensemble, 1.10
+ *  Copyright 2001 Cornell University, Hebrew University
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
@@ -26,6 +26,21 @@ void MD5Init(struct MD5Context *ctx);
 void MD5Update(struct MD5Context *ctx, unsigned char *buf, unsigned int len);
 void MD5Final(unsigned char *digest, struct MD5Context *ctx);
 
+
+
+/**************************************************************/
+/*
+ * Start MD5 accumulation.  Set bit count to 0 and buffer to 
+ * user initial key.
+ * This is used in the HMAC standard.
+ */
+void MD5InitFull(struct MD5Context *ctx, char * init_key)
+{
+  memcpy((char*)ctx->buf, (char*)init_key, 16);
+  ctx->bits[0] = 0;
+  ctx->bits[1] = 0;
+}
+
 /**************************************************************/
 
 value 
@@ -42,6 +57,19 @@ skt_md5_init(
     struct MD5Context *ctx;  
     ctx = (struct MD5Context*)String_val(ctx_v) ;
     MD5Init(ctx);
+    return Val_unit ;
+}
+
+value 
+skt_md5_init_full(
+		  value ctx_v,
+		  value init_key_v
+) {
+    struct MD5Context *ctx;  
+    char * init_key ;
+    ctx = (struct MD5Context*)String_val(ctx_v) ;
+    init_key = String_val(init_key_v);
+    MD5InitFull(ctx,init_key);
     return Val_unit ;
 }
 
