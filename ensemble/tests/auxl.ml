@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, 1_42
- *  Copyright 2003 Cornell University, Hebrew University
+ *  Ensemble, 2_00
+ *  Copyright 2004 Cornell University, Hebrew University
  *           IBM Israel Science and Technology
  *  All rights reserved.
  *
@@ -12,7 +12,7 @@
 (* AUX.ML: Auxilary code and definitions *)
 (* Author: Ohad Rodeh , 9/99 *)
 (**************************************************************)
-let name = "AUX"
+let name = "AUXL"
 (**************************************************************)
 
 open Printf

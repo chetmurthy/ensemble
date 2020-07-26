@@ -7,7 +7,7 @@
 #
 #*************************************************************#
 
-.SUFFIXES: .cmo .cmx .cmi .ml .mli .c .o .obj
+.SUFFIXES: .cmo .cmx .cmi .ml .mli .c .o .obj .java. class
 .mli.cmi:
 	ocamlc $(INCLUDE) -c $<
 .ml.cmo:
@@ -18,6 +18,8 @@
 	$(CC) -c $(CFLAGS)  $(C_ADD_FLAGS) $< -o $@
 .c.obj:
 	$(CC) -c $(CFLAGS)  $(C_ADD_FLAGS) $< $(OBJRULE)$@
+.java.class:
+	javac $<
 
 #  The new version
 #

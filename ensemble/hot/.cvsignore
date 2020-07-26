@@ -1,8 +1,0 @@
-*.cm*
-*.a
-*.o*
-.depend*
-Makefile.nt
-*.lib *.exp
-outboard hot_testo hot_test
-new_hot

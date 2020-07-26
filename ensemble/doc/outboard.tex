@@ -1,7 +1,7 @@
 %*************************************************************%
 %
-%    Ensemble, 1_42
-%    Copyright 2003 Cornell University, Hebrew University
+%    Ensemble, 2_00
+%    Copyright 2004 Cornell University, Hebrew University
 %           IBM Israel Science and Technology
 %    All rights reserved.
 %
@@ -95,35 +95,28 @@ is based on the primary bit of the group daemon's being used.
 
 \begin{FormatTable}
 \formatentry{integer}{group-id}
-\formatentry{integer}{View = 0}
+\formatentry{integer}{View = 1}
+\formatentry{int}{number of members}
+\formatentry{string}{Ensemble version number}
+\formatentry{string}{group-name}
+\formatentry{string}{protocol stack}
+\formatentry{int}{logical time of the view}
+\formatentry{boolean}{is this the primary partition?}
+\formatentry{string}{parameters}
+\formatentry{list}{addresses of group members}
+\formatentry{list}{view of this group}
 \formatentry{endpoint}{my endpoint}
 \formatentry{string}{my address}
 \formatentry{integer}{rank}
 \formatentry{string}{my name}
-\formatentry{int}{number of members}
 \formatentry{view\_id}{current view id}
-\formatentry{boolean}{am I the coordinator''}
-\formatentry{string}{Ensemble verion number}
-\formatentry{string}{group}
-\formatentry{string}{protocol stack}
-\formatentry{string}{group coordinator rank}
-\formatentry{int}{logical time of the view}
-\formatentry{boolean}{is this the primary partition?}
-\formatentry{boolean}{are we using the group-daemon?}
-\formatentry{boolean}{is this a state-transfer view?}
-\formatentry{string}{The group key}
-\formatentry{list}{previous view-ids, those that merged to form this view}
-\formatentry{string}{parameters}
-\formatentry{time}{uptime of this endpoint}
-\formatentry{list}{view of this group}
-\formatentry{list}{addresses of group members}
 \formatentry{iovec}{an empty message body}
 \end{FormatTable}
 
 \item{Cast} : A mulitcast message has been received on this group. 
 \begin{FormatTable}
 \formatentry{integer}{group-id}
-\formatentry{integer}{Cast = 1}
+\formatentry{integer}{Cast = 2}
 \formatentry{integer}{origin}
 \formatentry{iovec}{message body}
 \end{FormatTable}
@@ -132,17 +125,9 @@ is based on the primary bit of the group daemon's being used.
   endpoint. 
 \begin{FormatTable}
 \formatentry{integer}{group-id}
-\formatentry{integer}{Send = 2}
+\formatentry{integer}{Send = 3}
 \formatentry{integer}{origin}
 \formatentry{iovec}{message body}
-\end{FormatTable}
-
-\item{Heartbeat} : A periodic heartbeat. Is about to be {\bf deprecated}. 
-\begin{FormatTable}
-\formatentry{integer}{group-id}
-\formatentry{integer}{Heartbeat = 3}
-\formatentry{time}{the current time}
-\formatentry{iovec}{empty}
 \end{FormatTable}
 
 \item{Block} : Block the endpoint as preperation for a view
@@ -180,26 +165,18 @@ is based on the primary bit of the group daemon's being used.
   chosen by the client. 
 \begin{FormatTable}
 \formatentry{integer}{group-id}
-\formatentry{integer}{Join = 0}
-\formatentry{integer}{heartbeat rate}
-\formatentry{string}{transports}
-\formatentry{string}{protocol}
+\formatentry{integer}{Join = 1}
 \formatentry{string}{group-name}
 \formatentry{string}{properties}
-\formatentry{bool}{use the properties?}
-\formatentry{bool}{use the groupd service?}
 \formatentry{string}{parameters}
-\formatentry{string}{is this a light-weight client?}
-\formatentry{string}{use a debugging stack?}
 \formatentry{string}{principal}
-\formatentry{string}{group security key}
 \formatentry{bool}{secure stack?}
 \end{FormatTable}
 
 \item{Cast} : Multicast a message in this group.
 \begin{FormatTable}
 \formatentry{integer}{group-id}
-\formatentry{integer}{Cast = 1}
+\formatentry{integer}{Cast = 2}
 \formatentry{iovec}{message body}
 \end{FormatTable}
 
@@ -208,7 +185,7 @@ is based on the primary bit of the group daemon's being used.
   the group, the server will exit with an error otherwise. 
 \begin{FormatTable}
 \formatentry{integer}{group-id}
-\formatentry{integer}{Send = 2}
+\formatentry{integer}{Send = 3}
 \formatentry{list}{target ranks}
 \formatentry{iovec}{message body}
 \end{FormatTable}
@@ -219,7 +196,7 @@ The client must make sure that the destination is within
   the group, the server will exit with an error otherwise. 
 \begin{FormatTable}
 \formatentry{integer}{group-id}
-\formatentry{integer}{Send1 = 3}
+\formatentry{integer}{Send1 = 4}
 \formatentry{iovec}{message body}
 \end{FormatTable}
 
@@ -227,56 +204,16 @@ The client must make sure that the destination is within
   that the suspected members are valid member ranks; the server will exit with an error otherwise. 
 \begin{FormatTable}
 \formatentry{integer}{group-id}
-\formatentry{integer}{Suspect = 4}
+\formatentry{integer}{Suspect = 5}
 \formatentry{list}{suspect rank list}
 \formatentry{iovec}{message body}
-\end{FormatTable}
-
-\item{XferDone} : Indicate that state-trasfer has completed. 
-\begin{FormatTable}
-\formatentry{integer}{group-id}
-\formatentry{integer}{XferDone = 5}
-\formatentry{iovec}{empty}
-\end{FormatTable}
-
-\item{Protocol} : Request a stack change. Ask for a specific set of
-  layers. 
-\begin{FormatTable}
-\formatentry{integer}{group-id}
-\formatentry{integer}{Protocol = 6}
-\formatentry{string}{protocol}
-\formatentry{iovec}{empty}
-\end{FormatTable}
-
-\item{Property} : Request a stack change. Ask for a set of
-  properties. Ensemble will derive a stack from the set of
-  properties. 
-\begin{FormatTable}
-\formatentry{integer}{group-id}
-\formatentry{integer}{Property = 7}
-\formatentry{string}{protocol}
-\formatentry{iovec}{empty}
 \end{FormatTable}
 
 \item{Leave} : Request to leave the group. The endpoint is valid until
   the Exit message is received from the server. 
 \begin{FormatTable}
 \formatentry{integer}{group-id}
-\formatentry{integer}{Leave = 8}
-\formatentry{iovec}{empty}
-\end{FormatTable}
-
-\item{Prompt} : Ask for an immediate view change. 
-\begin{FormatTable}
-\formatentry{integer}{group-id}
-\formatentry{integer}{Prompt = 9}
-\formatentry{iovec}{empty}
-\end{FormatTable}
-
-\item{Rekey} : Rekey the group. 
-\begin{FormatTable}
-\formatentry{integer}{group-id}
-\formatentry{integer}{Rekey = 10}
+\formatentry{integer}{Leave = 6}
 \formatentry{iovec}{empty}
 \end{FormatTable}
 
@@ -284,7 +221,7 @@ The client must make sure that the destination is within
   BlockOk no new messages can be sent in the view. 
 \begin{FormatTable}
 \formatentry{integer}{group-id}
-\formatentry{integer}{BlockOk = 11}
+\formatentry{integer}{BlockOk = 7}
 \formatentry{iovec}{empty}
 \end{FormatTable}
 \end{itemize}

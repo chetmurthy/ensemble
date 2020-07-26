@@ -1,0 +1,100 @@
+#*************************************************************#
+#
+#   Ensemble, 2_00
+#   Copyright 2004 Cornell University, Hebrew University
+#           IBM Israel Science and Technology
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+#*************************************************************#
+# MAKEFILE: tests Makefile
+#*************************************************************#
+ENSROOT = ..
+!include $(ENSROOT)\mk\preamble.nmk
+!include $(ENSROOT)\mk\config.nmk
+#*************************************************************#
+
+.PHONY: perf rekey
+
+#*************************************************************#
+
+.SUFFIXES: .cmo .cmi .ml .mli
+.mli.cmi:
+	ocamlc  -c $<
+.ml.cmo:
+	ocamlc  -g -c $<
+
+#*************************************************************#
+all : tools
+
+tools : auxl.cmi auxl.cmo coord.cmi coord.cmo client.cmo\
+	perf\throu.cmo perf\latency.cmo perf\rpc.cmo\
+	rekey\rekey.cmo\
+	test_client.cmo test_rpc_speed.cmo 
+
+
+#test1 : tools test1.cmo
+#	ocamlc -custom -o test1 unix.cma str.cma auxl.cmo coord.cmo test1.cmo
+
+
+#MACH = hfstore2 hfstore3 hfstore4 hfstore6
+MACH = hfs-build3 hfs-build4 
+
+#*************************************************************#
+
+start : 
+	echo $(MACH)
+	for i in $(MACH)& do\
+	    echo $$i&\
+	    ssh $$i "\home\orodeh\e\2.00\ensemble\bin\i386-linux\ensembled >& \dev\null &" &\
+	    ssh $$i "\home\orodeh\e\2.00\ensemble\bin\i386-linux\ensembled -tcp_port 7000 >& \dev\null &" &\
+	    ssh $$i "ocaml -I \home\orodeh\e\2.00\ensemble\tests \home\orodeh\e\2.00\ensemble\tests\client.mls >& \dev\null &" &\
+	done
+
+#	    ssh $$i "ocaml -I \home\orodeh\e\2.00\ensemble\tests \home\orodeh\e\2.00\ensemble\tests\client.mls >& \dev\null &" &
+
+
+kill : 
+	for i in $(MACH)& do\
+	   echo $$i &\
+	   ssh $$i "killall ocaml" &\
+	   ssh $$i "killall ensembled" &\
+	done
+
+#*************************************************************#
+
+client : 
+	ocaml client.mls 
+
+try : 	
+	ocaml try.mls $(MACH)
+
+uptime : 	
+	ocaml uptime.mls $(MACH)
+
+rpc : 
+	cd perf& ocaml rpc.mls $(MACH)
+
+throu : 
+	cd perf& ocaml throu.mls -lo 4 -hi 4 -step 1 $(MACH)
+
+latency : 
+	cd perf& ocaml latency.mls $(MACH)
+
+rekey : 
+	cd rekey& ocaml rekey.mls $(MACH)
+
+#*************************************************************#
+clean : 
+	$(CLEANDIR)	
+	$(RM) *\*.cm*
+
+#*************************************************************#
+depend :
+	ocamldep *.ml *.mli > .depend
+
+include .depend
+
+#*************************************************************#

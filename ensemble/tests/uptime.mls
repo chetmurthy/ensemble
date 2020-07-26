@@ -1,11 +1,11 @@
 #load "str.cma"
 #load "unix.cma"
-#load "aux.cmo"
+#load "auxl.cmo"
 #load "coord.cmo"
 
 
 open Unix
-open Aux
+open Auxl
 open Coord
 open Printf ;;
 

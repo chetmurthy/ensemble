@@ -30,7 +30,6 @@ ENSEMBLEMLI = \
 	type/security.mli	\
 	type/shared.mli	\
 	util/tree.mli	\
-	type/tdefs.mli	\
 	util/mrekey_dt.mli	\
 \
 	util/hsys.mli	\
@@ -103,7 +102,6 @@ ENSCOREOBJ = \
 	type/security$(CMO)	\
 	type/shared$(CMO)	\
 	util/tree$(CMO)		\
-	type/tdefs$(CMO)	\
 	util/mrekey_dt$(CMO)	\
 \
 	type/proto$(CMO)	\
@@ -144,11 +142,9 @@ ENSCOREOBJ = \
 	route/bypassr$(CMO)	\
 	infr/hsyssupp$(CMO)	\
 	trans/netsim$(CMO)	\
-	trans/tcp$(CMO)	\
 \
 	appl/pgp$(CMO)	\
 	util/arrayop$(CMO)	\
-	appl/debug$(CMO)	\
 	appl/appl_debug$(CMO) \
 	appl/appl_aggr$(CMO) \
 	appl/appl_power$(CMO) \
@@ -224,7 +220,6 @@ ENSRESTOBJ = \
 	layers/other/subcast$(CMO)	\
 	layers/other/migrate$(CMO)	\
 	layers/security/perfrekey$(CMO)	\
-	layers/security/encrypt$(CMO)	\
 	layers/other/primary$(CMO)	\
 	layers/vsync/present$(CMO)	\
 \

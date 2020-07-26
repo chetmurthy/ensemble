@@ -1,7 +1,0 @@
-*.exe
-*.cm*
-*.a
-*.o*
-.depend*
-Makefile.nt
-life

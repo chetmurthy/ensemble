@@ -1,13 +1,21 @@
 #*************************************************************#
 #
-#   Ensemble, 1_42
-#   Copyright 2003 Cornell University, Hebrew University
+#   Ensemble, 2_00
+#   Copyright 2004 Cornell University, Hebrew University
 #           IBM Israel Science and Technology
 #   All rights reserved.
 #
 #   See ensemble/doc/license.txt for further information.
 #
 #*************************************************************#
+#*************************************************************#
+# MAKEFILE: tests Makefile
+#*************************************************************#
+ENSROOT = ..
+include $(ENSROOT)/mk/preamble.mk
+include $(ENSROOT)/mk/config.mk
+#*************************************************************#
+
 .PHONY: perf rekey
 
 #*************************************************************#
@@ -16,21 +24,23 @@
 .mli.cmi:
 	ocamlc  -c $<
 .ml.cmo:
-	ocamlc  -c $<
+	ocamlc  -g -c $<
 
 #*************************************************************#
 all : tools
 
-tools : aux.cmi aux.cmo coord.cmi coord.cmo client.cmo \
+tools : auxl.cmi auxl.cmo coord.cmi coord.cmo client.cmo \
 	perf/throu.cmo perf/latency.cmo perf/rpc.cmo \
-	rekey/rekey.cmo
+	rekey/rekey.cmo \
+	test_client.cmo test_rpc_speed.cmo 
 
 
-test1 : tools test1.cmo
-	ocamlc -custom -o test1 unix.cma str.cma aux.cmo coord.cmo test1.cmo
+#test1 : tools test1.cmo
+#	ocamlc -custom -o test1 unix.cma str.cma auxl.cmo coord.cmo test1.cmo
 
 
-MACH = hfstore2 hfstore3 hfstore4 hfstore6
+#MACH = hfstore2 hfstore3 hfstore4 hfstore6
+MACH = hfs-build3 hfs-build4 
 
 #*************************************************************#
 
@@ -38,14 +48,19 @@ start :
 	echo $(MACH)
 	for i in $(MACH); do \
 	    echo $$i; \
-	    rsh $$i "ocaml -I /home/orodeh/e/1.34/ensemble/tests /home/orodeh/e/1.34/ensemble/tests/client.mls >& /dev/null &" ; \
+	    ssh $$i "/home/orodeh/e/2.00/ensemble/bin/i386-linux/ensembled >& /dev/null &" ; \
+	    ssh $$i "/home/orodeh/e/2.00/ensemble/bin/i386-linux/ensembled -tcp_port 7000 >& /dev/null &" ; \
+	    ssh $$i "ocaml -I /home/orodeh/e/2.00/ensemble/tests /home/orodeh/e/2.00/ensemble/tests/client.mls >& /dev/null &" ; \
 	done
+
+#	    ssh $$i "ocaml -I /home/orodeh/e/2.00/ensemble/tests /home/orodeh/e/2.00/ensemble/tests/client.mls >& /dev/null &" ;
 
 
 kill : 
 	for i in $(MACH); do \
 	   echo $$i ; \
-	   rsh $$i "killall ocaml" ; \
+	   ssh $$i "killall ocaml" ; \
+	   ssh $$i "killall ensembled" ; \
 	done
 
 #*************************************************************#
@@ -72,11 +87,14 @@ rekey :
 	cd rekey; ocaml rekey.mls $(MACH)
 
 #*************************************************************#
+clean : 
+	$(CLEANDIR)	
+	$(RM) */*.cm*
+
+#*************************************************************#
 depend :
 	ocamldep *.ml *.mli > .depend
 
 include .depend
 
-clean : 
-	rm -f *.cm*
 #*************************************************************#

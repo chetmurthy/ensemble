@@ -1,7 +1,7 @@
 %*************************************************************%
 %
-%    Ensemble, 1_42
-%    Copyright 2003 Cornell University, Hebrew University
+%    Ensemble, 2_00
+%    Copyright 2004 Cornell University, Hebrew University
 %           IBM Israel Science and Technology
 %    All rights reserved.
 %
@@ -74,8 +74,8 @@ through a configuration of the unsigned router, UDP transport,
 and optimized socket library. We shall start from the bottom
 and work our way up. 
 
-In file \sourcefile{socket/s/sendrecv.c}, there is code for sending an
-array of C io-vectors and part of an ML string. The function takes
+In file \sourcefile{server/socket/s/nt/sendrecv.c}, there is code for sending an
+array of C io-vectors and part of an ML string for win32. The function takes
 five arguments:
 \begin{itemize}
 \item info\_v : a structure describing a list of remote targets and a
@@ -86,38 +86,60 @@ socket through which to send messages.
 \end{itemize}
 
 \begin{codebox}
-value skt_sendtosv(
+value skt_udp_mu_sendsv(
 	value info_v,
 	value prefix_v,
 	value ofs_v,
 	value len_v,
 	value iova_v
 ) \{
-  int naddr=0, i, ret=0;
-  ocaml_skt_t sock=0 ;
-  skt_sendto_info_t *info ;
+    int naddr=0, i, ret=0, len=0;
+    ocaml_skt_t sock=0 ;
+    skt_sendto_info_t *info ;
+    int nvecs = Wosize_val(iova_v) ;
 
-  info = skt_Sendto_info_val(info_v);
-  send_msghdr.msg_iovlen = prefixed_gather(prefix_v, ofs_v, len_v, iova_v); 
+    // Extract the set of addresses
+    info = skt_Sendto_info_val(info_v);
 
-  send_msghdr.msg_namelen = info->addrlen ;
-  sock = info->sock ;
-  naddr = info->naddr ;
+    // Prepare the header
+    skt_prepare_send_header(send_iova, peek_buf, Int_val(len_v), skt_iovl_len(iova_v));
 
-  for (i=0;i<naddr;i++) \{
-    /* Send the message.  Assume we don't block or get interrupted.  
-     */
-    send_msghdr.msg_name = (char*) &info->sa[i] ;
-    ret = sendmsg(sock, &send_msghdr, 0) ;
-  \}
+    // Prepare the iovectors
+    skt_add_ml_hdr(send_iova, 1, prefix_v, ofs_v, len_v);
+    skt_gather(send_iova, 2, iova_v) ;
+    
+    sock = info->sock ;
+    naddr = info->naddr ;
 
-  return Val_unit;
+    for (i=0;i<naddr;i++) {
+	// Send the message.  Assume we don't block or get interrupted.  
+	ret = WSASendTo(sock, send_iova, nvecs+2, &len, 0,
+			&info->sa[i], info->addrlen, 0, NULL);
+	if (SOCKET_ERROR == ret) skt_udp_error("skt_udp_mu_sendsv");
+    }
+    return Val_unit;
 \}
 \end{codebox}
 
+The {\tt \_mu\_} prefix is added to this function
+because it uses the Ml/User convention for sending data. Each data
+packet is split into:
+\begin{description}
+\item [ML header length:] Describes the length of the ML header. of length four bytes. 
+\item [User data length:] Describes the length of the user data. of length four bytes. 
+\item [ML header:] the ML header itself. Variable size.
+\item [User data:] user data. Variable size.
+\end{description}
 
-{\tt skt\_sendtosv} is hidden inside the socket library, and can
-safely be used using {\tt Socket.sendtosv}. The {\tt sendto\_info}
+The function builds a header of size eight that includes two integers: (a)
+ml-header length (b) io-vector length in network byte order. The
+header is the first in an array of io-vectors that includes in second
+place the ML-header, and then the array of user io-vectors. Once the
+io-array is assembled it is sent to each destination in the list using
+the native OS API. 
+
+{\tt skt\_udp\_mu\_sendsv} is hidden inside the socket library, and can
+safely be used using {\tt Socket.udp\_mu\_sendsv}. The {\tt sendto\_info}
 structure can be created from an array of target socket addresses, and
 a sending socket.
 
@@ -125,16 +147,16 @@ a sending socket.
 type sendto_info
 val sendto_info : socket -> Unix.sockaddr array -> sendto_info
 
-val sendtosv : sendto_info -> buf -> ofs -> len -> Basic_iov.t array -> unit
+val udp_mu_sendsv : sendto_info -> buf -> ofs -> len -> Iov.t array -> unit
 \end{codebox}
 
 
 The Hsys module makes access to sendtovs safer, and changes its type:
 \begin{codebox}
-  val sendtosv : sendto_info -> Buf.t -> ofs -> len -> Iovecl.t -> unit
+  val udp_mu_sendsv : sendto_info -> Buf.t -> ofs -> len -> Iovecl.t -> unit
 
-(* Implementation *)
-  Iovec.Priv.sendtosv info 
+  (* Implementation *)
+  Socket.udp_mu_sendsv info 
     (Buf.string_of buf) (Buf.int_of_len ofs) (Buf.int_of_len len) 
     (Iovecl.to_iovec_array iovl) 
 \end{codebox}

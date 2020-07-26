@@ -1,0 +1,11 @@
+#load "str.cma"
+#load "unix.cma"
+#load "auxl.cmo"
+#load "coord.cmo"
+#load "test_throu.cmo"
+
+open Test_throu;;
+
+run ();
+exit 0;;
+

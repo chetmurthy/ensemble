@@ -1,7 +1,7 @@
 #*************************************************************#
 #
-#   Ensemble, 1_42
-#   Copyright 2003 Cornell University, Hebrew University
+#   Ensemble, 2_00
+#   Copyright 2004 Cornell University, Hebrew University
 #           IBM Israel Science and Technology
 #   All rights reserved.
 #
@@ -12,6 +12,19 @@
 # MAKEFILE: tools Makefile
 #*************************************************************#
 ENSROOT = ..
+include $(ENSROOT)/mk/preamble.mk
 include $(ENSROOT)/mk/config.mk
-include $(ENSROOT)/mk/sub.mk
+#*************************************************************#
+
+all : \
+	$(ENSBIN)/$(EMRG)
+
+$(ENSBIN)/$(EMRG): 
+	ocamlc -c emrg.ml 
+	ocamlc -o $(ENSBIN)/$(EMRG) emrg.cmo
+
+clean : 
+	$(RM) *.cm*
+
+realclean : clean
 #*************************************************************#

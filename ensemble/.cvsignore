@@ -14,3 +14,4 @@ emrg*
 Makefile.top.nt
 Makefile.nt
 .unknown
+.depend*

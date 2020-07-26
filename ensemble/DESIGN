@@ -1,0 +1,173 @@
+DESIGN of version 2.00 of the Ensemble system
+
+TODO
++ Improving the server-to-client flow-control to take into account memory considerations. 
++ Complete the C client
++ Complete the Java client
++ modify the packaging: 
+     server
+     client
+     bin
+     lib
+     doc
+     ..
++ Improve marshalling for ML applications so that it will handle large messages. 
+
++ Make the udp_recv_packet code in Unix the same as in Win32.
++ Port to Unix.
++ Add documentation: 
++   complete the documentation for the C-client
++ packaging: for the Java client: jar files.
++ write a conigure script
++ update INSTALL.htm 
++ Add a simpler property scheme: "TOTAL, FIFO, VSYNC".
++ c_perf: 
++     - receive data from Ensemble thorough another thread
++     - Add an option to set the properties
++ testing:
++ Fix testing infra-structure so it will work resonable well.
++ Improve performance:
++   - rewrite Protos, remove the asynchronous delay. 
++ Add documentation for the possible properties: 
++   - Auth, Scale, Vsync, Total
++ Remove the TCP
++ Remove ecryption mode.
++ Fix java client: split between locking for send and receive.
++ Improve performance:
++  - improve allocations on the recv_upd_packet path. We can remove one allocation
++    there.
++  - improve allocations on the tcp-recv path.
++ - Improve c_rand test: (1) make it two-threaded. 
++   (2) Add a -group command line option.
++ - BUG: daemon dies if c_rand is killed mid-way.
++- Complete the testing harness: 
++ - which configurations to check 
++ - Check multiple groups
++- * profile and remove a bunch of allocations on the fast-path.
++- Improve client: 
++  - allow connecting to a server port other than 5002. This will allow
+    running a full test on a single machine. Run two servers with a
+    client connected to each server.
++ - Add a flag into an iovec: which pool it belongs too. This means that
+  upon free the space will be accounted for on its pool. There are two
+  pools: send-pool and recv-pool. The send-pool is 1M out of a total
+  of 6M by default. Each pool should (must?) include at least two chunks. 
++ Fix C# client: split between locking for send and receive.
++ Save parameters for DH keys in hex format, so they will be readable from win32 and
+  unix.
+
+- Write the RELEASE_NOTES
+- Fix the gossip bug
+
+TESTS
++ Check that the system works with zero iovec-memory: 
+   run rand.ml with MM set to hold zero space. 
++ Important configurations: Total, Fifo, Security.
+
+
+BUGS
++   bin/Release/Perf.exe -prog 1-n -num_msgs 100000 -s 12000  fails
+  Why does the pt2pt flow-control hold back control messages? 
+
+
+-----------------------------------------------------------------------
+Next version
+-----------
++1. Security: migrate to Xavier.s Caml library, instead of OpenSSL. 
+2. Security: write an encryption router so that we would not need to do anything
+   special for encryption. 
+3. Flow-control: tie the flow-block/unblock notification from the stack to the 
+   user-socket. 
+4. Finish java-client (add to tests)
++   Finish C# client.
+   Write an ML client.
+5. Improve performance:
+  - improve allocations on the recv_upd_packet path. We can remove one allocation
+    there.
+  - improve allocations on the tcp-recv path.
+6. testing:
+  - Add unit-tests to testing suite.
+7. Tie in memory-management and flow control, send credit to a member only 
+   if there is sufficient memory to actually receive messages. 
+8. Figure out how to slow clients down so %CPU for the server does not grow too
+   high. We assume that the internal "network" in a machine is at most 1000-100Mbit/sec. 
+9. Modify the throuput test to be n-n instead of 1-n. This will allow
+   seeing the deadlock even with a fifo stack.
+
+-----------------------------------------------------------------------
+  
+DOCUMENTATION
+1. client-server architecture
+
+2. re-write the reference manual: 
+   - explain the client-server architecture, and the reasons for it
+   - client: 
+     1) design: 
+       (a) a non-active library, a basic socket-protocol library
+       (b) the wire protocol
+     2) API for each supported language: ML,C/C++,Java,C-sharp
+   - server: 
+     keep current documentation 
+
+TESTING
+   Improve testing
+   - A tool that deploys Ensemble clients+servers on a set of machines, and runs 
+     tests. Goal: running on up to 10 machines. 
+   - Automatic testing prior to release. 
+
+REMOVED
+   All inboard modes
+   HOT, Maestro, CE interfaces
+   switch-protocol APIs, Prompt action 
+   TCP mode
+
+ADDED
+   strict memory-management
+   rewrite of IO system
+
+NOT IN THIS RELEASE --- COMPLETING THE JOB
+   - Fixing timers.
+   - Upgrade to GPG and Xavier-s library.
+   - OCaml-client
+   - Performance analysis.
+   - Replacing the Xfer layer with a Barrier layer instead.
+   - flow-control
+     1.Adding a simple congenstion control mechanism.
+   - Autoconf (less importatnt)
+
+
+MEMORY MANAGEMENT
+     options + requirements for memory allocation
+
+     components that will allocate memory: 
+     - security (Encrypt layer)
+     - Hsyssupp (limited by size)
+     - Receving data from other Servers (limited by size)
+     - test programs: perf.ml, rand.ml. 
+       Actually, not a big deal.
+
+     API (1):
+       reserve (asynchronous)
+       allocate (synchronous): returns an Array of iovectors.
+       
+     API (2): 
+       
+------------------------------------------------------------------------------
+     Problem: 
+      1) Cannot send data to a server unless the target server has enough memory. 
+      2) No deadlock. 
+     Solution: 
+      1) Add to the pt2pt+mcast flow control layer a way to reserve memory. 
+         Assume, when receiveing a data-message that sufficient memory has been 
+	 reserved for it, and reduce that amount from the total reserved space. 
+      2) A deadlock can occur if there are two members in a group that satisfy:
+         A) there is no memory left to receive messages
+	 B) all memory is taken by out-going messages
+
+	 In order to avoid deadlock we need to avoid this
+	 situation. The solution: maintain two pools of memory: one
+	 for out-going messages and another for in-coming
+	 messages. Allow flow-control layers to reserve memory and
+	 send out credit only if there is sufficient recv-memory on
+	 the host.
+------------------------------------------------------------------------------

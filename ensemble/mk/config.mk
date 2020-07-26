@@ -9,46 +9,9 @@
 # Changes: Ohad Rodeh, 8/2001
 #
 #*************************************************************#
-# C Compilation macros.  Used for compiling Socket library
-# and the C interface.  Ensemble has been compiled with gcc
-# and acc on SunOS4, Solaris, and Aix.  With cl on NT.
-# With cc on IRIX 6.5.
-
-# Code Generation Options
-# For Ocaml2.01/2.02 on Irix use : -n32 -mips4
-CODEGEN = # -n32 -mips4  Default for non-Irix is nothing
-
-# The type of system we are running on
-
-# The type of system we are running on
+# include the settings as determined by the configure script.
+# Basically, the PLATFORM variable
 #
-KIND = unix
-
-# C compiler to use
-CC	= gcc
-
-#*************************************************************#
-
-# CFLAGS: used for compilation of C files
-CFLAGS	=-DINLINE=inline \
-	-O2 -Wall -Wno-unused -Wstrict-prototypes -DNDEBUG \
-        $(CODEGEN)                      \
-	-I $(OCAML_LIB)			\
-	$(OPENSSL_INC) 
-
-# -DNDEBUG -O2
-#
-#-g -p/-pg 
-#	-DOSTYPE=$(ENS_OSTYPE)		
-#	-DMACHTYPE=$(ENS_MACHTYPE)	
-
-
-# LIBSYS: used for linking executables
-LIBSYS	= # default for Unix is nothing
-
-
-
-#*************************************************************#
 # PLATFORM describes the Unix platform you are using.  This
 # is used to differentiate machine dependent files.  On Unix
 # platforms (without the Socket library) there are no
@@ -63,36 +26,53 @@ LIBSYS	= # default for Unix is nothing
 # ENS_MACHTYPE = # type of machine: sparc, i386, rs6000, alpha, ...
 # ENS_OSTYPE = # os: sunos4, solaris, aix, osf1, linux
 # !NOTE! make sure there are no trailing spaces on the next line
-PLATFORM	= $(ENS_MACHTYPE)-$(ENS_OSTYPE)
+
+include $(ENSROOT)/mk/env.mk
 
 # The binary and library directories
 #
 ENSLIB = $(ENSROOT)/lib/$(PLATFORM)
 ENSBIN = $(ENSROOT)/bin/$(PLATFORM)
-OBJDIR = $(ENSROOT)/obj
+
+#*************************************************************#
+# The type of system we are running on
+#
+KIND = unix
+
+# C compiler to use
+CC	= gcc
+
+#*************************************************************#
+
+# CFLAGS: used for compilation of C files
+CFLAGS	=-DINLINE=inline \
+	-O2 -Wall -Wno-unused -Wstrict-prototypes -DNDEBUG \
+	-I $(OCAML_LIB)		
+
+#	-pg 
+
+#	$(OPENSSL_INC) 
+#
+#-g -p/
+
+
+# LIBSYS: used for linking executables
+LIBSYS	= # default for Unix is nothing
+
+
 #*************************************************************#
 # The default cryptographic library. We use OpenSSL
 # that compiles and runs on many different platforms. 
+CRYPTO = 0
 
-CRYPTO_LINK = # no crypto by default
-
-# Where to find the OpenSSL cryptographic library. 
-#OPENSSL_LIB = /usr/lib/libssl.so.0.9.6
-#OPENSSL_INC = -I /usr/include/openssl
-#
-#
-#CRYPTOLIB_ML = \
-#	$(ENSLIB)/crypto$(CMA)	
-#CRYPTOLIB_C = \
-#	$(ENSLIB)/libcryptoc$(ARC) \
-#	$(OPENSSL_LIB)
-#CRYPTOLIB_JUST_C = \
-#	$(OPENSSL_LIB)
-#
-#CRYPTO_LINK = \
-#	-cclib $(ENSLIB)/libcryptoc$(ARC) \
-#	-cclib $(OPENSSL_LIB) \
-#	$(CRYPTOLIB_ML) 
+ifdef CRYPTO
+# with cryptographich support. We're using Xavier's CryptoKit library
+# written natively in OCaml.
+CRYPTO_LINK = nums$(CMAS) cryptokit$(CMAS) $(ENSLIB)/crypto$(CMAS)
+else
+# no crypto by default
+CRYPTO_LINK = 	$(ENSLIB)/crypto_fake$(CMAS)
+endif
 
 
 #*************************************************************#
@@ -142,11 +122,11 @@ HSYS_TYPE = skt
 
 # Socket library
 ENSCONFDEP_skt	= $(LIBSOCKDEP) $(ENSLIBS_DEP)
-ENSCONF_skt	= $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS) $(CRYPTO_LINK)
+ENSCONF_skt	= $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(CRYPTO_LINK) $(ENSLIBS) 
 
 # Unix library
 ENSCONFDEP_unix	= $(LINKTHR) $(LIBUSOCK) $(ENSLIBS_DEP)
-ENSCONF_unix    = $(CUSTOM) $(LIBUNIX) $(LIBUSOCK) $(LINK_THR) $(ENSLIBS) $(CRYPTO_LINK)
+ENSCONF_unix    = $(CUSTOM) $(LIBUNIX) $(LIBUSOCK) $(CRYPTO_LINK) $(ENSLIBS) 
 
 ENSCONFDEP      = $(ENSCONFDEP_$(HSYS_TYPE))
 ENSCONF		= $(ENSCONF_$(HSYS_TYPE)) 
@@ -180,7 +160,6 @@ LN	= ln
 RM	= rm -f
 RM_REC	= 
 MAKE	= gmake	
-MAKE_BASE = gmake	
 MKLIB   = ar cr 		# comment forces spaces
 RANLIB  = ranlib
 MKLIBO  =
@@ -219,31 +198,10 @@ LIBMLUNIX	= unix$(CMAS)
 LIBCSOCK	= $(ENSLIB)/libsock$(ARC)
 LIBMLSOCK	= $(ENSLIB)/ssocket$(CMA)
 LIBSOCK		= $(LIBMLSOCK) -cclib $(LIBCSOCK) 
-LIBCTHREADS	= -lthreads
-LIBMLTHREADS	= threads$(CMAS)
-
-LIBTK		= $(OCAML_LIB)/labltk/labltk$(CMAS) 
-#*************************************************************#
-# Select whether or not to use Ocaml threads.  Ocaml threads
-# only work with bytecode interpreter.  Default is no
-# threads.  COMP_THR is the option needed for the
-# compilation step.  LINK_THR is the option needed for the
-# link step.  To use threads, you need to recompile Ensemble
-# from scratch in the def directory (run make clean ; make
-# depend ; make).
-
-# No threads
-COMP_THR	= # no threads
-LINK_THR	= # no threads
-
-# Use threads
-#COMP_THR	= -thread
-#LINK_THR	= -thread $(LIBTHREADS)
-
 #*************************************************************#
 # Clean this directory
 #
 CLEANDIR = \
-    $(RM) .nfs* *.cm* .err a.out *.o* *.exe *.a *.lib *.asm *~ .*~ .\#*  core *.pdb core gmon.out camlprim* *.exp *.dll *.idb 
+    $(RM) .nfs* *.cm* .err a.out *.o* *.exe *.a *.lib *.asm *~ .*~ .\#*  core *.pdb core gmon.out camlprim* *.exp *.dll *.idb *.class
 
 #*************************************************************#

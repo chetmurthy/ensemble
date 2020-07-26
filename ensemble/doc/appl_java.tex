@@ -1,151 +1,299 @@
 %*************************************************************%
 %
-%    Ensemble, 1_42
-%    Copyright 2003 Cornell University, Hebrew University
+%    Ensemble, 2_00
+%    Copyright 2004 Cornell University, Hebrew University
 %           IBM Israel Science and Technology
 %    All rights reserved.
 %
 %    See ensemble/doc/license.txt for further information.
 %
 %*************************************************************%
-\section{Native Java Application Interface (CEJAVA)}
+\section{Java Application Interface}
 
-The CEJAVA interface is built upon the CE interface, using the Java
-Native Interface (JNI). This allows a user to tap the power of the
-Ensemble messaging system from Java. Performance of this interface is
-similar to the native ML and C interfaces. 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% The API abstractions. 
 
-Not surprisingly, the API is similar to the CE API. Here, we walk
-through an overview of the interface, and then point out the major
-differences with respect to CE. Method and constructor documentation
-can be found either in the code itself, or through the javadoc
-generated HTML files.
+The API is constructed from a namespace named Ensemble and several
+public classes the major of which are: {\tt View, JoinOps, Message,
+  Connection}, and {\tt Member}. 
 
-\subsection{Overview}
-The basic concept is that of a {\it Group}. A group is constructed by: 
+\begin{description}
+\item[View:] The {\tt View} class describes a group membership view. 
+
+\item[JoinOps:] The {\tt JoinOps} class contains a
+  specification for a new member for Ensemble to create. 
+
+\item[Message:] The {\tt Message} class describes a message received
+  from Ensemble. A Message can be: a new View, a multicast message, a
+  point-to-point message, a block notification, or an exit notification. 
+
+\item[Connection:] The {\tt Connection} class implements the actual
+  socket communication between the client and the server. It has three
+  public methods the application has to use.
+
+  \begin{codebox}
+   public class Connection \{
+       public bool Poll();	  
+       public Message Recv();
+       public void Connect ();
+  \}
+  \end{codebox}
+
+  The application can open several Ensemble connections, however, a
+  single connection should suffice. No action can be taken on a
+  connection that has not connected to the server through the {\tt
+  Connect} call. Once connected the application can receive messages
+  through the {\tt Recv} method. {\tt Recv} is a blocking call, in
+  order to check first that there are pending messages the
+  non-blocking {\tt Poll} method should be used. 
+  
+
+\item[Member:] The {\tt Member} class embodies an Ensemble group
+  member. A member can join a single group, no more. A Member can be in several states: 
+  \begin{description}
+    \item[Pre:] The initial status in which all members are
+      created. The class constructor sets this as the default.
+    \item[Joining:] Joining a group is an asynchronous operation. A
+      member is in the {\tt Joining} state from the time it attempts to join,
+      until when it receives a View message with the initial group
+      membership. 
+    \item[Normal:] Normal operation state. The member is a regular
+      resident in the group. It can send/mcast messages and
+      perform all other Ensemble operations. 
+    \item[Blocked:] The member is currently blocked, and temporarily cannot 
+      perfrom any action. This state is achieved by sending a {\tt BlockOk}
+      in response to a {\tt Block} request. 
+    \item[Leaving:] The member has requested to leave the group. {\tt Leave}
+      is an asynchronous operation, the {\tt Leaving} state captures
+      the time between the {\tt Leave} request and the final leaving
+      of the group. It is possible for a member to receive a {\tt
+      Block} message after it has requested to leave the group. The
+      member should not respond with a {\tt BlockOk}, it is in the
+      process of being removed from the group. 
+    \item[Left:] The member has left the group and is in an invalid state
+  \end{description}
+
+  \begin{codebox}
+  public class Member \{
+      public enum Status \{
+          Pre,        // the initial status
+          Joining,    // we joining the group
+          Normal,     // Normal operation state, can send/mcast messages
+          Blocked,    // we are blocked
+          Leaving,    // we are leaving
+          Left        // We have left the group and are in an invalid state
+      \};
+
+      public View current\_view ;		       // The current view
+      public Status current\_status = Status.Pre; // Our current status
+  \end{codebox}
+
+  The member state can be learned by examining the {\tt
+  current\_status} field. The current view the member is part of is in 
+  the {\tt current\_view} field. 
+
+  Prior to any action, the member has to join a group.
+  \begin{codebox}
+  // Join a group with the specified options. 
+  public void Join(JoinOps ops);
+  \end{codebox}
+  
+  The set of operations allowed on a member in Normal state is:
+  \begin{description}
+  \item[Leave:] Leave a group. This should be the last call made to the member
+    It is possible for messages to be delivered to this member after the call
+    returns. However, it is illegal to initiate new actions on this member.
+    \begin{codebox}
+      public void Leave();
+    \end{codebox}
+    
+  \item[Cast:]
+    Send a multicast message to the group.
+    \begin{codebox}
+      public void Cast(byte[] data);
+    \end{codebox}
+    
+  \item[Send:]
+    Send a point-to-point message to a list of members.
+    \begin{codebox}
+      public void Send(int[] dests, byte[] data);
+    \end{codebox}
+    
+  \item[Send1:]
+    Send a point-to-point message to the specified group member.
+    \begin{codebox}
+      public void Send1(int dest, byte[] data);
+    \end{codebox}
+    
+  \item[Suspect:]
+    Report group members as failure-suspected.
+    \begin{codebox}
+      public void Suspect(int[] suspects);
+    \end{codebox}
+    
+  \item[BlockOk:]
+    Send a BlockOk
+    \begin{codebox}
+      public void BlockOk();
+    \end{codebox}
+  \end{description}
+\end{description}
+
+
+% The client state-machine. 
+\subsection{The client state-machine}
+
+Each group member moved inside a state-machine that has a very clear set
+of rules. Initially, it is in the {\tt Pre} state. After asking to
+join a group, it is in the {\tt Joining} state. When the first view
+arrives it is in the {\tt Normal} state. In the {\tt Normal} state and
+prior to a view-change Ensemble will send a {\tt Block} message to the
+member. The member has to reply with a {\tt BlockOk} action. After the {\tt BlockOk} the
+member is in the {\tt Blocked} state until the next view. When the
+next view is received is moves back to the {\tt Normal} state. Upon a
+{\tt Leave} request the member moves to the {\tt Leaving} state which
+turns into {\tt Left} after the {\tt Exit} message arrives. 
+
+% FIXME: Insert a figure here. 
+
+\subsection{Locking}
+All {\tt Connection} and {\tt Member} method calls are
+thread-safe. However, accessing the public Member fields such as the
+{\tt current\_view} and {\tt current\_status} should be done while
+holding the connection lock. All Ensemble actions, except Join, can be performed
+only on a group-member that is in the {\tt Normal} state. A
+multi-threaded application may need to synchronize its access to the
+client library so as to avoid a situation where one thread sends a
+{\tt BlockOk} and another thread sends message on the group later. 
+The connection lock should be used for synchronization purposes. 
+
+For example:
 \begin{codebox}
-    public Group(Callbacks cb);
+  synchronization (conn) 
+  \{
+      if (memb.current_status == Member.Status.Normal)
+          memb.Cast("hello world");
+       else
+           System.out.Println("Blocked currently, please try again later");
+  \}
 \end{codebox}
 
-A group has to define the following set of callbacks: 
+Replying to {\tt Block} message with a {\tt BlockOk} and moving to the
+{\tt Blocked} state can be done asynchronously. This gives the
+application a chance to send any pending messages 
+prior to moving to the {\tt Blocked} state. Depending on the
+application, this may allow the programmer to avoid locking. 
+
+\subsection{The View structure}
+The view structure is composed of several fields describing the
+members of the current membership. 
 
 \begin{codebox}
-public class Callbacks \{
-    public abstract void install(View view);
-    public abstract void exit();
-    public abstract void recv_cast(int origin, byte[] msg);
-    public abstract void recv_send(int origin, byte[] msg);
-    public abstract void flow_block(int rank, boolean onoff);
-    public abstract void block();
-    public abstract void heartbeat(double time);
+public class View \{
+    public int nmembers;
+    public String version;     /** The Ensemble version */
+    public String group;       /** group name  */
+    public String proto;       /** protocol stack in use  */
+    public int ltime;          /** logical time  */
+    public boolean primary;    /** this a primary view?  */
+    public String parameters;  /** parameters used for this group  */
+    public String[] address;   /** list of communication addresses  */
+    public String[] endpts;    /** list of endpoints in this view  */
+    public String endpt;       /** local endpoint name  */
+    public String addr;        /** local address  */
+    public int rank;           /** local rank  */
+    public String name;        /** My name. */
+    public ViewId view_id;     /** view identifier */
 \}
 \end{codebox}
 
-The callbacks define behavior when events, such as message receipt or
-view changes, occur. 
+\begin{description}
+\item[nmembers:] The number of members. 
+\item[version:] The Ensemble version
+\item[group:] The name of this group. This was chosen by the user when
+  he joined the group. 
+\item[proto:] The names of all the layers in the Ensemble stack. 
+\item[ltime:] The logical time of the view.
+\item[primary:] It this a primary view? 
+\item[parameters:]  The set of additional parameters used for this
+  stack. These were chosen by the user when he joined the group. 
+\item[address:] The list of communication addresses of group
+  members. Currently, this lists the addresses of {\it servers} not
+  the clients. 
+\item[endpts:] list of endpoints in this view.
+\item[endpt:] my endpoint name.
+\item[addr:] my communication address.
+\item[rank:] my rank.
+\item[name:] My name. Does not change through the lifetime of this member. 
+\item[view\_id:] The view identifier.
+\end{description}
 
-Within the context of a group the user can perform eleven actions: 
+\subsection{Join options}
+The join-options structure is used to specify which group an endpoint
+should join. 
 
 \begin{codebox}
-    public void join(JoinOps jops);
-    public void leave();
-    public void cast(byte[] msg);
-    public void send(int[] dests, byte[] msg) ;
-    public void send1(int dest, byte[] msg);
-    public void prompt();
-    public void suspect(int[] suspects);
-    public void xferDone();
-    public void rekey();
-    public void changeProtocol(String protocol_name);
-    public void changeProperties(String properties);
-\end{codebox}
+public class JoinOps \{
+    public String group_name = null;  /** group name.   */
 
-Before starting to use the package, the initialization function must
-be called: 
+    /** The default set of properties */
+    public final String DEFAULT_PROPERTIES = "Vsync";
+    /** requsted list of properties.  */    
+    public String properties = DEFAULT_PROPERTIES; 
 
-\begin{codebox}
-    static public void init(String args []);
-\end{codebox}
-
-Any command line argument to CE and Ensemble should be passed here. 
-
-To run a Java program that uses CEJAVA, the classpath must point to
-the {\tt ensemble.jar} java-archive file, and the library path should
-point to the matching native library {\tt libcejava.so}. For example,
-to run java program {\tt prog.java}, assuming the jar file is in the
-local directory, and that the native library is under {\tt lib} use:
-\begin{codebox}
-    java -Djava.class.path=;:ensemble.jar -Djava.library.path=lib prog
-\end{codebox}
-A simpler option is to set the {\tt CLASSPATH} environment variable to
-include {\tt ensemble.jar} and set the dynamic library path to include
-{\tt libcejava.so}. On Unix systems this means setting then
-{\tt LD\_LIBRARY\_PATH} and on win32 setting the {\tt PATH}.
-
-\subsection{Notes}
-There are two major difference with respect to CE: zero-copy, and
-synchronization. 
-
-CEJAVA is not ``zero-copy'', the receive callbacks copy message data
-from C to Java, and the send actions copy data from Java to C. This
-costs extra copying but allows the Java application to do whatever it
-likes with message data, without being bound by underlying reference
-counting and memory management. 
-
-Synchronization is very different between C and Java because the Java
-has language support for locking. A group can be in one of six phases: 
-\begin{codebox}
-    public static final int PRE     = 0;
-    public static final int JOINING = 1;
-    public static final int NORMAL  = 2;
-    public static final int BLOCKED = 3;
-    public static final int LEAVING = 4;
-    public static final int LEFT    = 5;
+    public String parameters = null;  /** parameters to pass to Ensemble.  */
+    public String princ = null;       /** principal name  */
+    public boolean secure = false;    /** a secure stack?  */
+\}
 \end{codebox}
 
 \begin{description}
-\item[PRE:] preliminary phase, the group has not been fully
-  constructed yet. 
-\item[JOINING:] this endpoint is joining the group. 
-\item[NORMAL:] the group is in stable state. 
-\item[BLOCKED:] group is blocked prior to a pending view change. 
-\item[LEAVING:] this member is leaving the group. 
-\item[LEFT:] member has left the group. 
+\item[group\_name:] The group name to join.
+\item[properties:] The set of properties requested. The most oftenly
+  used property is Vsync which ensures virtually-synchronous
+  point-to-point communication. The other commonly used properties
+  are:
+  \begin{description}
+    \item{Total:} totally ordered multicast messages
+    \item{Auth:} Authenticate members and MAC all group-messages. 
+    \item{Scale:} use scalable protocols. Useful if there are more
+      than 12 machines in the group. 
+  \end{description}
+
+  See section~\ref{sec:properties} for more information. 
+
+\item[parameters:]  An additional set of parameters controlling the
+  stack. 
+\item[princ:] The client principal name. This is used only for secure
+  stacks. It can be left {\tt null} otherwise. 
+\item[secure:] Should the stack be secure? 
 \end{description}
 
-The only phase in which actions are allowed is the NORMAL state.
-Multiple threads can perform actions on the same group, furthermore,
-the Ensemble main-loop executing in a separate thread invokes group
-callbacks when events arrive from the network. The group object is a
-synchronization point for these threads of execution. The
-implementation must ensure that group-state does not change during an
-action. To this end, whenever an action is performed on group $g$: (1) the
-group object is locked (2) status is checked (3) if it is NORMAL, the
-action is performed. For example, the code for send looks like this:
+\subsection{Limitations}
+There are several limitations on argument sizes. 
+
 \begin{codebox}
-    public void send(int[] dests, byte[] msg) \{
-        synchronized(this) \{
-	    check_normal();
-	    natSend(nat_env, dests, msg);
-        \}
-    \}
+    private final int ENS_DESTS_MAX_SIZE=      10;
+    private final int ENS_GROUP_NAME_MAX_SIZE= 64;
+    private final int ENS_PROPERTIES_MAX_SIZE= 128;
+    private final int ENS_PROTOCOL_MAX_SIZE=   256;
+    private final int ENS_PARAMS_MAX_SIZE=     256;
+    private final int ENS_ENDPT_MAX_SIZE=      48;
+    private final int ENS_ADDR_MAX_SIZE=       48;
+    private final int ENS_PRINCIPAL_MAX_SIZE=  32;
+    private final int ENS_NAME_MAX_SIZE=       ENS_ENDPT_MAX_SIZE+24;
+    private final int ENS_VERSION_MAX_SIZE=    8;
+    private final int ENS_MSG_MAX_SIZE=        32 *1024;
 \end{codebox}
 
-An application can have critical sections in which it must ensure
-group state is NORMAL. It can also lock group state, and ensure it
-does not change using a similar technique. A {\tt getStatus}
-call is provided that returns the group state for group $g$. An example
-of coding a critical section is:
-\begin{codebox}
-    synchronized(group) \{
-        int stat = group.getStatus ();
-        if (stat == NORMAL) \{
-             /* Perform critical code here */
-        \}
-    \}
-\end{codebox}
+The important limitations are: 
+\begin{description}
+\item[Number of destinations:] The user can send a point-to-point
+  message to a set of targets. The size of the target set is limited
+  to ENS\_DESTS\_MAX\_SIZE. The same goes for suspecting sets of
+  members. 
+\item[Message size:] The maximal message size is limited to 32K. 
+\end{description}
 
-To maximize performance, the send/recv callbacks can also invoke
-Ensemble actions. The callbacks enjoy the best latency since they do
-not incur a thread-switch. 
-
+\subsection{Code examples}
+Take a look at the Mtalk.java program in the {\tt client/java} subdirectory.

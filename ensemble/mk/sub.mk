@@ -16,20 +16,8 @@ all:
 sock: 
 	cd $(ENSROOT); $(MAKE) sock
 
-just:
-	cd $(ENSROOT); $(MAKE) just
-
 opt:
 	cd $(ENSROOT); $(MAKE) opt
-
-tk:
-	cd $(ENSROOT); $(MAKE) tk
-
-tk_opt:
-	cd $(ENSROOT); $(MAKE) tk_opt
-
-maestro: 
-	cd $(ENSROOT)/maestro; $(MAKE) all
 
 crypto:
 	cd $(ENSROOT); $(MAKE) crypto

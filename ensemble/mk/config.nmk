@@ -9,35 +9,44 @@
 # Changes: Ohad Rodeh, 11/2001 
 #
 #*************************************************************#
+# PLATFORM describes the Unix platform you are using.  This
+# is used to differentiate machine dependent files.  On Unix
+# platforms (without the Socket library) there are no
+# machine-dependent files for the bytecode version of
+# Ensemble, so these do not need to be set.  The default is
+# to use the GNU "standards" of machine_name-os_name.  If
+# you are using the tcsh shell, then the environment
+# variables MACHTYPE and OSTYPE will be set correctly for
+# your platform and you can use the defaults.  On NT,
+# PLATFORM should be set to be 'nt'.
+!include $(ENSROOT)\mk\env.nmk
+
+# !NOTE! make sure there are no trailing spaces on the next line
+
+# The binary and library directories
+#
+ENSLIB = $(ENSROOT)\lib\$(PLATFORM)
+ENSBIN = $(ENSROOT)\bin\$(PLATFORM)
+KIND = nt
+#*************************************************************#
 # C Compilation macros.  Used for compiling Socket library
 # and the C interface.  Ensemble has been compiled with gcc
 # and acc on SunOS4, Solaris, and Aix.  With cl on NT.
 
 # C compiler to use
 CC	= cl /nologo
-
-KIND = nt
 #*************************************************************#
-# The default cryptographic library. We use OpenSSL
-# that compiles and runs on many different platforms. 
 
-CRYPTO_LINK = # no crypto by default
+CRYPTO =0 
 
-# Where to find the OpenSSL cryptographic library. 
-#OPENSSL_LIB = C:\cygwin\usr\lib\libcrypto.a
-#OPENSSL_INC = -I C:\cygwin\usr\include\openssl -I C:\cygwin\usr\include
-
-#CRYPTOLIB_ML = \
-#	$(ENSLIB)/crypto$(CMA)	
-
-#CRYPTOLIB_C = \
-#	$(ENSLIB)/libcryptoc$(ARC) \
-#	$(OPENSSL_LIB)
-
-#CRYPTO_LINK = \
-#	-cclib $(ENSLIB)/libcryptoc$(ARC) \
-#	-cclib 	$(OPENSSL_LIB) \
-#	$(CRYPTOLIB_ML) 
+!ifdef CRYPTO
+# with cryptographich support. We're using Xavier's CryptoKit library
+# written natively in OCaml.
+CRYPTO_LINK = nums$(CMAS) cryptokit$(CMAS) $(ENSLIB)/crypto$(CMAS)
+!else
+# no crypto by default
+CRYPTO_LINK = 	$(ENSLIB)/crypto_fake$(CMAS)
+!endif
 
 #*************************************************************#
 
@@ -51,7 +60,7 @@ MSDEV_INCLUDE	= /I"C:\Program Files\Microsoft Visual Studio\VC98\Include"
 CFLAGS	= \
 	-DINLINE=__inline \
 	$(MSDEV_INCLUDE) /I$(OCAML_LIB) \
-	/Ox /MT /W3 /DNDEBUG
+	/Ox /MT /W3 
 
 
 #	$(OPENSSL_INC)
@@ -64,41 +73,6 @@ LIBSYS	= -cclib WS2_32$(ARCS)
 
 C_LINK  = WS2_32$(ARCS) 
 
-
-#*************************************************************#
-# Arguments to use for linking with CamlTk.  You may need to
-# add "-ccopt -Ldir" arguments).
-
-TKLIBS = # not supported for NT
-
-
-
-
-
-
-
-#*************************************************************#
-# PLATFORM describes the Unix platform you are using.  This
-# is used to differentiate machine dependent files.  On Unix
-# platforms (without the Socket library) there are no
-# machine-dependent files for the bytecode version of
-# Ensemble, so these do not need to be set.  The default is
-# to use the GNU "standards" of machine_name-os_name.  If
-# you are using the tcsh shell, then the environment
-# variables MACHTYPE and OSTYPE will be set correctly for
-# your platform and you can use the defaults.  On NT,
-# PLATFORM should be set to be 'nt'.
-
-# ENS_MACHTYPE = # unneeded
-# ENS_OSTYPE = # unnneeded
-# !NOTE! make sure there are no trailing spaces on the next line
-PLATFORM	= nt
-
-# The binary and library directories
-#
-ENSLIB = $(ENSROOT)\lib\$(PLATFORM)
-ENSBIN = $(ENSROOT)\bin\$(PLATFORM)
-OBJDIR = $(ENSROOT)\obj
 
 #*************************************************************#
 
@@ -151,11 +125,11 @@ ENSLIBS         = $(ENSCORELIB) $(ENSMINLIB) $(ENSRESTLIB)
 
 # Socket library
 ENSCONFDEP_skt	= $(LINKTHR) $(LIBSOCKDEP) $(ENSLIBS)
-ENSCONF_skt	= $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS)
+ENSCONF_skt	= $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(CRYPTO_LINK) $(ENSLIBS)
 
 # Unix library
 ENSCONFDEP_unix	= $(LINKTHR) $(LIBUSOCK) $(ENSLIBS)
-ENSCONF_unix    = $(CUSTOM) $(LIBUNIX) $(LIBUSOCK) $(LINK_THR) $(ENSLIBS) 
+ENSCONF_unix    = $(CUSTOM) $(LIBUNIX) $(LIBUSOCK) $(CRYPTO_LINK) $(ENSLIBS) 
 
 ENSCONFDEP      = $(ENSCONFDEP_skt)
 ENSCONF		= $(ENSCONF_skt) 
@@ -191,7 +165,6 @@ LN	= copy			# use copy instead
 RM      = -del /Q /F
 RM_REC	= -del /S
 MAKE	= nmake -f Makefile.nt
-MAKE_BASE = nmake               #sometimes we need the basic command
 MKLIB	= lib /nologo /debugtype:CV
 MKLIBO  = /out:
 
@@ -230,26 +203,6 @@ LIBMLUNIX	= unix$(CMAS)
 LIBCSOCK	= $(ENSLIB)\libsock$(ARC) 
 LIBMLSOCK	= $(ENSLIB)\ssocket$(CMA)
 LIBSOCK		= $(LIBMLSOCK) -cclib $(LIBCSOCK) #-cclib WS2_32$(ARCS)
-LIBCTHREADS	= $(OCAML_LIB)\libthreads$(ARCS)
-LIBMLTHREADS	= threads$(CMAS)
-
-LIBTK		= $(OCAML_LIB)\labltk\labltk$(CMAS) 
-#*************************************************************#
-# Select whether or not to use Ocaml threads.  Ocaml threads
-# only work with bytecode interpreter.  Default is no
-# threads.  COMP_THR is the option needed for the
-# compilation step.  LINK_THR is the option needed for the
-# link step.  To use threads, you need to recompile Ensemble
-# from scratch in the def directory (run make clean ; make
-# depend ; make).
-
-# No threads
-COMP_THR	= # no threads
-LINK_THR	= # no threads
-
-# Use threads
-#COMP_THR	= -thread
-#LINK_THR	= -thread $(LIBTHREADS)
 
 #*************************************************************#
 

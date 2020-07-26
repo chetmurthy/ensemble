@@ -1,7 +1,7 @@
 %*************************************************************%
 %
-%    Ensemble, 1_42
-%    Copyright 2003 Cornell University, Hebrew University
+%    Ensemble, 2_00
+%    Copyright 2004 Cornell University, Hebrew University
 %           IBM Israel Science and Technology
 %    All rights reserved.
 %
@@ -38,7 +38,8 @@
 \title{\ensemble\ Tutorial}
 \author{Mark Hayden, Ohad Rodeh \\
 \small{Copyright \copyright\ 1997 Cornell University,
-                             2000 Hebrew  University}
+                             2000 Hebrew  University,
+                             2002 IBM Israel Science and Technology }
 }
 
 \begin{document}
@@ -51,13 +52,9 @@ system in the \caml\ programming language.  This document describes:
 \item
 How to configure and execute the applications included with \ensemble.
 \item
-The text-based \ensemble\ application interface.
+The client application interface.
 \item
-The ML \ensemble\ application interface.
-\item
-The native C \ensemble\ application interface ({\it CE}).
-\item 
-The HOT C interface, a legacy from Horus.
+The Server (OCaml) \ensemble\ application interface.
 \end{itemize}
 \end{abstract}
 
@@ -65,22 +62,89 @@ The HOT C interface, a legacy from Horus.
 \tableofcontents
 \newpage
 
-%\section{Introduction}
-%This documentation assumes that the reader has some familiarity with group
-%communication.
+\section{Introduction}
+This documentation assumes that the reader has some familiarity with group
+communication. There are many texts that describe how to use and build
+group-communication system.
+
+Ensemble is structured as a client-server system with a server
+providing group-communication services through a socket based
+interface. Clients can connect to the server and send/receive reliable
+point-to-point and multicast messages. There should be one server
+running on a host, and clients should be located on the same
+host. This allows using insecure communication for client-server
+traffic.  The server is written (mostly) in the OCaml programming
+language, the client is a small library that has
+implementations in several languages. At the time of writing there are
+clients in C and Java.
+
+Previous versions of the system did not distinguish between client and
+server. The client was implemented with an internal server. This
+provides good performance. However, since the server is written in ML,
+in order to link with a C program written by a user the
+foreign-language interface of ML needs to be used. This causes very
+difficult portability issues. As of release 2.00 we decided to
+separate client from server; this should improve portability at the
+expense of performance. 
 
 \include{install}
+
+\newpage
+\part{The Server}
+This chapter describes how to build server-side programs. The reason
+users should be wary of writing such programs is that the server
+operates in a soft read-time environment. The server is written in the
+OCaml programming language, a single thread of execution is used. To
+improve performance bulk-data for user messages is not allocated on
+the ML heap, which is garbage collection, it is allocated on large
+chunks of memory allocated with {\tt malloc}. Bulk-data extents are
+also called io-vectors and the memory used to hold them is also called
+iovec-memory. To reduce server memory foot-print the size of
+iovec-memory is limited, at the time of writing we are using 6
+mega-bytes. Since memory is limited memory-allocation can fail. The
+server handles this with flow-control protocols limiting the amount of
+incoming messages to fit the amount of available iovec-memory. In
+order to maintain responsiveness to incoming messages pure CPU
+processing (such as search on a database) should be limited. If the
+messaging engine does not receive sufficient CPU every, say, 100
+milliseconds then performance is going to suffer dramatically.
+
+The casual user will be better served by the chapter on writing client
+programs that do not suffer from these limitations. If, however, you
+are undaunted then this chapter is for you. 
+
 \include{demo}
-\include{exec_tut}
 \include{config}
-\include{appl_text}
 \include{appl_ml}
 \include{pgp}
-\include{appl_c}
-\include{appl_java}
-\include{appl_csharp}
-\include{hot}
 \include{transport}
+
+\newpage
+\part{The Client}
+The client library (or simply the ``client'') implements a message-passing
+protocol between server and user. The protocol used is described in
+the reference manual. The client-library has no internal threads. No
+message-memory is allocated by the client, all messages are allocated
+and freed by the user. This gives the user complete control on its
+memory foot-print. The client is thread-safe, several threads can
+send/recv messages concurrently. Blocking socket operations are used
+to simplify client semantics.
+
+In order to use the client-library the user application must first
+connect to the server. It can then create group members and perform
+a subset of Ensemble actions: Leave, Cast, Send, Send1, Suspect.
+There are other Ensemble operations that we decided not to support
+since they add more complexity than value. 
+
+The application must poll Ensemble periodically to see if there are any
+pending messages, and receive them. In the past, it was possible
+for the application not to receive messages while continuing to create
+new actions. This is now not possible. The application will be blocked
+at some point before flooding the server. 
+
+\include{appl_java}
+%\include{appl_csharp}
+\include{appl_c}
 
 \section*{Acknowledgments}
 Thanks to Greg Sharp for comments on previous versions of this document.

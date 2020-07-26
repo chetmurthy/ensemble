@@ -12,11 +12,6 @@ Supported features:
    NETSIM, UDP, TCP, IPMC
 5. 
 
-to be supported better
-----------------------
-1. groupd: light weight groups 
-
-
 ===================================================
 Tests
 -----

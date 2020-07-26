@@ -1,7 +1,7 @@
 %*************************************************************%
 %
-%    Ensemble, 1_42
-%    Copyright 2003 Cornell University, Hebrew University
+%    Ensemble, 2_00
+%    Copyright 2004 Cornell University, Hebrew University
 %           IBM Israel Science and Technology
 %    All rights reserved.
 %
@@ -16,41 +16,39 @@ desired properties the application wants.  You can look at \sourceappl{property.
 for the various properties that are supported by \ensemble:
 \begin{codebox}
 type id =
-  | Agree				(* agreed (safe) delivery *)
-  | Gmp					(* group-membership properties *)
-  | Sync				(* view synchronization *)
-  | Total				(* totally ordered messages *)
-  | Heal				(* partition healing *)
-  | Switch				(* protocol switching *)
-  | Auth				(* authentication *)
-  | Causal				(* causally ordered broadcasts *)
-  | Subcast				(* subcast pt2pt messages *)
-  | Frag				(* fragmentation-reassembly *)
-  | Debug				(* adds debugging layers *)
-  | Scale				(* scalability *)
-  | Xfer				(* state transfer *)
-  | Cltsvr				(* client-server management *)
-  | Suspect				(* failure detection *)
-  | Flow				(* flow control *)
-  | Migrate				(* process migration *)
-  | Privacy				(* encryption of application data *)
-  | Rekey				(* support for rekeying the group *)
-  | OptRekey				(* optimized rekeying protocol *)
-  | DiamRekey                           (* Diamond rekey algorithm *)
-  | Primary				(* primary partition detection *)
-  | Local				(* local delivery of messages *)
-  | Slander				(* members share failure suspiciions *)
-  | Asym			        (* overcome asymmetry *)
+  | Agree       (* agreed (safe) delivery *)
+  | Gmp	        (* group-membership properties *)
+  | Sync        (* view synchronization *)
+  | Total       (* totally ordered messages *)
+  | Heal        (* partition healing *)
+  | Switch      (* protocol switching *)
+  | Auth        (* authentication *)
+  | Causal      (* causally ordered broadcasts *)
+  | Subcast     (* subcast pt2pt messages *)
+  | Frag        (* fragmentation-reassembly *)
+  | Debug       (* adds debugging layers *)
+  | Scale       (* scalability *)
+  | Xfer        (* state transfer *)
+  | Cltsvr      (* client-server management *)
+  | Suspect     (* failure detection *)
+  | Flow        (* flow control *)
+  | Migrate     (* process migration *)
+  | Privacy     (* encryption of application data *)
+  | Rekey       (* support for rekeying the group *)
+  | Primary     (* primary partition detection *)
+  | Local       (* local delivery of messages *)
+  | Slander     (* members share failure suspiciions *)
+  | Asym        (* overcome asymmetry *)
 
     (* The following are not normally used.
      *)
-  | Drop				(* randomized message dropping *)
-  | Pbcast				(* Hack: just use pbcast prot. *)
-  | Zbcast                              (* Use Zbcast protocol. *)
-  | Gcast                               (* Use gcast protocol. *)
-  | Dbg                                 (* on-line modification of network topology *)
-  | Dbgbatch                            (* batch mode network emulation *)
-  | P_pt2ptwp                           (* Use experimental pt2pt flow-control protocol *)
+  | Drop        (* randomized message dropping *)
+  | Pbcast      (* Hack: just use pbcast prot. *)
+  | Zbcast      (* Use Zbcast protocol. *)
+  | Gcast       (* Use gcast protocol. *)
+  | Dbg         (* on-line modification of network topology *)
+  | Dbgbatch    (* batch mode network emulation *)
+  | P_pt2ptwp   (* Use experimental pt2pt flow-control protocol *)
 \end{codebox}
 
 Here is a short description of some of the properties:

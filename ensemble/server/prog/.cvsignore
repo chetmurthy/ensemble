@@ -1,0 +1,11 @@
+_exec-*
+_exec_*
+mtalk rand fifo perf gossip ensemble groupd armadillo socktest
+hot_test* hot_ping* outboard
+gmon.out
+*.exe
+*.cm*
+*.a
+*.o*
+.depend*
+Makefile.nt

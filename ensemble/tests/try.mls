@@ -1,8 +1,8 @@
 #load "unix.cma"
 open Unix;;
 
-#load "aux.cmo";;
-open Aux
+#load "auxl.cmo";;
+open Auxl
 
 open Printf
 

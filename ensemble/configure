@@ -1,0 +1,48 @@
+#/bin/sh -f 
+
+set MACHTYPE=`uname -m`
+set OSTYPE=`uname -s`
+
+set ENS_MACHTYPE=""
+set ENS_OSTYPE=""
+
+switch ($MACHTYPE)
+       case sun4m:
+            set ENS_MACHTYPE="sparc";
+            breaksw;
+       case sun4u:
+            set ENS_MACHTYPE="sparc";
+            breaksw;
+       case i86pc:
+            set ENS_MACHTYPE="i386";
+            breaksw;
+       case i486:
+       case i586:
+       case i686:
+            set ENS_MACHTYPE="i386";
+            breaksw;
+endsw
+
+switch ($OSTYPE)
+       case SunOS:
+           set ENS_OSTYPE="solaris";
+           breaksw;
+       case BSD/OS:
+           set ENS_OSTYPE="bsdi";
+           breaksw;
+       case Linux:
+           set ENS_OSTYPE="linux";
+           breaksw;
+       case AIX:
+           set ENS_OSTYPE="aix";
+           breaksw;
+endsw
+
+echo "PLATFORM=$ENS_MACHTYPE-$ENS_OSTYPE" > mk/env.mk
+
+
+
+
+
+
+

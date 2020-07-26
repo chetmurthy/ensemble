@@ -3,4 +3,5 @@
 *.o*
 .depend*
 Makefile.nt
+test_client*
 

@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, 1_42
- *  Copyright 2003 Cornell University, Hebrew University
+ *  Ensemble, 2_00
+ *  Copyright 2004 Cornell University, Hebrew University
  *           IBM Israel Science and Technology
  *  All rights reserved.
  *
@@ -103,7 +103,9 @@ let establish_conn m =
     let rmt_sockaddr = ADDR_INET (inet_addr_of_machine m, res_port) in
     connect sock rmt_sockaddr ;
     let inchan = in_channel_of_descr sock in
+    set_binary_mode_in inchan true;
     let outchan = out_channel_of_descr sock in
+    set_binary_mode_out outchan true;
     Some (Connection (m, sock, inchan, outchan))
   with e -> 
     print ("unsuccessful close "^ m ^ " " ^ (hsys_error e) ^"\n");
@@ -260,38 +262,21 @@ let send_command_appl mon cmd_f opts num_appl =
  *)
 let rpc_command cmd_f timeout opts_l = 
   let flag_rec = rec_of_flag_l opts_l in
-  let break () = 
-    send_command mon (fun _ _ -> Do_finish) To_coord ;
-    ignore (await_replys 10  {
-      to_coord = false ;
-      file     = None ;
-      time     = false ;
-      record   = false ;
-      num_appl = None ;
-    }
-    )
-  in
-  try 
-    let coord_flag = 
-      if flag_rec.to_coord then To_coord 
-      else Local in
-    let num_appl = match flag_rec.num_appl with
-      | None -> mon.num 
-      | Some num -> num in
-    send_command_appl mon cmd_f coord_flag num_appl;
-
-    let replys,replys2 = await_replys timeout flag_rec in
-    if List.length replys <> mon.num then (
-      if !verbose then 
-	print "Didn't get all the replies, killing remote processes\n";
-      break ()
-    );
-    replys2
-  with Sys.Break -> 
-    print "Break, killing remote processes\n";
-    break ();
-    []
-      
+  let coord_flag = 
+    if flag_rec.to_coord then To_coord 
+    else Local in
+  let num_appl = match flag_rec.num_appl with
+    | None -> mon.num 
+    | Some num -> num in
+  send_command_appl mon cmd_f coord_flag num_appl;
+  
+  let replys,replys2 = await_replys timeout flag_rec in
+  if List.length replys <> mon.num then (
+    print "Didn't get all the replies, exiting\n";
+    Pervasives.exit 0
+  );
+  replys2
+    
 (**************************************************************)
 (* Non functional. Uses a global set of clients [client_l].
 *)
@@ -333,14 +318,13 @@ let rpc_uptime () =
     m, float_of_string (List.nth s_l 0)
   ) replys in
 
-  
-  
   (* 
    * int_of_string "pd-1" = "pd", "1"
    * int_of_string "apollo-4" = "apollo", "4"
    *)
-  
+(*  
   let int_of_string s = 
+    printf "int_of_string=%s" s; flush_out ();
     try 
       let i = String.index s '-' in
       let m_name = String.sub s 0 i 
@@ -362,15 +346,16 @@ let rpc_uptime () =
 	with _ -> 
 	  (s,0)
   in
+*)
   
   (* The default compare between strings is no good to us. 
    * We use our own brew.
    *)
-  let replys = Sort.list (fun (x,_) (y,_) -> 
+(*  let replys = Sort.list (fun (x,_) (y,_) -> 
     let m1,n1 = int_of_string x 
     and m2,n2 = int_of_string y
     in m1 > m2 || m1=m2 && n1 > n2
-  ) replys in
+  ) replys in*)
   replys
     
 (* Print the list of open connections.
@@ -392,14 +377,6 @@ let _ =
   connect ["par1"; "par3"];
   rpc_uptime ()
 *)
-(**************************************************************)
-(* Break handler
-*)
-let _ = 
-  printf "Setting break handlers\n"; flush_out ();
-  Sys.set_signal Sys.sigpipe Sys.Signal_ignore;
-  Sys.catch_break true
-
 (**************************************************************)
 
 

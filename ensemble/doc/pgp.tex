@@ -1,7 +1,7 @@
 %*************************************************************%
 %
-%    Ensemble, 1_42
-%    Copyright 2003 Cornell University, Hebrew University
+%    Ensemble, 2_00
+%    Copyright 2004 Cornell University, Hebrew University
 %           IBM Israel Science and Technology
 %    All rights reserved.
 %
@@ -10,13 +10,18 @@
 %*************************************************************%
 \section{Using PGP}
 
-\ensemble\ supports the use of PGP for authenticating members of
+The \ensemble\ server supports the use of PGP for authenticating members of
 groups.  This work is complete, and several papers have been
 pusblished with our results. We do not guarantee bullet proof
 security, however, we do not know of any remaining security bugs.
-All the \ensemble\ demo
-applications support the use of PGP, including \mlval{mtalk},
-\mlval{wbml}, and \mlval{ensemble}.
+All the \ensemble\ demo applications support the use of PGP, for
+exmaple, \mlval{mtalk}. 
+
+Only the server-side needs to worry about security, the client is on
+the same host as the server so no special measures are needed to
+protect client-server communication. Security is needed for
+host-to-host traffic. To set up a secure static a client needs to
+supply a principal name and specify that it wants security enabled. 
 
 These are the instructions for using PGP. Note that PGP is 
 supported for all platforms.

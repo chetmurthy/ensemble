@@ -1,0 +1,21 @@
+# -*- Mode: makefile -*- 
+#*************************************************************#
+#
+# CE_CONFIG.NMK: This set of definitions is included at the
+# beginning of the CE makefile, it includes standard definitions
+# for win32.
+#
+# Author: Ohad Rodeh, 5/2002
+#
+#*************************************************************#
+
+LINK_FLAGS = WS2_32.lib
+
+# We don't need a specific threads library for windows
+CE_THREAD_LIB =              
+
+#CFLAGS = -DINLINE=__inline /DNDEBUG /Ox /MT /W3 /DENS_TRACE
+CFLAGS = -DINLINE=__inline /Ox /MT /W3 /DENS_TRACE
+
+
+

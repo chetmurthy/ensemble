@@ -1,7 +1,7 @@
 %*************************************************************%
 %
-%    Ensemble, 1_42
-%    Copyright 2003 Cornell University, Hebrew University
+%    Ensemble, 2_00
+%    Copyright 2004 Cornell University, Hebrew University
 %           IBM Israel Science and Technology
 %    All rights reserved.
 %
@@ -9,6 +9,9 @@
 %
 %*************************************************************%
 \section{The Programs}
+Of the programs described here only mtalk, gossip, groupd, and
+ensembled, are normal programs. The rest: perf, rand, fifo, socktest,
+and armadillo, are internal system tests not for use by the casual user. 
 
 Notes:
 \begin{itemize}
@@ -18,97 +21,14 @@ not prefixed with the name of the program generating the message, but
 rather the name of the module.
 \end{itemize}
 
+\subsection{Ensembled: the ensemble daemon}
+This is the ensemble daemon. By running a single instance of this
+program on a host all clients on that host will be able to use Ensemble services. 
+
 \subsection{Mtalk: Multi-person Talk}
 This is a multi-person talk demo.  As \mlval{mtalk} processes are created, they merge
 into a single group.  Input typed at one process is broadcast to the rest of the
 processes in the group.
-
-\subsection{Wbml: Distributed Whiteboard}
-This is a graphical white board demo.  It uses the LablTk library to implement a
-graphical user interface\footnote{not supported under Windows/NT}.  When members are
-in the same group, lines drawn on one instance are broadcast to the rest of the
-group, who also draw the lines.  It supports the switching of protocols.  Initially,
-wbml has an auto-merge protocol in its stack so the members merge together.  This can
-be removed to disable partition healing.  Adding the XFER protocol, causes members to
-transfer their state on view changes; the TOTAL protocol enable totally ordered
-communication.  Initially, these extra protocols are not included in the protocol
-stack.
-
-\subsection{Ensemble: Text-based Interface}
-\label{section:ensemble-demo}
-This program provides a text-based interface to the Ensemble group
-communication facilities.  You can run it to directly see what happens in an
-Ensemble application.  You start up the program and it prints out messages
-decribing changes to the membership of the group.  You can type in commands
-such as ``cast hello'' which causes Ensemble to broadcast ``hello'' to the
-other members of the group, who get ``cast hello'' printed out.  This program
-can be used as a subprocess of an application for doing basic group
-communication.  The normal usage is to set up pipes to and from the standard
-input and output of the \mlval{ensemble} process.
-
-In order to distinguish different applications that are using this interface to
-communicate, you may wish to use the \mlval{-group\_name} option to set the
-name of the group.
-
-The input of the program must be formatted in text lines as follows:
-\begin{itemize}
-\item
-{[cast \mlval{msg}]} broadcasts the following message to the group, where
-\mlval{msg} is the remainder of the input line.  (Normally, the broadcaster
-will not receive the message).
-\item
-{[send \mlval{dest} \mlval{msg}]} sends a point-to-point message to the rest of the
-group.  \mlval{dest} is the endpoint identifier of the group member you wish to send
-the message to.  \mlval{msg} is the remainder of the input line.
-\item
-{[leave]} causes the member to leave the group.  This will eventually result in
-an exit message being output and then the \mlval{ensemble} process will exit.
-\item
-{[prompt]} prompt for a view change
-\item
-{[suspect \mlval{suspect}]} suspect a member, this will cause that
-member to be expelled from the view.
-\item
-{[xferdone]} state transfer is complete for this member. If you are
-  using the state-transfer layer, then this actions has effect. Once
-all members notify the system that state-transfer is complete, a fresh
-view is created, with the xfer bit set to false. For more information,
-look up the XFER layer. 
-\item
-{[rekey]} rekey the group.
-\item
-{[protocol \mlval{proto\_id} ]} switch the protocol
-\end{itemize}
-
-The output of the program consists of lines in one of the following formats:
-\begin{itemize}
-\item
-{[endpt \mlval{endpoint\_id}]} is output as the first line and only
-appears once.  It gives the name of this application as it will appear
-in views.
-
-\item
-{[view \mlval{nmembers} \mlval{my\_rank} \mlval{view}]} describes a
-new view of the group.  Initially, every member begins in its own
-singleton view.  Other members are added through automatic merging
-with other views.  Members are removed through failure detections.
-\mlval{nmembers} is the number of members of the group.
-\mlval{my\_rank} is this member's rank in the new view.
-\mlval{protocol} is the name of the protocol being used.  \mlval{view}
-is a space-separated list of the endpoint identifiers of the members
-of the group.
-
-\item 
-{[cast \mlval{origin} \mlval{msg}]} displays a broadcast received from
-the member of rank \mlval{origin}.
-\item
-{[send \mlval{origin} \mlval{msg}]} displays a point-to-point message
-received from member of rank \mlval{origin}.
-\item
-{[exit]} notifies that this member has left the group as a result of a
-previous \mlval{leave}.  This is the last line output by
-\mlval{ensemble}.
-\end{itemize}
 
 \subsection{Gossip: Group Locator Service}
 This is not really an application.  The gossip server works in
@@ -293,27 +213,6 @@ have three trust domains: $\{0,3,6\}$, $\{1,4\}$ $\{2,5\}$.
 The ``prompt'', and ``reg'' tests are auxillary tests not related
 to security. 
 
-
-\subsection{Life: Game of Life Demo}
-This is a graphical version of the \emph{Game of Life} that was
-originally ``invented'' by J.H.~Conway in 1969 (and was first
-reported in \emph{Scientific American}, October 1970).  The Game of
-Life is not actually a game: ``it is the study of phenomena which can
-be observed in evolving configurations of populations.  One can think
-of a population as a generation of living and non-living beings.  A
-generation can be modeled by a rectangular grid of cells in which
-each being occupies exactly one cell and each cell can be either on
-or off.  If a being is alive, then the corresponding cell is on; if
-the being is dead, then the cell is off.  From this point on we refer
-to beings of a population and cells of the rectangular grid
-interchangeably.''  In this implementation, each cell of the grid is
-implemented by a separate endpoint and all communication is through
-asynchronous Ensemble communication.  Anyway, this program requires
-the LablTk library and should be self-explanatory to run (note that
-you only need to run one Life process: it creates multiple endpoints
-within the process).
-
-\emph{This application was written by Samuel Weber.}
 
 \subsection{Socktest}
 This is a simple application that tests the soundness of the

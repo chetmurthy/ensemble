@@ -1,7 +1,7 @@
 %*************************************************************%
 %
-%    Ensemble, 1_42
-%    Copyright 2003 Cornell University, Hebrew University
+%    Ensemble, 2_00
+%    Copyright 2004 Cornell University, Hebrew University
 %           IBM Israel Science and Technology
 %    All rights reserved.
 %
@@ -107,13 +107,6 @@ messages and not finding any.  Setting this to $1$ will cause
 \ensemble\ to block immediately when there are no more messages.
 Setting this to a large number will cause \ensemble\ to busy-poll for
 a longer time before blocking.
-\item
-[\mlval{-ranking} trans:] this is used to set the priority of
-transport mechanisms. This is useful if you wish to use TCP as a
-transport instead of UDP (the default). Using {\tt -ranking TCP} will
-cause TCP to be ranked higher than any other transport. 
-[\mlval{-trace} module\_name:] Trace a specific module, it is possible
-to trace several modules. Module naming is insensitive to lower/upper casing.
 \end{description}
 
 The following configuration parameter can only be set as an
@@ -242,7 +235,6 @@ communication.
 transport	& P	& G	& description			\\ \hline \hline
 \mlval{UDP}	& \chk	& \chk	& UDP (+ gossip server)		\\ \hline
 \mlval{DEERING}	& \chk	& \chk	& UDP/IP multicast		\\ \hline
-\mlval{TCP}	& \chk	& 	& TCP/IP			\\ \hline
 \mlval{NETSIM}	& \chk	& \chk	& network simulator		\\ \hline
 \end{tabular}
 \end{center}
@@ -251,10 +243,7 @@ The \mlval{NETSIM} transports are used only in applications that are
 simulating the behavior of a group inside a single process.  The
 \mlval{rand} and \mlval{fifo} demos use this, for instance. All other
 currently supported modes run over IP. UDP requires running the gossip
-server.  With TCP as a transport, a fully connected mesh of TCP
-connections is used to move messages between group members. This is
-not very efficient for multicast messages, however, it can
-sometimes be useful. 
+server.   
 
 There are several ways to change the communication transports that \ensemble\
 uses.  These are listed below in order of highest ``precedence.''
@@ -305,21 +294,12 @@ members. The TTL value can be adjusted by editing the file \newline
 \item
 [Variation in site configuraiton :]
 IP-multicast may be misconfigured or disabled for security reasons on
-your site. You'll need to use the gossip service in this case. 
-\item
-[Multiple transports:]
-Note that you can configure ENS\_MODES with serveral transports and let
-Ensemble choose the best one. For example: 
+your site. You'll need to use the gossip service in this case. To do
+so set:
 \begin{verbatim}
-ENS_MODES=UDP:TCP
+ENS_MODES=UDP
 \end{verbatim}
-will cause Ensemble to use UDP or TCP, whichever is appropriate. The
-system ranks Deering the best transport, then UDP, and finally TCP. In
-order to modify this use the -ranking flag. For example: 
-\begin{verbatim}
-% mtalk -modes UDP:TCP -ranking TCP
-\end{verbatim}
-will use UDP for gossip and TCP for all other communication. 
+This will tell the system to use UDP instead of DEERING. 
 \end{description}
 
 

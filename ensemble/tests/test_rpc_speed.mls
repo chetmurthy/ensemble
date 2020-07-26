@@ -1,0 +1,11 @@
+#load "str.cma"
+#load "unix.cma"
+#load "auxl.cmo"
+#load "coord.cmo"
+#load "test_rpc_speed.cmo"
+
+open Test_rpc_speed;;
+
+run ();
+exit 0;;
+

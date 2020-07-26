@@ -1,7 +1,7 @@
 #*************************************************************#
 #
-#   Ensemble, 1_42
-#   Copyright 2003 Cornell University, Hebrew University
+#   Ensemble, 2_00
+#   Copyright 2004 Cornell University, Hebrew University
 #           IBM Israel Science and Technology
 #   All rights reserved.
 #
@@ -16,7 +16,7 @@ ENSROOT = ..
 
 pdf : ref.pdf tut.pdf 
 
-all: pdf hevea ce.html ejava_doc cejava_doc #projects.ps
+all: pdf 
 
 TUT_SRC =\
 	tut.tex\
@@ -27,8 +27,7 @@ TUT_SRC =\
 	appl_ml.tex\
 	appl_c.tex\
 	appl_csharp.tex\
-	appl_text.tex\
-	exec_tut.tex\
+	appl_java.tex\
 	property.tex\
 	pgp.tex\
 	view_state.tex
@@ -49,6 +48,7 @@ REF_SRC =\
 	exec_ref.tex\
 	membership.tex\
 	bimodal.tex\
+	transport.tex\
 	security.tex\
 	unsafe.tex
 
@@ -74,12 +74,10 @@ tut_hack : $(TUT_SRC)
 #	dvips projects.dvi -o projects.ps 
 
 clean:
-	$(RM) *.dvi *~ *.log *.aux *.toc *.lof *.lot *.pdf
-	$(RM) TAGS layers\*.aux .nfs* *~ .*~ *.haux *.image.tex .#?* *.gif
-	$(RMDIR) ce\html
+	$(RM) *~ *.log *.aux *.toc *.lof *.lot *.pdf
+	$(RM) TAGS layers\*.aux .nfs* *~ .*~ 
 	cd layers& $(MAKE) clean
-	$(RMDIR) tut ref cejava ejava 
-	$(RM) ref.html tut.html 
+	$(RMDIR) tut ref 
 
 realclean: clean
 	$(RM) *.pdf
@@ -89,47 +87,5 @@ force: clean all
 tags:
 	etags *.tex ..\layers\*\*.tex
 
-hevea: setup tut.html ref.html cleanup
-
-setup : 
-	$(RM) def.tex
-	ln def-hevea.tex def.tex
-
-cleanup : 
-	$(RM) def.tex
-	ln def-reg.tex def.tex
-
-tut.html : 
-	hevea -fix tut.tex
-	$(RMDIR) tut
-	$(MKDIR) tut
-	$(MV) tut.html tut
-	cd tut& hacha tut.html
-
-ref.html : 
-	hevea -fix ref.tex
-	imagen ref
-	$(RMDIR) ref
-	$(MKDIR) ref
-	$(MV) ref.html *.gif ref\
-	cd ref&	hacha ref.html
-
-ce.html : 
-	cd ce& doxygen ce-config.doxygen
-
-ejava_doc : 
-	$(RMDIR) ejava
-	$(RMDIR) docs
-	cd ..\ejava& $(MAKE) doc
-	$(MV) ..\ejava\docs .
-	$(MV) docs ejava
-
-cejava_doc : 
-	$(RMDIR) cejava
-	$(RMDIR) docs
-	cd ..\cejava& $(MAKE) doc
-	$(MV) ..\cejava\docs .
-	$(MV) docs cejava
-
 build : 
-	cd ..& tar -cf doc-$(VERSION).tar doc\{*.pdf,tut,ref,ce\html,maestro,ejava}& gzip -f doc-$(VERSION).tar& mv doc-$(VERSION).tar.gz ..
+	cd ..& tar -cf doc-$(VERSION).tar doc\*.pdf& gzip -f doc-$(VERSION).tar& mv doc-$(VERSION).tar.gz ..

@@ -1,0 +1,27 @@
+#*************************************************************#
+#
+#   Ensemble, 2_00
+#   Copyright 2004 Cornell University, Hebrew University
+#           IBM Israel Science and Technology
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+README: CE subdirectory
+Author: Ohad Rodeh 9/2001
+
+  The CE directory defines a C thin C-interface overlaid over
+  the ML interface. To use the interface one should read the interface file
+  (ce.h) and link with the library --- libce.a on Unix platforms, and 
+  libce.lib on windows platforms. The documentation can be found in the
+  doc subdirectory.
+
+  In the future, CE will form the major C-interface to the system, 
+  where HOT and Maestro are overlaid on top of it.
+
+  The overhead, as measured on Linux, is very low, on the order of 10%
+  above the cost of direct ML calls in the worst cases. This should be
+  lowered even further in the future.
+
+

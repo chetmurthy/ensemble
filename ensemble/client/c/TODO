@@ -1,0 +1,29 @@
+#*************************************************************#
+#
+#   Ensemble, 2_00
+#   Copyright 2004 Cornell University, Hebrew University
+#           IBM Israel Science and Technology
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+TODO
+----------------------------
+1. Fix memory-management to allow meta-data to flow without io-vectors
+2. Improve the random test: check Send as well.
+
+
+----------------------------
+BUGS
+
++ 1. c_perf -prog 1-n -s 400 ---- causes ref-counting to go bad
++ 2. c_perf -prog 1-n -s 500 ---- causes an empty membership-change to occur
++ 3. c_perf -prog 1-n -s 4000 ---- causes ref-counting to go bad
+4. c_rand: gets stuck after 6:41 minutes. 
+----------------------------
+
+
+
+
+

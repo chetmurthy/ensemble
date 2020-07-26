@@ -10,6 +10,9 @@ set year	= `date +%Y`
 set root        = "$argv[2]"
 set tardir      = $root/../tmp
 
+#clean files with an "~"
+find $root -name "*~*" | xargs rm 
+find $root -name ".#*" | xargs rm 
 
 # Create the target directory, and copy the 
 # distribution over there. 
@@ -20,6 +23,7 @@ cp -r $root $tardir
 
 echo "Removing some files"
 rm -f $tardir/TODO
+rm -f $tardir/DESIGN
 
 set tmp         = /tmp/tarcr$$
 /bin/rm -f .unknown

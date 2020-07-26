@@ -1,7 +1,7 @@
 (**************************************************************)
 (*
- *  Ensemble, 1_42
- *  Copyright 2003 Cornell University, Hebrew University
+ *  Ensemble, 2_00
+ *  Copyright 2004 Cornell University, Hebrew University
  *           IBM Israel Science and Technology
  *  All rights reserved.
  *
@@ -45,7 +45,9 @@ let process_handles = (ref [] : (file_descr * file_descr * in_channel * out_chan
  
 
 let close_single ((sic,sec,ic,oc,ec,opts) as child) =  
-  ignore (close_process_full (ic,oc,ec));
+  try 
+    ignore (close_process_full (ic,oc,ec))
+  with _ -> ();
   sock_l := List.find_all (fun i -> i<>sic && i<>sec) !sock_l;
   Hashtbl.remove chan_tbl sic;
   Hashtbl.remove chan_tbl sec;

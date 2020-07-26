@@ -1,38 +1,48 @@
 (**************************************************************)
 (*
- *  Ensemble, 1_42
- *  Copyright 2003 Cornell University, Hebrew University
+ *  Ensemble, 2_00
+ *  Copyright 2004 Cornell University, Hebrew University
  *           IBM Israel Science and Technology
  *  All rights reserved.
  *
  *  See ensemble/doc/license.txt for further information.
  *)
 (**************************************************************)
+#load "str.cma"
+#load "unix.cma"
+#load "auxl.cmo"
+#load "coord.cmo";;
+
 open Str
 open Unix
 open Auxl
 open Coord
-open Printf
+open Printf;;
 
+
+let base = 
+  try Sys.getenv "ENS_ABSROOT"
+  with Not_found ->
+    printf "You must set the ENS_ABSROOT environment variable for this 
+      program to work\n";
+    exit 1
+
+let perf = base ^ "/bin/i386-linux/c_perf"
 
 (*toggle_verbose ();; *)
 
-(*
-and rh = ["rh-01";"rh-02";"rh-03";"rh-04";"rh-05";"rh-07";"rh-09";"rh-12";"rh-13";"rh-15";"rh-16";"rh-18"]
-and pr = ["pr-01";"pr-05";"pr-07";"pr-08";"pr-09";"pr-11";"pr-13"(*;"pr-16"*);"pr-18";"pr-19";"pr-20"]
-and apollo= [(*"apollo-1";*)"apollo-2"(*;"apollo-3";"apollo-4"*)] 
-and pomela = [(*"pomela1";*)"pomela2"(*;"pomela3"*);"pomela4"] 
-and other = ["halva";"inferno-01"(*;"hamster"*);"limon2"; "tapuz1"]
-and par = ["par1";"par2";"par3";"par4";"par5";"par6";"par7";"par8";
-           "par9";"par10";"par11";"par12";"par13";"par14";"par15";"par16"]
-*)
-
-let machines = [(*"hfstore2";*) "hfstore3"];;
+let machines = ["hfs-build3"; "hfs-build4"];;
 
 let _ = 
   connect machines;
   let results = rpc_uptime () in
   List.iter (fun (m,x) -> printf "%s: %1.2f\n" m x) results;
+
+  rpc (fun i _ ->
+    if i>=2 then Do_unit
+    else 
+      let s = sprintf "%s -modes DEERING -prog 1-n -num_msgs 10000 -s 1000 -n 2" perf in
+      Do_command (s)
+  ) 10 [To_coord;Time];
   ()
-
-
+;;

@@ -18,12 +18,11 @@ CMA		= $(CMAS)
 MLWARN		=
 MLFAST		=# -unsafe
 PROFILE         =# -profile
-DEBUGGER        =#-g -ccopt -lefence
+DEBUGGER        =-g 
 MLFLAGS		= $(DEBUGGER) $(MLFAST) $(COMP_THR) $(PROFILE)
 MLLINKFLAGS	= $(DEBUGGER) $(MLWARN) $(MLFAST) $(MLTHREAD)
 DEPFLAGS	= -noopt
 ENSCOMP		= $(MLCOMP) $(MLFLAGS)
-MLRUNTIME	= $(OCAML_LIB)\libcamlrun$(ARCS)
 #*************************************************************#
 CUSTOM		= -custom
 #*************************************************************#

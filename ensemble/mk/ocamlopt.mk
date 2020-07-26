@@ -26,7 +26,6 @@ MLLINKFLAGS	= $(MLFAST) $(PROFILE)
 DEPFLAGS	= -opt
 ENSCOMPFLAGS	= -opt $(MLFLAGS)
 ENSCOMP		= $(MLCOMP) $(MLFLAGS)
-MLRUNTIME	= $(OCAML_LIB)/libasmrun$(ARCS)
 #*************************************************************#
 CUSTOM		=# no -custom option for ocamlopt
 #*************************************************************#

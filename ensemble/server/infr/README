@@ -1,0 +1,24 @@
+#*************************************************************#
+#
+#   Ensemble, 2_00
+#   Copyright 2004 Cornell University, Hebrew University
+#           IBM Israel Science and Technology
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+-*- Mode: indented-text -*- 
+README: Ensemble Infrastructure
+Author: Mark Hayden
+Last updated: 3/10/97
+
+disp		display layer
+glue		layer management modules
+hsyssupp	additional support for Hsys modules
+stacke		exported protocol stacks (e because of Stack in stdlib)
+transport	transport management
+async           asynchronous application callbacks
+config_trans	more transport stuff
+
+panel		work-in-progress
