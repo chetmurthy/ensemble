@@ -69,7 +69,7 @@ PLATFORM	= $(ENS_MACHTYPE)-$(ENS_OSTYPE)
 #
 ENSLIB = $(ENSROOT)/lib/$(PLATFORM)
 ENSBIN = $(ENSROOT)/bin/$(PLATFORM)
-
+OBJDIR = $(ENSROOT)/obj
 #*************************************************************#
 # The default cryptographic library. We use OpenSSL
 # that compiles and runs on many different platforms. 
@@ -164,7 +164,7 @@ ENSCONF		= $(ENSCONF_$(HSYS_TYPE))
 # do not want to use that version, because it may be
 # inconsistent with the installation you are using.
 
-OCAML_LIB	= $(CAMLLIB)
+OCAML_LIB	= $(OCAMLLIB)
 C_LINK = 
 #*************************************************************#
 # A bunch of configuration macros to support both NT and Unix
@@ -233,6 +233,6 @@ LINK_THR	= # no threads
 # Clean this directory
 #
 CLEANDIR = \
-    $(RM) .nfs* *.cm* .err a.out *.o* *.a *.lib *.asm *~ .*~ .\#*  core *.pdb core gmon.out camlprim* *.exp *.dll *.idb
+    $(RM) .nfs* *.cm* .err a.out *.o* *.exe *.a *.lib *.asm *~ .*~ .\#*  core *.pdb core gmon.out camlprim* *.exp *.dll *.idb 
 
 #*************************************************************#

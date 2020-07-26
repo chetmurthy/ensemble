@@ -74,13 +74,15 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
         eprintf "CHK_FIFO:%s:sanity[1] %s\n" s.debug (Event.to_string ev) ;
         if err1 then (
           eprintf "CHK_FIFO:%s:multicast message out of order unique_id=%d (origin=%d, my_rank=%d, seqno=%d, expect=%d)\n"
-            s.debug unique_id origin ls.rank seqno s.cast_up.(origin)
+            s.debug unique_id origin ls.rank seqno s.cast_up.(origin);
+            dnnm (dumpEv name)
         ) ;
 
         if err2 then (
           if err1 then eprintf "CHK_FIFO:***AND***\n" ;
           eprintf "CHK_FIFO:incorrect origin m.mendpt, sent=(%s) <> (%s,%d)=my_info\n"
-            (Endpt.string_of_id chk_from)  (Endpt.string_of_id (Arrayf.get vs.view origin)) origin
+            (Endpt.string_of_id chk_from)  (Endpt.string_of_id (Arrayf.get vs.view origin)) origin;
+            dnnm (dumpEv name)
         ) ;
 
         dump vf s ;

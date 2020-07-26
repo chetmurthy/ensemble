@@ -1,0 +1,43 @@
+\begin{Layer}{SEQUENCER}
+
+This layer implements a sequencer based protocol for total ordering.
+
+\begin{Protocol}
+One member of the group serves as the sequencer. Any member that wishes to
+send messages, send them point-to-point to the sequencer. The sequencer then
+delivers the message localy, and cast it to the rest of the group. Other
+members, as soon as they receive a cast from the sequencer, they deliver
+the message.
+
+If a view change occurs, messages are tagged as unordered and are send as
+such.
+When the \Up{View} event arrives, indicating that the group has successfully
+been flushed, these messages are delivered in a deterministic order everywhere
+(according to the ranks of their senders, breaking ties using FIFO).
+\end{Protocol}
+
+\begin{Parameters}
+\item None
+\end{Parameters}
+
+\begin{Properties}
+\item
+Requires VSYNC properties.
+\end{Properties}
+
+\begin{Sources}
+\sourcesfile{sequencer.ml}
+\end{Sources}
+
+\begin{GenEvent}
+\genevent{\Dn{Cast}}
+\genevent{\Dn{Send}}
+\end{GenEvent}
+
+\begin{Testing}
+\item
+\todo{}
+\end{Testing}
+
+\emph{This layer and its documentation were written by Roy Friedman.}
+\end{Layer}

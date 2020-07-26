@@ -1,33 +1,131 @@
-# Makefile for Maestro
+# -*- Mode: makefile -*- 
+#*************************************************************#
+#
+# Main Maestro Makefile
+#
+# Author: Ohad Rodeh 4/2003
+# Based on code by Alexey Vaysburd
+#
+#*************************************************************#
+ENSROOT = ..
+include $(ENSROOT)/mk/preamble.mk
+include $(ENSROOT)/mk/config.mk
+include $(ENSROOT)/maestro/ma_config.mk
+#*************************************************************#
 
-MAKE            = gmake
-ROOT            = .
-CONF		= conf
-PLATFORM        = $(ENS_MACHTYPE)-$(ENS_OSTYPE)
-OBJDIR          = $(CONF)/$(PLATFORM)
+INCLUDE_PATH	= \
+		-I $(ENSLIB) \
+		-I $(ENSROOT)/hot/include	\
+		-I type	\
+		-I corba	\
+		-I group
 
-all:    $(OBJDIR)
-	(cd $(OBJDIR); $(MAKE))
+.SUFFIXES: .C .o .obj
+.C.o : 
+	$(CCC) $(CFLAGS) $(INCLUDE_PATH) -c  $< -o $@
+.c.obj : 
+	$(CCC) $(CFLAGS) $(INCLUDE_PATH) -c  $< $(OBJRULE)$@
 
-conf:
-	if [ ! -d conf ]; then mkdir conf; fi
+#**********************************************************
 
-$(OBJDIR): conf
-	if [ ! -d $(OBJDIR) ];                          \
-	then                                            \
-		mkdir $(OBJDIR);                        \
-		ln Makefile.tem $(OBJDIR)/Makefile;	\
-		touch $(OBJDIR)/.depend;                \
-	fi
+HOTLIB		= $(ENSROOT)/lib/$(PLATFORM)/libhot$(ARC)
 
-clean:	$(OBJDIR)
-	(cd $(OBJDIR); $(MAKE) clean)
+CRYPTOLIB	=
+#CRYPTOLIB	= $(ENS)/lib/$(PLATFORM)/libcryptoc.a
 
-realclean:	clean
-	rm -rf $(OBJDIR)
 
-depend:	$(OBJDIR)
-	mkdir -p $(OBJDIR)
-	touch $(OBJDIR)/.depend
-	(cd $(OBJDIR); $(MAKE) depend)
+MAE_TYPE_OBJ =	type/Maestro_Types$(OBJ)	\
+		type/Maestro_Perf$(OBJ)
 
+MAE_GROUP_OBJ =	\
+		group/Maestro_GroupMember$(OBJ)		\
+		group/Maestro_ClSv$(OBJ)		\
+		group/Maestro_CSX$(OBJ)			\
+		group/Maestro_Prim$(OBJ)		\
+		group/Maestro_ES_ReplicatedUpdates$(OBJ) \
+		group/Maestro_ES_Simple$(OBJ)	\
+		group/Maestro_Group$(OBJ)
+
+MAE_CORBA_OBJ =	\
+		corba/Maestro_CORBA$(OBJ)	\
+		corba/Maestro_GIOP$(OBJ)	\
+		corba/Maestro_ETC$(OBJ)		\
+		corba/Maestro_IIOPBridge$(OBJ)	\
+		corba/Maestro_ORB$(OBJ)
+
+MAE_OBJ	      =	\
+		$(MAE_TYPE_OBJ)		\
+		$(MAE_GROUP_OBJ)	\
+		$(MAE_CORBA_OBJ)
+
+MAELIB		= libmae$(ARC)
+LIBS		= $(MAELIB) $(HOTLIB) $(CRYPTOLIB) 
+
+
+all: 	libmae$(ARC)	\
+	util/newkey$(EXE)	\
+	util/read_ior$(EXE)  \
+	tests
+
+maestro : all
+
+############################################################################
+
+libmae$(ARC): $(MAE_OBJ)
+	$(MKLIB) $(MKLIBO)libmae$(ARC) $(MAE_OBJ)
+	$(RANLIB) libmae$(ARC)
+
+util/newkey$(EXE): util/newkey$(OBJ)
+	$(CCC) -o util/newkey$(EXE) util/newkey$(OBJ) $(LIBS) $(MA_LINK_FLAGS)
+
+util/read_ior$(EXE): util/read_ior$(OBJ)
+	$(CCC) -o util/read_ior$(EXE) util/read_ior$(OBJ) $(LIBS) $(MA_LINK_FLAGS)
+
+ifeq ("$(PLATFORM)" , "nt")
+clean:
+	$(CLEANUP) 
+else
+clean:
+	$(RM) util/newkey$(EXE) util/read_ior$(EXE)
+	$(RM) test/maestro-test$(EXE) test/mae-prog2$(EXE) test/group$(EXE) test/maestro-perf$(EXE) test/test-replicated$(EXE)	test/test-simple$(EXE)
+	$(RM) *.obj *.o *.a *.lib *.exp *.exe
+	$(RM) */*.obj */*.o */*.a */*.lib */*.exp */*.exe
+endif
+
+realclean : clean
+
+tests: 	test/maestro-test$(EXE) \
+	test/mae-prog2$(EXE) \
+	test/group$(EXE) \
+	test/maestro-perf$(EXE) \
+	test/test-replicated$(EXE)	\
+	test/test-simple$(EXE)
+
+test/group$(EXE): test/group$(OBJ) $(LIBS)
+	$(CCC) -o test/group$(EXE) test/group$(OBJ) $(LIBS) $(MA_LINK_FLAGS)
+
+test/maestro-test$(EXE): test/maestro-test$(OBJ) $(LIBS) 
+	$(CCC) -o test/maestro-test$(EXE) test/maestro-test$(OBJ) $(LIBS) $(MA_LINK_FLAGS)
+
+test/maestro-perf$(EXE): test/maestro-perf$(OBJ) $(LIBS)
+	$(CCC) -o test/maestro-perf$(EXE) test/maestro-perf$(OBJ) $(LIBS) $(MA_LINK_FLAGS)
+
+test/test-replicated$(EXE): test/test-replicated$(OBJ) $(LIBS)
+	$(CCC) -o test/test-replicated$(EXE) test/test-replicated$(OBJ) $(LIBS) $(MA_LINK_FLAGS)
+
+test/test-simple$(EXE): test/test-simple$(OBJ) $(LIBS)
+	$(CCC) -o test/test-simple$(EXE) test/test-simple$(OBJ) $(LIBS) $(MA_LINK_FLAGS)
+
+test/mae-prog$(EXE): test/mae-prog$(OBJ) $(LIBS)
+	$(CCC) -o test/mae-prog$(EXE) test/mae-prog$(OBJ) $(LIBS) $(MA_LINK_FLAGS)
+
+test/mae-prog2$(EXE): test/mae-prog2$(OBJ) $(LIBS)
+	$(CCC) -o test/mae-prog2$(EXE) test/mae-prog2$(OBJ) $(LIBS) $(MA_LINK_FLAGS)
+
+install : 
+	$(CP) test/maestro-test$(EXE) $(ENSROOT)/bin/$(PLATFORM)/maestro-test$(EXE)
+	$(CP) libmae$(ARC) $(ENSROOT)/lib/$(PLATFORM)/libmae$(ARC)
+
+#
+# Currently, maestro does not support 'make depend'
+depend : 

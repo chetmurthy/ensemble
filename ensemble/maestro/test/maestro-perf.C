@@ -112,7 +112,7 @@ protected:
     Mbr *mbr = (Mbr *) arg;
     int i;
     int nmsgs = NMSGS;
-    struct timeval s_time, e_time;
+//    struct timeval s_time, e_time;
     Maestro_Message msg;
 
     double st, et, el;
@@ -154,7 +154,8 @@ private:
   Maestro_Semaphore rpcSema;
 };
 
-void main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
   Mbr *m;
   
   Maestro_CSX_Options ops;
@@ -179,4 +180,6 @@ void main(int argc, char *argv[]) {
   // Wait forever on a semaphore
   Maestro_Semaphore sema;
   sema.dec();
+
+  return 0;
 }

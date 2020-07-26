@@ -1,0 +1,75 @@
+\section{Event Handlers: Standard}
+
+Logically, a protocol has two incoming event handlers (one each above and
+below) and two outgoing event handlers (one each above and below).  In
+practice, because some events have messages and others do not, these
+handlers are split up into several extra handlers.  The breakdown of the 4
+logical handlers into 10 actual handlers is done for compatibility with the
+ML typechecker.  Typechecking is used extensively to guarantee that layers
+recieve messages of the same type they send.  This is a very useful
+property because it prevents a large class of programming errors.
+
+\begin{table}[tb]
+\begin{center}
+\begin{tabular}{|l|c|c|c|c|c|} \hline
+name	& in/	& up/	& above/	& message?	& header? \\
+	& out	& dn	& below		&		& 	\\ \hline \hline
+upnm	& out 	& up	& above		& no		& no	\\ \hline
+up	& out	& up	& above		& yes		& no	\\ \hline
+dnnm	& out	& dn	& below		& no		& no	\\ \hline
+dnlm	& out	& dn	& below 	& no		& yes	\\ \hline
+dn	& out	& dn	& below		& yes		& yes	\\ \hline \hline
+upnm	& in 	& up	& below		& no		& no	\\ \hline
+uplm	& in	& up	& below		& no		& yes	\\ \hline
+up	& in	& up	& below		& yes		& yes	\\ \hline
+dnnm	& in 	& dn 	& above		& no		& no	\\ \hline
+dn	& in	& dn	& above		& yes		& no	\\ \hline
+\end{tabular}
+\end{center}
+\caption{\em The 10 standard event handlers.}
+\label{table:handlers}
+\end{table}
+
+\begin{figure}[tb]
+\begin{center}
+\resizebox{!}{4in}{\incgraphics{handlers}}
+%\resizebox{!}{4in}{\includegraphics*[0,0][500,700]{fig/handlers}}
+\end{center}
+\caption{\em Diagram of the 10 standard event handlers.  Note that the
+ABOVE layer has a similar interface above it as the BELOW layer.  Likewise
+with the interface beneath the BELOW layer.}
+\label{fig:handlers}
+\end{figure}
+
+In the standard configuration, each layer has 10 handlers.  A handler is
+uniquely specified by a set of characteristics: whether it is an incoming
+or outgoing handler, a handler for up events or down events, a handler for
+communication with the layer above or for the layer below, whether it has
+an associated message, and whether it has an associated header.  See
+table~\ref{table:handlers} for a enumeration of the 10 handlers.  Of the 10
+handlers, 5 are outgoing and 5 are incoming; 5 are up event handlers and 5
+are down event handlers; 4 are for event communication with the layer below
+and 6 are for event communication with the layer above.  These are depicted
+in fig~\ref{fig:handlers}.
+
+The names of the handlers have two parts.  The first specifies the sort of
+event the handler is called with (``up'' or ``dn'').  The second specifies
+the sort of message that is associated with the event and may be either
+``'' (nothing, the default case), ``lm'' (for local message), or ``nm''
+(for no message), which correspond to:
+\begin{description}
+\item
+[nothing:] Events with associated messages, where the message was created
+by a layer above this layer.  This layer was not the first layer to push a
+header onto the message and will not be the last layer to pop its header
+off the message.
+\item
+[``lm'':] Events with associated messeges, where the
+message was created by this layer.  This was the first layer to push a
+header onto the message and is the last layer to pop its header off of the
+message.
+\item
+[``nm'':] Corresponds to events without associated messages.
+These handlers always take a single argument which is either an up event or
+a down event.
+\end{description}

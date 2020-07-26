@@ -1,0 +1,141 @@
+\section{Native Java Application Interface (CEJAVA)}
+
+The CEJAVA interface is built upon the CE interface, using the Java
+Native Interface (JNI). This allows a user to tap the power of the
+Ensemble messaging system from Java. Performance of this interface is
+similar to the native ML and C interfaces. 
+
+Not surprisingly, the API is similar to the CE API. Here, we walk
+through an overview of the interface, and then point out the major
+differences with respect to CE. Method and constructor documentation
+can be found either in the code itself, or through the javadoc
+generated HTML files.
+
+\subsection{Overview}
+The basic concept is that of a {\it Group}. A group is constructed by: 
+\begin{codebox}
+    public Group(Callbacks cb);
+\end{codebox}
+
+A group has to define the following set of callbacks: 
+
+\begin{codebox}
+public class Callbacks \{
+    public abstract void install(View view);
+    public abstract void exit();
+    public abstract void recv_cast(int origin, byte[] msg);
+    public abstract void recv_send(int origin, byte[] msg);
+    public abstract void flow_block(int rank, boolean onoff);
+    public abstract void block();
+    public abstract void heartbeat(double time);
+\}
+\end{codebox}
+
+The callbacks define behavior when events, such as message receipt or
+view changes, occur. 
+
+Within the context of a group the user can perform eleven actions: 
+
+\begin{codebox}
+    public void join(JoinOps jops);
+    public void leave();
+    public void cast(byte[] msg);
+    public void send(int[] dests, byte[] msg) ;
+    public void send1(int dest, byte[] msg);
+    public void prompt();
+    public void suspect(int[] suspects);
+    public void xferDone();
+    public void rekey();
+    public void changeProtocol(String protocol_name);
+    public void changeProperties(String properties);
+\end{codebox}
+
+Before starting to use the package, the initialization function must
+be called: 
+
+\begin{codebox}
+    static public void init(String args []);
+\end{codebox}
+
+Any command line argument to CE and Ensemble should be passed here. 
+
+To run a Java program that uses CEJAVA, the classpath must point to
+the {\tt ensemble.jar} java-archive file, and the library path should
+point to the matching native library {\tt libcejava.so}. For example,
+to run java program {\tt prog.java}, assuming the jar file is in the
+local directory, and that the native library is under {\tt lib} use:
+\begin{codebox}
+    java -Djava.class.path=;:ensemble.jar -Djava.library.path=lib prog
+\end{codebox}
+A simpler option is to set the {\tt CLASSPATH} environment variable to
+include {\tt ensemble.jar} and set the dynamic library path to include
+{\tt libcejava.so}. On Unix systems this means setting then
+{\tt LD\_LIBRARY\_PATH} and on win32 setting the {\tt PATH}.
+
+\subsection{Notes}
+There are two major difference with respect to CE: zero-copy, and
+synchronization. 
+
+CEJAVA is not ``zero-copy'', the receive callbacks copy message data
+from C to Java, and the send actions copy data from Java to C. This
+costs extra copying but allows the Java application to do whatever it
+likes with message data, without being bound by underlying reference
+counting and memory management. 
+
+Synchronization is very different between C and Java because the Java
+has language support for locking. A group can be in one of six phases: 
+\begin{codebox}
+    public static final int PRE     = 0;
+    public static final int JOINING = 1;
+    public static final int NORMAL  = 2;
+    public static final int BLOCKED = 3;
+    public static final int LEAVING = 4;
+    public static final int LEFT    = 5;
+\end{codebox}
+
+\begin{description}
+\item[PRE:] preliminary phase, the group has not been fully
+  constructed yet. 
+\item[JOINING:] this endpoint is joining the group. 
+\item[NORMAL:] the group is in stable state. 
+\item[BLOCKED:] group is blocked prior to a pending view change. 
+\item[LEAVING:] this member is leaving the group. 
+\item[LEFT:] member has left the group. 
+\end{description}
+
+The only phase in which actions are allowed is the NORMAL state.
+Multiple threads can perform actions on the same group, furthermore,
+the Ensemble main-loop executing in a separate thread invokes group
+callbacks when events arrive from the network. The group object is a
+synchronization point for these threads of execution. The
+implementation must ensure that group-state does not change during an
+action. To this end, whenever an action is performed on group $g$: (1) the
+group object is locked (2) status is checked (3) if it is NORMAL, the
+action is performed. For example, the code for send looks like this:
+\begin{codebox}
+    public void send(int[] dests, byte[] msg) \{
+        synchronized(this) \{
+	    check_normal();
+	    natSend(nat_env, dests, msg);
+        \}
+    \}
+\end{codebox}
+
+An application can have critical sections in which it must ensure
+group state is NORMAL. It can also lock group state, and ensure it
+does not change using a similar technique. A {\tt getStatus}
+call is provided that returns the group state for group $g$. An example
+of coding a critical section is:
+\begin{codebox}
+    synchronized(group) \{
+        int stat = group.getStatus ();
+        if (stat == NORMAL) \{
+             /* Perform critical code here */
+        \}
+    \}
+\end{codebox}
+
+To maximize performance, the send/recv callbacks can also invoke
+Ensemble actions. The callbacks enjoy the best latency since they do
+not incur a thread-switch. 
+

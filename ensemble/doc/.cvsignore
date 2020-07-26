@@ -1,0 +1,9 @@
+*.aux *.dvi *.lof *.lot *.ps *.pdf *.log
+*.toc *.htoc *.haux *.image.*
+ce/html
+ref
+tut
+ejava cejava
+Makefile.nt
+*.out
+

@@ -1,0 +1,94 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}
+\BOOKMARK [0][-]{part.1}{I The Ensemble Architecture}{}
+\BOOKMARK [1][-]{section.2}{Identifiers}{part.1}
+\BOOKMARK [2][-]{subsection.2.1}{Endpoint Identifiers}{section.2}
+\BOOKMARK [2][-]{subsection.2.2}{Group Identifiers}{section.2}
+\BOOKMARK [2][-]{subsection.2.3}{View Identifiers}{section.2}
+\BOOKMARK [2][-]{subsection.2.4}{Connection Identifiers}{section.2}
+\BOOKMARK [2][-]{subsection.2.5}{Protocol Identifiers}{section.2}
+\BOOKMARK [2][-]{subsection.2.6}{Mode identifiers}{section.2}
+\BOOKMARK [2][-]{subsection.2.7}{Stack Identifiers}{section.2}
+\BOOKMARK [1][-]{section.3}{The Event Module}{part.1}
+\BOOKMARK [2][-]{subsection.3.1}{Fields}{section.3}
+\BOOKMARK [3][-]{subsubsection.3.1.1}{Extension fields}{subsection.3.1}
+\BOOKMARK [3][-]{subsubsection.3.1.2}{Event Types}{subsection.3.1}
+\BOOKMARK [3][-]{subsubsection.3.1.3}{Field Specifiers}{subsection.3.1}
+\BOOKMARK [2][-]{subsection.3.2}{Constructors}{section.3}
+\BOOKMARK [2][-]{subsection.3.3}{Special Constructors}{section.3}
+\BOOKMARK [2][-]{subsection.3.4}{Modifiers}{section.3}
+\BOOKMARK [2][-]{subsection.3.5}{Copiers}{section.3}
+\BOOKMARK [2][-]{subsection.3.6}{Destructors}{section.3}
+\BOOKMARK [1][-]{section.4}{Event protocol: Intra-stack communication}{part.1}
+\BOOKMARK [2][-]{subsection.4.1}{Event Types}{section.4}
+\BOOKMARK [2][-]{subsection.4.2}{Event fields}{section.4}
+\BOOKMARK [3][-]{subsubsection.4.2.1}{Event Fields}{subsection.4.2}
+\BOOKMARK [2][-]{subsection.4.3}{Event fields and the ``types'' for which they are defined}{section.4}
+\BOOKMARK [2][-]{subsection.4.4}{Event Chains}{section.4}
+\BOOKMARK [3][-]{subsubsection.4.4.1}{Timer Chain}{subsection.4.4}
+\BOOKMARK [3][-]{subsubsection.4.4.2}{Send Chain}{subsection.4.4}
+\BOOKMARK [3][-]{subsubsection.4.4.3}{Broadcast Chain}{subsection.4.4}
+\BOOKMARK [3][-]{subsubsection.4.4.4}{Failure Chain}{subsection.4.4}
+\BOOKMARK [3][-]{subsubsection.4.4.5}{Block Chain}{subsection.4.4}
+\BOOKMARK [3][-]{subsubsection.4.4.6}{View Chain}{subsection.4.4}
+\BOOKMARK [3][-]{subsubsection.4.4.7}{Merge Chain \(successful\)}{subsection.4.4}
+\BOOKMARK [3][-]{subsubsection.4.4.8}{Merge Chain \(failed\)}{subsection.4.4}
+\BOOKMARK [1][-]{section.5}{Layer Execution Model}{part.1}
+\BOOKMARK [2][-]{subsection.5.1}{Callbacks}{section.5}
+\BOOKMARK [2][-]{subsection.5.2}{Ordering Properties}{section.5}
+\BOOKMARK [1][-]{section.6}{Layer Anatomy: what are the pieces of a layer?}{part.1}
+\BOOKMARK [2][-]{subsection.6.1}{Design Goals}{section.6}
+\BOOKMARK [2][-]{subsection.6.2}{Notes}{section.6}
+\BOOKMARK [2][-]{subsection.6.3}{Values and Types}{section.6}
+\BOOKMARK [1][-]{section.7}{Event Handlers: Standard}{part.1}
+\BOOKMARK [1][-]{section.8}{The Ensemble Security Architecture \(by Ohad Rodeh\)}{part.1}
+\BOOKMARK [2][-]{subsection.8.1}{Cryptographic Infrastructure}{section.8}
+\BOOKMARK [2][-]{subsection.8.2}{Rekeying}{section.8}
+\BOOKMARK [2][-]{subsection.8.3}{A secure stack}{section.8}
+\BOOKMARK [2][-]{subsection.8.4}{Security events}{section.8}
+\BOOKMARK [2][-]{subsection.8.5}{Using Security}{section.8}
+\BOOKMARK [2][-]{subsection.8.6}{Checking that things work}{section.8}
+\BOOKMARK [2][-]{subsection.8.7}{Using security from HOT and EJava}{section.8}
+\BOOKMARK [0][-]{part.2}{II The Ensemble Protocols}{}
+\BOOKMARK [1][-]{section.9}{Layers and Stacks}{part.2}
+\BOOKMARK [2][-]{subsection.9.1}{ANYLAYER}{section.9}
+\BOOKMARK [2][-]{subsection.9.2}{CREDIT}{section.9}
+\BOOKMARK [2][-]{subsection.9.3}{RATE}{section.9}
+\BOOKMARK [2][-]{subsection.9.4}{BOTTOM}{section.9}
+\BOOKMARK [2][-]{subsection.9.5}{CAUSAL}{section.9}
+\BOOKMARK [2][-]{subsection.9.6}{ELECT}{section.9}
+\BOOKMARK [2][-]{subsection.9.7}{ENCRYPT}{section.9}
+\BOOKMARK [2][-]{subsection.9.8}{HEAL}{section.9}
+\BOOKMARK [2][-]{subsection.9.9}{INTER}{section.9}
+\BOOKMARK [2][-]{subsection.9.10}{INTRA}{section.9}
+\BOOKMARK [2][-]{subsection.9.11}{LEAVE}{section.9}
+\BOOKMARK [2][-]{subsection.9.12}{MERGE}{section.9}
+\BOOKMARK [2][-]{subsection.9.13}{MFLOW}{section.9}
+\BOOKMARK [2][-]{subsection.9.14}{MNAK}{section.9}
+\BOOKMARK [2][-]{subsection.9.15}{OPTREKEY}{section.9}
+\BOOKMARK [2][-]{subsection.9.16}{PERFREKEY}{section.9}
+\BOOKMARK [2][-]{subsection.9.17}{PRIMARY}{section.9}
+\BOOKMARK [2][-]{subsection.9.18}{PT2PT}{section.9}
+\BOOKMARK [2][-]{subsection.9.19}{PT2PTW}{section.9}
+\BOOKMARK [2][-]{subsection.9.20}{PT2PTWP}{section.9}
+\BOOKMARK [2][-]{subsection.9.21}{REALKEYS}{section.9}
+\BOOKMARK [2][-]{subsection.9.22}{REKEY}{section.9}
+\BOOKMARK [2][-]{subsection.9.23}{REKEY\137DT}{section.9}
+\BOOKMARK [2][-]{subsection.9.24}{REKEY\137DIAM}{section.9}
+\BOOKMARK [2][-]{subsection.9.25}{SECCHAN}{section.9}
+\BOOKMARK [2][-]{subsection.9.26}{SEQUENCER}{section.9}
+\BOOKMARK [2][-]{subsection.9.27}{SLANDER}{section.9}
+\BOOKMARK [2][-]{subsection.9.28}{STABLE}{section.9}
+\BOOKMARK [2][-]{subsection.9.29}{SUSPECT}{section.9}
+\BOOKMARK [2][-]{subsection.9.30}{SYNC}{section.9}
+\BOOKMARK [2][-]{subsection.9.31}{TOTEM}{section.9}
+\BOOKMARK [2][-]{subsection.9.32}{WINDOW}{section.9}
+\BOOKMARK [2][-]{subsection.9.33}{XFER}{section.9}
+\BOOKMARK [2][-]{subsection.9.34}{ZBCAST}{section.9}
+\BOOKMARK [2][-]{subsection.9.35}{VSYNC}{section.9}
+\BOOKMARK [1][-]{section.A}{Appendix: ML Does Not Allow Segmentation Faults}{part.2}
+\BOOKMARK [1][-]{section.B}{Ensemble Membership Service TCP Interface}{part.2}
+\BOOKMARK [2][-]{subsection.B.1}{Locating the service}{section.B}
+\BOOKMARK [2][-]{subsection.B.2}{Communicating with the service}{section.B}
+\BOOKMARK [1][-]{section.C}{Bimodal Multicast \(by Ken Birman, Mark Hayden, and Zhen Xiao\)}{part.2}
+\BOOKMARK [2][-]{subsection.C.1}{Protocol description}{section.C}
+\BOOKMARK [2][-]{subsection.C.2}{Usage}{section.C}

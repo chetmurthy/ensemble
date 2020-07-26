@@ -71,7 +71,10 @@ all: dirs
 	cd ce & $(MAKE)	  & $(MAKE) install
 	cd cejava & $(MAKE) & $(MAKE) install
 	cd hot & $(MAKE)  & $(MAKE) install
+	cd maestro & $(MAKE) & $(MAKE) install
 
+maestro : 
+	cd maestro & $(MAKE) all
 
 sock : 
 	cd socket& $(MAKE) all & $(MAKE) install
@@ -88,6 +91,7 @@ opt: dirs
 	cd ce & $(MAKE) opt & $(MAKE) install
 	cd cejava & $(MAKE) opt & $(MAKE) install
 	cd hot & $(MAKE) opt & $(MAKE) install
+	cd maestro & $(MAKE) & $(MAKE) install
 
 crypto : 
 	cd crypto & $(MAKE) & $(MAKE) install 
@@ -127,7 +131,7 @@ dos2unix :
 src: dos2unix
 	nmake -f Makefile.nt realclean
 	nmake -f Makefile.nt depend
-	cd tar& tarcr 1.40 \home\orodeh\e\1.40\ensemble 
+	cd tar& tcsh tarcr 1.41 \home\orodeh\e\1.41\ensemble 
 	cd doc& nmake -f Makefile.nt build
 
 

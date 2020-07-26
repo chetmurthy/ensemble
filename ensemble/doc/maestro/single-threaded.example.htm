@@ -1,0 +1,123 @@
+<!-- File: single-threaded.example.htm -->
+<!-- Author: Alexey Vaysburd -->
+<!-- Contents: An example of a single-threaded Maestro application -->
+<!-- Created: Feb 1997 -->
+
+<html>
+
+<head>
+<title>An Example of a Single-Threaded Maestro Application</title>
+<link rev="made" href="mailto:alexey@cs.cornell.edu (Alexey Vaysburd)">
+</head>
+
+<BODY TEXT="#000000" BGCOLOR="#FCD5AD" LINK="#0000FF" VLINK="#551A8B" ALINK="#FF0000">
+<TABLE WIDTH="800" >
+<TR>
+<TD ALIGN=LEFT VALIGN=TOP WIDTH="100"><IMG SRC="maestro-logo.jpg" VSPACE=20 HSPACE=20 HEIGHT=105 WIDTH=70 ALIGN=LEFT></TD>
+
+<TD WIDTH="500" BORDER="0">
+<h1>An Example of a Single-Threaded Maestro Application</h1>
+</TD>
+</TR>
+</TABLE>
+
+This document is a part of online 
+<a href="http://www.cs.cornell.edu/Info/Projects/Ensemble/index.htm">
+Ensemble</a> documentation, under 
+<a href="Maestro.htm">Maestro Open Toolkit</a>.
+<hr><p>
+
+The program in the example below defines a subclass (called <tt>Mbr</tt>) of the 
+<a href="Maestro_GroupMember.htm"><tt>Maestro_GroupMember</tt></a> class.  
+Note that multicast, view, and heartbeat callbacks (which are no-op in the 
+base class) are overloaded to implement application-specific functionality. 
+
+<p>
+
+In the <tt>main</tt> function, several <tt>Mbr</tt> objects are created and 
+join the group.  Note that all group-member objects are created with the 
+same 
+<a href="Maestro_Overview.htm#Threading_issues">threading mode</a>
+(<tt>MAESTRO_MODE_SINGLE_THREADED</tt>).  
+
+<p>
+
+In the single-threaded mode, all downcalls to group-member objects can only
+be done from within group-callback methods.  In this example, all multicast
+messages are sent from within heartbeat callbacks.
+
+<p>
+<hr>
+<pre>
+
+#include "Maestro.h"
+#define NMEMBERS 10
+
+class  Mbr: public Maestro_GroupMember {
+public:
+
+  // Initialize the group-member object and join the group.
+  Mbr(Maestro_GrpMemb_Options &ops) : Maestro_GroupMember(ops) {
+    join();			// Join the group
+  }
+
+protected:
+
+  // This callback is invoked when a multicast message is received.
+  void grpMemb_ReceiveCast_Callback(Maestro_EndpID &origin,
+				    Maestro_Message &msg) {
+    Maestro_String contents;
+    msg >> contents;
+    cout << "CAST from " << origin << ": " << contents << endl;
+  }
+
+  // This callback is invoked when a new view is accepted.
+  void grpMemb_AcceptedView_Callback(Maestro_GrpMemb_ViewData &viewData,
+				     Maestro_Message &msg) {
+    cout << "Accepted View: " << viewData.members << endl ;
+  }
+
+  // This callback is invoked periodically. 
+  void grpMemb_Heartbeat_Callback(unsigned time) { 
+    Maestro_Message msg;
+    Maestro_String contents("hello");
+    msg << contents;
+    cast(msg);			// Send a multicast message.
+  }
+};
+
+main(int argc, char *argv[]) {
+  Mbr *m[NMEMBERS];
+  int i;
+
+  Maestro_GrpMemb_Options ops;
+  ops.heartbeatRate = 1000;	// Schedule a heartbeat every 1000 msec.
+
+  ops.groupName = "lapa";
+  ops.protocol = "Top:Heal:Switch:Leave:Inter:Intra:Elect:Merge:Sync:Suspect:Top_appl:Pt2pt:Frag:Stable:Mnak:Bottom";
+  ops.transports = "UDP";
+  ops.programName = argv[0];
+
+  // Start Maestro/Ensemble in single-threaded mode.
+  ops.threadMode = MAESTRO_MODE_SINGLE_THREADED;
+
+  // Create NMEMBERS group-member objects.
+  for (i = 0; i < NMEMBERS; i++)
+    m[i] = new Mbr(i, ops);
+
+  // Start Maestro/Ensemble.  
+  // Note that Maestro_GroupMember::start() function does not return.
+  Maestro_String progName(argv[0]);
+  Maestro_GroupMember::start(progName);
+  assert(0);
+}
+
+</pre>
+<hr>
+<address>
+send mail to
+<a href="mailto:alexey@cs.cornell.edu">alexey@cs.cornell.edu</a>
+</address>
+
+</body>
+</html>

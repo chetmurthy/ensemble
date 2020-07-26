@@ -108,7 +108,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	    seqno rank;*)
 
 	  (* cast accept message *)
-	  dnlm (Event.create name (ECast Iovecl.empty) [Peer ls.rank]) (Acc rank);
+	  dnlm (Event.create name (ECast Iovecl.empty) []) (Acc rank);
 	  (* deliver *)
 	  up ev abv ;
 
@@ -120,6 +120,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
     (* This is an already ordered message from the leader.
      *)
+(*
   | ECast iovl ,Acc rank -> 
       assert (rank = s.seq_rank && ls.rank <> rank) ;
       (* deliver the message from rank *)
@@ -127,7 +128,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       Queue.add (abv,ev) s.to_deliver.(rank);
       Queue.add rank s.accepts;
       deliver ();
-
+*)
 
     | _ -> up ev abv
 
@@ -198,7 +199,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	      (*printf "sequencer sending accept for %d\n" s.curr_seq_num;*)
 
 	      log (fun () -> sprintf " %s %d: seq multicasting" (View.string_of_id ls.view_id) ls.rank);
-	      dn ev abv (Acc ls.rank);
+	      (*dn ev abv (Acc ls.rank);*)
+	      (* Instead*)
+	      dn ev abv Cast;
+	      dnlm (Event.create name (ECast Iovecl.empty) []) (Acc ls.rank);
 	      
 	      (* the sequencer delivers the message immediately.
 	       *)

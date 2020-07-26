@@ -28,6 +28,9 @@ tk:
 tk_opt:
 	cd $(ENSROOT)& $(MAKE) tk_opt
 
+maestro: 
+	cd $(ENSROOT)\maestro& $(MAKE) all
+
 crypto:
 	cd $(ENSROOT)& $(MAKE) crypto
 

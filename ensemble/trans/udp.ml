@@ -73,7 +73,12 @@ let domain alarm =
    * to INADDR_ANY so that messages will be accepted on
    * all network interfaces.
    *)
-  let (udp_sock, port) = init_sock (Hsys.inet_any ()) in
+  let addr =
+    match Arge.get Arge.udp_host with
+      | None -> Hsys.inet_any()
+      | Some host -> Arge.inet_of_string Arge.udp_host host
+  in
+  let (udp_sock, port) = init_sock addr in
 
 (*
   let xmit_sock_mc = do_once (fun () ->

@@ -32,5 +32,5 @@
 #.ml.cmx: 
 #	ocamlopt $(MLFLAGS) $(INCLUDE) -c $< -o $(OBJDIR)\$(@F)
 #.c.obj:
-#	$(CC) -c $(CFLAGS) $< /Fo$(OBJDIR)\$(@F)
+#	$(CC) -c $(CFLAGS) $< $(OBJRULE)$(OBJDIR)\$(@F)
 

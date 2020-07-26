@@ -48,18 +48,10 @@ MSDEV_INCLUDE	= /I"C:\Program Files\Microsoft Visual Studio\VC98\Include"
 
 #DEBUG = 1
 
-!ifndef DEBUG
 CFLAGS	= \
 	-DINLINE=__inline \
 	$(MSDEV_INCLUDE) /I$(OCAML_LIB) \
 	/Ox /MT /W3 /DNDEBUG
-!else
-CFLAGS = \
-    -DINLINE=__inline \
-   $(MSDEV_INCLUDE) /I$(OCAML_LIB) \
-    /MT /W3 /I$(OCAML_LIB) \
-    /Yd /Zi /ZI
-!endif
 
 
 #	$(OPENSSL_INC)
@@ -106,6 +98,7 @@ PLATFORM	= nt
 #
 ENSLIB = $(ENSROOT)\lib\$(PLATFORM)
 ENSBIN = $(ENSROOT)\bin\$(PLATFORM)
+OBJDIR = $(ENSROOT)\obj
 
 #*************************************************************#
 
@@ -182,7 +175,7 @@ ENSCONF		= $(ENSCONF_skt)
 # do not want to use that version, because it may be
 # inconsistent with the installation you are using.
 
-OCAML_LIB	= $(CAMLLIB)
+OCAML_LIB	= $(OCAMLLIB)
 
 #*************************************************************#
 # A bunch of configuration macros to support both NT and Unix
@@ -252,7 +245,7 @@ LINK_THR	= # no threads
 # Clean this directory
 #
 CLEANDIR = \
-    $(RM) .nfs* *.cm* *.ppo .err a.out *.o *.obj *.a *.lib *.asm *~ .*~ core *.pdb core gmon.out camlprim* *.exp *.dll *.idb
+    $(RM) .nfs* *.cm* *.ppo .err a.out *.o *.exe *.obj *.a *.lib *.asm *~ .*~ core *.pdb core gmon.out camlprim* *.exp *.dll *.idb
 
 #*************************************************************#
 

@@ -15,25 +15,37 @@ Future
    - bug 1: uncaught exception
 10. Prompt for a view change if the current sequence number is close 
     to wrapping around. 
-
+2. Convert the java demos to jar format, should be easy. 
+3. Allow CE to work with ENSCONF_unix, not just ENSCONF_skt.
+5. Check the flow control protocols, use Window instead of Mflow?
+4. Use a configuration file instead of environment variables. 
+1. Makefiles 
+   - Cleanup the makefiles, who is using preamble? 
+   - Use an object directory, and send all created objects there. 
+   - Stop copying executables
+2. port the security-infrastructure to win32 (Xavier library).
+   Add support for GnuPG (www.gnupg.org) ?
 --------------------------------------------------------
 
-TODO for 1.40
+done: 1.41
 -------------
+1. Fix the various Maestro bugs.
+   - merge code bases for win32/unix
+   - fix the Jonathan bug
+2. Fix bug not allowing the use of a specific IP address for an Ensemble process
+3. Fix total-ordering bug in Seqbb
+
+--------------------------------------------------------
+done: 1.40
+-------------
+*  Report a bug in Ocaml, -I does not work. 
 0. Fixed a bug affecting gossip on win32 systems. Previously, when an
    application using a gossip server died, the gossip server could go
    into an infinite loop due to an endless sequence of socket errors. To
    solve this, we now close down the gossip-server socket, and open a new
    one in these cases.
-1. Makefiles 
-   - Cleanup the makefiles, who is using preamble? 
-   - Use an object directory, and send all created objects there. 
-   - Stop copying executables
-1. Convert the java demos to jar format, should be easy. 
-2. Allow CE to work with ENSCONF_unix, not just ENSCONF_skt.
 4. Check what happens when we move sockets to OVERLAPPED on win32
 5. Create DLLs for win32
-6. port the security-infrastructure to win32 (Xavier library)
 7. Use a simple mechanism for passing actions to the Ensemble thread, 
    instead of using sockets.
 

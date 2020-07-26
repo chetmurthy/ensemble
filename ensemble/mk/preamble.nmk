@@ -6,7 +6,7 @@
 # Author: Mark Hayden, 3\96
 #
 #*************************************************************#
-VERSION = 1_39
+VERSION = 1_40
 #*************************************************************#
 ENSLIB		= $(ENSROOT)\lib\$(PLATFORM)
 ENS		= $(ENSLIB)\libens$(CMA)	# main ENS library 

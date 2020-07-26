@@ -213,6 +213,10 @@ void skt_udp_recv_error(void) {
     case WSAEMSGSIZE:
 #endif
 	
+#ifdef WSAWOULDBLOCK
+    case WSAWOULDBLOCK:
+#endif
+	
 	/* Do nothing */
 	break ;
     default:

@@ -1,0 +1,53 @@
+\begin{Layer}{XFER}
+
+This protocol facilitates application based state-transfer. 
+The view structure contains a boolean field {\tt xfer\_view}
+conveying whether the current view is one where
+state-transfer is taking place ({\tt xfer\_view = true}) or whether it 
+is a regular view ({\tt xfer\_view = false}).
+
+\begin{Protocol}
+It is assumed that an application initiates state-transfer after a view
+change occurs. In the initial view, {\tt xfer\_view = true}. 
+In a fault free run, 
+each application sends pt-2-pt and multicast messages, according
+to its state-transfer protocol. Once the application-protocol is
+complete, an {\tt XferDone} action is sent to Ensemble. 
+This action is caught by the Xfer layer, where each member sends a pt-2-pt
+message {\tt XferMsg} to the leader. When the leader
+collects {\tt XferMsg} from all members, the state-transfer is
+complete, and a new view is installed with the {\tt xfer\_view} field
+set to false. 
+
+When faults occur, and members fail during the state-transfer
+protocol, new views are installed with {\tt xfer\_view} set to {\tt
+true}. This informs applications that state-transfer was not
+completed, and they can restart the protocol. 
+\end{Protocol}
+
+\begin{Notes}
+\item 
+This layer allows the application to choose
+the state-transfer protocol it wishes to use, the only constrain being
+the XferDone actions. 
+
+\item 
+In the normal case, (a fault free run) the protocol should take a 
+single view to complete. 
+\end{Notes}
+
+\begin{Parameters}
+\item None
+\end{Parameters}
+
+\begin{Properties}
+\item
+Requires VSYNC properties.
+\end{Properties}
+
+\begin{Sources}
+\sourcesfile{xfer.ml}
+\end{Sources}
+
+\end{Layer}
+

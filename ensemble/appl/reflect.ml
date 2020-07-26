@@ -37,10 +37,16 @@ let create_server_sock port =
     log (fun () -> sprintf "warning:setsockopt:Bsdcompat:%s" (Util.error e))
   end ;
   
+  let addr =
+    match Arge.get Arge.udp_host with
+      | None -> Hsys.inet_any()
+      | Some host -> Arge.inet_of_string Arge.udp_host host
+  in
+
   (* Bind it to the gossip port.
    *)
   begin
-    try Hsys.bind sock (Hsys.inet_any()) port with e ->
+    try Hsys.bind sock addr port with e ->
       (* Don't bother closing the socket.
        *)
       if not !quiet then (

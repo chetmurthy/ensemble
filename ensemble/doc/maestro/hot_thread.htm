@@ -1,0 +1,99 @@
+<!-- File: hot_thread.htm -->
+<!-- Author: Alexey Vaysburd -->
+<!-- Contents:  Ensemble's system-independent threads interface --> 
+<!-- Created: Feb 1997 -->
+
+<html>
+
+<head>
+<title>Maestro Open Toolkit: System-Independent Threads Interface</title> 
+<link rev="made" href="mailto:alexey@cs.cornell.edu (Alexey Vaysburd)">
+</head>
+
+<head>
+<title>Maestro Overview</title>
+<link rev="made" href="mailto:alexey@cs.cornell.edu (Alexey Vaysburd)">
+</head>
+
+<BODY TEXT="#000000" BGCOLOR="#FCD5AD" LINK="#0000FF" VLINK="#551A8B" ALINK="#FF0000">
+<TABLE WIDTH="800" >
+<TR>
+<TD ALIGN=LEFT VALIGN=TOP WIDTH="100"><IMG SRC="maestro-logo.jpg" VSPACE=20 HSPACE=20 HEIGHT=105 WIDTH=70 ALIGN=LEFT></TD>
+
+<TD WIDTH="500" BORDER="0">
+<h1>Maestro Open Toolkit:  System-Independent Threads Interface of Ensemble</h1>
+</TD>
+</TR>
+</TABLE>
+
+This document is a part of online 
+<a href="http://www.cs.cornell.edu/Info/Projects/Ensemble/index.htm">
+Ensemble</a> documentation, under 
+<a href="Maestro.htm">Maestro Open Toolkit</a>.
+<p>
+
+<h4><hr>Threads</h4>
+
+<pre>
+typedef struct {
+  int stacksize;
+} hot_thread_attr_t;
+
+// Create a new thread.  Returns 0 if OK.
+hot_err_t hot_thread_Create(void (*routine)(void*), 
+			    void *arg,
+			    hot_thread_attr_t *attr);
+
+</pre>
+
+<h4><hr>Locks</h4>
+
+<pre>
+
+// Obscured type
+typedef void* hot_lock_t;
+
+// Create a new lock.  Returns 0 if OK.
+hot_err_t hot_lck_Create(/*OUT*/hot_lock_t*);
+
+// Destroy a lock.  Returns 0 if OK.
+hot_err_t hot_lck_Destroy(hot_lock_t);
+
+// Acquire a lock.  Return 0 if OK.
+hot_err_t hot_lck_Lock(hot_lock_t);
+
+// Release a lock.  Return 0 if OK.
+hot_err_t hot_lck_Unlock(hot_lock_t);
+
+</pre>
+
+<h4><hr>Semaphores</h4>
+
+<pre>
+
+// Obscured type
+typedef void* hot_sema_t;
+
+// Create a semaphore.  Returns 0 if OK.
+hot_err_t hot_sema_Create(int initial_value, /*OUT*/ hot_sema_t *semap);
+
+// Destroy a semaphore.  Returns 0 if OK.
+hot_err_t hot_sema_Destroy(hot_sema_t sema);
+
+// Increase the value of a semaphore.  Returns 0 if OK.
+hot_err_t hot_sema_Inc(hot_sema_t sema);
+
+// Decrease the value of a semapghore (may block).  Returns 0 if OK.
+hot_err_t hot_sema_Dec(hot_sema_t sema);
+
+</pre>
+
+<p>
+<hr>
+<address>
+send mail to
+<a href="mailto:alexey@cs.cornell.edu">alexey@cs.cornell.edu</a>
+</address>
+
+</body>
+</html>

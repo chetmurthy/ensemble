@@ -1,0 +1,1046 @@
+\section{Native C \ensemble\ Application Interface (CE)}
+
+The C application interface is very similar in design to the ML
+interface. It is located in directory \sourcecode{ce}. It has been
+modified from the original ML interface, so as to fit better into
+the C language (type-system and native data structures).
+
+There are seven callbacks a C application needs to define in order
+to work with Ensemble. These are:
+
+\begin{itemize}
+\item 
+{\tt install(env,ls,vs) }: called whenever a new view is installed.
+
+\item 
+{\tt exit()} :called when the member leaves. 
+
+\item 
+{\tt receive\_cast(env, origin, num, iovl)} :
+called with the origin, an iovec array (and its length)
+whenever a mulicast message arrives. 
+
+\item
+{\tt receive\_send(env, origin, num, iovl)} : 
+called with the origin, an iovec array (and its length)
+whenever a point-to-point message arrives. 
+
+\item
+{\tt flow\_block(env, origin, onoff)} : 
+called whenever there are flow-control problems, and
+the application should refrain from sending messages until further
+notice.
+
+\item
+{\tt block(env) } : 
+called whenever a view change is forthcoming. All
+applications are blocked,  the old view is stabilized,
+cleaned, and way is made for the new view. 
+
+\item 
+{\tt heartbeat(env, time)} : 
+called every timeout. The timeout is specified in the \cval{jops}
+structure. Timers are not exact, this callback may be called at
+inaccurate times, or more often than neccessary. If accuracy is
+required, the application should check the {\it time} argument. 
+\end{itemize}
+
+The environment argument which is the first argument in all seven
+callbacks is registered when a {\it C-application interface} is created.
+
+The types of the callbacks are as follows:
+\begin{codebox}
+typedef int         ce_rank_t ;
+typedef int         ce_len_t ;
+typedef void       *ce_env_t ;
+typedef double      ce_time_t ;
+
+typedef void (*ce_appl_install_t)(ce_env_t, ce_local_state_t*, ce_view_state_t*);
+
+typedef void (*ce_appl_exit_t)(ce_env_t) ;
+
+typedef void (*ce_appl_receive_cast_t)(ce_env_t, ce_rank_t, int, ce_iovec_array_t) ;
+
+typedef void (*ce_appl_receive_send_t)(ce_env_t, ce_rank_t, int, ce_iovec_array_t) ;
+
+typedef void (*ce_appl_flow_block_t)(ce_env_t, ce_rank_t, ce_bool_t) ;
+
+typedef void (*ce_appl_block_t)(ce_env_t) ;
+
+typedef void (*ce_appl_heartbeat_t)(ce_env_t, ce_time_t) ;
+\end{codebox}
+
+
+A {\tt ce\_appl\_intf\_t} is the type of a C application interface
+({\it cappl}).  It can be created by the constructor {\tt
+ce\_create\_intf}. There is no need for a destructor because Ensemble
+frees the interface-structure and all related memory after the \cval{exit}
+callback is invoked. An application interface is opaque, it can be
+used to create an endpoint, and join a group. It cannot be used to 
+join more than a single group.
+\begin{codebox}
+typedef struct ce_appl_intf_t ce_appl_intf_t ;
+\end{codebox}
+
+
+The constructor takes the above handlers as parameters, as well as
+an environment variable. 
+
+\begin{codebox}
+ce_appl_intf_t*
+ce_create_intf(
+    ce_env_t env, 
+    ce_appl_exit_t exit,
+    ce_appl_install_t install,
+    ce_appl_flow_block_t flow_block,
+    ce_appl_block_t block,
+    ce_appl_receive_cast_t cast,
+    ce_appl_receive_send_t send,
+    ce_appl_heartbeat_t heartbeat
+);
+\end{codebox}
+
+The initial operation used to initiate a CE application is
+\cval{ce\_Init}. It initializes the internal Ensemble data structures, and
+processes command line arguments.
+
+\begin{codebox}
+void ce_Init(int argc, char **argv) ;
+\end{codebox}
+
+
+After a C application completes initialization it should pass control 
+the Ensemble main loop via \cval{ce\_Main\_loop}.
+
+\begin{codebox}
+void ce_Main_loop ();
+\end{codebox}
+			 
+In order to join a group, the \cval{ce\_Join} operation should be used.
+\begin{codebox}
+void ce_Join(ce_jops_t *ops, ce_appl_intf_t *c_appl) ;
+\end{codebox}
+
+\subsection{Group operations}
+Similarly to the ML interface, the set of supported operations is:
+Leave, Cast, Send, Send1, Prompt, Suspect, XferDone, Rekey,
+ChangeProtocol, and ChangeProperties. Messages are arrays of
+IO-vectors ({\it iovecs}), or C memory chunks.  The application can
+send and receive iovec-arrays.
+
+Multicast an iovec-array to the group. 
+\begin{codebox}
+void ce_Cast(
+    ce_appl_intf_t *c_appl,
+    int num,
+    ce_iovec_array_t iovl
+) ;
+\end{codebox}
+
+Send a point-to-point message to a set of group members.
+\begin{codebox}
+void ce_Send(
+    ce_appl_intf_t *c_appl,
+    int num_dests,
+    ce_rank_array_t dests,
+    int num,
+    ce_iovec_array_t iovl
+) ;
+\end{codebox}
+
+Send a point-to-point message to the specified group member.
+\begin{codebox}
+void ce_Send1(
+    ce_appl_intf_t *c_appl,
+    ce_rank_t dest,
+    int num,
+    ce_iovec_array_t iovl
+) ;
+\end{codebox}
+
+The control actions are the same as the ML actions.
+
+Leave a group. Following this downcall, \cval{exit} will be called, 
+freeing the cappl. 
+\begin{codebox}
+void ce_Leave(ce_appl_intf_t *c_appl) ;
+\end{codebox}
+
+Ask for a new View.
+\begin{codebox}
+void ce_Prompt(
+    ce_appl_intf_t *c_appl
+);
+\end{codebox}
+
+ Report specified group members as failure-suspected.
+\begin{codebox}
+void ce_Suspect(
+    ce_appl_intf_t *c_appl,
+    int num,
+    ce_rank_array_t suspects
+);
+\end{codebox}
+	
+Inform Ensemble that the state-transfer is complete. 
+\begin{codebox}
+void ce_XferDone(
+    ce_appl_intf_t *c_appl
+) ;
+\end{codebox}
+
+Ask the system to rekey.
+\begin{codebox}
+void ce_Rekey(
+    ce_appl_intf_t *c_appl
+) ;
+\end{codebox}
+
+
+Request a protocol change.  The \cval{protocol\_name} is a string
+specifying the exact set of layers to use. The string is a colon
+separated list of layers, for example:
+Top:Heal:Switch:Leave:Inter:Intra:Elect:Merge:Sync:Suspect:Stable:\
+Vsync:Frag\_Abv:Top\_appl:Frag:Pt2ptw:Mflow:Pt2pt:Mnak:Bottom
+\begin{codebox}
+void ce_ChangeProtocol(
+    ce_appl_intf_t *c_appl,
+    char *protocol_name
+) ;
+\end{codebox}
+
+
+Request a protocol change, specifying properties.
+\cval{properties} is a string containing a colon separated list of
+properties. For example:
+"Gmp:Sync:Heal:Switch:Frag:Suspect:Flow:Xfer".
+The system deduces a protocol stack that abides by these properties.
+\begin{codebox}
+void ce_ChangeProperties(
+    ce_appl_intf_t *c_appl,
+    char *properties
+) ;
+\end{codebox}
+
+All arguments to the group-action calls are copied into CE, hence the
+application can use the run-time stack to create the arguments. There
+is no need to allocate nor free the arguments. There are also
+limitations on the sizes of arguments: 
+\begin{itemize}
+\item The maximal size of an iovector array is {\tt MAX\_SIZE\_IOVL}.
+\item The maximal number of destinations for {\tt send/send1/suspect}
+  is MAX\_NUM\_DESTS
+\item Tha maximal size of a protocol string is: {\tt CE\_PROTOCOL\_MAX\_SIZE}.
+\item Tha maximal size of a properties string is: {\tt CE\_PROPERTIES\_MAX\_SIZE}.
+\end{itemize}
+
+\subsection{Integration of other sockets into the main loop}
+Ensemble works in an event driven fashion, where events can either
+come from the network or the user. The system runs a loop that is
+split between (1) waiting for input on incoming sockets using a
+\cval{select} system call (2) Processing local
+application send/recv and internal events. 
+
+The application hands over control to Ensemble after initialization.
+The application may wish to wait on its own sockets, e.g., \cval{stdin} (on
+Unix). To this end, we also support adding, removing, and putting
+handlers on sockets.
+
+{\tt ce\_handler\_t} is the type of handler called when there is input
+to process on a socket.
+\begin{codebox}
+typedef void (*ce_handler_t)(void*);
+\end{codebox}
+
+{\tt ce\_AddSockRecv} adds a socket to the list Ensemble listens to. 
+When input on the socket occurs, this handler will be invoked
+on the specified environment variable.
+\begin{codebox}
+void ce_AdddSockRecv(
+    CE_SOCKET socket,
+    ce_handler_t handler,
+    ce_env_t env
+);
+\end{codebox}
+
+{\tt ce\_RmvSockRecv} is called to remove a socket from the list 
+Ensemble listens to.
+\begin{codebox}
+void ce_RmvSockRecv(
+    CE_SOCKET socket
+);
+\end{codebox}
+
+
+\subsection{Memory management}
+The convention used throughout is that all data-structures passed from
+the application CE are copied by CE, and all data-structures passed
+from CE to the application are owned by the CE side (hence must not be
+freed nor cached). This rule holds for all structures and data apart
+from the iovec-arrays.
+
+Ensemble does not copy messages from C to the ML heap, rather, it
+separates C-memory and ML memory completely. Messages are received
+from the network and read directly into C-buffers. Sent iovecs are
+fragmented and sent directly on the network. Messages must be buffered
+until all group members reliably receive them. To this end, a
+reference counting scheme is used to track iovec liveness. When an
+iovec's reference count reaches zero, it is freed. In other words,
+iovec's are owned by Ensemble. They are received either from the 
+user, or the network.
+
+On linux, the type of an iovec is:
+\begin{codebox}
+typedef struct iovec ce_iovec_t ;
+typedef ce_iovec_t *ce_iovec_array_t;
+\end{codebox}
+
+To get better control of the iovec memory system, the \cval{alloc} and 
+\cval{free} functions can be set by the user. The definitions are in
+\sourcecode{lib/mm.h} and  \sourcecode{lib/mm\_basic.h}.
+
+These define the types of alloc and free functions.
+\begin{codebox}
+typedef void* (*mm_alloc_t)(int);
+typedef void  (*mm_free_t)(char*);
+\end{codebox}
+
+The actual functions called to free and allocate iovec's.
+\begin{codebox}
+mm_alloc_t mm_alloc_fun;
+mm_free_t mm_free_fun;
+\end{codebox}
+
+Use these functions to set \cval{alloc} and \cval{free}. Be careful to
+do this exactly once at application initialization, before
+starting Ensemble.
+\begin{codebox}
+void set_alloc_fun(mm_alloc_t f);
+void set_free_fun(mm_free_t f);
+\end{codebox}
+
+The upshot of this is that when a user sends or casts a message,
+Ensemble takes over the message body. When a message is
+delivered to the application, the user may copy it, or perform any
+read-only operation while in the receive callback. The application may
+{\it not} modify a received iovec, or assume it owns it.
+
+To use the CE library as a win32 DLL the user {\bf must} set the alloc
+and free functions. This makes the CE library use the application's
+allocation and deallocation functions. The simplest choices here are
+the standard LIBC {\tt malloc} and {\tt free} functions. 
+
+\subsection{The flat interface}
+Using iovecs is a little complex for simple applications,
+therefore, a simplified ``flat'' interface is also provided.
+
+The flat\_receive callbacks take a C memory chunk, with it's length as
+arguments. This releases the application from merging together the
+set of buffers that consist an iovec-array, as well as releasing that
+array.
+\begin{codebox}
+typedef void (*ce_appl_flat_receive_cast_t)(ce_env_t, ce_rank_t, ce_len_t, ce_data_t) ;
+
+typedef void (*ce_appl_flat_receive_send_t)(ce_env_t, ce_rank_t, ce_len_t, ce_data_t) ;
+\end{codebox}
+
+
+Create a standard application interface using flat receive callbacks.
+\begin{codebox}
+ce_appl_intf_t*
+ce_create_flat_intf(
+    ce_env_t env, 
+    ce_appl_exit_t exit,
+    ce_appl_install_t install,
+    ce_appl_flow_block_t flow_block,
+    ce_appl_block_t block,
+    ce_appl_flat_receive_cast_t cast,
+    ce_appl_flat_receive_send_t send,
+    ce_appl_heartbeat_t heartbeat
+);
+\end{codebox}
+
+
+Cast and Send operations that work with buffers instead of iovec-arrays.
+\begin{codebox}
+void ce_flat_Cast(
+    ce_appl_intf_t *c_appl,
+    ce_len_t len, 
+    ce_data_t buf
+) ;
+
+void ce_flat_Send(
+    ce_appl_intf_t *c_appl,
+    int num_dests,
+    ce_rank_array_t dests,
+    ce_len_t len, 
+    ce_data_t buf
+) ;
+
+void ce_flat_Send1(
+    ce_appl_intf_t *c_appl,
+    ce_rank_t dest,
+    ce_len_t len, 
+    ce_data_t buf
+) ;
+\end{codebox}
+
+
+
+\subsection{An example}
+
+This section shows how to use the CE interface to write applications. 
+We walk through the \sourcecode{ce/ce\_mtalk.c} demo program.
+
+\sourcecode{ce/ce\_mtalk.c}, similarly to \sourcecode{demo/mtalk.ml},
+is a multi-person talk program. Messages are read from the user via {\tt
+stdin}, and multicasted to the network.
+
+\cval{state\_t} is the state structure used by the program. It is the
+environment variable registered in the C-interface. The state contains
+the current view information, a pointer to its cappl, and a flag
+indicating if we are blocked.
+\begin{codebox}
+typedef struct state_t \{
+    int rank;
+    int nmembers;
+    ce_endpt_t endpt;
+    ce_appl_intf_t *intf ;
+    int blocked;
+\} state_t;
+\end{codebox}
+
+
+A helper function to multicast a message if we are not blocked. 
+We use the flat interface, to save the messy handling of iovec's.
+\begin{codebox}
+void cast(state_t *s, char *msg)\{
+  if (s->blocked == 0)
+    ce_flat_Cast(s->intf, strlen(msg)+1, msg);
+\}
+\end{codebox}
+ 
+
+A handler for stdin. This callback is called whenever there is input
+on the socket. The handler multicasts any message the user types on the
+screen. Be careful not to send messages if we are blocked.
+\begin{codebox}
+void
+stdin_handler(void *env)
+\{
+    state_t *s = (state_t*)env;
+    char buf[100], *msg;
+    int len ;
+    
+    TRACE("stdin_handler");
+    fgets(buf, 100, stdin);
+    len = strlen(buf);
+    if (len>=100)
+    
+    /* string too long, dumping it.
+     */
+    return;
+
+    msg = (char*) malloc(len+1);
+    memcpy(msg, buf, len);
+    msg[len] = 0;
+    cast(s, msg);
+\}
+\end{codebox}
+
+
+There is nothing special to do if we leave the group, the application
+essentially halts.
+\begin{codebox}
+void main_exit(void *env){}
+\end{codebox}
+
+When a new view arrives, update the environment structure. The view
+structures are owned by the CE library and may not be freed nor taken. To
+maintain knowledge of the view by the rank, number of members, and
+endpoint named are copied locally. 
+\begin{codebox}
+void main_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs) 
+\{
+    state_t *s = (state_t*) env;
+    
+    s->rank = ls->rank;
+    s->nmembers = ls->nmembers;
+    s->blocked =0;
+    memcpy(s->endpt.name, ls->endpt.name, CE\_ENDPT\_MAX\_SIZE);
+
+    printf("\%s nmembers=\%d", ls->endpt.name, ls->nmembers);
+\}
+\end{codebox}
+
+Ignore flow control problems. We are not suppose to have any of 
+these, we are very low bandwidth.
+\begin{codebox}
+void main_flow_block(void *env, ce_rank_t rank, ce_bool_t onoff){}
+\end{codebox}
+
+Mark our blocked flag. 
+\begin{codebox}
+void main_block(void *env) \{
+  state_t *s = (state_t*) env;
+
+  s->blocked=1;
+\}
+\end{codebox}
+
+Print out any message that we receive. Be careful not to free the
+received message.
+\begin{codebox}
+void main_recv_cast(void *env, int rank, ce_len_t len, char *msg) \{
+  state_t *s = (state_t*) env;
+
+  printf("recv_cast <- \%d msg=\%s", rank, msg);
+\}
+\end{codebox}
+
+Ignore send messages, we are not supposed to get any of these.
+\begin{codebox}
+void main_recv_send(void *env, int rank, ce_len_t len, char *msg) \{
+\}
+\end{codebox}
+
+Ignore heartbeats.
+\begin{codebox}
+void main_heartbeat(void *env, double time) \{ \}
+\end{codebox}
+
+
+Create a join options structure, and join the group ``ce\_mtalk''.
+Use a regular virtually-synchronous stack. Put a handler on {\tt
+stdin} such that whenever there is input, it will be called. 
+The join options structure can be allocated on the stack since it is
+copied internally by CE. 
+
+There is no need to set the transport in the join-options structure,
+the system uses the environment variable ENS\_MODES in this case.
+\begin{codebox}
+void join() \{
+    ce_jops_t jops; 
+    ce_appl_intf_t *main_intf;
+    state_t *s;
+    
+    /* The rest of the fields should be zero. The
+     * conversion code should be able to handle this. 
+     */
+    memset(&jops, 0, sizeof(ce_jops_t));
+    jops.hrtbt_rate=10.0;
+    strcpy(jops.group_name, "ce_mtalk");
+    strcpy(jops.properties, CE_DEFAULT_PROPERTIES);
+    jops.use_properties = 1;
+    
+    s = (state_t*) malloc(sizeof(state_t));
+    memset(s, 0, sizeof(state_t));
+    
+    main_intf = ce_create_flat_intf(s,
+				    main_exit, main_install, main_flow_block,
+				    main_block, main_recv_cast, main_recv_send,
+				    
+				    main_heartbeat);
+    
+    s->intf= main_intf;
+    ce_Join (&jops, main_intf);
+    
+    ce_AddSockRecv(0, stdin_handler, s);
+\}
+\end{codebox}
+
+The main entry point, initialize the ML side, process command line 
+arguments, join the {\it ce\_mtalk} group, and turn control over
+to the Ensemble event loop.
+\begin{codebox}
+int main(int argc, char **argv) \{
+  
+  ce_set_alloc_fun((mm_alloc_t)malloc);
+  ce_set_free_fun((mm_free_t)free);
+
+  ce_Init(argc, argv); /* Call Arge.parse, and appl_process_args */
+
+  join();
+  
+  ce_Main_loop ();
+  return 0;
+\}
+\end{codebox}
+
+\subsection{Outboard mode}
+It is possible to run any CE application through a remote Ensemble
+server. Such a configuration is called an ``outboard'' configuration.
+The idea is to run a daemon on the local host that listens to
+TCP connections on a specific port, the daemon provides Ensemble
+services to connected clients. Such services include joining/leaving groups, 
+and sending/receiving multicast and point-to-point
+messages on these groups. 
+
+A CE application can be configured to run in outboard mode by linking
+with the {\tt libceo} library (suffix {\tt .a} on Unix,  {\tt .lib}
+on WIN32). The user must then make sure that the Ensemble daemon is
+running, simply run the ce\_outboard executable.
+
+Using a daemon configuration has several benefits as well as some
+drawbacks. The advantages are:
+\begin{itemize}
+\item The library to link with is orders
+  of a magnitude smaller than the full (inboard) Ensemble library.
+\item The user-process is completely separated from the Ensemble
+  server. This allows better debugging, and also facilitates writing simple
+  interfaces to other languages (e.g., Java, Ada, ...). 
+\end{itemize}
+
+The disadvantage is performance loss. Each message now has to travel
+through a socket and another process before being sent on the network;
+vice-versa for received messages. This may outweigh the benefits of
+simple client code, and a minimal sized library.
+
+The current port used by the outboard mode is 5002. This is
+configurable by running {\tt ce\_outboard} with the command line
+argument {\tt -tcp\_port <port\_num>}, and modifying the 
+{\tt OUTBOARD\_TCP\_PORT} parameter in {\tt ce/ce\_outboard\_comm.h}.
+
+Care was taken to optimize memory consumption. Messages are sent
+zero-copy from the client, and they are copied once only into the
+server's buffers. A sent io-vector is consumed by the send
+function. Received messages are allocated at the client's buffers and
+handed to the application. After the application's receive callback,
+io-vectors are released. It was possible at this point to allow the
+application to take control of the io-vector, yet we chose to conform
+with the memory convections of the inboard mode. 
+
+\subsection{Thread-safety}
+A thread-safe version of the library is also provided, it exports the
+exact same interface as the basic library. To use it link with {\tt
+libce\_mt.so}, or {\tt libceo\_mt.so}.  For WIN32 systems link with
+{\tt .lib} instead. The thread-safe library requires the application
+to synchronize its threads so they will not perform actions (send,
+cast, prompt, etc.) on a group while it is stabilizing. There are
+several thread-safe applications under the {\tt ce} directory: {\tt
+ce\_rand\_mt.c, ce\_perf\_mt.c}, and {\tt ce\_mtalk\_mt.c}. These applications
+use a lock to ensure that sensitive group-state is accessed safely.
+Threads atomically check group-state before performing an Ensemble
+action.
+
+The thread-safe library is designed as a wrapper around the basic
+library. A single thread runs both Ensemble main-loop and application
+callback handlers; this thread is known as the {\it Ensemble
+thread}. Other threads are refered to as {\it user-threads}. When a
+user-thread performs an action outside of a handler, the action is
+stored in a pending queue. A byte is sent through a socket to the
+Ensemble thread, notifying it that there is pending work to do. 
+Asynchronously, the Ensemble thread ``wakes up'', consumes the queue,
+and performs all pending actions. Any actions invoked in the interim
+will also be stored in the pending queue; to be consumed along with
+the rest.
+
+Any action invoked from within a callback is performed directly when
+the callback is completed and control returns to Ensemble. 
+
+Since a single thread performs the Ensemble main-loop as well as all user
+callbacks, callbacks must be short. Long-term computations should {\bf
+not} be performed in the context of a callback.
+
+There are three sensitive periods in which issuing Ensemble actions is
+not allowed, these are when {\it joining, leaving}, and {\it
+blocking}. A group is in:
+\begin{description}
+\item {\it joining} state: between {\tt ce\_Join} and
+the first {\tt install} callback.
+\item {\it leaving} state: between {\tt ce\_Leave} and the {\tt exit}
+callback.
+\item {\it blocking} state: between the {\tt block} callback and the
+succeeding {\tt install} callback.
+\end{description}
+
+An example of a simple multi-threaded application is provided in {\tt
+ce/ce\_mtalk\_mt.c}.
+
+The overhead of adding thread-safety is 10\% in the worst case, and
+normally much less than that. This should be acceptable for most 
+applications. 
+
+\subsection{A multi-threaded multi-person chat program}
+This program is a multi-threaded version of {\tt ce\_mtalk.c}
+Here, we walk through it and explain the interface and how to 
+use it. 
+
+Include the system-independent thread header file, so we'll be
+able to use locks. 
+\begin{codebox}
+#include "ce_trace.h"
+#include "ce.h"
+#include "ce_threads.h"
+#include <stdio.h>
+#include <memory.h>
+#include <malloc.h>
+\end{codebox}
+
+
+The {\tt NAME} variable is used for internal tracing purposes of
+CE. There is no need to set it for standard user programs.
+\begin{codebox}
+#define NAME "CE_MTALK_MT"
+\end{codebox}
+
+
+Apart for standard view state, the state structure keeps track
+of the current status of the group: blocked, joining, or leaving.
+\begin{codebox}
+typedef struct state_t \{
+    int rank;
+    int nmembers;
+    ce_endpt_t endpt;
+    ce_appl_intf_t *intf ;
+    int blocked;
+    int joining;
+    int leaving;
+    ce_lck_t *mutex;
+\} state_t;
+\end{codebox}
+
+Although we must define these callbacks, they do nothing in this
+program.
+\begin{codebox}
+void main_exit(void *env)
+\{\}
+
+void
+main_flow_block(void *env, ce_rank_t rank, ce_bool_t onoff)
+\{\}
+
+void
+main_recv_send(void *env, int rank, ce_len_t len, char *msg)
+\{\}
+
+void
+main_heartbeat(void *env, double time)
+\{\}
+\end{codebox}
+
+
+
+{\tt main\_install} updates the view state. A lock must be taken to
+protect view state, as other threads may concurrently read the state.
+\begin{codebox}
+void
+main_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs)
+\{
+    state_t *s = (state_t*) env;
+    
+    ce_lck_Lock(s->mutex); \{
+        s->rank = ls->rank;
+        s->nmembers = ls->nmembers;
+        s->blocked =0;
+        memcpy(s->endpt.name, ls->endpt.name, CE\_ENDPT\_MAX\_SIZE);
+        s->blocked =0;
+        s->joining =0;
+	
+        printf("\%s nmembers=\%d", ls->endpt.name, ls->nmembers);
+        TRACE2("main_install",ls->endpt.name); 
+     \} ce_lck_Unlock(s->mutex);
+\}
+\end{codebox}
+
+
+The group is blocked, lock the state structure, and update the blocked
+flag. This notifies other threads not to attempt sending messages
+until the upcoming install callback. A lock must be taken to protect view
+state, as other threads may read it.
+\begin{codebox}
+void
+main_block(void *env)
+\{
+    state_t *s = (state_t*) env;
+    
+    ce_lck_Lock(s->mutex); \{
+        s->blocked=1;
+   \} ce_lck_Unlock(s->mutex);
+\}
+\end{codebox}
+
+Received a message, print who sent it and its content.
+\begin{codebox}
+void
+main_recv_cast(void *env, int rank, ce_len_t len, char *msg)
+\{
+    printf("\%d -> msg=\%s", rank, msg); fflush(stdout);
+\}
+\end{codebox}
+
+{\tt get\_input} is a non-terminating function performed by the user-thread of
+this program. In an infinite loop, read a line from stdin, 
+and multicast it to the group. Prior to sending, check that the group is not
+blocked/joining/leaving. Status flags are shared information, and
+may be updated concurrently by an {\tt install} or {\tt block}
+callback. Hence, a lock is taken to protect access to the flags.
+\begin{codebox}
+void
+get_input(void *env)
+\{
+    state_t *s = (state_t*)env;
+    char buf[100], *msg;
+    int len ;
+
+    while (1) \{
+        TRACE("stdin_handler");
+        fgets(buf, 100, stdin);
+        len = strlen(buf);
+        if (len>=100)
+            /* string too long, dumping it.
+             */
+            return;
+        	
+        msg = ce_copy_string(buf);
+        TRACE2("Read: ", msg);
+	
+        ce_lck_Lock(s->mutex); \{
+            if (s->joining || s->leaving || s->blocked)
+               	printf("Cannot send while group is joining/leaving/blocked");
+            else \{
+               	ce_flat_Cast(s->intf, strlen(msg)+1, msg);
+            \}
+        \} ce_lck_Unlock(s->mutex);
+    \}
+\}
+\end{codebox}
+
+
+Initialize the state structure, and join the ``ce\_mtalk'' Ensemble group.
+Take care to initialize the lock, and set the joining flag. The flag
+will be unset, allowing sending messages, in the first install callback.
+\begin{codebox}
+state_t *
+join(void)
+\{
+    ce_jops_t jops; 
+    ce_appl_intf_t *main_intf;
+    state_t *s;
+    
+    /* The rest of the fields should be zero. The
+     * conversion code should be able to handle this. 
+     */
+    memset(&jops, 0, sizeof(ce_jops_t));
+    jops.hrtbt_rate=3.0;
+    strcpy(jops.group_name, "ce_mtalk_mt");
+    strcpy(jops.properties, CE_DEFAULT_PROPERTIES);
+    jops.use_properties = 1;
+    
+    s = (state_t*) malloc(sizeof(state_t));
+    memset(s, 0, sizeof(state_t));
+    
+    main_intf = ce_create_flat_intf(s,
+				    main_exit, main_install, main_flow_block,
+				    main_block, main_recv_cast, main_recv_send,
+				    
+				    main_heartbeat);
+    
+    s->intf= main_intf;
+    s->mutex = ce_lck_Create();
+    s->joining = 1;
+    ce_Join (&jops, main_intf);
+    return s;
+\}
+\end{codebox}
+
+
+Initialize Ensemble, start the reader thread, and go to sleep.
+\begin{codebox}
+int
+main(int argc, char **argv)
+\{
+    state_t *s;
+    
+    ce_set_alloc_fun((mm_alloc_t)malloc);
+    ce_set_free_fun((mm_free_t)free);
+
+    ce_Init(argc, argv); /* Call Arge.parse, and appl_process_args */
+
+    /* Join the group
+     */
+    s = join();
+    
+    /* Create a thread to read input from the user.
+     */
+    ce_thread_Create(get_input, s, 10000);
+    
+    ce_Main_loop ();
+    return 0;
+\}
+\end{codebox}
+
+\subsection{The Join Options structure}
+The {\tt ce\_jops\_t} structure contains all the options an application
+joining Ensemble wishes requests of the created endpoint. All string
+arguments use a fixed sized char array which should look like a
+C-string: initial set of readable ASCII characters followed by zeros. 
+There has to be a terminating NULL character. To simplify C memory
+management all string arguments use a fixed sized char arrays.
+Boolean arguments use zero for false and one for true. 
+
+\begin{codebox}
+typedef struct ce_jops_t \{
+    ce_time_t hrtbt_rate ;                     
+    char transports[CE_TRANSPORT_MAX_SIZE] ;   
+    char protocol[CE_PROTOCOL_MAX_SIZE] ;      
+    char group_name[CE_GROUP_NAME_MAX_SIZE] ;  
+    char properties[CE_PROPERTIES_MAX_SIZE] ;  
+    ce_bool_t use_properties ;                 
+    ce_bool_t groupd ;                         
+    char params[CE_PARAMS_MAX_SIZE] ;          
+    ce_bool_t client;                          
+    ce_bool_t debug ;                          
+    ce_endpt_t endpt;                          
+    char princ[CE_PRINCIPAL_MAX_SIZE] ;       
+    char key[CE_KEY_SIZE] ;                   
+    ce_bool_t secure ;                        
+\} ce_jops_t ;
+\end{codebox}
+
+\begin{description}
+\item{hrtbt\_rate:} The rate of heartbeat callbacks. A resonable
+  setting would be seconds, or hundreds of milliseconds. 
+\item{transports:} Which transports to use want the endpoint to
+  use. For example:  ``DEERING'', or ``UDP:TCP''.
+\item{protocol:} Which protocol to use. This allows setting by hand
+  the stack (set of layers) used by the endoint. Not for casual use.
+\item{group\_name:} What is the name of the group to join. 
+\item{properties:} What is the set of properties the endpoint stack
+  should adhere to. This is the prefered way of creating endpoints,
+  set the {\tt use\_properties} flag to 1 in this case. The default
+  setting is "Gmp:Sync:Heal:Switch:Frag:Suspect:Flow:Slander". This
+  includes Group membership (Gmp:Heal).
+\item{groupd:} Should the endpoint use an external groupd membership
+  manager?
+\item {debug:} Set this flag to use a debugging stack. This
+  considerably degrades performance. This is only useful if there is a
+  possiblity that the stack itself has a bug. 
+\item {endpt:}
+  Normally, Ensemble generates a unique endpoint name for each
+  group an application joins (this is what happens if you leave
+  'endpt' unmodified).  The application can optionally provide
+  its own endpoint name.  It can, for instance, reuse an
+  endpoint name generated by Ensemble for another group (the
+  same endpoint name can be used to join any number of groups).
+  The application can even generate an endpoint on its own.
+  Such names should be unique.  It is best if they contain only
+  printable characters and do not contain spaces because
+  Ensemble my print them out in debugging or error messages.
+  (The names generated by Ensemble fit these characteristics.)
+  See ensemble/type/endpt.mli for more information.
+
+\item{princ:} The principal name of this endpoint. Used by the
+  security code. 
+
+\item{key:} The encryption and MAC keys used by Ensemble. If the stack
+  is secure (authenticated and encrypted), then it uses two symmetric
+  keys: one for encryptions and one for MACing messages. The {\tt key}
+  field allows the user to set these initial keys. The key is of size
+  (exactly) 32 bytes, the first 16bytes are used as the initial encryption
+  key, and the last 16bytes are used as the initial MAC key.
+
+\item{secure:} Should we use a secure stack. A secure stack is one
+  that authenticates endpoints and MACs and encrypts messages. The
+  default encryption mechanism is RC4, the default MAC algorithm is
+  keyed MD5. 
+\end{description}
+
+
+\subsection{The view structure}
+The view is split into pieces: the local view, describing the local
+state of the endpoint, and the group view, describing the global state
+of the group. 
+
+The local view is defined as:
+\begin{codebox}
+typedef struct ce_local_state_t {
+    ce_endpt_t endpt ;             
+    ce_addr_t addr ;               
+    ce_rank_t rank ;               
+    char name[CE_NAME_MAX_SIZE];   
+    int nmembers ;                 
+    ce_view_id_t view_id ;         
+    ce_bool_t am_coord ;           
+} ce_local_state_t ;
+
+\end{codebox}
+\begin{description}
+\item{endpt:} The endpoint name.
+\item{addr:} The address of this endpoint. This is of form ``Udp(128.25.4.98)''.
+\item{rank:} The rank of the member in the group. Member ranks are
+  between 0 and the (number of group members)-1. Ranks are
+  decided internally by Ensemble, and each member has a unique rank within
+  a group. 
+\item{name:} The full name of the endpoint: includes the rank,
+  endpoint name and the logical time (internal to Ensemble).
+\item{nmembers:} The number of members in the group. 
+\item{view\_id:} A unique id for the group, provided by Ensemble. 
+\item{am\_coord:} Is this endpoint the group coordinator? 
+\end{description}
+
+The group view is defined as: 
+\begin{codebox}
+typedef struct ce_view_state_t {
+    char version[CE_VERSION_MAX_SIZE] ;     
+    char group[CE_GROUP_NAME_MAX_SIZE] ;    
+    char proto[CE_PROTOCOL_MAX_SIZE] ;      
+    ce_rank_t coord ;              
+    int ltime ;                    
+    ce_bool_t primary ;            
+    ce_bool_t groupd ;             
+    ce_bool_t xfer_view ;          
+    char key[CE_KEY_SIZE] ;        
+    int num_ids ;                  
+    ce_view_id_t *prev_ids ;       
+    char params[CE_PARAMS_MAX_SIZE];
+    ce_time_t uptime ;             
+    ce_endpt_t *view ;             
+    ce_addr_t  *address ;          
+} ce_view_state_t ;
+\end{codebox}
+
+\begin{description}
+\item{version:} The distribution version of this Ensemble library.
+\item{group:} The group name. 
+\item{proto:} The protocol stack used.
+\item{coord:} What is the rank of the group coordinator. Currently,
+  this is always member 0. We do not expect this to change in the
+  future.               
+\item{ltime:} The logical time of the view. Ensemble maintains this
+  counter for virtual-synchrony purposes.                      
+\item{primary:} Is this a primary partition? This flag matters only if
+  the stack includes a primary partition layer.             
+\item{groupd:} Are we using the group-daemon? 
+\item{xfer\_view:} Is this view a state-transfer view? this flag
+  matters only if the stack includes a state-transfer layer (Xfer). 
+\item{key:}  What is the security key. This field is non-zero only
+  when the stack is a secure stack. 
+\item{num\_ids:} The number of previous views that merged together to
+  create the current view. 
+\item{prev\_ids:} An array of view ids, one for each of the views that
+  merged to create the current view. 
+\item{params:} The parameters provided for this endpoint. 
+\item{uptime:} The amount of time this endpoint has been running.              
+\item{view:} A array of size {\tt nmembers} of the endpoint ids in the group.
+\item{address:} A array of size {\tt nmembers} of the addresses of
+  endpoints in the group.
+\end{description}
+
+
+\subsection{Notes}
+Of the four transports supported by Ensemble : NETSIM, UDP, TCP, and
+DEERING, NETSIM is not supported for the thread-safe library. A socket
+is used internally, and NETSIM does not allow any
+external communication. Hence, it is unsupported.
+
+To maintain compatibility with the non-thread-safe version,
+{\tt ce\_Main\_loop} should send the calling thread to sleep forever. It
+creates a semaphore and sleeps on it. The actual Ensemble thread is
+spawned by the {\tt ce\_Init} call. An application that wants to run
+the Ensemble main loop in a separate thread needs to call
+{\tt ce\_Init} without calling the {\tt ce\_Main\_Loop}.
+
+
+
+

@@ -1,0 +1,213 @@
+<!-- File: Maestro_Xfer.htm -->
+<!-- Author: Alexey Vaysburd -->
+<!-- Contents: State Transfer in Maestro  -->
+<!-- Created: September 1995 -->
+<!-- Updated: January 1997 -->
+
+<html>
+
+<head>
+<title>Maestro Open Toolkit:  State Transfer Protocol</title>
+<link rev="made" href="mailto:alexey@cs.cornell.edu (Alexey Vaysburd)">
+</head>
+
+<BODY TEXT="#000000" BGCOLOR="#FCD5AD" LINK="#0000FF" VLINK="#551A8B" ALINK="#FF0000">
+<TABLE WIDTH="800" >
+<TR>
+<TD ALIGN=LEFT VALIGN=TOP WIDTH="100"><IMG SRC="maestro-logo.jpg" VSPACE=20 HSPACE=20 HEIGHT=105 WIDTH=70 ALIGN=LEFT></TD>
+
+<TD WIDTH="500" BORDER="0">
+<H1>State Transfer in Maestro</H1>
+</TD>
+</TR>
+</TABLE>
+
+This document is a part of online 
+<a href="http://www.cs.cornell.edu/Info/Projects/Ensemble/index.htm">
+Ensemble</a> documentation, under 
+<a href="Maestro.htm">Maestro Open Toolkit</a>.
+<hr>
+<p>
+
+<p>The state-transfer functionality is provided in Maestro by two classes:  
+
+<a href="Maestro_ClSv.htm"><tt>Maestro_ClSv</tt></a>
+
+implements a state-transfer protocol (which is discussed below)
+and offers a low-level interface to it.  The 
+
+<a href="Maestro_CSX.htm"><tt>Maestro_CSX</tt></a>
+
+class offers a higher-level interface to state transfer; users of Maestro 
+will want to use it in most cases.
+
+<p>
+The implementation of state transfer in Maestro follows the "pull" paradigm, 
+in which a joining server asks old server(s) for pieces of the global state, 
+and decides by itself when state transfer has been completed.  In the "push" 
+paradigm (used in Isis), it is a responsibility of old servers to decide how 
+to transfer their state to the joining server, and how to handle failures 
+during state transfer.  It appears that the "pull" approach is simpler to 
+implement and is more flexible. 
+
+<p>
+In sections below, we show how the state is transferred in two important
+situations (new server joining the group, and two group partitions merging), 
+and discuss the state transfer protocol.
+
+<h2>
+<a name="Server_Joins">
+<hr>State Transfer:  A Server Joins the Group
+</a>
+</h2>
+
+The typical scenario is a new process X joining the group as a server.  
+This occurs in several stages.  Initially, X joins as a client (Stage 1).  
+It then sends a <tt>becomeServer</tt> request to the group coordinator 
+(Stage 2), which flushes the group and installs a new view.  In that view, 
+X is included in the list of xfer-servers (Stage 3).  From that moment on, 
+X has all "rights" of normal servers, but no "responsibilities:"  
+
+<p>
+<li>While X is among xfer-servers, it will receive the same messages 
+(<tt>casts</tt> and <tt>scasts</tt>) as normal servers.
+
+<li>However, X is not required to do any service as long as it is in the 
+state-transfer stage.
+
+<p>
+When X becomes an xfer-server, it starts state transfer.  The state is 
+transfered in a series of read requests to normal servers (Stage 4).  
+When all the state has been received, X sends an <tt>xferDone</tt> message 
+to the coordinator (stage 5).  The coordinator flushes the group and 
+installs a new view, in which X is included in the list of servers.  At that 
+point, X becomes a normal server.
+
+
+<h2>
+<a name="Partitions_Merge">
+<hr>State Transfer:  Two Group Partitions Merge
+</a>
+</h2>
+
+There are different approaches to dealing with 
+state merges and global state consistency issues in general.  Appropriateness 
+of specific policies is very much application dependent.  However, Ensemble
+implements a state transfer protocol, and Maestro provides another one.  
+Both protocols do not have built-in mechanisms for global state consistency.
+We are planning to port the primary-views layer
+from Horus to Ensemble and adapt Maestro to it.  The state-transfer
+protocol of the primary-views layer is strong enough to guarantee global total
+ordering in a partitionable network.  However, in this document we discuss
+the current implementation of state transfer in Maestro.
+
+<p>
+When two partitions merge, the servers in one of them will formally lose
+their state and become "degraded" to the client status.  
+At that point all degraded servers will restart state 
+transfer from the other partition.  It is a responsibility of the application 
+to actually transfer the state and notify Maestro of state-transfer 
+completion.  The role of Maestro is to notify the application when state 
+transfer is deemed necessary, and to specify the direction of the transfer.
+The state-transfer model of Maestro thus assumes that during a view merge
+there is a <em>transfer</em> of state from one partition to the others, rather
+than a <em>merge</em> of states from individual partitions.  This model 
+is justified for an important class of applications (namely, those requiring
+the primary-view execution).  The state transfer protocol of Ensemble is
+more general in allowing merge of states from several partitions.  We are
+planning to eventually extend the Maestro interface to support both 
+</em>state-merge</em> and <em>state-transfer</em> models.
+
+<p>
+Here is what happens when a group merge occurs.  Initially, there are 
+two partitions with possibly different global states (Stage 0).  
+Eventually, the two partitions merge.   When that happens, all members of one 
+of the partitions (servers, xfer-servers, and clients) suddenly find 
+themselves in the clients list (Stage 1).  That triggers a restart of 
+state transfer by all degraded servers (Stage 2).  When state transfer 
+completes, the servers list of the merged group includes servers from both 
+partitions (Stage 3). 
+
+<h2>
+<a name="Protocol">
+<hr>State Transfer:  The Protocol
+</a>
+</h2>
+
+The aim of the state transfer protocol of Maestro is to provide some kind of 
+convergence properties to the global state.  The global state in this context 
+means some (application-defined) data that is consistently maintained by a 
+subset of the group members, which are called servers.  When a new member 
+joins the group and wants to become a server, it has to receive the 
+current state of the group first.  Among possible problems are:
+
+<p>
+<li>Old servers may crash during state transfer (in particular, it may 
+happen that all servers but the joining one crash);
+
+<p>
+<li>New messages may be sent/received during state transfer, which may 
+result in (potentially inconsistent) modifications to the global state;
+
+<p>
+<li>The group may merge with another partition, with a different opinion on 
+what the current state is.
+
+<p>
+The implementation of state transfer in HOT attempts to deal with these 
+problems in the following way.  Each group member has a membership type, 
+which is either <tt>Client</tt> or <tt>Server</tt>.   After the join downcall 
+is invoked, a group member is always in one of the following states:
+
+<pre>	JOINING
+	CLIENT_NORMAL
+	BECOMING_SERVER
+	SERVER_XFER
+	SERVER_XFER_DONE
+	SERVER_NORMAL</pre>
+
+<li>It is guaranteed that if the membership type is <tt>Client</tt>, then 
+the state of the member will eventually become <tt>CLIENT_NORMAL</tt>, after 
+which it will always be <tt>CLIENT_NORMAL</tt>.
+
+<p>
+<li>If the membership type is <tt>Server</tt>, and state transfer option is 
+<tt>NO_XFER</tt>, then it is guaranteed that the state of the member will 
+eventually become <tt>SERVER_NORMAL</tt>.  After that, whenever the state of 
+the member becomes different from <tt>SERVER_NORMAL</tt>, it will eventually 
+become <tt>SERVER_NORMAL</tt> again.
+
+<p>
+<li>Suppose the membership type is <tt>Server</tt>, and state transfer option 
+is other than <tt>NO_XFER</tt>.  Suppose also that whenever the state of the 
+member changes to <tt>SERVER_XFER</tt> (as specified by the <tt>VIEW</tt> 
+upcall parameters), that is eventually followed by an <tt>xferDone</tt> 
+downcall.  
+
+<p>
+Then it is guaranteed that the state of the member will eventually become 
+<tt>SERVER_NORMAL</tt>.  After that, whenever the state of the member becomes 
+different from <tt>SERVER_NORMAL</tt>, it will eventually become 
+<tt>SERVER_NORMAL</tt> again.
+
+<p>
+<li>Note that even after a joining server has received the state and become 
+a normal server, it may lose its server status as a result of a group merge.  
+If that happens,  the state transfer will be restarted automatically.
+
+<p>
+<li>If a group merge occurs during state transfer, the transfer will be 
+terminated and restarted again.
+
+<p>
+<li>A state transfer will also be terminated if all normal servers crash 
+before the transfer completes. 
+
+<hr>
+<address>
+send mail to
+<a href="mailto:alexey@cs.cornell.edu">alexey@cs.cornell.edu</a>
+</address>
+
+</body>
+</html>

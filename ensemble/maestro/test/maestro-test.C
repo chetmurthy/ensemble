@@ -26,7 +26,7 @@
 // Define for synchronous state transfer.
 //#define SYNC_XFER
 
-#define NMEMBERS 20
+#define NMEMBERS 10
 
 extern "C" {
 #ifndef _WIN32
@@ -41,7 +41,7 @@ int accepted_view[NMEMBERS];
 int crit_mass;
 
 class  Mbr: public Maestro_CSX {
-public:
+ public:
     
     Mbr(int id, Maestro_CSX_Options &ops) : Maestro_CSX(ops) {
 	ID = id;
@@ -63,7 +63,7 @@ public:
     int id() { return ID; }
     int stateIsNormal() { return (state == NORMAL); }
     
-protected:
+ protected:
     
     void csx_ReceiveCast_Callback(Maestro_EndpID &origin,
 				  Maestro_Message &msg) {
@@ -85,12 +85,13 @@ protected:
     
     void csx_AcceptedView_Callback(Maestro_CSX_ViewData &viewData,
 				   Maestro_Message &msg) {
+//	cout << "maestro-test: csx_AcceptedView_Callback" << endl;
 	me = viewData.myEndpID;
 	nmembers = viewData.nmembers;
 	if (nmembers == NMEMBERS && (first_time == 1)) {
-	  cout << ID << "Reached critical mass\n";
-	  first_time = 0 ;
-	  crit_mass++;
+	    cout << ID << "Reached critical mass\n";
+	    first_time = 0 ;
+	    crit_mass++;
 	}
 	
 	if (state != LEAVING)
@@ -100,11 +101,11 @@ protected:
 	msg >> vm;
 	
 	if (viewData.myRank == 0) {
-	  cout << ID << ": ACCEPTED VIEW: " << viewData.viewID << 
-	      "(" << viewData.nmembers << " memb, "
-	       << viewData.servers.size() << " serv, " 
-	       << viewData.xferServers.size() << " xf-serv, " 
-	       << viewData.clients.size() << " clts)" << endl;
+	    cout << ID << ": ACCEPTED VIEW: " << viewData.viewID << 
+		"(" << viewData.nmembers << " memb, "
+		 << viewData.servers.size() << " serv, " 
+		 << viewData.xferServers.size() << " xf-serv, " 
+		 << viewData.clients.size() << " clts)" << endl;
 	}
 	
 	if (0 /*viewData.myRank == 0*/) {
@@ -127,9 +128,10 @@ protected:
     
     void csx_ViewMsg_Callback(Maestro_CSX_ViewData &viewData,
 			      /*OUT*/ Maestro_Message &viewMsg) {
-      //cout << ID << ": VIEW MSG: " << viewData.viewID << endl;
+	cout << ID << ": VIEW MSG: " << viewData.viewID << endl;
 	Maestro_String s("hello world");
 	viewMsg << s;
+///	cout << "}" << endl;
     }
     
     void csx_Block_Callback() {
@@ -137,7 +139,7 @@ protected:
     
     void csx_Exit_Callback() { 
 	state = BOGUS;
-
+	
     }
     
     void csx_Heartbeat_Callback(unsigned time) { 
@@ -173,7 +175,7 @@ protected:
     }
     
     void xferCanceled_Callback(Maestro_XferID &xferID) {
-      //cout << ID << ": ASYNC Xfer CANCELED" << endl;
+	//cout << ID << ": ASYNC Xfer CANCELED" << endl;
     }
     
     void gotState_Callback(Maestro_XferID &xferID,
@@ -196,7 +198,7 @@ protected:
 	sendState(origin, xferID, stateMsg);
     }
     
-private:
+ private:
     
     enum { BOGUS, NORMAL, LEAVING } state;
     int ID;
@@ -212,12 +214,25 @@ private:
 
 typedef enum {REG, LEAVE,JOIN} appl_state;
 
-void main(int argc, char *argv[]) {
+
+static void small_test (void)
+{
+    int i,j;
+    Maestro_Message view_msg;
+
+    view_msg << 1 << 2; 
+    view_msg >> (int&) i >> (int&)j;
+    cout << "i=" << i << "  j=" << j << endl;
+}
+
+int main(int argc, char *argv[])
+{
     Mbr *m[NMEMBERS];
     int i;
     
+    small_test ();
 #ifndef _WIN32
-    srand(time(NULL));
+    srand(0); //time(NULL));
 #endif
     // Initializing the array.
     for (i=0; i<NMEMBERS; i++) accepted_view[i] = 0;
@@ -235,68 +250,70 @@ void main(int argc, char *argv[]) {
     ops.params = "suspect_max_idle=3:int;suspect_sweep=1.000:time";
     ops.groupdFlag = 0 ;
     ops.debug = 0 ;
-
+    
     /* Need to test Roy's new state xfer code */
     ops.mbrshipType = MAESTRO_SERVER;
     ops.xferType = MAESTRO_ATOMIC_XFER;
     
     for (i = 0; i < NMEMBERS; i++)
 	m[i] = new Mbr(i, ops);
-    
+
 #define rejoin
 #ifdef rejoin
     int c = 0;
     int starting = 0;
     while (1) {
-      Maestro_Thread::usleep(1000);
-      if ((crit_mass == NMEMBERS) && !starting) {
-	Maestro_Thread::usleep(5000);
-	starting = 1;
-	cout << "Starting the test in 5 seconds\n";
-      }
-
-      if (starting) {
-	int count = 0;
-	for(i=0; i<NMEMBERS; i++)
-	  if (accepted_view[i] == 1)
-	    count++;
-	if (count==NMEMBERS) 
-	  for(i=0; i<NMEMBERS; i++) accepted_view[i] = 0;
-	count = 0;
-	if (count > 0) continue;
+	Maestro_Thread::usleep(1000);
+	if ((crit_mass == NMEMBERS) && !starting) {
+	    Maestro_Thread::usleep(5000);
+	    starting = 1;
+	    cout << "Starting the test in 5 seconds\n";
+	}
 	
-	if (rand() % 100 == 0)
-	  switch (state) {
-	  case LEAVE:
-	    cout << "In leave\n";
-	    flush(cout);
-	    c = rand() % NMEMBERS ;
-	    cout << "The chosen member is " << c << "\n"; flush(cout);
-	    if (!(m[c] -> stateIsNormal())) {
-	      printf("Sanity, state is abnormal");
-	      exit (0);
-	    }
-
-	    cout << "\n*** " << m[c]->id() << " LEAVING ***" << endl;
-	    m[c]->leave();
-	    state = JOIN;
-	    break;
+	if (starting) {
+	    int count = 0;
+	    for(i=0; i<NMEMBERS; i++)
+		if (accepted_view[i] == 1)
+		    count++;
+	    if (count==NMEMBERS) 
+		for(i=0; i<NMEMBERS; i++) accepted_view[i] = 0;
+	    count = 0;
+	    if (count > 0) continue;
 	    
-	  case JOIN: 
-	    cout << "\n*** " << m[c]->id() << " REJOINING ***" << endl;
-	    m[c]->join();
-	    state = LEAVE;
-	    break;
-	    
-	  case REG:
-	    cout << "Starting test\n";
-	    state = LEAVE ;
-	    break;
-	  }
-      }
+	    if (rand() % 100 == 0)
+		switch (state) {
+		case LEAVE:
+		    cout << "In leave\n";
+		    flush(cout);
+		    c = rand() % NMEMBERS ;
+		    cout << "The chosen member is " << c << "\n"; flush(cout);
+		    if (!(m[c] -> stateIsNormal())) {
+			printf("Sanity, state is abnormal");
+			exit (0);
+		    }
+		    
+		    cout << "\n*** " << m[c]->id() << " LEAVING ***" << endl;
+		    m[c]->leave();
+		    state = JOIN;
+		    break;
+		    
+		case JOIN: 
+		    cout << "\n*** " << m[c]->id() << " REJOINING ***" << endl;
+		    m[c]->join();
+		    state = LEAVE;
+		    break;
+		    
+		case REG:
+		    cout << "Starting test\n";
+		    state = LEAVE ;
+		    break;
+		}
+	}
     }
 #endif    
-
+    
     Maestro_Semaphore sema;
     sema.dec();
+
+    return 0;
 }

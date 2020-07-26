@@ -1,3 +1,19 @@
+Ensemble 1.41
+------------
+  This release primarily cleans up the maestro code-base. There is now
+just one code for all platforms with relatively few "ifdefs". From the
+next release the CORBA/GIOP code included in Maestro will not be
+supported. Aside from a maestro cleanup several bugs have been fixed: 
+1. A maestro bug due to a miscalculation of the previous group leader
+2. A total-ordering bug in the Seqbb protocol
+3. A bug that prevented the use of a user-specified IP address for an Ensemble process
+
+Ensemble 1.40
+-------------
+1. DLLs on win32 platforms for CE
+2. working JNI on win32
+3. bug fix for gossip on win32
+
 Ensemble 1.39
 -------------
 1. Port to Solaris and HPUX, donated by Bernd Harries (bha@gmx.de).

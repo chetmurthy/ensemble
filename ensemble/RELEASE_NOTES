@@ -1,39 +1,18 @@
-     RELEASE_NOTES for Ensemble version 1.40
+     RELEASE_NOTES for Ensemble version 1.41
 
 Author: Ohad Rodeh
-Last updated: 19/December/2002
+Last updated: 28/April/2003
 
 RELEASE_NOTES
 
-  This release primarily solves a long standing problem with the use
-of DLLs on win32 platforms. CE was rewritten so as to compiled into a
-DLL instead of a static library. Since JNI requires shared libraries,
-this finally allows cejava to work on win32 and not just Unix. The second
-problem solved in this release is the gossip bug on win32, this was due
-to problems with UDP sockets. 
+  This release primarily cleans up the maestro code-base. There is now
+just one code for all platforms with relatively few "ifdefs". From the
+next release the CORBA/GIOP code included in Maestro will not be
+supported. Aside from a maestro cleanup several bugs have been fixed: 
+1. A maestro bug due to a miscalculation of the previous group leader
+2. A total-ordering bug in the Seqbb protocol
+3. A bug that prevented the use of a user-specified IP address for an Ensemble process
 
-The major change in the CE API is in memory allocation
-conventions. Instead of the application allocating memory chunks, such
-as arrays of destinations and vectors pointing to C-memory chunks, CE
-now copies these auxiliary buffers into its own memory areas. This
-completely separates the memory areas used by the application and
-CE/Ensemble. The only sharing occurs for message bodies which are not
-copied. To this end the application must set the message alloc/free
-functions used by CE for messages, for example:
-
-    ce_set_alloc_fun((mm_alloc_t)malloc);
-    ce_set_free_fun((mm_free_t)free);
-
-will allows messages allocated by the application using malloc to freed by Ensemble.
-
-The API change would require CE applications to be modified for the
-new memory conventions, which is not a "good thing". This was done
-primarily to allow using DLLs, where each DLL keeps a private copy of
-LIBC. Therefore, memory allocated by one DLL (the application) cannot be
-freed by another DLL (CE). In the longer term, it separates the
-application and library from each other and should make developement
-easier. It also saves allocations for iovector arrays and destination arrays on
-the critical message send path.
 
 OCAML COMPILER VERSION
   We are using version 3.06 for this version. 

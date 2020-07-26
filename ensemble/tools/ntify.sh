@@ -11,7 +11,8 @@ for i in mk/files mk/ocaml mk/ocamlopt mk/preamble mk/rules mk/sub; do
 done
 
 for i in demo/Makefile demo/life/Makefile demo/tk/Makefile demo/dbm/Makefile \
-    Makefile Makefile.top ce/Makefile hot/Makefile crypto/Makefile; do
+    Makefile Makefile.top ce/Makefile hot/Makefile crypto/Makefile \
+    maestro/Makefile; do
       echo "  " $i
       sed -f tools/ntify.sed $i > $i.nt
 done
@@ -21,7 +22,8 @@ done
 #
 for i in appl mm crypto crypto/isaac crypto/OpenSSL doc doc/layers groupd \
     infr layers mk route socket socket/u socket/s socket/s/unix socket/s/nt \
-    trans tools type util cejava; do
+    trans tools type util cejava\
+    maestro/util maestro/type maestro/corba maestro/group maestro/test  ; do
       echo "  " $i/Makefile
       sed -f tools/ntify.sed $i/Makefile > $i/Makefile.nt
 done

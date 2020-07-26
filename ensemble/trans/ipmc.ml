@@ -76,8 +76,14 @@ let very_first port () =
    *)
   log (fun () -> sprintf "port=%d" port) ;
   
+  let addr =
+    match Arge.get Arge.udp_host with
+    | None -> Hsys.inet_any()
+    | Some host -> Arge.inet_of_string Arge.udp_host host
+  in
+
   begin try
-    Hsys.bind sock (Hsys.inet_any ()) port ;
+    Hsys.bind sock addr port ;
   with e ->
     eprintf "IPMC:error:binding to port %d:%s\n" port (Util.error e) ;
     exit 1

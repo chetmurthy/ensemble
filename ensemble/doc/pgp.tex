@@ -1,0 +1,44 @@
+\section{Using PGP}
+
+\ensemble\ supports the use of PGP for authenticating members of
+groups.  This work is complete, and several papers have been
+pusblished with our results. We do not guarantee bullet proof
+security, however, we do not know of any remaining security bugs.
+All the \ensemble\ demo
+applications support the use of PGP, including \mlval{mtalk},
+\mlval{wbml}, and \mlval{ensemble}.
+
+These are the instructions for using PGP. Note that PGP is 
+supported for all platforms.
+
+\begin{itemize}
+\item
+The \mlval{pgp} binary must be in your path.  \ensemble\ executes PGP
+as a subprocess for authenticating remote members.  If you do not yet
+have a PGP keyring, read the PGP documentation on how to set all this
+up.
+\item
+You must set the \mlval{PGPPASS} environment variable to contain your
+secret key pass phrase.  See the PGP documentation for more
+information.
+\item
+\mlval{-pgp user} : command line argument.  This tells \ensemble\ what
+this user's name is for PGP other processes will use this name to
+select the public key to use for authenticating you.
+\item
+\mlval{-key sharedkey}: command line argument.  This sets the shared
+key conversation key that \ensemble\ will use initially.  It should
+be at least $32$ characters long.
+\item
+\mlval{-add\_prop Auth}: command line argument.  This adds the
+\mlval{Auth} property to the default Ensemble properties.  This then
+causes the \mlval{EXCHANGE} protocol to be used in the protocol stack
+for exchanging shared keys.
+\end{itemize}
+
+Now when you run an application only members that start with the same
+shared key or who can authenticate each other through PGP will
+merge into the same group.
+
+If you run into problems, you can access PGP's debugging output
+through the additional command-line arguments, \mlval{-trace PGP}.
