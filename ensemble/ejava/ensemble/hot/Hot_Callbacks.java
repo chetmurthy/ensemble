@@ -1,3 +1,8 @@
+/**************************************************************/
+/* Hot_Callbacks.java */
+/* Author: Jason Dale */
+/**************************************************************/
+
 package ensemble.hot;
 
 public interface Hot_Callbacks {

@@ -1,0 +1,26 @@
+# -*- Mode: makefile -*- 
+#*************************************************************#
+#
+# CE_CONFIG.NMK: This set of definitions is included at the
+# beginning of the CE makefile, it includes standard definitions
+# for win32.
+#
+# Author: Ohad Rodeh, 5/2002
+#
+#*************************************************************#
+
+SO = .dll
+
+# static or dynamic linking?
+#
+CE_LIB = .lib  #.dll
+CE_LNKLIB = .lib 
+
+
+CE_LINK_FLAGS = \
+    ADVAPI32.lib LIBCMT.lib OLDNAMES.lib KERNEL32.lib WS2_32.lib
+
+CFLAGS = \
+    -DINLINE=__inline \
+    /Ox /MT /W3 -DNDEBUG /I$(OCAML_LIB) 
+

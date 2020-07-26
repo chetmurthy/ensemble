@@ -427,6 +427,11 @@ Val_action (ce_action_t *a){
     a_v = alloc_small(1,APPL_PROPERTIES);
     Field(a_v, 0) = field0 ;
     break;
+
+  case APPL_BLOCK:
+    a_v = alloc_small(1,APPL_BLOCK);
+    Field(a_v, 0) = Val_unit ;
+    break;
     
   default:
     printf("Bad action type");

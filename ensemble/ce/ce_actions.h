@@ -52,8 +52,10 @@ typedef struct ce_action_t {
       APPL_XFERDONE,
       APPL_REKEY,
       APPL_PROTOCOL,
-      APPL_PROPERTIES
-    } type;
+      APPL_PROPERTIES,
+
+      APPL_BLOCK  // Not internal use only!
+} type;
   union {
     struct {
       int num;
@@ -110,6 +112,7 @@ ce_action_t *ce_appl_xfer_done(ce_queue_t*) ;
 ce_action_t *ce_appl_rekey(ce_queue_t*) ;
 ce_action_t *ce_appl_protocol(ce_queue_t*, char *proto) ;
 ce_action_t *ce_appl_properties(ce_queue_t*, char *properties) ;
+ce_action_t *ce_appl_block(ce_queue_t*);
 	    
 void ce_action_free(ce_action_t*) ;
 

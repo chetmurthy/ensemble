@@ -14,8 +14,8 @@ struct MD5Context {
     unsigned char in[64];
 };
 
-void MD5Init(struct MD5Context *ctx);
-void MD5Update(struct MD5Context *ctx, const unsigned char *buf, unsigned int len);
-void MD5Final(unsigned char *digest, struct MD5Context *ctx);
+void ce_MD5Init(struct MD5Context *ctx);
+void ce_MD5Update(struct MD5Context *ctx, const unsigned char *buf, unsigned int len);
+void ce_MD5Final(unsigned char *digest, struct MD5Context *ctx);
 
 #endif /* __CE_MD5_H__ */

@@ -25,15 +25,15 @@ CC	= gcc
 
 # CFLAGS: used for compilation of C files
 CFLAGS	=-DINLINE=inline \
-	-O2 -Wall -Wstrict-prototypes \
+	-O2 -Wall -Wstrict-prototypes -DNDEBUG \
         $(CODEGEN)                      \
 	-I $(OCAML_LIB)			\
 	$(PURIFY_CFLAGS)		\
-	-DOSTYPE=$(ENS_OSTYPE)		\
-	-DMACHTYPE=$(ENS_MACHTYPE)	\
 	$(OPENSSL_INC) 
 
-#-g -p
+#-g -p/-pg 
+#	-DOSTYPE=$(ENS_OSTYPE)		
+#	-DMACHTYPE=$(ENS_MACHTYPE)	
 
 
 # LIBSYS: used for linking executables
@@ -41,7 +41,6 @@ LIBSYS	= # default for Unix is nothing
 
 # SHELL to use for processing these makefiles must be /bin/sh
 SHELL = /bin/sh
-
 
 
 
@@ -187,9 +186,6 @@ MKLIBO  =
 
 MKSHRLIB   = ld -shared
 MKSHRLIBO   = -o #comment forces a space
-SO = .so
-SOLNK = .so
-SOLNKFLAGS =
 #*************************************************************#
 SUBMAKE = ; $(MAKE)
 DEPEND  = .depend
@@ -201,6 +197,7 @@ STRIP   = strip
 MKDIR   = mkdir -p
 RMDIR   = rm -rf
 CHMODR  = chmod +r
+PWD = pwd
 #*************************************************************#
 # How to link various Ocaml libraries.  Should not require
 # modification.
@@ -253,5 +250,5 @@ PURIFY 		= $(PURIFY_$(PLATFORM))
 CLEANDIR = \
     $(RM) .nfs* *.cm* .err a.out *.o* *.a *.lib *.asm *~ .*~ .\#*  core *.pdb core gmon.out camlprim*
 
-VERSION = 1_35
+VERSION = 1_36
 #*************************************************************#

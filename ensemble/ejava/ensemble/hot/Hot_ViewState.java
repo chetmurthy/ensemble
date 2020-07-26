@@ -1,3 +1,7 @@
+/**************************************************************/
+/* Hot_ViewState.java */
+/* Author: Jason Dale */
+/**************************************************************/
 package ensemble.hot;
 
 public class Hot_ViewState {

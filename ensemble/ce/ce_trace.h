@@ -7,26 +7,20 @@
 #ifndef __CE_TRACE_H__
 #define __CE_TRACE_H__
 
-/******************************************************************/
-/* This is for defining DLLs on windows. Do NOT define CE_DLL_LINK
- * in applications that use the CE library.
- */
-#ifdef _WIN32
-#ifdef CE_MAKE_A_DLL
-#define LINKDLL __declspec( dllexport)
-#else
-#define LINKDLL __declspec( dllimport)
-#endif
-#else
-/* This is unused on Unix
- */
-#define LINKDLL 
-#endif
+#include <stdarg.h>
+#include <stdio.h>
+#include "ce_so.h"
+
 /******************************************************************/
 
 LINKDLL void trace_add(char* s) ;
 LINKDLL int am_traced(char *name);
+LINKDLL void ce_trace(char *name, const char *s, ...);
 
+
+#ifndef NDEBUG
+/* Slower code, with trace support
+ */
 
 #define TRACE(x) {\
   int debug ;                   \
@@ -49,6 +43,25 @@ LINKDLL int am_traced(char *name);
   }                             \
 }
 
+#define TRACE_D(x,y) \
+{                               \
+  int debug ;                   \
+                                \
+  debug = am_traced(NAME);      \
+  if (debug==1) {               \
+    printf("%s: %s %d\n",NAME,x,y);   \
+    fflush(stdout);             \
+  }                             \
+}
+
+#else
+/* Faster code, no trace support
+ */
+
+#define TRACE(x) 
+#define TRACE2(x,y) 
+#define TRACE_D(x,y)
+#endif
 
 
 

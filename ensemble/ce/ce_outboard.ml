@@ -226,7 +226,7 @@ let dncall_unmarsh buf iovl =
 	Dncall(id,Control (Rekey false))
     | 11 ->				(* Block *)
 	Dncall(id,Control(Block true))
-    | _ -> failwith sanity
+    | _ -> failwith (sprintf "bad message id in dncall_unmarsh (id=%d" dntype)
   in
   Marsh.unmarsh_check_done_all m ;
   ret
@@ -271,7 +271,7 @@ let run () =
 	    log_iov (fun () -> 
 	      sprintf "iovecs=%s" (Iovecl.sum_refs iovl));
 	  send buf len0 (Buf.length buf) iovl
-      |	_ -> failwith sanity
+      |	_ -> failwith "sanity: bad type in send function: not an Upcall type"
     in
 
     let recv,disable,() = protos_server info send in

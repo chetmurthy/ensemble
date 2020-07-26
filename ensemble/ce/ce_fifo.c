@@ -254,7 +254,7 @@ void main_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs){
     s->blocked = 0;
     TRACE2("main_install",s->ls->endpt);
     
-    printf("FIFO: view=[");
+    printf("CE_FIFO: view=[");
     for(i=0; i<s->ls->nmembers; i++)
 	printf("%s|", s->vs->view[i]);
     printf("]\n");
@@ -266,9 +266,9 @@ void main_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs){
 
 
 void main_flow_block(void *env, ce_rank_t rank, ce_bool_t onoff){
-    state_t *s = (state_t*) env;
+//    state_t *s = (state_t*) env;
     
-    TRACE2("main_flow_block",s->ls->endpt);
+//    TRACE2("main_flow_block",s->ls->endpt);
 }
 
 void main_block(void *env){
@@ -348,7 +348,8 @@ void join(void){
      */
     jops = record_create(ce_jops_t*, jops);
     record_clear(jops);
-    jops->transports = ce_copy_string("NETSIM");
+//    jops->transports = ce_copy_string("NETSIM");
+    jops->transports = ce_copy_string("DEERING");
     jops->group_name = ce_copy_string("ce_fifo");
     jops->properties = ce_copy_string(CE_DEFAULT_PROPERTIES);
     jops->use_properties = 1;
@@ -394,11 +395,13 @@ void fifo_process_args(int argc, char **argv){
 	    j++;
 	}
     }
-    ret[ml_args] = "-alarm";
-    ret[ml_args+1] = "Netsim";
-    ret[ml_args+2] = NULL;
+//    ret[ml_args] = "-alarm";
+//    ret[ml_args+1] = "Netsim";
+//    ret[ml_args+2] = NULL;
+    ret[ml_args] = NULL;
     
-    ce_Init(ml_args+2, ret); /* Call Arge.parse, and appl_process_args */
+    ce_Init(ml_args, ret); /* Call Arge.parse, and appl_process_args */
+//    ce_Init(ml_args+2, ret); /* Call Arge.parse, and appl_process_args */
 }
 
 int main(int argc, char **argv){

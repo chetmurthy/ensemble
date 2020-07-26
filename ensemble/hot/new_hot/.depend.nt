@@ -1,0 +1,9 @@
+hot_appl.cmo: hot_util.cmi hot_appl.cmi 
+hot_appl.cmx: hot_util.cmx hot_appl.cmi 
+hot_inboard.cmo: hot_appl.cmi hot_util.cmi 
+hot_inboard.cmx: hot_appl.cmx hot_util.cmx 
+hot_outboard.cmo: hot_util.cmi 
+hot_outboard.cmx: hot_util.cmx 
+hot_util.cmo: hot_util.cmi 
+hot_util.cmx: hot_util.cmi 
+hot_appl.cmi: hot_util.cmi 

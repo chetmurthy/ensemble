@@ -1,12 +1,4 @@
-/.cvsignore/1.10/Thu Dec  6 11:08:28 2001//
-/BUGS/1.12/Wed Dec 19 09:38:47 2001//
-/CHANGES/1.7/Thu Apr  4 08:41:03 2002//
 /LICENSE/1.2/Tue Jul 31 13:14:19 2001//
-/Makefile/1.61/Sun Mar 31 07:05:49 2002//
-/Makefile.top/1.8/Thu Apr  4 08:41:03 2002//
-/README/1.20/Wed Dec 19 09:38:47 2001//
-/RELEASE_NOTES/1.16/Mon Mar 25 13:45:40 2002//
-/TODO/1.7/Sun Mar 31 07:05:49 2002//
 D/appl////
 D/atm////
 D/bin////
@@ -41,4 +33,12 @@ D/tools////
 D/trans////
 D/type////
 D/util////
-/INSTALL.htm/1.41/Thu Apr  4 08:50:23 2002//
+/.cvsignore/1.10/Thu Dec  6 10:08:28 2001//
+/BUGS/1.12/Wed Dec 19 08:38:47 2001//
+/INSTALL.htm/1.41/Thu Apr  4 07:50:23 2002//
+/Makefile.top/1.8/Thu Apr  4 07:41:03 2002//
+/README/1.20/Wed Dec 19 08:38:47 2001//
+/CHANGES/1.8/Wed May 15 11:46:30 2002//
+/RELEASE_NOTES/1.17/Mon May 13 07:07:09 2002//
+/TODO/1.8/Sun Apr 21 13:16:56 2002//
+/Makefile/1.62/Thu May 23 05:46:37 2002//

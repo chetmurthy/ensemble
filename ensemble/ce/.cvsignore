@@ -1,5 +1,6 @@
-ce_mtalk ce_rand ce_fifo ce_perf 
+ce_mtalk ce_rand ce_fifo ce_perf ce_perf_mt
 ce_outboard ce_rando ce_perfo ce_fifoo ce_mtalko
+ce_rand_mt ce_rando_mt ce_mtalk_mt
 mm_basic.c
 *.cm*
 *.o *.a *.so

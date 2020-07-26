@@ -36,77 +36,79 @@ ce_iovl_flatten(int num, ce_iovec_array_t iovl,
 		/* OUT */ ce_len_t *len, ce_data_t *data)
 {
     int i;
-  int total_len, cur;
-  char *buf;
-
-  if (num == 0) {
-    printf("empty iovec\n");
-    *len=0;
-    *data=NULL;
-    return;
-  } 
-  
-  /* One segment, no copying.
-   */
-  if (num == 1) {
-    *len = Iov_len(iovl[0]);
-    *data = Iov_buf(iovl[0]);
-  } else {
-    TRACE("actually copying");
+    int total_len, cur;
+    char *buf;
     
-    /* Compute the total length
-     */
-    for (i=0, total_len=0;
-	 i<num;
-	 i++, total_len += Iov_len(iovl[i]));
+    if (num == 0) {
+	printf("empty iovec\n");
+	*len=0;
+	*data=NULL;
+	return;
+    } 
     
-    /* Allocate memory
+    /* One segment, no copying.
      */
-    buf = mm_alloc_fun(total_len);
-
-    /* Copy into it.
-     */
-    cur=0;    
-    for (i=0; i<num; i++){
-      memcpy((char*)buf + cur, Iov_buf(iovl[i]), Iov_len(iovl[i]));
-      cur += Iov_len(iovl[i]);
+    if (num == 1) {
+	*len = Iov_len(iovl[0]);
+	*data = Iov_buf(iovl[0]);
+    } else {
+	TRACE("actually copying");
+	
+	/* Compute the total length
+	 */
+	for (i=0, total_len=0;
+	     i<num;
+	     i++, total_len += Iov_len(iovl[i]));
+	
+	/* Allocate memory
+	 */
+	buf = mm_alloc_fun(total_len);
+	
+	/* Copy into it.
+	 */
+	cur=0;    
+	for (i=0; i<num; i++){
+	    memcpy((char*)buf + cur, Iov_buf(iovl[i]), Iov_len(iovl[i]));
+	    cur += Iov_len(iovl[i]);
+	}
+	
+	/* Return results (C style)
+	 */
+	*len = total_len;
+	*data = buf;
     }
-
-    /* Return results (C style)
-     */
-    *len = total_len;
-    *data = buf;
-  }
 }
 
 /****************************************************************************/
-void
-ce_intrn_flat_Cast(ce_appl_intf_t *c_appl, ce_len_t len, ce_data_t buf)
+LINKDLL void
+ce_flat_Cast(ce_appl_intf_t *c_appl, ce_len_t len, ce_data_t buf)
 {
     ce_iovec_array_t iovl;
-    
+
+    TRACE("ce_flat_Cast(");
     iovl = ce_iovl_wrap(len,buf);
-    ce_intrn_Cast(c_appl, 1, iovl);
+    ce_Cast(c_appl, 1, iovl);
+    TRACE(")");
 }
 
-void
-ce_intrn_flat_Send(ce_appl_intf_t *c_appl, int num_dests,
+LINKDLL void
+ce_flat_Send(ce_appl_intf_t *c_appl, int num_dests,
 		   ce_rank_array_t dests, ce_len_t len, ce_data_t buf)
 {
     ce_iovec_array_t iovl;
     
     iovl = ce_iovl_wrap(len,buf);
-    ce_intrn_Send(c_appl, num_dests, dests, 1, iovl);
+    ce_Send(c_appl, num_dests, dests, 1, iovl);
 }
 
-void
-ce_intrn_flat_Send1(ce_appl_intf_t *c_appl, ce_rank_t dest, ce_len_t len,
+LINKDLL void
+ce_flat_Send1(ce_appl_intf_t *c_appl, ce_rank_t dest, ce_len_t len,
 	      ce_data_t buf)
 {
-  ce_iovec_array_t iovl;
-
-  iovl = ce_iovl_wrap(len,buf);
-  ce_intrn_Send1(c_appl, dest, 1, iovl);
+    ce_iovec_array_t iovl;
+    
+    iovl = ce_iovl_wrap(len,buf);
+    ce_Send1(c_appl, dest, 1, iovl);
 }
 
 
@@ -191,6 +193,7 @@ ce_flat_cast_cbd(ce_env_t env, ce_rank_t origin, int num,
     ce_data_t buf = NULL;
     
     ce_iovl_flatten(num, iovl, &len, &buf);
+    assert(buf != NULL);
     e->cast(e->env, origin, len, buf);
     
     /* Be carefuly to free the buffer only if has been
@@ -224,6 +227,7 @@ ce_create_flat_intf(ce_env_t env,
     ){
     ce_flat_env_t *flat_env;
     flat_env = record_create(ce_flat_env_t*, flat_env);
+    TRACE("ce_create_flat_intf");
     
     flat_env -> env = env;
     flat_env -> exit = exit;

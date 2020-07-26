@@ -37,7 +37,7 @@ external cback_install : c_appl -> c_local_state -> c_view_state -> c_action arr
 external cback_flow_block : c_appl -> rank option -> bool -> unit
   = "ce_FlowBlock_cbd"
 
-external cback_block : c_appl -> c_action array
+external cback_block : c_appl -> c_action array 
   = "ce_Block_cbd"
 
 (*
@@ -45,7 +45,7 @@ external cback_diable : c_appl -> unit
   = "ce_Disable_cbd"
 *)
 
-external cback_heartbeat : c_appl -> float -> unit
+external cback_heartbeat : c_appl -> float -> c_action array
   = "ce_Heartbeat_cbd"
 
 external cback_recv_cast : c_appl -> rank -> Iovec.raw array -> c_action array
@@ -56,8 +56,9 @@ external cback_recv_send : c_appl -> rank -> Iovec.raw array -> c_action array
 
 (* Retrieve pending downcalls from C application.
  *)
-external c_get_actions : c_appl -> c_action array
+(*external c_get_actions : c_appl -> c_action array
   = "ce_GetActions"
+*)
 
 (* There is input on a socket, call the registered C function,
  * with its envrionment. 
@@ -68,10 +69,10 @@ external c_pass_sock : c_handler -> c_env -> unit
 (* Call out to C for printing and exceptions.
  *)
 external c_printer : string -> bool
-    = "ce_MLDoPrint"
+    = "ce_st_MLDoPrint"
 
 external c_exception_handler : string -> bool
-    = "ce_MLHandleException"
+    = "ce_st_MLHandleException"
 
 (**************************************************************)
 
@@ -111,17 +112,15 @@ let c_interface c_appl heartbeat_rate =
     let heartbeat time = 
       let time = Time.to_float time in
       log (fun () -> "heartbeat(");
-      cback_heartbeat c_appl time;
+      let c_acs = cback_heartbeat c_appl time in
       log (fun () -> ")");
-      let c_acs = c_get_actions c_appl in
       c_map c_acs
-
     in
     let block () = 
       log (fun () -> "block(");
-      let c_acs = c_map (cback_block c_appl) in
+      let acs = cback_block c_appl in
       log (fun () -> ")");
-      c_acs
+      c_map acs
     in
     let flow_block (rank_opt,onoff) = 
       log (fun () -> "flow_block(");
@@ -149,11 +148,11 @@ let c_interface c_appl heartbeat_rate =
 
 let c_join c_appl jops = 
   let ls,vs = init_view_full jops in
-  log (fun () -> "(Adding asynchronous call");
+  log (fun () -> "(c_join: Adding asynchronous call");
   let async = Appl.async (vs.group,ls.endpt) in
   Hashtbl.add async_tbl c_appl async;
   let heartbeat_rate = jops.jops_hrtbt_rate in
-  log (fun () -> "c_interface(");
+  log (fun () -> "c_interface");
   let interface = c_interface c_appl heartbeat_rate in
   log (fun () -> ")");
   Appl.config_new interface (ls,vs) 
@@ -224,7 +223,7 @@ let _ =
   try run () with e ->
     let e = Util.error e in
     if not (c_exception_handler e) then
-      eprintf "HOT_INBOARD:top:uncaught exception:%s\n" e ;
+      eprintf "CE_INBOARD:top:uncaught exception:%s\n" e ;
     exit 1
 
 (**************************************************************)

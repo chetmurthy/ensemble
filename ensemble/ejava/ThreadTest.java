@@ -1,3 +1,8 @@
+/**************************************************************/
+/* ThreadTest.java */
+/* Author: Jason Dale */
+/**************************************************************/
+
 import java.util.Random;
 import java.util.Vector;
 import java.lang.InterruptedException;

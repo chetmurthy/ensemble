@@ -19,7 +19,7 @@
 #endif
 
 /**************************************************************/
-value skt_has_ip_multicast() {	/* ML */
+value skt_has_ip_multicast(void) {	/* ML */
   return Val_true ; 
 }
 

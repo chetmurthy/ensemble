@@ -17,7 +17,6 @@
 
 #include <string.h>  // UNIX
 #include <assert.h>
-#include <stdarg.h>
 
 #include "ce.h"
 #include "sockfd.h"
@@ -44,7 +43,12 @@ typedef int ce_ctx_id_t;
  */
 struct ce_appl_intf_t {
     ce_env_t env;
-    ce_ctx_id_t id; 
+    ce_ctx_id_t id;
+
+    int joining;
+    int leaving;
+    int blocked;
+
     struct ce_queue *aq; /*  Contains the current set of queued actions */
     ce_bool_t req_heartbeat;   /*  For internal use */
     
@@ -92,7 +96,6 @@ char **
 ce_process_args(int argc, char **argv); 
 
 void ce_panic(char *s);
-void ce_trace(const char *s, ...);
 
 /**************************************************************/
 /* The internal functions. These are used to allow wrapping
@@ -100,109 +103,97 @@ void ce_trace(const char *s, ...);
  * names. A neccessary hassle. 
  */
 
-void ce_intrn_Init(
-    int argc,
-    char **argv
-    ) ;
-
-void ce_intrn_Main_loop (void);
-
-void ce_intrn_Join(
-    ce_jops_t *ops,
-    ce_appl_intf_t *c_appl
-    ) ;
-
-void ce_intrn_Leave(ce_appl_intf_t *c_appl) ;
-
-void ce_intrn_Cast(
-    ce_appl_intf_t *c_appl,
-    int num,
-    ce_iovec_array_t iovl
-    ) ;
-
-void ce_intrn_Send(
-    ce_appl_intf_t *c_appl,
-    int num_dests,
-    ce_rank_array_t dests,
-    int num,
-    ce_iovec_array_t iovl
-    ) ;
-
-void ce_intrn_Send1(
-    ce_appl_intf_t *c_appl,
-    ce_rank_t dest,
-    int num,
-    ce_iovec_array_t iovl
-    ) ;
-
-void ce_intrn_Prompt(
-    ce_appl_intf_t *c_appl
-    );
-
-void ce_intrn_Suspect(
-    ce_appl_intf_t *c_appl,
-    int num,
-    ce_rank_array_t suspects
-    );
-
-void ce_intrn_XferDone(
-    ce_appl_intf_t *c_appl
-    ) ;
-
-void ce_intrn_Rekey(
-    ce_appl_intf_t *c_appl
-    ) ;
-
-void ce_intrn_ChangeProtocol(
-    ce_appl_intf_t *c_appl,
-    char *protocol_name
-    ) ;
-
-void ce_intrn_ChangeProperties(
-    ce_appl_intf_t *c_appl,
-    char *properties
-    ) ;
-
-void ce_intrn_MLPrintOverride(
-    void (*handler)(char *msg)
-    ) ;
-    
-void ce_intrn_MLUncaughtException(
-    void (*handler)(char *info)
-    ) ;
-    
-void ce_intrn_AddSockRecv(
-    CE_SOCKET socket,
-    ce_handler_t handler,
-    ce_env_t env
-    );
-
-void ce_intrn_RmvSockRecv(
-    CE_SOCKET socket
-    );
-
-/* The flat stuff
+/* The basic create_intf function, defined in misc.c
  */
+ce_appl_intf_t*
+ce_st_create_intf(ce_env_t env, ce_appl_exit_t exit,
+		     ce_appl_install_t install, ce_appl_flow_block_t flow_block,
+		     ce_appl_block_t block, ce_appl_receive_cast_t cast,
+		     ce_appl_receive_send_t send, ce_appl_heartbeat_t heartbeat
+    );
 
-void ce_intrn_flat_Cast(
-     ce_appl_intf_t *c_appl,
-     ce_len_t len, 
-     ce_data_t buf
-     ) ;
+ce_appl_intf_t*
+ce_mt_create_intf(ce_env_t env, ce_appl_exit_t exit,
+		     ce_appl_install_t install, ce_appl_flow_block_t flow_block,
+		     ce_appl_block_t block, ce_appl_receive_cast_t cast,
+		     ce_appl_receive_send_t send, ce_appl_heartbeat_t heartbeat
+    );
 
-void ce_intrn_flat_Send(
-    ce_appl_intf_t *c_appl,
-    int num_dests,
-    ce_rank_array_t dests,
-    ce_len_t len, 
-    ce_data_t buf
-    ) ;
 
-void ce_intrn_flat_Send1(
-    ce_appl_intf_t *c_appl,
-    ce_rank_t dest,
-    ce_len_t len, 
-    ce_data_t buf
-    ) ;
+/**************************************************************/
+/* The single-threaded functions
+ */
+void ce_st_Init(int argc,char **argv) ;
 
+void ce_st_Main_loop(void);
+
+void ce_st_Join(ce_jops_t *ops, ce_appl_intf_t *c_appl) ;
+
+void ce_st_Leave(ce_appl_intf_t *c_appl) ;
+
+void ce_st_Cast(ce_appl_intf_t *c_appl, int num, ce_iovec_array_t iovl) ;
+
+void ce_st_Send(ce_appl_intf_t *c_appl, int num_dests, ce_rank_array_t dests, int num, ce_iovec_array_t iovl) ;
+
+void ce_st_Send1(ce_appl_intf_t *c_appl, ce_rank_t dest, int num, ce_iovec_array_t iovl) ;
+
+void ce_st_Prompt(ce_appl_intf_t *c_appl);
+
+void ce_st_Suspect(ce_appl_intf_t *c_appl, int num, ce_rank_array_t suspects);
+
+void ce_st_XferDone(ce_appl_intf_t *c_appl) ;
+
+void ce_st_Rekey(ce_appl_intf_t *c_appl) ;
+
+void ce_st_ChangeProtocol(ce_appl_intf_t *c_appl, char *protocol_name) ;
+
+void ce_st_ChangeProperties(ce_appl_intf_t *c_appl, char *properties) ;
+
+void ce_st_MLPrintOverride(void (*handler)(char *msg)) ;
+    
+void ce_st_MLUncaughtException(void (*handler)(char *info)) ;
+    
+void ce_st_AddSockRecv(CE_SOCKET socket, ce_handler_t handler, ce_env_t env);
+
+void ce_st_RmvSockRecv(CE_SOCKET socket);
+
+/**************************************************************/
+
+/* The multi-threaded functions
+ */
+void ce_mt_Init(int argc,char **argv) ;
+
+void ce_mt_Main_loop(void);
+
+void ce_mt_Join(ce_jops_t *ops, ce_appl_intf_t *c_appl) ;
+
+void ce_mt_Leave(ce_appl_intf_t *c_appl) ;
+
+void ce_mt_Cast(ce_appl_intf_t *c_appl, int num, ce_iovec_array_t iovl) ;
+
+void ce_mt_Send(ce_appl_intf_t *c_appl, int num_dests, ce_rank_array_t dests, int num, ce_iovec_array_t iovl) ;
+
+void ce_mt_Send1(ce_appl_intf_t *c_appl, ce_rank_t dest, int num, ce_iovec_array_t iovl) ;
+
+void ce_mt_Prompt(ce_appl_intf_t *c_appl);
+
+void ce_mt_Suspect(ce_appl_intf_t *c_appl, int num, ce_rank_array_t suspects);
+
+void ce_mt_XferDone(ce_appl_intf_t *c_appl) ;
+
+void ce_mt_Rekey(ce_appl_intf_t *c_appl) ;
+
+void ce_mt_ChangeProtocol(ce_appl_intf_t *c_appl, char *protocol_name) ;
+
+void ce_mt_ChangeProperties(ce_appl_intf_t *c_appl, char *properties) ;
+
+void ce_mt_MLPrintOverride(void (*handler)(char *msg)) ;
+    
+void ce_mt_MLUncaughtException(void (*handler)(char *info)) ;
+    
+void ce_mt_AddSockRecv(CE_SOCKET socket, ce_handler_t handler, ce_env_t env);
+
+void ce_mt_RmvSockRecv(CE_SOCKET socket);
+
+/**************************************************************/
 #endif /*__CE_INTERNAL_H__*/

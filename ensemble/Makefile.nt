@@ -11,8 +11,6 @@
 
 !include mk\config.nmk
 
-ENSROOT = .
-
 SUBDIRS =\
 	appl\
 	ce\

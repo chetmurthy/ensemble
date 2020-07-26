@@ -95,6 +95,13 @@ ce_appl_properties(ce_queue_t *q, char* properties) {
   return a ;
 }
 
+ce_action_t *
+ce_appl_block(ce_queue_t *q){
+  ce_action_t *a = ce_queue_alloc(q);
+  a->type = APPL_BLOCK;
+  return a ;
+}
+
 
 void
 ce_action_free(ce_action_t *a) {
@@ -105,39 +112,42 @@ ce_action_free(ce_action_t *a) {
       break ;
 
     case APPL_SEND:
-      free(a->u.send.iovl) ;
-      free(a->u.send.dests) ;
-      break ;
-
+	free(a->u.send.iovl) ;
+	free(a->u.send.dests) ;
+	break ;
+	
     case APPL_SEND1:
-      free(a->u.send1.iovl) ;
-      break ;
-
+	free(a->u.send1.iovl) ;
+	break ;
+	
     case APPL_LEAVE:
     case APPL_PROMPT:
 	/* nothing */
 	break ;
-
+	
     case APPL_SUSPECT:
-      free(a->u.suspect.members);
-      break;
+	free(a->u.suspect.members);
+	break;
 	
     case APPL_XFERDONE:
     case APPL_REKEY:
 	/* nothing */
 	break ;
-
+	
     case APPL_PROTOCOL:
-      free(a->u.proto);
-      break;
-
+	free(a->u.proto);
+	break;
+	
     case APPL_PROPERTIES:
-      free(a->u.properties);
-      break;
-      
+	free(a->u.properties);
+	break;
+	
+    case APPL_BLOCK:
+	break;
+	
     default:
-      printf ("Error: ce_action_Free: bad action type\n");
-      exit(1);
+	printf ("Error: ce_action_Free: bad action type\n");
+	exit(1);
     }
 
 }
@@ -223,7 +233,7 @@ ce_queue_clear(ce_queue_t *q)
 {
     int i ;
     
-    TRACE("ce_queue_clear len");
+    TRACE("ce_queue_clear(");
     for (i=0;i<q->len;i++) {
 	ce_action_free((ce_action_t*)&(q->arr[i]));
     }

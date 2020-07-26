@@ -1,7 +1,10 @@
 Ensemble 1.36
 -------------
-
-
+1. Thread-safe version of CE
+2. Discontinued use of dll's for CE on win32, due to a serious memory leak.
+   The problem does not exists for the equivalient static library.
+   Until the problem is fixed, we ship the system with static liberies only.
+3. Added Rekeying to CE. 
 
 Ensemble 1.35
 -------------

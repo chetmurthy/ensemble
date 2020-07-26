@@ -16,28 +16,14 @@
 #define __CE_H__
 
 #include "e_iovec.h"
+#include "ce_so.h"
 #include <memory.h>
 
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
 
-/******************************************************************/
-/* This is for defining DLLs on windows. Do NOT define CE_DLL_LINK
- * in applications that use the CE library.
- */
-#ifdef _WIN32
-#ifdef CE_MAKE_A_DLL
-#define LINKDLL __declspec( dllexport)
-#else
-#define LINKDLL __declspec( dllimport)
-#endif
-#else
-/* This is unused on Unix
- */
-#define LINKDLL 
-#endif
-/******************************************************************/
+
 
 
 /*! The type of floats used here. Should be the same as an

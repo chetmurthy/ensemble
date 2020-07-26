@@ -1,6 +1,9 @@
-/.cvsignore/1.5/Mon Dec  3 16:39:31 2001//
 /Makefile/1.33/Sun Jul 29 09:51:03 2001//
 /Makefile.nt/1.5/Tue Jul 31 13:17:50 2001//
-/Makefile.tem/1.1/Mon Feb 16 21:16:00 1998//
-/common.mk/1.16/Thu Apr  4 08:13:16 2002//
-D
+D/conf////
+D/maestro-nt////
+D/src////
+D/test////
+/.cvsignore/1.5/Mon Dec  3 15:39:31 2001//
+/Makefile.tem/1.1/Mon Feb 16 20:16:00 1998//
+/common.mk/1.16/Thu Apr  4 07:13:16 2002//

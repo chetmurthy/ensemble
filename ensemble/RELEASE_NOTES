@@ -1,49 +1,31 @@
-     RELEASE_NOTES for Ensemble version 1.35
+     RELEASE_NOTES for Ensemble version 1.36
 
 Author: Ohad Rodeh
-Last updated: 4/04/2002
+Last updated: 13/05/2002
 
 RELEASE_NOTES
 
-1. Added a "local" stack, which simply adds property local to vsync. 
+  This release includes a thread-safe version of the CE libraries.
+The thread-safe inboard version is named libce_mt.so, the outboard
+version is named libceo_mt.so. On windows, a serious memory leak
+has been identified for the CE dll's. The problem does exist for the
+equivalent static libraries. Until the problem is fixed, only static
+libraries will be shipped for win32. 
 
-2. Some slight typing changes in the Hsys module, requested by Roy Friedman.
+The thread-safe version
+requires the application to synchronize its threads so that they will
+not perform actions (send, cast, prompt, etc.) while the application
+is stabilizing. An example is provided in ce/ce_mtalk_mt.c,
+documentation and a tutorial have been added.
 
-3. Removed spurious logical-time in outboard mode (HOT). This improves
-   line-utilization for HOT applications using outboard mode.
-
-4. Added outboard mode to CE. This allows using Ensemble though a
-   server and a thin client library. This is a step forward in the
-   rewrite of the HOT interface. Eventually, we intend to completely
-   replace it with CE, using a thin overlay layer to mimic HOT semantics.
-
-5. make depend now works on WIN32. The make sequence is now on all platforms:
-    for bytecode:
-      make depend
-      make all
-    for optimized code:
-      make depend
-      make opt
-
-6. Added staggering to the Suspect and Stablity layers. This means
-   that instead of a flood of messages sent when suspicions and
-   stability information is computed, such events are scattered.  This
-   prevents implosion at the group leader. This was suggested by Roy Friedman.
-
-6. Some makefiles and build fixes
-  - libceo.lib was not included in the library
-  - make clean bug in CE
-
-7. Conversion to dynamic linking for CE.
-
-8. Documentation provided now in PDF and HTML formats, instead
-   of postscript and HTML.
-
-9. Build fixes for Maestro.
-
-10. Fixes for the Java interface.
-
-11. Started working on a Thread safe version of the CE libraries. 
+The thread-safe library is designed as a wrapper around the basic
+library.  A single thread runs the Ensemble main loop as well as all
+application callback handlers. When a user-thread performs an action
+outside of a handler, the action is stored in a pending queue.
+A byte is sent through a socket to the Ensemble thread, which
+consumes the queue, and performs all pending actions. Any 
+actions invoked in the interim period will also be stored in the
+pending queue. Ensemble will perform all actions in a batch. 
 
 OCAML COMPILER VERSION
   We are using version 3.04 for this version. 

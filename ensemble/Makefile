@@ -11,8 +11,6 @@
 
 include mk/config.mk
 
-ENSROOT = .
-
 SUBDIRS = \
 	appl		\
 	ce		\

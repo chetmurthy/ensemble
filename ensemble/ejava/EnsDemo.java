@@ -1,3 +1,8 @@
+/**************************************************************/
+/* EnsDemo.java */
+/* Author: Jason Dale */
+/**************************************************************/
+
 import java.awt.*;
 import java.awt.event.*;
 import ensemble.hot.*;

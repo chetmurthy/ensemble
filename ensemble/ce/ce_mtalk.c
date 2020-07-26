@@ -1,7 +1,8 @@
 /**************************************************************/
-/* CE_VIEW.H */
+/* CE_MTALK.H */
 /* Author: Ohad Rodeh 8/2001 */
-/* Based somewhat on code by Mark Hayden in the CEnsemble system */
+/* A simple program implementing a multi-person talk. */
+/* Works only on Unix platforms. */
 /**************************************************************/
 #include "ce_trace.h"
 #include "ce.h"
@@ -31,7 +32,7 @@ typedef struct state_t {
 void
 cast(state_t *s, char *msg)
 {
-    if (s->blocked == 0)
+    if (s->blocked == 0) 
 	ce_flat_Cast(s->intf, strlen(msg)+1, msg);
 }
 
@@ -88,10 +89,10 @@ main_block(void *env)
 void
 main_recv_cast(void *env, int rank, ce_len_t len, char *msg)
 {
-    state_t *s = (state_t*) env;
+//    state_t *s = (state_t*) env;
     
-    TRACE2("main_recv_send", s->ls->endpt);
-    printf("%d -> msg=%s", rank, msg);
+//    TRACE2("main_recv_send", s->ls->endpt);
+    printf("%d -> msg=%s", rank, msg); fflush(stdout);
 }
 
 void

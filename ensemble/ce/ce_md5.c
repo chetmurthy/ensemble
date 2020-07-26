@@ -1,16 +1,3 @@
-/***********************************************************************/
-/*                                                                     */
-/*                           Objective Caml                            */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  Automatique.  Distributed only by permission.                      */
-/*                                                                     */
-/***********************************************************************/
-
-/* $Id: ce_md5.c,v 1.3 2002/03/19 17:05:55 orodeh Exp $ */
-
 #include "ce_md5.h"
 #include <memory.h>
 
@@ -52,7 +39,7 @@ static void byteReverse(unsigned char * buf, unsigned longs)
  * Start MD5 accumulation.  Set bit count to 0 and buffer to mysterious
  * initialization constants.
  */
-void MD5Init(struct MD5Context *ctx)
+void ce_MD5Init(struct MD5Context *ctx)
 {
     ctx->buf[0] = 0x67452301;
     ctx->buf[1] = 0xefcdab89;
@@ -67,7 +54,7 @@ void MD5Init(struct MD5Context *ctx)
  * Update context to reflect the concatenation of another buffer full
  * of bytes.
  */
-void MD5Update(struct MD5Context *ctx, const unsigned char *buf, unsigned int len)
+void ce_MD5Update(struct MD5Context *ctx, const unsigned char *buf, unsigned int len)
 {
     uint32 t;
 
@@ -115,7 +102,7 @@ void MD5Update(struct MD5Context *ctx, const unsigned char *buf, unsigned int le
  * Final wrapup - pad to 64-byte boundary with the bit pattern 
  * 1 0* (64-bit count of bits processed, MSB-first)
  */
-void MD5Final(unsigned char *digest, struct MD5Context *ctx)
+void ce_MD5Final(unsigned char *digest, struct MD5Context *ctx)
 {
     unsigned count;
     unsigned char *p;

@@ -6,6 +6,7 @@
 #include "ce_internal.h"
 #include "ce_trace.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 /**************************************************************/
 #define NAME "CE_MISC"
@@ -138,8 +139,8 @@ LINKDLL void ce_jops_free(ce_jops_t* jops) {
  */
 static int id_counter = 1;
 
-LINKDLL ce_appl_intf_t*
-ce_create_intf(ce_env_t env, 
+ce_appl_intf_t*
+ce_st_create_intf(ce_env_t env, 
 	       ce_appl_exit_t exit,
 	       ce_appl_install_t install,
 	       ce_appl_flow_block_t flow_block,
@@ -149,9 +150,14 @@ ce_create_intf(ce_env_t env,
 	       ce_appl_heartbeat_t heartbeat
     ){
     ce_appl_intf_t* intf = record_create(ce_appl_intf_t*, intf) ;
-    
+
     intf->env = env;
     intf->id = id_counter++;
+
+    intf->joining = 0;
+    intf->leaving = 0;
+    intf->blocked = 0;
+    
     intf->aq = ce_create_queue ();
     intf->req_heartbeat = 0;
     intf->exit = exit ;
@@ -162,8 +168,9 @@ ce_create_intf(ce_env_t env,
     intf->receive_send = receive_send ;
     intf->heartbeat = heartbeat ;
     
-    return ((ce_appl_intf_t*) intf);  
+    return intf;  
 }
+
 
 void
 ce_intf_free(ce_appl_intf_t* intf){
@@ -206,28 +213,6 @@ ce_process_args(int argc, char **argv){
 
 /**************************************************************/
 
-void
-ce_trace(const char *s, ...)
-{
-    va_list args;
-    static int debugging = -1 ;
-    
-    va_start(args, s);
-    
-    if (debugging == -1) {
-	debugging = (getenv("CE_TRACE") != NULL) ;
-    }
-    
-    if (!debugging) return ;
-    
-    fprintf(stderr, "CE_OUTBOARD(C):");
-    vfprintf(stderr, s, args);
-    fprintf(stderr, "\n");
-    va_end(args);
-}
-
-
-/**************************************************************/
 #ifndef _WIN32
 void
 ce_panic(char *s)
@@ -261,3 +246,4 @@ ce_panic(char *s)
 #endif /*_WIN32*/
 
 /**************************************************************/
+

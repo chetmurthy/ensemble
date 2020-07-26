@@ -4,12 +4,14 @@
 /* Based on code by Mark Hayden and Alexey Vaysbrud. */
 /**************************************************************/
 #include "ce_internal.h"
+#include "ce_outboard_c.h"
 #include "mm_basic.h"
 #include "ce_trace.h"
 #include "ce_context_table.h"
 #include "ce_sock_table.h"
-#include "ce_outboard_comm.h"
+#include "ce_comm.h"
 #include <stdio.h>
+#include <assert.h>
 
 #ifdef _WIN32
 #include "process.h"
@@ -57,6 +59,26 @@ static struct {
 
 
 /**************************************************************/
+/* These routines must be set by the multi-threaded library to
+ * work. They customize the locking functions. 
+ */
+static routine_t lock_fun = NULL, unlock_fun = NULL;
+
+void ce_st_set_lock_fun (routine_t f){ lock_fun = f;}
+void ce_st_set_unlock_fun (routine_t f){ unlock_fun = f;}
+
+static void mt_lock(void)
+{
+    if (lock_fun != NULL) (*lock_fun)();
+}
+
+static void mt_unlock(void)
+{
+    if (unlock_fun != NULL) (*unlock_fun)();
+}
+/**************************************************************/
+
+
 /* This is to maintain the memory conventions of the inboard
  * mode
  */
@@ -117,8 +139,8 @@ end_write(void)
 	g.write_hdr_len = g.write_pos;
 	g.write_iov_len = 0;
     }
-    ce_trace("  **** write_hdr_len=%d write_iov_len=%d  ****",
-	  g.write_hdr_len, g.write_iov_len);
+//    ce_trace(NAME, "  **** write_hdr_len=%d write_iov_len=%d  ****",
+//	  g.write_hdr_len, g.write_iov_len);
     
     /* Write header length
      */
@@ -304,7 +326,7 @@ write_int(int i)
 {
     int tmp = htonl(i);
     do_write(&tmp,INT_SIZE) ;
-    ce_trace("write_int: %d", i);
+//    ce_trace(NAME, "write_int: %d", i);
 }
 
 INLINE static void
@@ -328,8 +350,8 @@ write_buffer(void *body, int size)
     do_write(&i, INT_SIZE) ;
     do_write(body, size) ;
 
-    ce_trace("write_buf_len: %d", size);
-    ce_trace("write_buffer: %s", (char*) body);
+//    ce_trace(NAME, "write_buf_len: %d", size);
+//    ce_trace(NAME, "write_buffer: %s", (char*) body);
 }
 
 INLINE static void
@@ -380,7 +402,7 @@ write_hdr(ce_ctx_t *s, ce_dnType_t type)
 {
     struct header h ;
     assert(s) ;
-    ce_trace("write_hdr:id=%d, type=%d(%s)",s->intf->id, type, string_of_dnType(type)) ;
+    ce_trace(NAME, "write_hdr:id=%d, type=%d(%s)",s->intf->id, type, string_of_dnType(type)) ;
     h.id = htonl(s->intf->id) ;
     h.type = htonl(type) ;
     do_write(&h,sizeof(h)) ;
@@ -411,7 +433,7 @@ write_iovl(int num, ce_iovec_array_t iovl)
     g.num_iovl = num;
     g.iovl = iovl;
 	
-    ce_trace("write_iovl: size = %d", size);
+//    ce_trace(NAME, "write_iovl: size = %d", size);
 }
 
 
@@ -421,7 +443,7 @@ read_int(void)
     int tmp;
     do_read(&tmp, INT_SIZE);
     tmp = ntohl(tmp);
-    ce_trace("read_int: %d", tmp);
+//    ce_trace(NAME, "read_int: %d", tmp);
     return tmp;
 }
 
@@ -468,7 +490,7 @@ read_string(void)
     buf = (char*) ce_malloc(size+1);
     do_read(buf, size);
     buf[size] = 0;
-    ce_trace("read_string: <%d> %s", size, buf);
+//    ce_trace(NAME, "read_string: <%d> %s", size, buf);
 
     return buf;
 }
@@ -577,59 +599,58 @@ cb_View(ce_ctx_t *s)
     record_clear(ls);
     record_clear(vs);
     
-    ce_trace("VIEW");
+//    ce_trace(NAME, "VIEW");
 
     /* Reading local state
      */
     ls->endpt = read_endpt ();
     ls->addr =  read_string ();
     ls->rank = read_int ();
-    ce_trace("\t rank: %d", ls->rank);
+//    ce_trace(NAME,"\t rank: %d", ls->rank);
     ls->name = read_string ();
     ls->nmembers = read_int ();
     ls->view_id = read_view_id ();
-    ce_trace("\t view_id.ltime: %d", ls->view_id->ltime);
-    ce_trace("\t view_id.coord: %s", ls->view_id->endpt);
+//    ce_trace(NAME, "\t view_id.ltime: %d", ls->view_id->ltime);
+//    ce_trace(NAME,"\t view_id.coord: %s", ls->view_id->endpt);
     ls->am_coord = read_bool ();
 
     /* Reading view state
      */
     vs->version = read_string ();
-    ce_trace("\t version: %s", vs->version);
+//    ce_trace("\t version: %s", vs->version);
     vs->group = read_string ();
-    ce_trace("\t group_name: %s", vs->group);
+//    ce_trace("\t group_name: %s", vs->group);
     vs->proto = read_string ();
-    ce_trace("\t protocol: %s", vs->proto);
+//    ce_trace("\t protocol: %s", vs->proto);
     vs->coord = read_int ();
     vs->ltime = read_int ();
     vs->primary = read_bool ();
-    ce_trace("\t primary: %d", vs->primary);
+//    ce_trace(NAME, "\t primary: %d", vs->primary);
     vs->groupd = read_bool ();
-    ce_trace("\t groupd: %d", vs->groupd);
+//    ce_trace(NAME,"\t groupd: %d", vs->groupd);
     vs->xfer_view = read_bool ();
-    ce_trace("\t xfer_view: %d", vs->xfer_view);
+//    ce_trace(NAME, "\t xfer_view: %d", vs->xfer_view);
     vs->key = read_string ();
-    ce_trace("\t key: %s", vs->key);
+//    ce_trace("\t key: %s", vs->key);
     vs->num_ids = read_int ();
     vs->prev_ids = read_view_id_array ();
     vs->params = read_string ();
-    ce_trace("\t params: %s", vs->params);
+//    ce_trace("\t params: %s", vs->params);
     vs->uptime = read_time ();
     vs->view = read_endpt_array ();
-    ce_trace("\t nmembers: %d", ls->nmembers);
-    { 
-	int i;
-	for (i = 0; i < ls->nmembers; i++)
-	    ce_trace("\t\t member[%d] = %s", i, vs->view[i]);
-    }
+//    ce_trace(NAME, "\t nmembers: %d", ls->nmembers);
+//    { 
+//	int i;
+//	for (i = 0; i < ls->nmembers; i++)
+//	    ce_trace(NAME, "\t\t member[%d] = %s", i, vs->view[i]);
+//    }
     vs->address = read_addr_array ();
     
     /* The group is unblocked now.
      */
     s->blocked = 0;
     s->nmembers = ls->nmembers ;
-    if (s->intf->install != NULL)
-	(s->intf->install) (s->intf->env, ls, vs);
+    (s->intf->install) (s->intf->env, ls, vs);
 
     s->joining = 0 ;
 }
@@ -640,14 +661,13 @@ cb_Cast(ce_ctx_t *s)
     int origin ;
     ce_iovec_array_t iovl;
 
-    ce_trace("cb_Cast");
+//    ce_trace(NAME, "cb_Cast");
     origin = read_int();
     iovl = read_iovl();
     
     assert(origin < s->nmembers) ;
 
-    if (s->intf->receive_cast != NULL) 
-	(s->intf->receive_cast) (s->intf->env, origin, 1, iovl);
+    (s->intf->receive_cast) (s->intf->env, origin, 1, iovl);
 }
 
 static void
@@ -656,14 +676,13 @@ cb_Send(ce_ctx_t *s)
     int origin ;
     ce_iovec_array_t iovl;
 
-    ce_trace("cb_Cast");
+//    ce_trace(NAME, "cb_Send");
     origin = read_int();
     iovl = read_iovl();
     
     assert(origin < s->nmembers) ;
 
-    if (s->intf->receive_send != NULL) 
-	(s->intf->receive_send) (s->intf->env, origin, 1, iovl);
+    (s->intf->receive_send) (s->intf->env, origin, 1, iovl);
 }
 
 static void
@@ -673,23 +692,23 @@ cb_Heartbeat(ce_ctx_t *s)
     double time;
 
     time = read_time();
- 
-    if (s->intf->heartbeat != NULL)
-	(s->intf->heartbeat)(s->intf->env, time);
+    
+    (s->intf->heartbeat)(s->intf->env, time);
 }
 
 static void
 cb_Block(ce_ctx_t *s)
 {
-    if (s->intf->block != NULL)
-	(s->intf->block)(s->intf->env);
+    (s->intf->block)(s->intf->env);
     s->blocked = 1;
 
     /* Write the block_ok downcall.
      */
+    mt_lock();
     begin_write(); {
 	write_hdr(s,DN_BLOCK_OK) ;
     } end_write();
+    mt_unlock();
 }
 
 static void
@@ -699,8 +718,7 @@ cb_Exit(ce_ctx_t *s)
     if (!s->leaving)
 	ce_panic("ce_Exit_cbd: mbr state is not leaving");
     
-    if (s->intf->exit != NULL)
-	(s->intf->exit)(s->intf->env);
+    (s->intf->exit)(s->intf->env);
 
     release_context(s);
 }
@@ -718,7 +736,7 @@ static cback_f ce_callback[6] = {
 /* Loop reading + processing Ensemble upcalls.
  */
 void
-ce_intrn_Main_loop()
+ce_st_Main_loop(void)
 {
     ce_ctx_id_t id;
     cbType_t cb;
@@ -750,13 +768,13 @@ ce_intrn_Main_loop()
 	if (FD_ISSET(g.fd, &g.readfds)){
 	    begin_read() ; {
 		id = read_contextID();
-		ce_trace("CALLBACK: group ID: %d", id);
+//		ce_trace(NAME, "CALLBACK: group ID: %d", id);
 		
 		cb = read_cbType();
-		ce_trace("CALLBACK: callback type: %s", string_of_cbType(cb));
+//		ce_trace("CALLBACK: callback type: %s", string_of_cbType(cb));
 		
 		if (cb > CB_EXIT) {
-		    ce_trace("bad callback type (%d)", cb);
+//		    ce_trace(NAME, "bad callback type (%d)", cb);
 		    ce_panic("");
 		}
 		s = lookup_context(id);
@@ -780,7 +798,7 @@ ce_intrn_Main_loop()
 /**************************************************************/
 
 void
-ce_intrn_AddSockRecv(CE_SOCKET sock, ce_handler_t handler, ce_env_t env)
+ce_st_AddSockRecv(CE_SOCKET sock, ce_handler_t handler, ce_env_t env)
 {
     TRACE("ce_AddSockRecv");
     ce_sock_tbl_insert(g.sock_tbl, sock, handler, env);
@@ -789,7 +807,7 @@ ce_intrn_AddSockRecv(CE_SOCKET sock, ce_handler_t handler, ce_env_t env)
 }
 
 void
-ce_intrn_RmvSockRecv(CE_SOCKET sock)
+ce_st_RmvSockRecv(CE_SOCKET sock)
 {
     ce_sock_tbl_remove(g.sock_tbl, sock);
     FD_CLR(sock, &g.readfds);
@@ -801,9 +819,9 @@ ce_intrn_RmvSockRecv(CE_SOCKET sock)
 /* Initialize Ensemble.
  */ 
 void 
-ce_intrn_Init(int argc, char *argv[])
+ce_st_Init(int argc, char *argv[])
 {
-    ce_trace("ce_Init");
+//    ce_trace(NAME, "ce_Init");
 
     /* Process command line arguments. 
      */
@@ -830,7 +848,7 @@ alloc_context(ce_ctx_id_t id)
 {
     ce_ctx_t *ctx;
 
-    ce_trace("alloc_context <%d>", id);
+//    ce_trace(NAME, "alloc_context <%d>", id);
     ctx = (ce_ctx_t*) ce_malloc(sizeof(ce_ctx_t)) ;
     ce_ctx_tbl_insert(g.ctx_tbl, id, ctx);
     
@@ -858,7 +876,7 @@ lookup_context(ce_ctx_id_t id)
 /* Join a group.  The group context is returned in *contextp.  
  */
 void
-ce_intrn_Join(ce_jops_t *ops,	ce_appl_intf_t *c_appl) 
+ce_st_Join(ce_jops_t *ops,	ce_appl_intf_t *c_appl) 
 {
     ce_ctx_t *ctx ;
 
@@ -884,21 +902,21 @@ ce_intrn_Join(ce_jops_t *ops,	ce_appl_intf_t *c_appl)
   	write_hdr(ctx,DN_JOIN);
 	write_time(ops->hrtbt_rate);
 	write_string(ops->transports);
-	ce_trace(".");
+//	ce_trace(NAME, ".");
 	write_string(ops->protocol);
-	ce_trace(".");
+//	ce_trace(NAME, ".");
 	write_string(ops->group_name);
-	ce_trace("write ops->properties:");
+//	ce_trace(NAME, "write ops->properties:");
 	write_string(ops->properties);
-	ce_trace("write ops->use_properties:");
+//	ce_trace(NAME, "write ops->use_properties:");
 	write_bool(ops->use_properties);
-	ce_trace("write ops->groupd:");
+//	ce_trace(NAME, "write ops->groupd:");
 	write_bool(ops->groupd);
-	ce_trace("write ops->params:");
+//	ce_trace(NAME, "write ops->params:");
 	write_string(ops->params);
-	ce_trace("write ops->client:");
+//	ce_trace(NAME, "write ops->client:");
 	write_bool(ops->client);
-	ce_trace("write ops->debug:");
+//	ce_trace(NAME, "write ops->debug:");
 	write_bool(ops->debug);
 	
 	if (ops->endpt != NULL) {
@@ -913,18 +931,43 @@ ce_intrn_Join(ce_jops_t *ops,	ce_appl_intf_t *c_appl)
     } end_write();
 }
 
+
+static void
+report_err(ce_appl_intf_t *c_appl, const char *s)
+{
+    
+    if (c_appl->joining)
+	printf("Operation %s while group is joining (id=%d, ptr=%x)\n",
+	       s, c_appl->id, (int)c_appl);
+    if (c_appl->leaving)
+	printf("Operation %s while group is leaving (id=%d, ptr=%x)\n",
+	       s, c_appl->id, (int)c_appl);
+    if (c_appl->blocked)
+	printf("Operation %s while group is blocked (id=%d, ptr=%x)\n",
+	       s, c_appl->id, (int)c_appl);
+    exit(1);
+}
+
+INLINE static void
+check_valid(ce_appl_intf_t *c_appl, const char *s)
+{
+    if (c_appl->blocked || c_appl->joining || c_appl->leaving) {
+	report_err(c_appl,s);
+    }
+}
+
+
 /* Leave a group.  This should be the last call made to a given context.
  * No more events will be delivered to this context after the call
  * returns.  
  */
 void
-ce_intrn_Leave(ce_appl_intf_t *intf)
+ce_st_Leave(ce_appl_intf_t *c_appl)
 {
-    ce_ctx_t *s = lookup_context(intf->id);
+    ce_ctx_t *s = lookup_context(c_appl->id);
 
+    check_valid(c_appl, "ce_st_Leave");
     begin_write(); {
-	if (s->leaving) 
-	    ce_panic("ce_Leave:this member is already leaving") ;
 	s->leaving = 1 ;
 	
 	/* Write the downcall.
@@ -936,16 +979,12 @@ ce_intrn_Leave(ce_appl_intf_t *intf)
 /* Send a multicast message to the group.
  */
 void
-ce_intrn_Cast(ce_appl_intf_t *intf,  int num, ce_iovec_array_t iovl)
+ce_st_Cast(ce_appl_intf_t *c_appl,  int num, ce_iovec_array_t iovl)
 {
-    ce_ctx_t *s = lookup_context(intf->id);
+    ce_ctx_t *s = lookup_context(c_appl->id);
     
+    check_valid(c_appl, "ce_st_Cast");
     begin_write(); {
-	if (s->leaving)
-	    ce_panic("ce_Cast: member is leaving") ;
-	
-	/* Write the downcall.
-	 */
 	write_hdr(s,DN_CAST);
 	write_iovl(num, iovl);
     } end_write();
@@ -954,7 +993,7 @@ ce_intrn_Cast(ce_appl_intf_t *intf,  int num, ce_iovec_array_t iovl)
 /* Send a point-to-point message to a list of members.
  */
 void
-ce_intrn_Send(
+ce_st_Send(
     ce_appl_intf_t *c_appl,
     int num_dests,
     ce_rank_array_t dests,
@@ -964,14 +1003,10 @@ ce_intrn_Send(
 {
     ce_ctx_t *s = lookup_context(c_appl->id);
     int i;
-    
-    begin_write(); { 
-	if (s->leaving)
-	    ce_panic("ce_Send: member is leaving") ;
-	
-	if (s->blocked) 
-	    ce_panic("ce_Send: member is blocked") ;
 
+    //printf("ce_st_Send");
+    check_valid(c_appl, "ce_st_Send");
+    begin_write(); { 
 	write_hdr(s,DN_SEND);
 	write_int(num_dests);
 	for (i=0; i<num_dests; i++) {
@@ -986,17 +1021,12 @@ ce_intrn_Send(
 /* Send a point-to-point message to the specified group member.
  */
 void
-ce_intrn_Send1(ce_appl_intf_t *intf, ce_rank_t dest, int n, ce_iovec_array_t iovl)
+ce_st_Send1(ce_appl_intf_t *c_appl, ce_rank_t dest, int n, ce_iovec_array_t iovl)
 {
-    ce_ctx_t *s = lookup_context(intf->id);
+    ce_ctx_t *s = lookup_context(c_appl->id);
 
+    check_valid(c_appl, "ce_st_Send1");
     begin_write(); { 
-	if (s->leaving)
-	    ce_panic("ce_Send: member is leaving") ;
-	
-	if (s->blocked) 
-	    ce_panic("ce_Send: member is blocked") ;
-
 	assert(dest<s->nmembers) ;
 	write_hdr(s,DN_SEND1);
 	write_int(dest);
@@ -1008,7 +1038,7 @@ ce_intrn_Send1(ce_appl_intf_t *intf, ce_rank_t dest, int n, ce_iovec_array_t iov
  * 
  */
 void
-ce_intrn_Suspect(
+ce_st_Suspect(
 	ce_appl_intf_t *c_appl,
 	int num,
 	ce_rank_array_t suspects
@@ -1017,9 +1047,8 @@ ce_intrn_Suspect(
     ce_ctx_t *s = lookup_context(c_appl->id);
     int i;
 
+    check_valid(c_appl, "ce_st_Suspect");
     begin_write(); {
-	if (s->leaving) 
-	    ce_panic("ce_Suspect: member is leaving") ;
 	write_hdr(s,DN_SUSPECT);
 	write_int(num);
 	for (i=0; i<num; i++) {
@@ -1034,13 +1063,12 @@ ce_intrn_Suspect(
 /* Inform Ensemble that the state-transfer is complete. 
  */
 void
-ce_intrn_XferDone(ce_appl_intf_t *c_appl)
+ce_st_XferDone(ce_appl_intf_t *c_appl)
 {
     ce_ctx_t *s = lookup_context(c_appl->id);
 
+    check_valid(c_appl, "ce_st_XferDone");
     begin_write(); {
-	if (s->leaving) 
-	    ce_panic("ce_XferDone: member is leaving") ;
 	write_hdr(s,DN_XFERDONE);
     } end_write();
 }
@@ -1050,14 +1078,13 @@ ce_intrn_XferDone(ce_appl_intf_t *c_appl)
 /* Request a protocol change.
  */
 void
-ce_intrn_ChangeProtocol(ce_appl_intf_t *c_appl, char *protocol_name)
+ce_st_ChangeProtocol(ce_appl_intf_t *c_appl, char *protocol_name)
 {
     ce_ctx_t *s = lookup_context(c_appl->id);
 
     assert(protocol_name);
+    check_valid(c_appl, "ce_st_ChangeProtocol");
     begin_write(); {
-	if (s->leaving) 
-	    ce_panic("ce_ChangeProtocol: member is leaving") ;
 	write_hdr(s,DN_PROTOCOL);
 	write_string(protocol_name); 
 	free(protocol_name);
@@ -1067,14 +1094,13 @@ ce_intrn_ChangeProtocol(ce_appl_intf_t *c_appl, char *protocol_name)
 /* Request a protocol change specifying properties.
  */
 void
-ce_intrn_ChangeProperties(ce_appl_intf_t *c_appl, char *properties)
+ce_st_ChangeProperties(ce_appl_intf_t *c_appl, char *properties)
 {
     ce_ctx_t *s = lookup_context(c_appl->id);
 
     assert(properties) ;
+    check_valid(c_appl, "ce_st_ChangeProperties");
     begin_write(); {
-	if (s->leaving) 
-	    ce_panic("ce_ChangeProperties: member is leaving") ;
 	write_hdr(s,DN_PROPERTIES);
 	write_string(properties);
 	free(properties);
@@ -1084,13 +1110,12 @@ ce_intrn_ChangeProperties(ce_appl_intf_t *c_appl, char *properties)
 /* Request a new view to be installed.
  */
 void
-ce_intrn_Prompt(ce_appl_intf_t *c_appl)
+ce_st_Prompt(ce_appl_intf_t *c_appl)
 {
     ce_ctx_t *s = lookup_context(c_appl->id);
 
+    check_valid(c_appl, "ce_st_Prompt");
     begin_write(); {
-	if (s->leaving) 
-	    ce_panic("ce_Prompt: member is leaving") ;
 	write_hdr(s,DN_PROMPT);
     } end_write();
 }
@@ -1099,13 +1124,12 @@ ce_intrn_Prompt(ce_appl_intf_t *c_appl)
 /* Request a Rekey operation.
  */
 void
-ce_intrn_Rekey(ce_appl_intf_t *c_appl)
+ce_st_Rekey(ce_appl_intf_t *c_appl)
 {
     ce_ctx_t *s = lookup_context(c_appl->id);
 
+    check_valid(c_appl, "ce_st_Rekey");
     begin_write(); {
-	if (s->leaving)
-	    ce_panic("ce_Rekey: member is leaving") ;
 	write_hdr(s,DN_REKEY);
     } end_write();
 }
@@ -1114,14 +1138,16 @@ ce_intrn_Rekey(ce_appl_intf_t *c_appl)
 /* These are both no-ops for the outboard mode.
  */
 
-void ce_intrn_MLPrintOverride(
+void
+ce_st_MLPrintOverride(
 	void (*handler)(char *msg)
 ) {
     return;
 }
 
-void ce_intrn_MLUncaughtException(
-	void (*handler)(char *info)
+void
+ce_st_MLUncaughtException(
+    void (*handler)(char *info)
 ) {
     return;
 }

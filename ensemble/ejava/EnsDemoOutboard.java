@@ -1,3 +1,8 @@
+/**************************************************************/
+/* EnsDemoOutboard.java */
+/* Author: Jason Dale */
+/**************************************************************/
+
 import java.awt.*;
 import java.awt.event.*;
 import java.lang.*;

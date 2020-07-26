@@ -239,7 +239,7 @@ let server alarm addr config debug_ignored deliver_upcall =
       fun msg ->
 	match msg with
 	| Dncall(_,Control(Block _)) ->
-	    eprintf "PROTOS:ignoring BlockOk for id not found in table (should not be a problem)\n"
+	    log (fun () -> "PROTOS:ignoring BlockOk for id not found in table (should not be a problem)")
 	|  _ ->
 	    eprintf "PROTOS:id=%d ids=%s msg=%s\n"
 	      id (string_of_int_list (List.map fst (hashtbl_to_list table))) 
