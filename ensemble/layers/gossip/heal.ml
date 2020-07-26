@@ -153,13 +153,14 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let up_hdlr ev abv NoHdr = up ev abv
 
   and uplm_hdlr ev NoHdr = match getType ev with
-  | ESend ->
+  | ESend iovl ->
       s.present.(getPeer ev) <- true ;
       if array_for_all ident s.present then
 	Once.set s.all_present ;
       log (fun () -> "bcasting(all_present)") ;
       dnnm (create name EGossipExt[(gossip_send ())]) ;
-      (*ack ev ;*) free name ev
+      Iovecl.free iovl
+
   | _ ->
       failwith "bad local message"
 

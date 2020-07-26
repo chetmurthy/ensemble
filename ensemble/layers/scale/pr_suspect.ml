@@ -68,7 +68,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   and uplm_hdlr ev hdr = match getType ev,hdr with
     (* Gossip Message.
      *)
-  | (ECast|ESend|ECastUnrel|ESendUnrel), Gossip(failed,idle) ->
+  | (ECast iovl|ESend iovl|ECastUnrel iovl|ESendUnrel iovl), Gossip(failed,idle) ->
       let origin = (getPeer ev) in
       if (not (Arrayf.get failed ls.rank)) (* BUG: could auto-fail him *)
       && (not (Arrayf.get s.failed origin))
@@ -81,7 +81,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  do_gossip ()
 	)
       ) ;
-      free name ev
+      Iovecl.free iovl
 
   | _ -> failwith unknown_local
 

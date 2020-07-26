@@ -20,7 +20,7 @@ done
 # Don't do this for maestro and ejava: they have their own build process.
 #
 for i in appl mm crypto crypto/isaac crypto/OpenSSL doc doc/layers groupd \
-    infr layers mk route socket socket/s socket/u trans tools type util; do
+    infr layers mk route socket socket/s socket/u trans tools type util cejava; do
       echo "  " $i/Makefile
       sed -f tools/ntify.sed $i/Makefile > $i/Makefile.nt
 done

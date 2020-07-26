@@ -84,7 +84,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let up_hdlr ev abv hdr = up ev abv
 	  
   and uplm_hdlr ev hdr = match getType ev,hdr with
-    | ESend, Key rmt_key -> 
+    | ESend _, Key rmt_key -> 
 	log1 (fun () -> sprintf "recv key <- %d" (getPeer ev));
 	s.rmt_keys <- rmt_key :: s.rmt_keys;
 	check_recv_all () 

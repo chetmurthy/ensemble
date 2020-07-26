@@ -191,17 +191,14 @@ let f alarm ranking bot_nomsg ((ls,vs) as vf) up_hdlr =
   let (primary_cast,primary_send,primary_disable) =
     let receive kind secure =
       if secure then (
-	let ut = match kind with
-	| Conn.Send  -> Event.ESend
-	| Conn.Cast  -> Event.ECast
-	in
-	let debug = addinfo (Event.string_of_type ut) name in
 	let handler rank msg seqno iov =
 	  let msg = match msg with
 	  | None -> Local_seqno seqno	(*MEM:alloc*)
 	  | Some d -> unpack d
 	  in
-	  up_hdlr (Event.bodyCore debug ut rank iov) msg
+	  match kind with 
+	    | Conn.Send  -> up_hdlr (Event.sendPeerIov "ESend" rank iov) msg
+	    | Conn.Cast  -> up_hdlr (Event.castPeerIov "ECast" rank iov) msg
 	in handler
       ) else (
 	fun _ _ _ _ ->
@@ -219,20 +216,19 @@ let f alarm ranking bot_nomsg ((ls,vs) as vf) up_hdlr =
   let sends = Array.create ls.nmembers None in
   
   let dn ev msg = match Event.getType ev with
-  | Event.ECastUnrel
-  | Event.ECast -> (
+  | Event.ECastUnrel iov
+  | Event.ECast iov -> (
       (* Note: we do not free the event because
        * the cast operation will take the iov reference.
        *)
-      let iov = Event.getIov ev in
       match msg with
       | Local_seqno seqno -> 
 	  primary_cast ls.rank None seqno iov
       | _ ->
 	  primary_cast ls.rank (Some (pack(msg))) (-1) iov 
     )
-  | Event.ESendUnrel
-  | Event.ESend -> (
+  | Event.ESendUnrel iov
+  | Event.ESend iov -> (
       (* Compute the send function if not done already.
        * Note: we do not free the event because
        * the send operation will take the iov reference.
@@ -247,7 +243,6 @@ let f alarm ranking bot_nomsg ((ls,vs) as vf) up_hdlr =
 	    send
       in
 
-      let iov = Event.getIov ev in
       match msg with
       | Local_seqno seqno -> 
 	  send ls.rank None seqno iov

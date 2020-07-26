@@ -80,15 +80,15 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   in
 
   let up_hdlr ev abv hdr = match getType ev,hdr with
-  | (ESend|ECast), Appl ->
+  | (ESend iovl|ECast iovl), Appl ->
       if Once.isset s.got_view then (
 	eprintf "CHK_SYNC:received message after Up(EView) (dropping msg)\n" ;
 	eprintf "  event=%s\n" (Event.to_string ev) ;
 	dnnm (create name EDump[]) ;
-	free name ev
+	Iovecl.free iovl
       ) else (
 	let origin = getPeer ev in
-	if getType ev = ECast then
+	if getCompactType ev = C_ECast then
 	  array_incr s.cast_recv origin
 	else 
 	  array_incr s.send_recv origin ;
@@ -101,17 +101,17 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   and uplm_hdlr ev hdr = match getType ev,hdr with
   (* Check whether all members have the same view states.
    *)
-  | ECast, ViewState vs' ->
+  | ECast iovl, ViewState vs' ->
       if vs' <> vs then 
 	failwith "mismatched view state" ;
-      (*ack ev ;*) free name ev
+      Iovecl.free iovl
 
-  | ECast,Gossip(rmt_vs,rmt_casts,rmt_send_xmit) ->
+  | ECast iovl,Gossip(rmt_vs,rmt_casts,rmt_send_xmit) ->
       let origin = getPeer ev in
       let rmt_send_xmit = Arrayf.get rmt_send_xmit ls.rank in
       chk_rmt := (origin,rmt_vs,rmt_casts,rmt_send_xmit) :: !chk_rmt ;
       chk_sync () ;
-      (*ack ev ;*) free name ev
+      Iovecl.free iovl
   | _,_ -> failwith "bad uplm event"
 
   and upnm_hdlr ev = match getType ev with
@@ -133,7 +133,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       let next_view_id = View.id_of_state (getViewState ev) in
       chk_recv := Some(next_view_id,cast_recv,send_recv) ;
       chk_sync () ;
-      dnlm (create name ECast[NoTotal]) 
+      dnlm (create name (ECast Iovecl.empty) [NoTotal]) 
         (Gossip(next_view_id,cast_recv,send_xmit)) ;
       upnm ev
 
@@ -145,13 +145,13 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | _ -> upnm ev
 
   and dn_hdlr ev abv = match getType ev with
-  | ECast | ESend ->
+  | ECast _| ESend _->
       if getApplMsg ev then (
 	if Once.isset s.got_dn_block then (
 	  eprintf "CHK_SYNC:sending message after Dn(Block)\n" ;
 	  dnnm (create name EDump[])
 	) ;
-	if getType ev = ECast then
+	if getCompactType ev = C_ECast then
       	  s.cast_xmit <- succ s.cast_xmit
 	else 
           array_incr s.send_xmit (getPeer ev) ;

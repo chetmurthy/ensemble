@@ -111,7 +111,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     let sends = Arrayf.get s.sends origin in
     Iq.set_lo sends ack ;
     log (fun () -> sprintf "got ack from %d for %d (new lo=%d)" origin ack (Iq.lo sends)) ;
-  and handle_data ev seqno abv =
+  and handle_data iov ev seqno abv =
     let origin = getPeer ev in
     let recvs = Arrayf.get s.recvs origin in
 
@@ -121,10 +121,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       (* The assignment below is unnecessary, but is
        * added for the functional optimizations.
        *)
-      (*Arraye.set s.recvs origin*) ignore (Iq.opt_update_update recvs seqno) ;
+      (*Arraye.set s.recvs origin*) 
+      ignore (Iq.opt_update_update recvs seqno) ;
       up ev abv
     ) else (
-      let iov = getIov ev in
       log (fun () -> sprintf "slow path origin=%d seqno=%d hi=%d" origin seqno (Iq.hi recvs)) ;
       if Iq.assign recvs seqno iov abv then (
 	Iq.get_prefix recvs (fun seqno iov abv ->
@@ -161,7 +161,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	)
       ) ;
 
-      free name ev
+      Iovecl.free iov
     )
   in
 
@@ -170,15 +170,15 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     (* ESend:Data: Got a data message from other
      * member.
      *)
-  | ESend, Data(seqno) ->
-      handle_data ev seqno abv
+  | ESend iovl , Data(seqno) ->
+      handle_data iovl ev seqno abv
 
     (* ESend:DataAck: Got a data message from other
      * member as well as an acknowledgement.
      *)
-  | ESend, DataAck(seqno,ack) ->
+  | ESend iovl, DataAck(seqno,ack) ->
       handle_ack ev ack ;
-      handle_data ev seqno abv
+      handle_data iovl ev seqno abv
 
   | _, NoHdr -> up ev abv
   | _        -> failwith bad_header
@@ -188,7 +188,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     (* Nak: got a request for retransmission.  Send any
      * messages I have in the requested interval, lo..hi.
      *)
-  | ESend, Nak(lo,hi) ->
+  | ESend iov, Nak(lo,hi) ->
       let origin = getPeer ev in
       let sends = Arrayf.get s.sends origin in
       log (fun () -> sprintf "got NAK for %d..%d from %d" lo hi origin) ;
@@ -205,13 +205,13 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
         dn (sendPeerIov name origin iov) abv (Data seqno)
       ) list ;
 
-      free name ev
+      Iovecl.free iov
 
     (* Ack: Unbuffer any acked messages.
      *)
-  | ESend, Ack(seqno) ->
+  | ESend iovl, Ack(seqno) ->
       handle_ack ev seqno ;
-      free name ev
+      Iovecl.free iovl
 
   | _ -> failwith unknown_local
 
@@ -288,7 +288,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
     (* ESend: buffer a copy and send it out.
      *)
-  | ESend ->
+  | ESend iov ->
       let dest = getPeer ev in
       if dest =| ls.rank then (
 	eprintf "PT2PT:%s\n" (Event.to_string ev) ;
@@ -297,7 +297,6 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       ) ;
       let sends = Arrayf.get s.sends dest in
       let seqno = Iq.hi sends in
-      let iov = getIov ev in
 
       (* The assignment below is unnecessary, but is
        * added for the functional optimizations.
@@ -331,7 +330,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
 in {up_in=up_hdlr;uplm_in=uplm_hdlr;upnm_in=upnm_hdlr;dn_in=dn_hdlr;dnnm_in=dnnm_hdlr}
 
-let l args vs = Layer.hdr init hdlrs None (LocalSeqno(NoHdr,ESend,extractor,constructor)) args vs
+let l args vs = Layer.hdr init hdlrs None (LocalSeqno(NoHdr,C_ESend,extractor,constructor)) args vs
 let l2 args vs = Layer.hdr_noopt init hdlrs args vs
 
 let _ = 

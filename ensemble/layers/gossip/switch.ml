@@ -109,7 +109,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let up_hdlr ev abv () = up ev abv
 
   and uplm_hdlr ev hdr = match getType ev, hdr with
-  | (ECast|ESend), (Proto proto_id) ->
+  | (ECast iovl|ESend iovl), (Proto proto_id) ->
       s.proto_id_sug <- Some proto_id ;
 
       (* Trigger a view change if I'm coordinator.
@@ -118,7 +118,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	upnm (create name EPrompt []) ;
       ) ;
 
-      (*ack ev ;*) free name ev
+      Iovecl.free iovl
+
   | _ -> failwith unknown_local
 
   and upnm_hdlr ev = match getType ev with

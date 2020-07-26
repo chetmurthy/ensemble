@@ -1,15 +1,15 @@
-/README/1.2/Tue Apr 29 14:40:53 1997//
 D/dbm////
 D/life////
 D/tk////
-/.cvsignore/1.10/Mon Dec  3 14:45:34 2001//
-/Makefile/1.56/Mon Mar 25 06:17:30 2002//
-/armadillo.ml/1.32/Mon Nov 12 15:17:50 2001//
-/fifo.ml/1.17/Thu Nov  8 14:02:15 2001//
-/gossip.ml/1.15/Thu Nov  8 14:02:15 2001//
-/groupd.ml/1.14/Thu Nov  8 14:02:15 2001//
-/lensemble.ml/1.26/Thu Nov  8 14:02:15 2001//
-/mtalk.ml/1.20/Thu Nov  8 14:02:15 2001//
-/perf.ml/1.52/Sun Dec 30 13:44:53 2001//
-/rand.ml/1.41/Mon Nov 12 12:56:20 2001//
-/socktest.ml/1.4/Tue Dec 18 07:22:06 2001//
+/.cvsignore/1.10/Fri Jul 12 08:30:13 2002//
+/README/1.2/Fri Jul 12 08:30:15 2002//
+/armadillo.ml/1.32/Fri Jul 12 08:30:14 2002//
+/fifo.ml/1.17/Fri Jul 12 08:30:14 2002//
+/gossip.ml/1.15/Fri Jul 12 08:30:14 2002//
+/groupd.ml/1.14/Fri Jul 12 08:30:13 2002//
+/lensemble.ml/1.26/Fri Jul 12 08:30:15 2002//
+/perf.ml/1.52/Fri Jul 12 08:30:15 2002//
+/socktest.ml/1.4/Fri Jul 12 08:30:15 2002//
+/Makefile/1.56/Sun Jul 21 15:57:29 2002//
+/mtalk.ml/1.21/Tue Jul 16 05:27:55 2002//
+/rand.ml/1.42/Sat Jul 20 09:29:05 2002//

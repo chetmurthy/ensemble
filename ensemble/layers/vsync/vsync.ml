@@ -181,7 +181,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
   (* Receive vector info in General hdr.
    *)
-  | (ESend|ECast), General(failed, info) ->
+  | (ESend iovl|ECast iovl), General(failed, info) ->
       (* Ignore messages from myself.
        *)
       if getPeer ev <> ls.rank then (
@@ -194,7 +194,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	) info 
       ) ;
 
-      (*ack ev ;*) free name ev
+      Iovecl.free iovl
 
   | _ -> failwith unknown_local
 	

@@ -42,13 +42,13 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   (* ECast|ESend(InView): other member is telling me
    * that he is in the view.
    *)
-  | (ECast|ESend), InView ->
+  | (ECast iovl|ESend iovl), InView ->
       let origin = getPeer ev in
       s.in_view.(origin) <- true ;
       let in_view = Arrayf.of_array s.in_view in
       log (fun () -> sprintf "present=%s" (Arrayf.bool_to_string in_view)) ;
       dnnm (create name EPresent[Presence in_view]) ;
-      (*ack ev ;*) free name ev
+      Iovecl.free iovl
 
   | _ -> failwith "bad uplm event"
 

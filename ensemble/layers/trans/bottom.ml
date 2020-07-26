@@ -60,7 +60,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   in
 
   let up_hdlr ev abv hdr = match getType ev, hdr with
-  | (ECast|ESend), NoHdr ->
+  | (ECast iov |ESend iov), NoHdr ->
       if s.all_alive 
       || not (Arrayf.get s.failed (getPeer ev)) 
       then
@@ -68,19 +68,19 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	 *)
 	up ev abv
       else
-	free name ev
+	Iovecl.free iov
 
-  | ECast,Unrel ->
+  | ECast iov,Unrel ->
       if Arrayf.get s.failed (getPeer ev) then
-	free name ev
+	Iovecl.free iov
       else
-	up (set name ev[Type ECastUnrel]) abv
+	up (set name ev[Type (ECastUnrel iov)]) abv
 
-  | ESend,Unrel ->
+  | ESend iov,Unrel ->
       if Arrayf.get s.failed (getPeer ev) then
-	free name ev
+	Iovecl.free iov
       else
-	up (set name ev[Type ESendUnrel]) abv
+	up (set name ev[Type (ESendUnrel iov)]) abv
 
   | EAuth,_ -> 
       if s.enabled then up ev abv else free name ev 
@@ -108,11 +108,11 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     if s.enabled then (
       match getType ev with
       | EAuth
-      | ECast
-      | ESend ->
+      | ECast _
+      | ESend _ ->
 	  dn ev abv NoHdr
-      | ECastUnrel
-      | ESendUnrel ->
+      | ECastUnrel _
+      | ESendUnrel _ ->
 	  dn ev abv Unrel
       | _ -> failwith "bad down event[1]"
     ) else (

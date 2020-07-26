@@ -121,9 +121,14 @@ join(void)
     jops = record_create(ce_jops_t*, jops);
     record_clear(jops);
     jops->hrtbt_rate=10.0;
-    jops->transports = ce_copy_string("DEERING");
+//    jops->transports = ce_copy_string("DEERING");
+    jops->transports = ce_copy_string("UDP");
     jops->group_name = ce_copy_string("ce_mtalk");
-    jops->properties = ce_copy_string(CE_DEFAULT_PROPERTIES);
+    jops->properties = ce_copy_string(
+"Gmp:Sync:Heal:Switch:Frag:Suspect:Flow:Slander:Local"
+	);
+
+/*CE_DEFAULT_PROPERTIES);*/
     jops->use_properties = 1;
     
     s = (state_t*) record_create(state_t*, s);

@@ -1,19 +1,19 @@
-/Makefile/1.2/Sun Jul 29 09:51:07 2001//
-/ipmc.mli/1.2/Mon Apr 21 20:10:45 1997//
-/netsim.mli/1.2/Mon Apr 21 20:10:45 1997//
-/udp.mli/1.2/Mon Apr 21 20:10:46 1997//
 D/atm////
 D/mpi////
-/.cvsignore/1.2/Mon Dec  3 14:45:36 2001//
-/README/1.1/Mon Mar 31 20:20:18 1997//
-/htk.ml/1.24/Thu Dec  6 08:32:09 2001//
-/htk.mli/1.4/Thu Dec  6 08:32:09 2001//
-/ipmc.ml/1.16/Wed Nov 21 15:53:11 2001//
-/netsim.ml/1.29/Thu Nov  8 14:02:22 2001//
-/real.ml/1.42/Mon Nov 12 12:56:22 2001//
-/real.mli/1.7/Sun Oct 24 04:28:52 1999//
-/tcp.ml/1.31/Wed Nov 21 15:53:29 2001//
-/tcp.mli/1.1/Mon Mar 31 20:20:21 1997//
-/threaded.ml/1.6/Tue Feb  2 05:20:22 1999//
-/threaded.mli/1.1/Mon Mar 31 20:20:21 1997//
-/udp.ml/1.46/Mon Mar 25 12:21:20 2002//
+/.cvsignore/1.2/Fri Jul 12 08:30:25 2002//
+/Makefile/1.2/Fri Jul 12 08:30:25 2002//
+/README/1.1/Fri Jul 12 08:30:25 2002//
+/htk.ml/1.24/Fri Jul 12 08:30:25 2002//
+/htk.mli/1.4/Fri Jul 12 08:30:25 2002//
+/ipmc.ml/1.16/Fri Jul 12 08:30:25 2002//
+/ipmc.mli/1.2/Fri Jul 12 08:30:25 2002//
+/netsim.ml/1.29/Fri Jul 12 08:30:25 2002//
+/netsim.mli/1.2/Fri Jul 12 08:30:25 2002//
+/real.ml/1.42/Fri Jul 12 08:30:25 2002//
+/real.mli/1.7/Fri Jul 12 08:30:25 2002//
+/tcp.ml/1.31/Fri Jul 12 08:30:25 2002//
+/tcp.mli/1.1/Fri Jul 12 08:30:25 2002//
+/threaded.ml/1.6/Fri Jul 12 08:30:25 2002//
+/threaded.mli/1.1/Fri Jul 12 08:30:25 2002//
+/udp.ml/1.46/Fri Jul 12 08:30:25 2002//
+/udp.mli/1.2/Fri Jul 12 08:30:25 2002//

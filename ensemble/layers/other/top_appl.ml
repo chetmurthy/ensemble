@@ -189,9 +189,9 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	    eprintf "TOP_APPL:dest=[||],rank=%d,nmembers=%d\n" ls.rank ls.nmembers ;
 	    raise (Invalid_argument "Empty send list");
 	  );
-	  for i = 0 to pred (Array.length dest) do
+	  for i = 0 to pred len do
 	    let msg = 
-	      if i>0 then Iovecl.copy msg
+	      if i >| 0 then Iovecl.copy msg
 	      else msg
 	    in
 	    let dest = dest.(i) in
@@ -221,12 +221,12 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   in
 
   let up_hdlr ev abv hdr = match getType ev,hdr with
-    | ECast, VsyncMsg -> 
+    | ECast _, VsyncMsg -> 
 	let origin = getPeer ev in
 	array_incr s.cast_recv origin ;
 	up ev abv 
 	
-    | ESend, VsyncMsg -> 
+    | ESend _ , VsyncMsg -> 
 	let origin = getPeer ev in
 	array_incr s.send_recv origin;
 	up ev abv 
@@ -234,32 +234,28 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     | _ -> up ev abv 
 
   and uplm_hdlr ev () = match getType ev with
-  | ECast ->
+  | ECast iovl ->
       let origin = getPeer ev in
       array_incr s.cast_recv origin ;
 (*    log (fun () -> sprintf "%d:cast_recv=%d xmit=%d" origin (s.cast_recv.(origin)) s.cast_xmit) ;*)
       if s.got_expect && s.cast_recv.(origin) >| Arrayf.get s.cast_expect origin then
 	failwith ("bad cast:"^(Event.to_string ev)) ;
-      let iov = getIov ev in
       log_iov (fun () -> sprintf "recv Cast: iovl=%s,len=%d" 
-	(Iovecl.sum_refs iov) (Buf.int_of_len (Iovecl.len iov)));
-      handle_actions (s.recv_cast.(origin) iov) ;
+	(Iovecl.sum_refs iovl) (Buf.int_of_len (Iovecl.len iovl)));
+      handle_actions (s.recv_cast.(origin) iovl) ;
       if s.blocking = UpBlocking then
 	check_block_ok () ;
-      free_noIov name ev
 
-  | ESend ->
+  | ESend iovl ->
       let origin = getPeer ev in
       array_incr s.send_recv origin ;
       if s.got_expect && s.send_recv.(origin) >| Arrayf.get s.send_expect origin then
 	failwith "bad send" ;
-      let iov = getIov ev in
       log_iov (fun () -> sprintf "recv Send: iovl=%s,len=%d" 
-	(Iovecl.sum_refs iov) (Buf.int_of_len (Iovecl.len iov)));
-      handle_actions (s.recv_send.(origin) iov) ;
+	(Iovecl.sum_refs iovl) (Buf.int_of_len (Iovecl.len iovl)));
+      handle_actions (s.recv_send.(origin) iovl) ;
       if s.blocking = UpBlocking then
 	check_block_ok () ;
-      free_noIov name ev
      
   | _ -> failwith "got bad uplm event"
 
@@ -349,13 +345,11 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       	logs (fun () -> sprintf "capture EBlockOk") ;
 	s.blocking <- UpBlocking ;
       	check_block_ok () ;
-      	free name ev
       )
 
   | EFlowBlock -> 
       let fb = getFlowBlock ev in
       s.handlers.flow_block fb ;
-      free name ev
 
   | EAccount ->
       logb (fun () -> [
@@ -376,7 +370,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
      * (Ohad) added support for VS events above top_appl, by using 
      * the ApplMsg flag.
     *)
-  | ECast -> 
+  | ECast _ -> 
       let ev = setNoTotal name ev in
       if getForceVsync ev then (
 	s.cast_xmit <- succ s.cast_xmit ;
@@ -384,7 +378,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       ) else dn ev abv NoHdr
 
 
-  | ESend -> 
+  | ESend _ -> 
       (* BUG: is no total needed here?
        *)
       let ev = setNoTotal name ev in

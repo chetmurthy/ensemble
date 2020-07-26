@@ -42,13 +42,18 @@ type 'abv state = {
 
 (**************************************************************)
 
-let msg_len s ev = int_of_len ((Iovecl.len (getIov ev)) +|| s.overhead)
+let msg_len s iovl = int_of_len ((Iovecl.len iovl) +|| s.overhead)
 
 let string_of_queue_len q = string_of_int (Queuee.length q)
 
 let queue_bytes s q = 
   let len = ref 0 in
-  Queuee.iter (fun (ev,_) -> len := !len + msg_len s ev) q ;
+  Queuee.iter (fun (ev,_) ->
+    match getType ev with 
+      | ECast iovl | ESend iovl | ECastUnrel iovl | ESendUnrel iovl ->
+	  len := !len + msg_len s iovl
+      | _ -> ()
+  ) q ;
   !len
 
 let string_of_queue_bytes s q = 
@@ -140,7 +145,12 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     (* Queue.take will not fail here.>
      *)
       let ev,abv = Queuee.take s.send_buf in
-      let len = msg_len s ev in
+      let len = 
+	match getType ev with 
+	  | ECast iovl | ESend iovl | ECastUnrel iovl | ESendUnrel iovl ->
+	      msg_len s iovl
+	  | _ -> 0
+      in
       
       (* The assignment below is unnecessary, but is
        * added for the functional optimizations.
@@ -157,13 +167,13 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
      * send an acknowledgement.  Finally, deliver the
      * message.  
      *)
-  | ECast,NoHdr ->
+  | ECast iovl,NoHdr ->
       let origin = getPeer ev in
 
       (* Don't do any credit stuff with casts from myself.
        *)
       if origin <>| ls.rank then (
-        let len = msg_len s ev in
+        let len = msg_len s iovl in
 	let current_credit = Mcredit.got_msg s.credit origin len in
 	if current_credit >=| s.ack_thresh then (
 	  let nacks = current_credit / s.ack_thresh in
@@ -174,20 +184,20 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       ) ;
       up ev abv
 
-  | ECast, NoFlow -> up ev abv
+  | ECast _, NoFlow -> up ev abv
   | _, NoHdr -> up ev abv
   | _        -> failwith bad_header
 
   and uplm_hdlr ev hdr = match getType ev,hdr with
     (* Some credit were sent back, send more data if its waiting.
      *)
-  | ESend, Ack(nacks) ->
+  | ESend iovl, Ack(nacks) ->
       let origin = getPeer ev in 
       for i = 1 to nacks do
 	Mcredit.got_credit s.credit origin ;
       done ;
       check_msg s ;
-      (*ack ev ;*) free name ev 
+      Iovecl.free iovl
   | _ -> failwith unknown_local
 
   and upnm_hdlr ev = match getType ev with
@@ -231,12 +241,12 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
    * effect to both application and control messages
    * (unreliable ones are still sent immediately.  
    *)
-  | ECast ->      
+  | ECast iovl ->      
       if getApplMsg ev || getFragment ev then (
 	if Mcredit.check s.credit then (
 	  (* Normal case.  We have enough credit.
 	   *)
-	  ignore (Mcredit.take s.credit (msg_len s ev)) ;
+	  ignore (Mcredit.take s.credit (msg_len s iovl)) ;
 	  dn ev abv NoHdr
 	) else (
 	  Queuee.add (ev,abv) s.send_buf;

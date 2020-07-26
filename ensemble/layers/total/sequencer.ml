@@ -76,7 +76,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let log = Trace.log2 name ls.name in
 
   let up_hdlr ev abv hdr = match getType ev, hdr with
-    | ESend, ToSeq ->
+    | ESend iovl, ToSeq ->
 	if ls.rank <> s.seq_rank then
 	  failwith "send when not sequencer" ;
 
@@ -84,18 +84,16 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	 *)
 	if not s.blocking then (
 	  let origin = getPeer ev in
-	  let iov = getIov ev in
-	  let iov' = Iovecl.copy iov in
-	  up (castPeerIov name origin iov') abv ;
+	  up (castPeerIov name origin iovl) abv ;
 	  if ls.nmembers > 1 then (
-	    let iov' = Iovecl.copy iov in
-	    dn (castIovAppl name iov') abv (Ordered origin)
+	    let iovl = Iovecl.copy iovl in
+	    dn (castIovAppl name iovl) abv (Ordered origin)
 	  ) ;
 	  array_incr s.ordered origin ;
-	) ;
-	free name ev
+	) else 
+	  Iovecl.free iovl
 
-    | ECast, Ordered rank ->
+    | ECast _, Ordered rank ->
       	if s.got_view then
 	  failwith "got ordered after view" ;
 	if s.seq_rank = ls.rank then
@@ -113,12 +111,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	array_incr s.ordered rank ;
 	up (set name ev[Peer rank]) abv
 
-    | ECast, Unordered seqno ->
+    | ECast iovl, Unordered seqno ->
       	(* Buffer unordered messages until the view.
 	 *)
-	let iov = Iovecl.copy (getIov ev) in
-	Queuee.add (seqno,abv,iov) s.up_unord.(getPeer ev) ;
-	free name ev
+	Queuee.add (seqno,abv,iovl) s.up_unord.(getPeer ev) ;
 
     | _, NoHdr      -> up ev abv (* all other events have NoHdr *)
     | _             -> failwith "non-NoHdr on non ECast"
@@ -127,6 +123,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
   and upnm_hdlr ev = match getType ev with
   | EView ->
+      log (fun () -> "EView") ;
       s.got_view <- true ;
       
       (* Deliver unordered messages and then the view.
@@ -142,50 +139,48 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	) s.up_unord.(i)
       done ;
       upnm ev
+
+  | EExit -> 
+      log (fun () -> "EExit") ;
+      Iq.free s.casts ;
+      Array.iter (fun q -> 
+	Queuee.clean (fun (_,_,iovl) -> Iovecl.free iovl) q
+      ) s.up_unord ;
+      upnm ev
+
   | _ -> upnm ev
 
   and dn_hdlr ev abv = match getType ev with
-  | ECast ->
-      let iov = getIov ev in
-
-      if getNoTotal ev then (
-      	(* Send without ordering properties.
-	 *)
-      	dn ev abv NoHdr
-      ) else if s.blocking then (
+  | ECast iov when not (getNoTotal ev) && getApplMsg ev -> 
+      if s.blocking then (
       	eprintf "SEQUENCER:warning dropping ECast after EBlockOk\n" ;
-	free name ev
+	Iovecl.free iov
       ) else if ls.rank = s.seq_rank then (
 	(* If I'm the sequencer, send out immediately as an ordered message.
 	 * Otherwise, send pt2pt to sequencer and stash a copy of it in
 	 * case the sequencer fails and we need to resend it.
 	 *)
-	let iov = Iovecl.copy (getIov ev) in
-	if ls.nmembers > 1 then
+	if ls.nmembers > 1 then (
+	  let iov = Iovecl.copy iov in
 	  dn ev abv (Ordered(ls.rank))
-	else
-	  free name ev ;
+	);
 	up (castPeerIov name ls.rank iov) abv ;
 	array_incr s.ordered ls.rank
       ) else (
 	ignore (Iq.add s.casts iov abv) ;
-	let iov = Iovecl.copy iov in
-	dn (sendPeerIov name s.seq_rank iov) abv ToSeq ;
-	free name ev
+	dn (sendPeerIov name s.seq_rank iov) abv ToSeq
       )
 
     (* Handle local delivery for sends.
      *)
-  | ESend ->
+  | ESend iovl ->
       let dest = getPeer ev in
       if dest = ls.rank then (
-	let iov = Iovecl.copy (getIov ev) in
-      	up (sendPeerIov name ls.rank iov) abv ;
-  	free name ev
+      	up (sendPeerIov name ls.rank iovl) abv
       ) else (
 	dn ev abv NoHdr
       )
-
+	
   | _ -> dn ev abv NoHdr
 
   and dnnm_hdlr ev = match getType ev with
@@ -195,10 +190,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       if not s.blocking then (
 	s.blocking <- true ;
 	List.iter (fun (seqno,iov,abv) ->
-	  Queuee.add (seqno,abv,iov) s.up_unord.(ls.rank) ;
-	  let iov = Iovecl.copy iov in
-	  dn (castIovAppl name iov) abv (Unordered seqno)
-	) (Iq.list_of_iq s.casts)
+	  Queuee.add (seqno,abv,Iovecl.copy iov) s.up_unord.(ls.rank) ;
+	  dn (castIovAppl name (Iovecl.copy iov)) abv (Unordered seqno)
+	) (Iq.list_of_iq s.casts);
+	Iq.free s.casts;
       ) ;
       dnnm ev
 

@@ -1,14 +1,14 @@
 D/awk-scripts////
 D/perf////
 D/rekey////
-/.cvsignore/1.1/Sun Dec 30 13:32:17 2001//
-/Makefile/1.1/Sun Dec 30 13:29:02 2001//
-/aux.ml/1.1/Thu May 16 10:51:43 2002//
-/aux.mli/1.1/Thu May 16 10:51:43 2002//
-/client.ml/1.1/Sun Dec 30 13:29:02 2001//
-/client.mls/1.1/Sun Dec 30 13:29:02 2001//
-/coord.ml/1.1/Sun Dec 30 13:29:02 2001//
-/coord.mli/1.1/Sun Dec 30 13:29:02 2001//
-/test1.ml/1.1/Sun Dec 30 13:29:02 2001//
-/try.mls/1.1/Sun Dec 30 13:29:02 2001//
-/uptime.mls/1.1/Sun Dec 30 13:29:02 2001//
+/.cvsignore/1.1/Fri Jul 12 08:30:25 2002//
+/Makefile/1.1/Fri Jul 12 08:30:25 2002//
+/aux.ml/1.1/Sun Jul 21 15:49:29 2002//
+/aux.mli/1.1/Sun Jul 21 15:49:29 2002//
+/client.ml/1.1/Fri Jul 12 08:30:25 2002//
+/client.mls/1.1/Fri Jul 12 08:30:25 2002//
+/coord.ml/1.1/Fri Jul 12 08:30:25 2002//
+/coord.mli/1.1/Fri Jul 12 08:30:25 2002//
+/test1.ml/1.1/Fri Jul 12 08:30:25 2002//
+/try.mls/1.1/Fri Jul 12 08:30:25 2002//
+/uptime.mls/1.1/Fri Jul 12 08:30:25 2002//

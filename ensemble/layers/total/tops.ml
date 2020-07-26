@@ -104,20 +104,33 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
   (* UpCast:Data: Got a data message.
    *)
-  | ECast, YesTops -> 
-      handle_msg (Full(abv,(getIov ev))) (getPeer ev);
+  | ECast iovl, YesTops -> 
+      handle_msg (Full(abv, iovl)) (getPeer ev);
 
   | _  -> up ev abv 
 
   and uplm_hdlr ev hdr = match getType ev,hdr with
-  | ECast, Filler -> 
+  | ECast iovl, Filler -> 
       handle_msg Null (getPeer ev) ;
+      Iovecl.free iovl
 
   | _ -> failwith unknown_local
 
   and upnm_hdlr ev = match getType ev with
   |  EBlock -> 
       s.blocked <- true;
+      upnm ev
+
+  (* GC all buffers.
+   *)
+  | EExit ->
+      Array.iter (fun q -> 
+	Queue.iter (function
+	  | Null -> ()
+	  | Full(abv, iov) -> Iovecl.free iov
+	) q ;
+	Queue.clear q;
+      ) s.buf ;
       upnm ev
 
   (* Send a Filler message 
@@ -148,10 +161,28 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | _ -> upnm ev 
 
   and dn_hdlr ev abv = match getType ev with
-  | ECast when not (getNoTotal ev) -> 
-      dn ev abv YesTops;
-      handle_msg (Full(abv,(getIov ev))) ls.rank;
 
+    (* Increment the reference count: this message is being sent 
+     * both locally, and to the network. 
+     *)
+  | ECast iovl when not (getNoTotal ev) -> 
+      log (fun () -> "multicasting") ;
+      if ls.nmembers > 1 then (
+	dn ev abv YesTops;
+	handle_msg (Full(abv,(Iovecl.copy iovl))) ls.rank;
+      ) else
+	up (Event.set name ev [Peer ls.rank]) abv
+
+    (* Handle local delivery for sends.
+     *)
+  | ESend iovl ->
+      let dest = getPeer ev in
+      if dest = ls.rank then (
+      	up (sendPeerIov name ls.rank iovl) abv
+      ) else (
+	dn ev abv NoHdr
+      )
+	
   |  _ -> dn ev abv NoHdr
 
   and dnnm_hdlr = dnnm

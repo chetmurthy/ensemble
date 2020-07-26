@@ -51,22 +51,22 @@ let hdlrs () (ls,vs) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out=d
   in
 
   let up_hdlr ev abv hdr = match getType ev,hdr with
-  | ECast,NoHdr ->
+  | ECast _,NoHdr ->
       if !got_view then
       	failwith "ECast after EView" ;
       Queuee.add (getPeer ev) recd ;
       up ev abv
-  | ECast,NoTot ->
+  | ECast _,NoTot ->
       up ev abv
   | _,NoHdr -> up ev abv
   | _ -> failwith bad_up_event
 
   and uplm_hdlr ev hdr = match getType ev,hdr with
-  | ECast,Gossip(view_id,ranks)  ->
+  | ECast iovl,Gossip(view_id,ranks)  ->
       let origin = getPeer ev in
       chk_rmt := (origin,view_id,ranks) :: !chk_rmt ;
       chk_total () ;
-      (*ack ev ;*) free name ev
+      Iovecl.free iovl
   | _ -> failwith unknown_local
 
   and upnm_hdlr ev = match getType ev with
@@ -78,11 +78,11 @@ let hdlrs () (ls,vs) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out=d
       let ranks = Arrayf.of_list ranks in
       chk_ranks := Some(view_id,ranks) ;
       chk_total () ;
-      dnlm (create name ECast[NoTotal]) (Gossip(view_id,ranks)) ;
+      dnlm (create name (ECast Iovecl.empty) [NoTotal]) (Gossip(view_id,ranks)) ;
       upnm ev
   | _ -> upnm ev
   and dn_hdlr ev abv = match getType ev with
-  | ECast ->
+  | ECast _ ->
       if getNoTotal ev || not (getApplMsg ev) then (
       	dn ev abv NoTot
       ) else (

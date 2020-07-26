@@ -186,6 +186,7 @@ MKLIBO  =
 
 MKSHRLIB   = ld -shared
 MKSHRLIBO   = -o #comment forces a space
+SO = .so
 #*************************************************************#
 SUBMAKE = ; $(MAKE)
 DEPEND  = .depend
@@ -250,5 +251,5 @@ PURIFY 		= $(PURIFY_$(PLATFORM))
 CLEANDIR = \
     $(RM) .nfs* *.cm* .err a.out *.o* *.a *.lib *.asm *~ .*~ .\#*  core *.pdb core gmon.out camlprim*
 
-VERSION = 1_36
+VERSION = 1_37
 #*************************************************************#

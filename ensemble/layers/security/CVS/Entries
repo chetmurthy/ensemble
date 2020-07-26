@@ -1,12 +1,12 @@
-/Makefile/1.4/Wed Aug  1 11:03:55 2001//
-/.cvsignore/1.2/Mon Dec  3 14:45:38 2001//
-/encrypt.ml/1.29/Mon Nov 12 15:17:50 2001//
-/exchange.ml/1.27/Thu Nov  8 14:02:20 2001//
-/optrekey.ml/1.13/Thu Nov  8 14:02:20 2001//
-/perfrekey.ml/1.15/Thu Nov  8 14:02:20 2001//
-/realkeys.ml/1.13/Thu Nov  8 14:02:20 2001//
-/rekey.ml/1.28/Thu Nov  8 14:02:20 2001//
-/rekey_diam.ml/1.6/Thu Nov  8 14:02:20 2001//
-/rekey_dt.ml/1.4/Thu Nov  8 14:02:20 2001//
-/secchan.ml/1.21/Thu Nov  8 14:02:20 2001//
+/.cvsignore/1.2/Fri Jul 12 08:30:02 2002//
+/Makefile/1.4/Fri Jul 12 08:30:02 2002//
+/exchange.ml/1.27/Fri Jul 12 08:30:02 2002//
+/rekey.ml/1.28/Fri Jul 12 08:30:02 2002//
+/encrypt.ml/1.30/Fri Jul 19 07:46:31 2002//
+/optrekey.ml/1.14/Fri Jul 19 07:38:33 2002//
+/perfrekey.ml/1.16/Fri Jul 19 07:39:09 2002//
+/realkeys.ml/1.14/Fri Jul 19 07:38:40 2002//
+/rekey_diam.ml/1.7/Fri Jul 19 07:33:36 2002//
+/rekey_dt.ml/1.5/Fri Jul 19 07:33:37 2002//
+/secchan.ml/1.22/Fri Jul 19 07:34:07 2002//
 D

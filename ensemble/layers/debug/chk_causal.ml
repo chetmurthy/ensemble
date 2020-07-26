@@ -65,7 +65,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   in
 
   let up_hdlr ev abv hdr = match getType ev,hdr with
-  | ECast, (Cast ack_vct) -> 
+  | ECast _, (Cast ack_vct) -> 
       let ack_vct = Arrayf.to_array ack_vct in
       let org = getPeer ev in
       if org <> ls.rank then (
@@ -92,7 +92,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | _ -> upnm ev
 
   and dn_hdlr ev abv = match getType ev with
-  | ECast when not (getNoTotal ev) -> 
+  | ECast _ when not (getNoTotal ev) -> 
       s.acks.(ls.rank) <- succ s.acks.(ls.rank);
       dn ev abv (Cast(Arrayf.of_array s.acks));
   | _ -> dn ev abv NoHdr

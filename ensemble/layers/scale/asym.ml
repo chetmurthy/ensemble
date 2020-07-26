@@ -138,7 +138,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   in
 
   let up_hdlr ev abv hdr = match getType ev, hdr with
-  | (ESend|ESendUnrel), Route(src,dst,ttl) ->
+  | (ESend iovl|ESendUnrel iovl), Route(src,dst,ttl) ->
       let fwd = s.forward.(dst) in
       let peer = getPeer ev in
       if Arrayf.get s.failed src 
@@ -162,9 +162,9 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	dn (setSendUnrelPeer name ev fwd) abv (Route(src,dst,pred ttl))
       ) ;
 
-      free name ev
+      Iovecl.free iovl
 
-  | (ESend|ESendUnrel), Direct(src_time) ->
+  | (ESend _|ESendUnrel _), Direct(src_time) ->
       let origin = getPeer ev in
 (*
       merge "direct" origin ls.rank ls.rank s.last src_time ;
@@ -175,7 +175,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | _, _     -> failwith bad_up_event
 
   and uplm_hdlr ev hdr = match getType ev, hdr with
-  | (ESend|ESendUnrel|ECast|ECastUnrel),
+  | (ESend iovl|ESendUnrel iovl|ECast iovl|ECastUnrel iovl),
     Gossip(send_dest,time0,reply) ->
       let origin = getPeer ev in
       let send_dest = Arrayf.fset send_dest origin ls.rank in
@@ -236,7 +236,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	do_gossip origin false
       ) ;
       
-      free name ev
+      Iovecl.free iovl
 
   | _ -> failwith unknown_local
   and upnm_hdlr ev = match getType ev with
@@ -295,7 +295,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | _ -> upnm ev
   
   and dn_hdlr ev abv = match getType ev with
-  | (ESend|ESendUnrel) ->
+  | (ESend _|ESendUnrel _) ->
       let dest = getPeer ev in
       assert (dest <> ls.rank) ;
       let forward = s.forward.(dest) in

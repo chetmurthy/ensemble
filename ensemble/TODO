@@ -1,7 +1,41 @@
+
 --------------------------------------------------------
-Next
-----
-1. Check the port to solaris.
+
+rand
+
+rand -add_prop total
+
+--------------------------------------------------------
+TODO for 1.37
+-------------
+14. Fix the rest of the total-ordering protocols: (Totem, Total, Sequencer?).
+
+0. Add -fPIC to the CFLAGS.
+
+1. Debug groupd : 
+   - bug 1: uncaught exception
+   - bug 2: refcount bug
+2. Add a transport-mode document
+3. Port to solaris.
+4. Check what happens when we move sockets to OVERLAPPED on win32
+5. Performance: 
+  - 'ce_perf -rpc' spends A LOT of time converting ML sockets to C sockets.
+  - Check other cases
+  - perhaps write a paper on performance improvements and software experience
+    between 1.00v and 1.36v.
+6. The 32bit counter in ce_outboard, that counts stack ids, can overflow.
+7. Fix the DLL version
+8. Split out security and groupd
+9. port the security-infrastructure to win32 (crypto++)
+10. write a configure script (in ML)
+11. Use the new Unix setsock calls for Unix part of socket/s
+12. Port to ocaml-3.05 (use the direct marshaling C<->ML)
+13. Convert from C directly to ML actions, instead of going through an intermidiate representation. 
+
+done:
+-----
+1. Initial work on a JNI port for CE.
+2. Fixed reference counting bugs in total-ordering and Local protocols.
 
 --------------------------------------------------------
 

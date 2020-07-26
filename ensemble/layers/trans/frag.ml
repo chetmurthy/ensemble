@@ -17,7 +17,7 @@ open Event
 open Util
 (**************************************************************)
 let name = Trace.filel "FRAG"
-let failwith = Trace.make_failwith name
+let failwith s = Trace.make_failwith name s
 (**************************************************************)
 
 type frag = {
@@ -64,19 +64,20 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
   (* Handle the fragments as they arrive.
    *)
-  let handle_frag ev i n abv =
+  let handle_frag iovl ev i n abv =
     (* First, flatten the iovec.  Normally, the iovec
      * should have only one element anyway.  
      *)
-    let iovl = getIov ev in
     let origin = getPeer ev in
     
     (* Select the fragment info to use.
      *)
+    let c_type = getCompactType ev in
     let frag = 
-      if getType ev = ECast
-      then s.cast.(origin)
-      else s.send.(origin)
+      match c_type with 
+	| C_ECast -> s.cast.(origin)
+	| C_ESend -> s.send.(origin)
+	| _ -> failwith "Sanity, trying to fragment a non Send/Cast message"
     in
 
     (* Check for out-of-order fragments: could send up lost
@@ -110,14 +111,16 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
      *)
     match abv with
     | None ->
-	if i = pred n then failwith sanity ;
-      	free_noIov name ev
+	if i = pred n then failwith sanity 
     | Some abv ->
     	if i <> pred n then failwith sanity ;
         let iov = Iovecl.concata (Arrayf.of_array frag.iov) in
       	frag.iov <- [||] ;
       	frag.i <- 0 ;
-      	up (set name ev [Iov iov]) abv
+	match c_type with 
+	  | C_ECast -> up (set_typ name ev (ECast iov)) abv
+	  | C_ESend -> up (set_typ name ev (ESend iov)) abv
+	  | _ -> failwith "Sanity, trying to fragment a non Send/Cast message"
   in
 
   let up_hdlr ev abv hdr = match getType ev, hdr with
@@ -125,13 +128,13 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
      *)
   | _, NoHdr -> up ev abv
 
-  | (ECast | ESend), Last(n) ->
-      handle_frag ev (pred n) n (Some abv)
+  | (ECast iovl | ESend iovl), Last(n) ->
+      handle_frag iovl ev (pred n) n (Some abv)
   | _, _     -> failwith bad_up_event
 
   and uplm_hdlr ev hdr = match getType ev, hdr with
-  | (ECast | ESend), Frag(i,n) ->
-      handle_frag ev i n None
+  | (ECast iovl | ESend iovl ), Frag(i,n) ->
+      handle_frag iovl ev i n None
   | _ -> failwith unknown_local
 
   and upnm_hdlr ev = match getType ev with
@@ -152,17 +155,17 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | _ -> upnm ev
   
   and dn_hdlr ev abv = match getType ev with
-  | ECast | ESend ->
+  | ECast iovl | ESend iovl ->
       (* Messages are not fragmented if either:
        * 1) They are small.
        * 2) They are tagged as unreliable. (BUG?)
        * 3) All their destinations are within this process.
        *)
-      let iovl = getIov ev in
       let lenl = Iovecl.len iovl in
+      let c_type = getCompactType ev in
       if lenl <=|| s.max_len
-      || (getType ev = ECast && s.all_local)
-      || (getType ev = ESend && Arrayf.get s.local (getPeer ev))
+      || (c_type = C_ECast && s.all_local)
+      || (c_type = C_ESend && Arrayf.get s.local (getPeer ev))
       then (
 	(* Common case: no fragmentation.
 	 *)
@@ -181,17 +184,22 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
 	let nfrags = Arrayf.length frags in
 	assert (nfrags >= 2) ;
+	let frag_fun = match c_type with 
+	  | C_ESend -> setSendIovFragment 
+	  | C_ECast -> setCastIovFragment 
+	  | _ -> failwith "Sanity, a non Send/Cast message"
+	in
 	for i = 0 to nfrags - 2 do
-	  dnlm (setIovFragment name ev (Arrayf.get frags i)) (Frag(i,nfrags)) ;
+	  dnlm (frag_fun name ev (Arrayf.get frags i)) (Frag(i,nfrags)) ;
 	done ;
 
 	(* The last fragment has the header above us.
          *)
-	dn (setIovFragment name ev (Arrayf.get frags (pred nfrags))) abv (Last(nfrags)) ;
+	dn (frag_fun name ev (Arrayf.get frags (pred nfrags))) abv (Last(nfrags)) ;
 
 	(* Here the iovecl will be freed. 
 	 *)
-	free name ev ;
+	Iovecl.free iovl
       )
   | _ -> dn ev abv NoHdr
 

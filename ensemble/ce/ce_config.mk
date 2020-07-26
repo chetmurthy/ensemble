@@ -9,8 +9,6 @@
 #
 #*************************************************************#
 
-SO = .so
-
 # static or dynamic linking?
 #
 CE_LIB = .so     #.a
@@ -20,9 +18,10 @@ CE_LNKLIB = .so  #.a
 ifeq ("$(PLATFORM)" , "i386-linux")
 CE_LINK_FLAGS = -ltermcap -lm -ldl -lpthread
 CFLAGS = -DINLINE=inline \
-	-O2 -Wall -Wstrict-prototypes -DNDEBUG \
-	-I $(OCAML_LIB)			
+	-O2 -Wall -Wstrict-prototypes \
+	-I $(OCAML_LIB)		
 #-g -p/-pg 
+#-DNDEBUG 
 endif
 
 # SPARC-SOLARIS

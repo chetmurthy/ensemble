@@ -119,7 +119,7 @@ type ('local,'hdr) optimize =
   | NoOpt
   | LocalNoHdr of 'local
   | FullNoHdr of 'hdr
-  | LocalSeqno of 'hdr * Event.typ * ('hdr -> Trans.seqno option) * (Trans.seqno option -> 'hdr)
+  | LocalSeqno of 'hdr * Event.compact_typ * ('hdr -> Trans.seqno option) * (Trans.seqno option -> 'hdr)
 
 (**************************************************************)
 
@@ -254,7 +254,7 @@ let hdr init hdlrs hdr_t opt args vs =
 	  (fun ev msg ->
 	    match msg with
 	    | Local_seqno _ -> 
-		if Event.getType ev == typ then
+		if Event.getCompactType ev == typ then
 		  up ev Local_nohdr (cons (Obj.magic msg : int option)) (* Hack! *)
 		else 
 		  up ev (local_seqno_coerce msg) nohdr (* same hack yet again *)

@@ -212,7 +212,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     (* Gossip Message: if from a live member, copy into
      * the origins row in my acknowledgement matrix.
      *)
-  | (ECast|ESend|ESendUnrel|ECastUnrel), Gossip(g) ->
+  | (ECast iovl|ESend iovl|ESendUnrel iovl|ECastUnrel iovl), Gossip(g) ->
       let origin = getPeer ev in
 
       if (not (Arrayf.get g.g_failed ls.rank)) (* he doesn't think I'm failed *)
@@ -252,7 +252,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  ) ;
 	)
       ) ;
-      free name ev
+      Iovecl.free iovl
 
   | _ -> failwith unknown_local
 

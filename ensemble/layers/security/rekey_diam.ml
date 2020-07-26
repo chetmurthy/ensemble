@@ -324,20 +324,20 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     
   and uplm_hdlr ev hdr = if not s.blocking then 
   match getType ev,hdr with
-  | ECast, CompInst (instr1,diam,instr2) -> 
+  | ECast _, CompInst (instr1,diam,instr2) -> 
       got_comp_inst (instr1,diam,instr2)
 	
-  | ECast, Gather ->
+  | ECast _, Gather ->
       if subleader s.diam = ls.rank then 
 	dnlm (sendPeer name 0) (Component s.diam)
       
-  | ESend, Component c-> 
+  | ESend _, Component c-> 
       got_component (getPeer ev) c
 
-  | ECast, Commit -> 
+  | ECast _, Commit -> 
       recv_commit ()
       
-  | ESend, MAck -> 
+  | ESend _, MAck -> 
       log (fun () -> sprintf "<- Ack %d" (getPeer ev));
       let peer = getPeer ev in 
       recv_from_father (PendAck peer)

@@ -347,10 +347,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       ) else 
 	s.dly_shared_key <- Some (origin,new_key_tag,(Some real))
 
-  | ESend, (Cast1Key _ | Cast2Key _)  when ls.rank=0 -> 
+  | ESend _, (Cast1Key _ | Cast2Key _)  when ls.rank=0 -> 
       bundle hdr
       
-  | ECast, SumCasts sc when origin=0 -> 
+  | ECast _, SumCasts sc when origin=0 -> 
       got_sum_casts sc 
 	
   | _ -> failwith "unknown local"

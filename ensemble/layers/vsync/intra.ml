@@ -44,7 +44,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   (* New view arrived.  If not from me, check it out.  If
    * accepted, bounce off bottom.  
    *)
-  | ECast, View(new_vs) -> (
+  | ECast iov, View(new_vs) -> (
       let origin = getPeer ev in
       if origin <> ls.rank then (
 	if Once.isset s.elected		(* I'm coordinator *)
@@ -62,13 +62,13 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  dnnm (create name EView[ViewState new_vs])
 	)
       ) ;
-      (*ack ev ;*) free name ev
+      Iovecl.free iov
     )
 
   (* New failure announced.  If not from me, check it out.
    * If accepted, bounce off bottom. 
    *)
-  | ECast, Fail(failures) ->
+  | ECast iov, Fail(failures) ->
       let origin = getPeer ev in
       if origin <> ls.rank then (
 	if Once.isset s.elected		(* I've been elected *)
@@ -87,7 +87,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  dnnm (create name EFail[(Failures failures)])
 	)
       ) ;
-      (*ack ev ;*) free name ev
+      Iovecl.free iov
+
   | _ -> failwith unknown_local
 
   and upnm_hdlr ev = match getType ev with

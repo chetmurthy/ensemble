@@ -128,7 +128,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let up_hdlr ev abv () = up ev abv
     
   and uplm_hdlr ev hdr = match getType ev,hdr with
-  | ECast, Start -> (
+  | ECast _, Start -> (
+
       if not s.blocking then 
 	match s.father with 
 	  | None -> 
@@ -136,10 +137,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  | _ -> ()
     )
       
-  | ESend, Component c -> 
+  | ESend _, Component c -> 
       got_component (getPeer ev) c
 	
-  | ECast, NewTree nt -> 
+  | ECast _, NewTree nt -> 
       got_new_tree (getPeer ev) nt
 	
   (* Got a key from the parent.  

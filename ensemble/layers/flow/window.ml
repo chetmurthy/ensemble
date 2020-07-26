@@ -67,14 +67,14 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | _ -> upnm ev
 
   and dn_hdlr ev abv = match getType ev with
-  | ECast ->
+  | ECast iovl ->
       (* If too many unacknowledged messages, buffer the message
        * for future sending.
        *)
       if (s.seqno - s.acked) >= s.window then (
 	log (fun () -> sprintf "window ECast: buffering seqno: %d ack: %d\n" 
 	  (succ s.seqno) s.acked) ;
-        Queuee.add (abv,(getIov ev)) s.buffer
+        Queuee.add (abv,iovl) s.buffer
       ) else (
         s.seqno <- succ s.seqno ;
         dn ev abv ()

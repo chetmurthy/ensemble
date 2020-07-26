@@ -24,8 +24,6 @@
 #endif
 
 
-
-
 /*! The type of floats used here. Should be the same as an
  * ML float.
  */

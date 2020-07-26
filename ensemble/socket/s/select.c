@@ -154,7 +154,7 @@ again:
 
   /* We repeatly select as long as we get EINTR errnos.
    */
-  if (retcode == -1) {
+  if (retcode == -1 && (rp || wp || ep)) {
     if (h_errno == EINTR)
       goto again ;
     serror("select");
@@ -200,7 +200,7 @@ again:
   tv.tv_usec = 0 ;
   retcode = select(max_fd, rp, wp, ep, &tv) ;
   
-  if (retcode == -1) {
+  if (retcode == -1 && (rp || wp || ep)) {
     if (h_errno == EINTR)
       goto again ;
     serror("poll:select");

@@ -71,9 +71,9 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     (* Select the fragment info to use.
      *)
     let frag = 
-      if getType ev = ECast
-      then s.cast.(origin)
-      else s.send.(origin)
+      match getType ev with 
+	| ECast _ -> s.cast.(origin)
+	| _ -> s.send.(origin)
     in
 
     (* Check for out-of-order fragments: could send up lost
@@ -120,20 +120,22 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | _ -> failwith bad_up_event
 
   and uplm_hdlr ev hdr = match getType ev, hdr with
-  | (ECast | ESend), Short(buf) ->
+  | (ECast iovl | ESend iovl), Short(buf) ->
+      assert(Iovecl.len iovl =|| len0);
       let abv = unmarsh buf len0 in
       up ev abv
-  | (ECast | ESend), Frag(i,n,buf) ->
+  | (ECast iovl| ESend iovl), Frag(i,n,buf) ->
+      assert(Iovecl.len iovl =|| len0);
       handle_frag ev i n buf
   | _ -> failwith unknown_local
 
   and upnm_hdlr = upnm 
   
   and dn_hdlr ev abv = match getType ev with
-  | ECast | ESend ->
+  | ECast iovl | ESend iovl ->
       (* Make sure that the iovec is empty
        *)
-      assert (getIov ev = Iovecl.empty);
+      assert (Iovecl.len iovl =|| len0);
 
       (* Messages are not fragmented if either:
        * 1) They are tagged as unreliable. (BUG?)
@@ -142,8 +144,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       let buf = marsh abv in
       let len_buf = Buf.length buf in
       if len_buf <=|| s.max_len
-      || (getType ev = ECast && s.all_local)
-      || (getType ev = ESend && Arrayf.get s.local (getPeer ev))
+      || (getCompactType ev = C_ECast && s.all_local)
+      || (getCompactType ev = C_ESend && Arrayf.get s.local (getPeer ev))
       then (
 	(* Common case: no fragmentation.
 	 *)

@@ -149,7 +149,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   in
   
   let sendHardMsg peer m = 
-    dnlm (Event.create name ESend[Peer peer; ForceVsync]) m in
+    dnlm (Event.create name (ESend Iovecl.empty) [Peer peer; ForceVsync]) m in
   
   let compute_key bignum = 
     let material = DH.compute_key s.dh s.dhl_key bignum in
@@ -245,7 +245,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   
 
   let up_hdlr ev abv hdr = match getType ev,hdr with 
-    | ESend, Data msg -> 
+    | ESend _, Data msg -> 
 	let peer = getPeer ev in
 	handle_data peer msg  abv
 	  
@@ -253,7 +253,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
     
   and uplm_hdlr ev hdr = match getType ev,hdr with
-    | ESend, Piece num -> 
+    | ESend _, Piece num -> 
 	let peer = getPeer ev in
 	log (fun () -> sprintf "DH piece <- %d" peer);
 	let bignum = DH.bignum_of_string s.dh num in 

@@ -70,25 +70,25 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
   let up_hdlr ev abv () = up ev abv
   and uplm_hdlr ev hdr = match getType ev,hdr with
-  | (ECast|ECastUnrel), Leave ->
+  | (ECast iovl | ECastUnrel iovl), Leave ->
       let origin = getPeer ev in 
       if origin <> ls.rank then
 	dnnm (suspectReason name (Arrayf.of_ranks ls.nmembers [origin]) name) ;
-      (*ack ev ;*) free name ev
+      Iovecl.free iovl
 
     (* Watch out!  Be careful about these GotView messages.
      * Because we may get them from leaving members, in
      * which case they should not have set things they
      * shouldn't have.
      *)
-  | (ECast|ECastUnrel|ESend|ESendUnrel), GotView got_view ->
+  | (ECast iovl | ECastUnrel iovl |ESend iovl |ESendUnrel iovl), GotView got_view ->
       if Arrayf.get got_view  ls.rank
       && not (Arrayf.get s.got_view ls.rank) then
 	failwith sanity ;
 	  
       s.got_view <- Arrayf.map2 (||) s.got_view got_view ;
       check_exit () ;
-      (*ack ev ;*) free name ev
+      Iovecl.free iovl
 
   | _ -> failwith unknown_local
 

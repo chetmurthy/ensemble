@@ -1,6 +1,10 @@
+(****************************************************************)
+(* SEQBB.ML                                                     *)
+(* Author: Lars Hofhansl 5/97                                   *)
+(* Bug fixes: Ohad Rodeh, 7/02				        *)
+(****************************************************************)
 (*
- * Module seqBB. An sequencer based broadcast-broadcast
- * total ordering protocol.
+ * An sequencer based broadcast-broadcast total ordering protocol.
  * A sender who wishes to initiate a totally ordered broadcast,
  * sends it immediatly. All receivers buffer the message until
  * they receive a special accept message from the sequencer.
@@ -19,23 +23,22 @@
  * The BB protocol has advantages on multicast networks, with
  * with large messages.
  * 
- * Written by Lars Hofhansl Mai 1997
- * 
+
  * Warning, this is my first Program in ocaml (and ensemble),
  * so be patient with me...
  *)
-
-
-(* import some modules *)
-
+(**************************************************************)
 open Layer
 open Event
 open Util
 open View
 open Trans
-
+open Buf
+(**************************************************************)
 let name = Trace.filel "SEQBB"
-let failwith = Trace.make_failwith name
+let failwith s = Trace.make_failwith name s
+let log = Trace.log name 
+(**************************************************************)
 
 type header = NoHdr
   | Cast         (* an ordered BCast msg *)
@@ -97,7 +100,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
        - all others store the message, until the
          accept message arrives *)
     match getType(ev),hdr with
-    | ECast, Cast ->
+    | ECast iovl, Cast ->
 	let rank = getPeer ev in 
 
       	if ls.rank = s.seq_rank then (
@@ -105,8 +108,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	    seqno rank;*)
 
 	  (* cast accept message *)
-	  dnlm (create name ECast[Peer ls.rank]) (Acc rank);
-
+	  dnlm (Event.create name (ECast Iovecl.empty) [Peer ls.rank]) (Acc rank);
 	  (* deliver *)
 	  up ev abv ;
 
@@ -115,21 +117,30 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  Queue.add (abv,ev) s.to_deliver.(rank);
 	  deliver ()
 	)
+
+    (* This is an already ordered message from the leader.
+     *)
+(*
+  | ECast iovl ,Acc(rank) -> 
+      assert (rank = s.seq_rank && ls.rank <> rank) ;
+      (* deliver the message from rank *)
+      (*printf "got accept %d from %d... queueing\n" seqno rank;*)
+      Queue.add (abv,ev) s.to_deliver.(rank);
+      Queue.add rank s.accepts;
+      deliver ();
+*)
+
     | _ -> up ev abv
 
   (* rcv ev from below, handle msg *)
   and uplm_hdlr ev hdr = match getType ev, hdr with
-  | ECast,Acc(rank) ->
+  | ECast iovl ,Acc(rank) ->
       (* deliver the message from rank *)
+      (*printf "got accept %d from %d... queueing\n" seqno rank;*)
+      assert (Iovecl.len iovl =|| len0) ;
+      Queue.add rank s.accepts;
+      deliver ();
 
-      if( ls.rank <> s.seq_rank ) then (
-	(*printf "got accept %d from %d... queueing\n" seqno rank;*)
-
-	Queue.add rank s.accepts;
-
-	deliver ();
-      );
-      free name ev
   | _ -> failwith "uplm_hdlr... strange"
 
   (* rcv ev from below *)
@@ -143,53 +154,76 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  let (abv,ev) = Queue.take s.to_deliver.(i) in
 	  up ev abv
 	done;
+	Queue.clear s.to_deliver.(i)
       done;
       upnm ev
+
+  (* GC all buffers.
+   *)
+  | EExit ->
+      log (fun () -> "EExit(");
+      Array.iter (fun q -> 
+	Queue.iter (function (abv,ev) -> free name ev) q ;
+	Queue.clear q;
+      ) s.to_deliver;
+      log (fun () -> ")");
+      upnm ev
+
   | _ -> upnm ev
 
   (* rcv ev from above, forward msg *)  
   and dn_hdlr ev abv = 
-    match getType(ev) with
-    | ECast ->
+    match getType ev with
+    | ECast iovl when not (getNoTotal ev) -> 
         (* we got a broadcast request from the application here *)
-	if getNoTotal ev then (
-	  dn ev abv NoHdr
-
-	) else if s.blocking then (
+	if s.blocking then (
 	  eprintf "the view is blocked... dropping\n" ;
-	  free name ev
+	  Iovecl.free iovl
 	) else (
-	  (* all members can cast the message immediately ! *)
-	  if ls.nmembers > 1 then (
-
-	    (* append the sequencer number and send it ... *)
+	  if ls.nmembers = 1 then 
+	    up (Event.set name ev [Peer ls.rank]) abv
+	  else (
+	    log (fun () -> "multicasting");
+	    (* all members can cast the message immediately ! *)
+	    
+	    (* Increment the reference count: this message is being sent 
+	     * both locally, and to the network. *)
+	    ignore (Iovecl.copy iovl);
+	    let ev = Event.set name ev [Peer ls.rank] in
     	    dn ev abv Cast;
 
 	    if( ls.rank = s.seq_rank ) then (
-
+	      
 	      (* if I'm the sequencer send the accept
                  - each message is uniqly indentified by
-                   the senders rank and the sequence number *)
+                 the senders rank and the sequence number *)
 	      (*printf "sequencer sending accept for %d\n" s.curr_seq_num;*)
-
-	      dnlm (create name ECast[Peer ls.rank]) (Acc ls.rank);
-
-	      (* the sequencer delivers the message immediately *)
-	      up (Event.set name ev[Peer ls.rank]) abv
-
+	      dnlm (castEv name) (Acc ls.rank);
+	      
+	      (* the sequencer delivers the message immediately.
+	       *)
+	      up ev abv
 	    ) else (
 	      (* all others store their message and wait for
 	         the accept *)
-
+	      
 	      (*printf "storing own cast %d me %d -- %d\n"
 		s.curr_seq_num ls.rank (getOrigin ev);*)
-
-	      Queue.add (abv,(Event.set name ev[Peer ls.rank]))
-		s.to_deliver.(ls.rank);
-
+	      Queue.add (abv,ev) s.to_deliver.(ls.rank);
 	    )
-          )
+          ) 
         )
+
+    (* Handle local delivery for sends.
+     *)
+  | ESend iovl ->
+      let dest = getPeer ev in
+      if dest = ls.rank then (
+      	up (sendPeerIov name ls.rank iovl) abv
+      ) else (
+	dn ev abv NoHdr
+      )
+
     | _ -> dn ev abv NoHdr
 
   (* rcv ev from above *)

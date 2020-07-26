@@ -112,6 +112,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   in
   
   let handle_actions actions =
+(*    if Array.length actions > 0 then 
+      log (fun () -> "actions");    *)
     for i = 0 to pred (Array.length actions) do 
       match actions.(i) with
       | Cast(msg) ->
@@ -119,7 +121,16 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       	  dnlm (castIovAppl name msg) ()
       | Send(dest,msg) ->
 	  assert (unblocked s) ;
-	  for i = 0 to pred (Array.length dest) do
+	  let len = Array.length dest in
+	  if len =| 0 then (
+	    eprintf "PARTIAL_APPL:dest=[||],rank=%d,nmembers=%d\n" ls.rank ls.nmembers ;
+	    raise (Invalid_argument "Empty send list");
+	  );
+	  for i = 0 to pred len do
+	    let msg = 
+	      if i >| 0 then Iovecl.copy msg
+	      else msg
+	    in
 	    let dest = dest.(i) in
 	    if dest =| ls.rank then
 	      log (fun () -> sprintf "send to myself dest=%d" dest) ;
@@ -144,17 +155,13 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let up_hdlr ev abv () = up ev abv
 
   and uplm_hdlr ev () = match getType ev with
-  | ECast ->
+  | ECast iovl ->
       let origin = getPeer ev in
-      let iov = getIov ev in
-      handle_actions (s.recv_cast.(origin) iov) ;
-      free_noIov name ev
+      handle_actions (s.recv_cast.(origin) iovl)
 
-  | ESend ->
+  | ESend iovl ->
       let origin = getPeer ev in
-      let iov = getIov ev in
-      handle_actions (s.recv_send.(origin) iov) ;
-      free_noIov name ev
+      handle_actions (s.recv_send.(origin) iovl)
      
   | _ -> failwith "got bad uplm event"
 
@@ -205,8 +212,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
   | EFlowBlock -> 
       let fb = getFlowBlock ev in
-      s.handlers.flow_block fb ;
-      free name ev
+      s.handlers.flow_block fb
 
   | EAccount ->
       logb (fun () -> [
@@ -220,9 +226,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   and dn_hdlr ev abv = match getType ev with
     (* Hack!!! Add NoTotal flag to all messages from above.
      *)
-  | ECast | ESend ->
+  | ECast _ -> 
       let ev = setNoTotal name ev in
       dn ev abv ()
+
   | _ -> dn ev abv ()
 
   and dnnm_hdlr ev = match getType ev with

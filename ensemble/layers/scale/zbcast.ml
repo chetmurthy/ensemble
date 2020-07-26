@@ -151,7 +151,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       | Msg(_, _, abv) ->
 	  s.acct_recd <- succ s.acct_recd ;
           update_appl_info s ;
-          up (create name ECast[Peer rank ; Iov iov]) abv 
+          up (create name (ECast iov) [Peer rank]) abv 
 
       |	Lost ->
 	  s.acct_lost <- succ s.acct_lost ;
@@ -202,7 +202,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   in
 
   let up_hdlr ev abv hdr = match getType ev,hdr with
-  | (ECast|ESend), Data(rank, seqno, retrans, is_cast) ->
+  | (ECast iov|ESend iov), Data(rank, seqno, retrans, is_cast) ->
       if rank <> ls.rank then (
 	log (fun () -> sprintf "got:(%d,%d)" rank seqno) ;
 	if is_cast then (
@@ -210,7 +210,6 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	) ;
 	s.high.(rank) <- max s.high.(rank) seqno ;
 	check_gap rank ;
-	let iov = getIov ev in
 	if seqno >= s.free.(rank)
 	&& Iq.assign s.casts.(rank) seqno iov (Msg(s.round, s.round, abv))
 	then (
@@ -231,7 +230,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
 
   and uplm_hdlr ev hdr = match getType ev, hdr with
-  | (ECast|ESendUnrel), Gossip(round, avail) ->
+  | (ECast _|ESendUnrel _), Gossip(round, avail) ->
       if getPeer ev = ls.rank then failwith "gossip from myself" ;
       let requests = ref [] in
       for rank = 0 to pred ls.nmembers do 
@@ -260,7 +259,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       (*ack ev ;*) free name ev
 
 
-  | (ECast|ESend), Request(round, requests) ->
+  | (ECast _|ESend _), Request(round, requests) ->
       if getPeer ev = ls.rank then failwith "request from myself" ;
       if round <> s.round then (  
 	logg (fun () -> sprintf "rank=%d round=%d origin=%d old-gossip=%d"
@@ -273,7 +272,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  if s.datasent < s.max_entropy && i < nreqs then (
 	    let (rank, seqno) = Arrayf.get requests i in
 	    (* Suppress my cast request *)
-	    if getType ev = ECast then (
+	    if getCompactType ev = C_ECast then (
 	      Hashtbl.remove s.req_tbl (rank, seqno) ;
 	    ) ;
 	    begin match Iq.get s.casts.(rank) seqno with
@@ -283,7 +282,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 		  ignore (Iq.msg_update s.casts.(rank) seqno (Msg(round, s.round, abv)))
 		) ;
 		(* If the request is casted, so is the reply *)
-		if getType ev = ECast then (
+		if getCompactType ev = C_ECast then (
 		  dn (castPeerIov name rank iov) abv (Data(rank, seqno, true, true)) ;
 		  Hashtbl.remove s.reply_tbl (rank, seqno) ;
 		) else (
@@ -420,10 +419,9 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   and dn_hdlr ev abv = match getType ev with
     (* ECast: Increment my recd counter.  Then pass the event down.
      *)
-  | ECast ->
+  | ECast iov ->
       s.acct_recd <- succ s.acct_recd ;
       update_appl_info s ;
-      let iov = getIov ev in
       ignore (Iq.assign s.casts.(ls.rank) s.recd.(ls.rank) iov (Msg(s.round, s.round, abv))) ;
       if s.disseminate then 
         dn ev abv (Data(ls.rank, s.recd.(ls.rank), false, true))

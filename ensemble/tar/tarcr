@@ -20,7 +20,7 @@ cp -r $root $tardir
 
 echo "Removing some files"
 rm -f $tardir/TODO
-rm -f $tardir/doc
+rm -rf $tardir/doc
 
 set tmp         = /tmp/tarcr$$
 /bin/rm -f .unknown

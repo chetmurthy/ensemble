@@ -145,7 +145,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	    (* Don't forget to set the Unreliable option
 	     * for the STABLE layer (see note in stable.ml).
 	     *)
-	    dnlm (create name ECastUnrel[]) (Nak(rank,lo,hi))
+	    dnlm (castUnrel name)  (Nak(rank,lo,hi))
 	  )
 (*
 	)
@@ -192,11 +192,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     (* ECast:Data: Got a data message from other
      * member.  Check for fast path or call recv_cast.
      *)
-  | ECast, Data(seqno) ->
+  | ECast iovl, Data(seqno) ->
       let origin = getPeer ev in
       assert (not (Arrayf.get s.failed origin)) ;
       let buf = Arrayf.get s.buf origin in
-      let iov = getIov ev in
 
       (* Check for fast-path.
        *)
@@ -206,20 +205,20 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	(* The assignment below is unnecessary, but is
 	 * added for the functional optimizations.
 	 *)
-	(*Arraye.set s.buf origin*) let _ = (Iq.opt_insert_doread buf seqno iov abv) in
+	(*Arraye.set s.buf origin*) let _ = (Iq.opt_insert_doread buf seqno iovl abv) in
 (*
       	if seqno <> s.dbg_n.(o) then failwith sanity ;
 	s.dbg_n.(o) <- succ s.dbg_n.(o) ;
 *)   	
 	up ev abv
       ) else (
-      	recv_cast origin seqno abv (getIov ev) ;
-        free name ev
+      	recv_cast origin seqno abv iovl ;
+        Iovecl.free iovl
       )
 
     (* ESend:Ack: Got an ack.
      *)
-  | ESend, Ack seqno ->
+  | ESend _, Ack seqno ->
       (* Update the ack entry.
        *)
       let origin = getPeer ev in
@@ -251,7 +250,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     (* Retrans: Got a retransmission.  Always use the slow
      * path.  
      *)
-  | (ECast|ESend|ECastUnrel|ESendUnrel), Retrans(rank,seqno) ->
+  | (ECast iov|ESend iov|ECastUnrel iov|ESendUnrel iov), Retrans(rank,seqno) ->
       if rank <> ls.rank then (
       	log (fun () -> sprintf "retrans:%d->%d->me:seqno=%d" rank (getPeer ev) seqno) ;
 (*
@@ -263,9 +262,9 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  (Iq.lo buf) (Iq.read buf)
 	  (Iq.hi buf) (string_of_int_list l)
 *)
-        recv_cast rank seqno abv (getIov ev) ;
+        recv_cast rank seqno abv iov ;
       ) ;
-      free name ev
+      Iovecl.free iov
 
   | _, NoHdr -> up ev abv
   | _        -> failwith bad_header
@@ -275,7 +274,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     (* Nak: got a request for retransmission.  Send any
      * messages I have in the requested interval, lo..hi.
      *)
-  | (ESend|ECast|ECastUnrel|ESendUnrel), Nak(rank,lo,hi) ->
+  | (ESend iov|ECast iov|ECastUnrel iov|ESendUnrel iov), Nak(rank,lo,hi) ->
       (* Retransmit any of the messages asked for that I have.
        *)
       (* TODO: check if request is for message from failed member
@@ -297,17 +296,14 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	match Iq.get buf seqno with
 	| Iq.GData(iov,abv) ->
 	    let iov = Iovecl.copy iov in
-	    dn (create name ESendUnrel[
-	      Peer origin ;
-	      Iov iov
-	    ]) abv (Retrans(rank,seqno))
+	    dn (sendUnrelPeerIov name origin iov) abv (Retrans(rank,seqno))
 	| Iq.GReset | Iq.GUnset ->
 	    (* Do nothing...
 	     *)
 	    log (fun () -> sprintf "Nak from %d for message I think is Unset or Reset" origin) ;
       done ;
 	  
-      free name ev
+      Iovecl.free iov
 
   | _ -> failwith unknown_local
 
@@ -403,8 +399,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
     (* ECast: buffer a copy and send it on.
      *)
-  | ECast ->
-      let iov = getIov ev in
+  | ECast iov ->
       let buf = Arrayf.get s.buf ls.rank in
       let seqno = Iq.read buf in
       assert (Iq.opt_insert_check buf seqno) ;
@@ -418,7 +413,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 *)
       dn ev abv (Data seqno)
 
-  | ESend ->
+  | ESend _ ->
       if getApplMsg ev then (
 	dn ev abv NoHdr
       ) else (
@@ -433,7 +428,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
 in {up_in=up_hdlr;uplm_in=uplm_hdlr;upnm_in=upnm_hdlr;dn_in=dn_hdlr;dnnm_in=dnnm_hdlr}
 
-let l args vs = Layer.hdr init hdlrs None (LocalSeqno(NoHdr,ECast,extractor,constructor)) args vs
+let l args vs = Layer.hdr init hdlrs None (LocalSeqno(NoHdr,C_ECast,extractor,constructor)) args vs
 let l2 args vs = Layer.hdr_noopt init hdlrs args vs
 
 let _ = 

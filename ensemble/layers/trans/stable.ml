@@ -114,7 +114,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     (* Gossip Message: if from a live member, copy into
      * the origins row in my acknowledgement matrix.
      *)
-  | (ECast|ESend|ECastUnrel|ESendUnrel), Gossip(remote,failed) ->
+  | (ECast _ |ESend _ |ECastUnrel _ |ESendUnrel _), Gossip(remote,failed) ->
       let origin = getPeer ev in
       if (not (Arrayf.get failed ls.rank)) (* BUG: could auto-fail him *)
       && (not (Arrayf.get s.failed origin))

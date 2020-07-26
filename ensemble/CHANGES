@@ -1,3 +1,11 @@
+Ensemble 1.37
+-------------
+1. Many reference count fixes.
+2. More safe handling of ref-counts
+3. Initial implementation of a JNI interface
+4. Some Makefile fixes, and other minor fixes. 
+
+
 Ensemble 1.36
 -------------
 1. Thread-safe version of CE

@@ -205,6 +205,7 @@ MKLIBO  = /out:
 
 MKSHRLIB   = link /nologo /dll 
 MKSHRLIBO   = /out:
+SO = .dll
 #*************************************************************#
 RANLIB  = echo			# not needed on NT
 SUBMAKE = & $(MAKE)           #SUBMAKE = "& echo"
@@ -260,7 +261,7 @@ HOT_LINK	= $(LIBSYSCL)
 CLEANDIR = \
     $(RM) .nfs* *.cm* *.ppo .err a.out *.o *.obj *.a *.lib *.asm *~ .*~ core *.pdb core gmon.out camlprim*
 
-VERSION = 1_36
+VERSION = 1_37
 #*************************************************************#
 
 

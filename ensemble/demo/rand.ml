@@ -11,18 +11,20 @@ open Buf
 open Appl_intf open New
 (**************************************************************)
 let name = Trace.file "RAND"
-let failwith = Trace.make_failwith name
+let failwith s = Trace.make_failwith name s
 let log = Trace.log name
 (**************************************************************)
 let size = ref 100
 (**************************************************************)
 
-type action = ACast | ASend | ALeave
+type action = ACast | ASend1 | ASend | ALeave | ANone
 
 let string_of_action = function
-    ACast -> "ACast"
+  | ACast -> "ACast"
+  | ASend1 -> "ASend1"
   | ASend -> "ASend"
   | ALeave -> "ALeave"
+  | ANone -> "ANone"
 
 let policy nmembers thresh =
   let next = Random.int 10000000 * nmembers in
@@ -30,29 +32,15 @@ let policy nmembers thresh =
   let action =
     if nmembers >= thresh 
       && p < 10 
-    then 
-      ALeave
-    else 
-      if p < 40
-      then ACast
-      else ASend
-  in 
-  if p < 10 then 
-    log (fun () -> string_of_action action);
-  (action,(Time.of_ints 0 next))
-       (*
-let policy nmembers thresh =
-  let next = Random.int 1000000 * nmembers in
-  let p = Random.int 100 in
-  let action =
-    if nmembers >= thresh
-    && p < 50
     then ALeave
-    else if p < 75
-    then ACast
-    else ASend
-  in (action,(Time.of_ints 0 next))
-*)
+    else if p < 40 then ACast
+    else if p < 70 then ASend 
+    else ASend1 
+  in 
+  (*  if p < 10 then *)
+  log (fun () -> string_of_action action);
+  (action,(Time.of_ints 0 next))
+
 (**************************************************************)
 
 type state = {
@@ -79,12 +67,10 @@ let digest iovl =
 
 let gen_msg () = 
   let len = 
-    if !size > 0 then
-      Random.int !size
-    else
-      0
+    if !size > 0 then Random.int !size
+    else 0
   in
-  (*eprintf "RAND:len=%d\n" len ;*)
+  log (fun () -> sprintf "gen_msg: len=%d" len );
   let len = Buf.len_of_int len in
   let iov = Iovec.alloc len in
   let iov = Iovecl.of_iovec iov in
@@ -109,20 +95,11 @@ let check iovl =
 
 (**************************************************************)
 
-let block_msg (ls,vs) =
-  if Random.int 2 = 0 then (
-    Cast(gen_msg ())
-  ) else (
-    let rec loop () =
-      let rank = Random.int ls.nmembers in
-      if rank = ls.rank then loop () else
-        Send1(rank,gen_msg())
-    in loop ()
-  )
-
 (**************************************************************)
 
-let interface alarm policy thresh on_exit time merge primary_views =
+
+
+let interface alarm policy thresh on_exit time merge primary_views local_send =
   let s = {
     max_ltime   = 0 ;
     last_view	= time ;
@@ -133,13 +110,33 @@ let interface alarm policy thresh on_exit time merge primary_views =
   let install ((ls,vs) as vf) =
     let msg () = gen_msg () in
 
+    let rec choose_dest ()  =
+      if ls.nmembers = 1 then None
+      else
+	let r = Random.int ls.nmembers in
+	if local_send then Some r
+	else
+	  if r = ls.rank then choose_dest ()
+	  else Some r
+    in
+
+    let block_msg () = 
+      if Random.int 2 = 0 then (
+	Cast(gen_msg ())
+      ) else (
+	match choose_dest () with 
+	  | Some dest -> Send1(dest,gen_msg())
+	  | None -> failwith "Sanity: could not choose a peer in the group, group size must be 1."
+      )
+    in
+    
     let heartbeat time =
       max_time := max time !max_time ;
       let acts = ref [] in
   (* BUG?*)
       if Param.bool vs.params "top_dump_linger"
-      && s.last_view <> Time.invalid
-      && time >= Time.add s.last_view (Time.of_int 600) 
+	&& s.last_view <> Time.invalid
+        && time >= Time.add s.last_view (Time.of_int 600) 
       then (
 	printf "RAND: Error, the view lingered more than 600 simulated seconds";
 	dump vf s ;
@@ -157,16 +154,27 @@ let interface alarm policy thresh on_exit time merge primary_views =
 	    eprintf "RAND:%s:casting\n" ls.name ;
   *)
 	    acts := [Cast(msg())] @ !acts;
-	| ASend ->
-	    let dest = Random.int ls.nmembers in
-	    if dest <> ls.rank then (
-	      acts := [Send1(dest, msg())] @ !acts;
-	    )
+	| ASend1 -> (
+	    match choose_dest () with 
+		None -> ()
+	      | Some dest -> 
+		  acts := [Send1(dest, msg())] @ !acts;
+	  )
+	| ASend -> (
+	    let dest1 = choose_dest () in
+	    let dest2 = choose_dest () in
+	    match dest1,dest2 with 
+	      | Some dest1, Some dest2 -> 
+		  log (fun () -> sprintf "Send([%d;%d])" dest1 dest2);
+		  acts := [Send([|dest1; dest2|], msg())] @ !acts;
+	      | _ -> ()
+	  )
 	| ALeave ->
 	    acts := [Cast(msg()); Cast(msg()); Cast(msg()); Control(Leave)] @ !acts ;
 	    if !verbose then (
 	      printf "RAND:%s:Leaving(nmembers=%d)\n" ls.name ls.nmembers
 	    )
+	| ANone -> ()
       ) ;
       Array.of_list !acts
     in
@@ -189,7 +197,8 @@ let interface alarm policy thresh on_exit time merge primary_views =
 
     let block () =
       if ls.nmembers > 1 then (
-      	Array.init 5 (fun _ -> block_msg vf)
+	[||]
+      	(*Array.init 5 (fun _ -> block_msg ())*)
       ) else [||]
     in
     
@@ -258,13 +267,14 @@ let merge       = ref 0
 let nmembers    = ref 7
 let groupd_local = ref false
 let ngroupds    = ref 3
+let local_send    = ref false
 
 (**************************************************************)
 
 let run () =
   let primary_views = Hashtbl.create 503 in
 
-  let props = Property.Drop :: Property.Debug :: Property.vsync in
+  let props = Property.Drop :: Property.Debug  :: Property.vsync in
 
 (*
   Trace.set_trace "merge" (open_out "rand.merge") ;
@@ -284,12 +294,12 @@ let run () =
     "-s",	Arg.Int(fun i -> size := i),undoc ;
     "-groupd_local", Arg.Set(groupd_local),undoc ;
     "-quiet",	Arg.Set(quiet),undoc ;
-    "-ngroupds", Arg.Int (fun i -> ngroupds := i), "number of group-daemons"
+    "-ngroupds", Arg.Int (fun i -> ngroupds := i), "number of group-daemons" ;
+    "-local_send", Arg.Set(local_send), "test sends from an endpoint to itself" 
   ] (Arge.badarg name) 
-  "rand: random failure generation test program" ;
+      "rand: random failure generation test program" ;
 
   let alarm = Appl.alarm name in
-
   if Arge.get Arge.modes = [Addr.Netsim] then (
     Alarm.install_port (-2) ;
   ) ;
@@ -308,7 +318,7 @@ let run () =
     	let vs = View.set vs [Vs_ltime ltime] in
 	let ls = View.local name ls.endpt vs in
     	let time = gettime() in
-    	let interface = interface alarm policy !thresh (instance (ls,vs)) time !merge primary_views in
+    	let interface = interface alarm policy !thresh (instance (ls,vs)) time !merge primary_views !local_send in
     	Appl.config_new interface (ls,vs)
       in instance
     ) else (
@@ -333,7 +343,7 @@ let run () =
     	let vs = View.set vs [Vs_ltime ltime] in
 	let ls = View.local name ls.endpt vs in
     	let time = gettime() in
-    	let interface = interface alarm policy !thresh (instance (ls,vs)) time !merge primary_views in
+    	let interface = interface alarm policy !thresh (instance (ls,vs)) time !merge primary_views !local_send in
 	let groupd = Arrayf.get groupds (Random.int ngroupds) in
   	let glue = Arge.get Arge.glue in
 	let state = Layer.new_state interface in

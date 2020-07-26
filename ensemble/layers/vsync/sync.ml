@@ -92,22 +92,22 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
   (* Block: cast from coordinator. 
    *)
-  | (ECast|ESend), Block ->
+  | (ECast iovl|ESend iovl), Block ->
       if not s.dn_block then (
 	s.dn_block <- true ;
 	dnnm (create name EBlock[])
       ) ;
-      (*ack ev ;*) free name ev
+      Iovecl.free iovl
 
   (* BlockOk: Got block Ok from other members, mark him
    * as OK and check whether we're done blocking.
    *)
-  | (ECast|ESend), BlockOk(block_ok) ->
+  | (ECast iovl|ESend iovl), BlockOk(block_ok) ->
       for i = 0 to pred (Array.length s.block_ok) do
 	s.block_ok.(i) <- s.block_ok.(i) || Arrayf.get block_ok i
       done ;
       check_ok () ;
-      (*ack ev ;*) free name ev
+      Iovecl.free iovl
 
   | _ -> failwith bad_up_event
 
@@ -164,7 +164,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       if not s.dn_block then (
 	logs (fun () -> "broadcasting Block") ;
         s.dn_block <- true ;
-	dnlm (create name ECast[NoTotal]) Block ;
+	dnlm (create name (ECast Iovecl.empty) [NoTotal]) Block ;
         dnnm ev
       ) else (
       	free name ev

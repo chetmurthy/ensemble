@@ -270,10 +270,11 @@ let choose props =
 
 	(* Total ordering implies local delivery.
 	 *)
-	(if p.total then ["Sequencer:Collect"] else if p.local then ["Local"] else []) ::
+	(if p.total then ["Seqbb:Collect"] else 
+	  if p.agree then ["Tops:Collect"] else 
+	    if p.local then ["Local"] else []) ::
 
 	(if p.debug && p.agree then ["Chk_total:Chk_causal"] else []) ::
-	(if p.agree then ["Tops"] else []) ::
 	(if p.debug && p.causal then ["Chk_causal"] else []) :: 
 	(if p.causal then ["Causal"] else []) ::
 	

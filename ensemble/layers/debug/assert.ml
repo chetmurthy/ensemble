@@ -85,8 +85,8 @@ let hdlrs name (ls,vs) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out
       | EMergeDenied
       | EMergeGranted
       | EMergeRequest
-      | ESend
-      | ECast -> 
+      | ESend _
+      | ECast _ -> 
 	  failwith "got msg event with nomsg"
       | EMergeFailed ->
       	  if s.up_merge_failed then failwith "2nd EMergeFailed" ;
@@ -125,11 +125,11 @@ let hdlrs name (ls,vs) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out
     chk_init () ;
     begin
       match getType ev with
-      | ECast
+      | ECast _
       | EMergeRequest
       | EMergeDenied
       | EMergeGranted
-      | ESend ->
+      | ESend _ ->
 	  failwith "got msg event with nomsg"
       | EView ->
       	  if s.dn_view then failwith "2nd EView" ;

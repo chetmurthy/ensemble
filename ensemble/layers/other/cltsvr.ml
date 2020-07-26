@@ -32,12 +32,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
     (* Filter out messages not to me.
      *)
-  | ECast, ClientOnly when     s.client -> up ev abv
-  | ECast, ServerOnly when not s.client -> up ev abv
-  | ECast, NoHdr                        -> up ev abv
-  | ECast, _ ->
-      (*ack ev ;*)
-      free name ev
+  | ECast _, ClientOnly when     s.client -> up ev abv
+  | ECast _, ServerOnly when not s.client -> up ev abv
+  | ECast _, NoHdr                        -> up ev abv
+  | ECast iovl, _ -> Iovecl.free iovl
   | _, NoHdr -> up ev abv
   | _ -> failwith bad_up_event
 
@@ -60,7 +58,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     (* Check bitfields to see if this is a client
      * or server subcast.
      *)
-  | ECast ->
+  | ECast _ ->
       let clt_only = getClientOnly ev
       and svr_only = getServerOnly ev in
       let hdr = match clt_only, svr_only with

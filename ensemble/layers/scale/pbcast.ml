@@ -124,7 +124,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       | Msg(_, abv) ->
 	  s.acct_recd <- succ s.acct_recd ;
           update_appl_info s ;
-          up (create name ECast[Peer rank ; Iov iov]) abv 
+          up (create name (ECast iov) [Peer rank]) abv 
 
       |	Lost ->
 	  s.acct_lost <- succ s.acct_lost ;
@@ -134,13 +134,12 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   in
 
   let up_hdlr ev abv hdr = match getType ev,hdr with
-  | (ECast|ESend), Data(rank,seqno,retrans) ->
+  | (ECast iov|ESend iov), Data(rank,seqno,retrans) ->
       if rank = ls.rank then 
 	failwith "sanity:retransmit of my message" ;
       log (fun () -> sprintf "got:(%d,%d)" rank seqno) ;
       s.high.(rank) <- max s.high.(rank) seqno ;
 
-      let iov = getIov ev in
       if seqno >= s.free.(rank)
       && Iq.assign s.casts.(rank) seqno iov (Msg(s.round, abv))
       then (
@@ -161,7 +160,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
 
   and uplm_hdlr ev hdr = match getType ev, hdr with
-  | (ECast|ESendUnrel), Gossip(round, avail) ->
+  | (ECast _|ESendUnrel _), Gossip(round, avail) ->
       if getPeer ev = ls.rank then failwith "gossip from myself" ;
       let requests = ref [] in
       let nrequests = ref 0 in
@@ -204,7 +203,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       (*ack ev ;*) free name ev
 
 
-  | (ECast|ESend), Request(round,requests) ->
+  | (ECast _ |ESend _), Request(round,requests) ->
       if getPeer ev = ls.rank then failwith "request from myself" ;
       if round <> s.round then (  
 	logg (fun () -> sprintf "rank=%d round=%d origin=%d old-gossip=%d"
@@ -334,10 +333,9 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   and dn_hdlr ev abv = match getType ev with
     (* ECast: Increment my recd counter.  Then pass the event down.
      *)
-  | ECast ->
+  | ECast iov ->
       s.acct_recd <- succ s.acct_recd ;
       update_appl_info s ;
-      let iov = getIov ev in
       ignore (Iq.assign s.casts.(ls.rank) s.recd.(ls.rank) iov (Msg(s.round,abv))) ;
       if s.disseminate then 
         dn ev abv (Data(ls.rank, s.recd.(ls.rank), false))

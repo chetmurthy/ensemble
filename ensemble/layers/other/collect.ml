@@ -15,6 +15,7 @@ let name = Trace.filel "COLLECT"
 
 type header = NoHdr
   | NonAppl
+  | VsyncMsg
 
 type blocking = 
   | Unblocked
@@ -99,7 +100,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let up_hdlr ev abv hdr = match getType ev,hdr with
   (* Application cast.
    *)
-  | ECast,NoHdr ->			
+  | ECast _,NoHdr ->			
       let origin = getPeer ev in
       array_incr s.cast_recv origin ;
       if s.got_expect
@@ -112,7 +113,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
   (* Application send.
    *)
-  | ESend,NoHdr ->			
+  | ESend _,NoHdr ->			
       let origin = getPeer ev in
       array_incr s.send_recv origin ;
       if s.got_expect
@@ -123,7 +124,23 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       if s.blocking = UpBlocking then
 	check_block_ok ()
 
-  | (ECast|ESend), NonAppl
+  (* Some control messages need to be sent with a VS guanranty
+   *)
+    | ECast _, VsyncMsg -> 
+	let origin = getPeer ev in
+	array_incr s.cast_recv origin ;
+	up ev abv ;
+	if s.blocking = UpBlocking then
+	  check_block_ok ()
+	
+    | ESend _, VsyncMsg -> 
+	let origin = getPeer ev in
+	array_incr s.send_recv origin;
+	up ev abv ;
+	if s.blocking = UpBlocking then
+	  check_block_ok ()
+
+  | (ECast _|ESend _), NonAppl
   | _, NoHdr -> up ev abv
   | _        -> failwith bad_header
      
@@ -159,28 +176,37 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | EBlockOk -> 
       assert (s.blocking = DnBlocked) ;
       s.blocking <- UpBlocking ;
-      check_block_ok () ;
-      free name ev
+      check_block_ok ()
 
   | _ -> upnm ev
 
   and dn_hdlr ev abv = match getType ev with
-  | ECast ->
+  | ECast _ ->
       if getApplMsg ev then (
 	assert (s.blocking = Unblocked) ;
 	s.cast_xmit <- succ s.cast_xmit ;
 	dn ev abv NoHdr
       ) else (
-	dn ev abv NonAppl
+	if getForceVsync ev then (
+	  assert (s.blocking = Unblocked) ;
+	  s.cast_xmit <- succ s.cast_xmit ;
+	  dn ev abv VsyncMsg
+	) else
+	  dn ev abv NonAppl
       )
 
-  | ESend ->
+  | ESend _ ->
       if getApplMsg ev then (
 	assert (s.blocking = Unblocked) ;
 	array_incr s.send_xmit (getPeer ev) ;
 	dn ev abv NoHdr
       ) else (
-	dn ev abv NonAppl
+	if getForceVsync ev then (
+	  assert (s.blocking = Unblocked) ;
+	  array_incr s.send_xmit (getPeer ev) ;
+	  dn ev abv VsyncMsg
+	) else
+	  dn ev abv NonAppl
       )
 
   | _ -> dn ev abv NoHdr

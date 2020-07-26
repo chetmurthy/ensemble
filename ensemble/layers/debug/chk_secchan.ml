@@ -220,14 +220,14 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	);
 	free name ev
 
-    | ESend, ChanList l -> 
+    | ESend iovl, ChanList l -> 
 	if not s.blocked then (
 	  s.recv <- succ s.recv ;
 	  let peer = getPeer ev in
 	  s.chans.(peer) <- l ;
 	  check_recv_all ()
 	);
-	free name ev
+	Iovecl.free iovl
 
     | _ -> failwith unknown_local
 		

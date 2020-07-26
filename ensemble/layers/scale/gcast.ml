@@ -99,20 +99,19 @@ let init _ (ls,vs) =
 let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out=dnnm} =
   let log = Trace.log2 name ls.name in
   let up_hdlr ev abv hdr = match getType ev, hdr with
-  | (ESend|ESendUnrel), (Cast(origin) as hdr) ->
+  | (ESend iovl|ESendUnrel iovl), (Cast(origin) as hdr) ->
       if not (Arrayf.get s.failed origin) then (
 	let dests = Arrayf.get s.forward origin in
 	log (fun () -> sprintf "%d ... -> %d -> %d -> %s" 
 	  origin (getPeer ev) ls.rank (Arrayf.int_to_string dests)) ;
-	let iov = getIov ev in
 	Arrayf.iter (fun dest ->
-	  let iov = Iovecl.copy iov in
-	  dn (sendPeerIov name dest iov) abv hdr ;
+	  let iovl = Iovecl.copy iovl in
+	  dn (sendPeerIov name dest iovl) abv hdr ;
 	) dests ;
-	let iov = Iovecl.copy iov in
-	up (castPeerIov name origin iov) abv
+	let iovl = Iovecl.copy iovl in
+	up (castPeerIov name origin iovl) abv
       ) ;
-      free name ev
+      Iovecl.free iovl
 
   | _, NoHdr -> up ev abv
   | _, _     -> failwith bad_up_event
@@ -133,16 +132,15 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | _ -> upnm ev
   
   and dn_hdlr ev abv = match getType ev with
-  | (ECast|ECastUnrel) ->
-      let iov = getIov ev in
+  | (ECast iovl|ECastUnrel iovl) ->
       let dests = Arrayf.get s.forward ls.rank in
       log (fun () -> sprintf "root:%d -> %s" 
 	ls.rank (Arrayf.int_to_string dests)) ;
       Arrayf.iter (fun dest ->
-	let iov = Iovecl.copy iov in
-      	dn (sendPeerIov name dest iov) abv (Cast ls.rank)
+	let iovl = Iovecl.copy iovl in
+      	dn (sendPeerIov name dest iovl) abv (Cast ls.rank)
       ) dests ;
-      free name ev
+      Iovecl.free iovl
 
   | _ -> dn ev abv NoHdr
 

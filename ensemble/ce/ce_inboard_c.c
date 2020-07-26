@@ -427,7 +427,7 @@ ce_st_Init(int argc, char **argv)
 {
     char **ml_args;
 
-    TRACE("ce_st_Init\n");
+    TRACE("ce_st_Init");
     ml_args = ce_process_args(argc, argv);
     caml_startup(ml_args) ;
     
@@ -449,6 +449,7 @@ ce_st_Join(ce_jops_t *jops, ce_appl_intf_t *c_appl)
     CAMLlocal2(jops_v, c_appl_v);
     
     check_valid(c_appl);
+    TRACE("ce_st_Join");
     c_appl->joining = 1;
     if (ce_join_v == NULL){
 	printf("Main loop callback not initialized yet. You need to do"
@@ -474,6 +475,7 @@ ce_st_Main_loop (void)
 	       "ce_process_args first.\n");
 	exit(1);
     }
+    TRACE("ce_st_Main_loop");
     callback(*ce_main_loop_v, Val_unit);
 }
 

@@ -253,12 +253,12 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       let origin = getPeer ev in 
       match getType ev,hdr with
 	  
-  | ECast, Start -> send_component_to_leader ()
+  | ECast _, Start -> send_component_to_leader ()
 
-  | ESend, MyTree (tree, rl) when ls.rank=0 -> 
+  | ESend _, MyTree (tree, rl) when ls.rank=0 -> 
       check_recv_all origin tree rl 
 	
-  | ECast, FinalTree (view_type,tree,inst) when origin=0 ->  
+  | ECast _, FinalTree (view_type,tree,inst) when origin=0 ->  
       recv_final_tree view_type tree inst
 
   | typ, msg -> 

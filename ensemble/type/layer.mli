@@ -55,7 +55,7 @@ type ('local,'hdr) optimize =
   | NoOpt
   | LocalNoHdr of 'local
   | FullNoHdr of 'hdr
-  | LocalSeqno of 'hdr * Event.typ * ('hdr -> Trans.seqno option) * (Trans.seqno option -> 'hdr)
+  | LocalSeqno of 'hdr * Event.compact_typ * ('hdr -> Trans.seqno option) * (Trans.seqno option -> 'hdr)
 
 (**************************************************************)
 (* Message composition functions (for bypass code).

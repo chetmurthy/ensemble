@@ -202,7 +202,6 @@ module Debug = struct
 	  let new_iov = Socket.Basic_iov.flatten ta' in
 	  log_iov new_iov
 	    
-	    
 
   let num_refs (key,t) = Socket.Basic_iov.num_refs t
 

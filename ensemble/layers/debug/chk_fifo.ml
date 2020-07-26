@@ -59,7 +59,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let failwith m = failwith ("CHK_FIFO:"^s.debug^":"^m) in
 
   let up_hdlr ev abv hdr = match getType ev,hdr with
-  | ECast, Cast(chk_from,unique_id,seqno) ->
+  | ECast _, Cast(chk_from,unique_id,seqno) ->
       (*eprintf "CHK_FIFO:%s:CAST+:%s:" name (Endpt.string_of_id ls.endpt) ; eprint_members members ;*)
       let origin = getPeer ev in
 
@@ -90,7 +90,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       array_incr s.cast_up origin ;
       up ev abv
 
-  | ESend, Send(from,dest,seqno) ->
+  | ESend _ , Send(from,dest,seqno) ->
       if dest <> ls.endpt then (
 	eprintf "CHK_FIFO:got send message, but not dest\n" ;
         dnnm (dumpEv name)
@@ -138,11 +138,11 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | _ -> upnm ev
 
   and dn_hdlr ev abv = match getType ev with
-  | ECast ->
+  | ECast _ ->
       dn ev abv (Cast(ls.endpt,(unique()),s.cast_dn)) ;
       s.cast_dn <- succ s.cast_dn
 
-  | ESend ->
+  | ESend _ ->
       let dest = getPeer ev in
       let deste = Arrayf.get vs.view dest in
       let seqno =

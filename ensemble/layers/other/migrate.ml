@@ -40,12 +40,12 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | _ -> failwith bad_up_event
 
   and uplm_hdlr ev hdr = match getType ev, hdr with
-  | ECast, Migrate(address) ->
+  | ECast iovl, Migrate(address) ->
       let origin = getPeer ev in
       s.laddress.(origin) <- address ;
       if ls.am_coord then
 	upnm (create name EPrompt []) ;
-      free name ev
+      Iovecl.free iovl
 
   | _ -> failwith "bad uplm event"
 

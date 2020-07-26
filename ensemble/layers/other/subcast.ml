@@ -18,15 +18,14 @@ type header = NoHdr | Send of rank
 let init = ignore2
 
 let hdlrs () (ls,vs) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out=dnnm} =
-(*let ack = make_acker name dnnm in*)
+
   let up_hdlr ev abv hdr = match getType ev, hdr with
-  | ECast, Send(dest) ->
+  | ECast iovl, Send(dest) ->
       if ls.rank = dest then (
-        up (set name ev [Type ESend(*; Ack NoAck*)]) abv
+        up (set name ev [Type (ESend iovl)]) abv
       ) else (
-      	free name ev
+      	Iovecl.free iovl
       )
-      (*; ack ev*)
 
   | _, NoHdr -> up ev abv
   | _, _     -> failwith bad_up_event
@@ -35,9 +34,9 @@ let hdlrs () (ls,vs) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out=d
   and upnm_hdlr = upnm
 
   and dn_hdlr ev abv = match getType ev with
-  | ESend ->
+  | ESend iovl ->
       let rank = getPeer ev in
-      let ev = set name ev [Type ECast;Peer (-1)] in
+      let ev = set name ev [Type (ECast iovl);Peer (-1)] in
       dn ev abv (Send(rank))
 
   | _ -> dn ev abv NoHdr

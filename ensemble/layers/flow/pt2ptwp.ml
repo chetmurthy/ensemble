@@ -60,13 +60,18 @@ type 'abv state = {
 
 (**************************************************************)
 
-let msg_len s ev = (int_of_len (Iovecl.len (getIov ev))) + s.overhead
+let msg_len s iovl = (int_of_len (Iovecl.len iovl)) + s.overhead
 
 let string_of_queue_len q = string_of_int (Queuee.length q)
 
 let string_of_queue_bytes s q = 
   let len = ref 0 in
-  Queuee.iter (fun (ev,_) -> len := !len + msg_len s ev) q ;
+  Queuee.iter (fun (ev,_) ->
+    match getType ev with 
+      | ECast iovl | ESend iovl | ECastUnrel iovl | ESendUnrel iovl ->
+	  len := !len + msg_len s iovl
+      | _ -> ()
+  ) q ;
   string_of_int !len
 
 let string_of_int_set s = string_of_list string_of_int (IntSet.elements s)
@@ -232,13 +237,13 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
      * another process and send ack to the sender. Finally, deliver 
      * the message.  
      *)
-  | ESend, NoHdr ->
+  | ESend iovl, NoHdr ->
       let origin = getPeer ev in
       if Arrayf.get s.failed origin then
 	log (fun () -> sprintf "message from failed member") 
       else (
 	(*s.msgs <- succ s.msgs ;*)
-	let len = msg_len s ev in
+	let len = msg_len s iovl in
 	array_add s.received origin len ;
 	array_add s.rcredit origin len ;
 	array_sub s.scredit origin len ;
@@ -268,7 +273,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   and uplm_hdlr ev hdr = match getType ev,hdr with
     (* Some credit were sent back, send more data if its waiting.
      *)
-  | ESend, Ack(credit) ->
+  | ESend iovl, Ack(credit) ->
       let origin = getPeer ev in 
       array_add s.send_credit origin credit ;
 
@@ -276,11 +281,11 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       while s.send_credit.(origin) > 0 && not (Queuee.empty buf) do
 	let ev,abv = Queuee.take buf in
 	dn ev abv NoHdr ;
-      	array_sub s.send_credit origin (msg_len s ev)
+      	array_sub s.send_credit origin (msg_len s iovl)
       done ;
       check_wmark origin ;
 
-      free name ev 
+      Iovecl.free iovl
 
   | _ -> failwith unknown_local
 
@@ -371,16 +376,16 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
      * messages, fragmented messages (see note in Frag layer) and 
      * control messages. Unreliable ones are still sent immediately.  
      *)
-  | ESend ->
+  | ESend iovl ->
 (*      if getApplMsg ev || getFragment ev then ( *)
 	let dest = getPeer ev in
 	if Arrayf.get s.failed dest then (
 	  log (fun () -> sprintf "send to failed member") ;
-	  free name ev
+	  Iovecl.free iovl
 	) else if s.send_credit.(dest) > 0 then (
 	  (* Normal case. I have enough credit. 
 	   *)
-	  array_sub s.send_credit dest (msg_len s ev) ;
+	  array_sub s.send_credit dest (msg_len s iovl) ;
           dn ev abv NoHdr
 	) else (
 	  log (fun () -> sprintf "messages are buffered") ;

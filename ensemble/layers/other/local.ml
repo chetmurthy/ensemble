@@ -19,15 +19,14 @@ let hdlrs () (ls,vs) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out=d
   and upnm_hdlr = upnm
 
   and dn_hdlr ev abv = match getType ev with
-  | ECast ->
+  | ECast iovl ->
       dn ev abv () ;
-      up (castPeerIov name ls.rank (getIov ev)) abv
+      up (castPeerIov name ls.rank (Iovecl.copy iovl)) abv
 
-  | ESend ->
+  | ESend iovl ->
       let rank = getPeer ev in
       if ls.rank =| rank then (
-      	up (sendPeerIov name ls.rank (getIov ev)) abv ;
-  	free name ev
+      	up (sendPeerIov name ls.rank iovl) abv ;
       ) else (
 	dn ev abv ()
       )

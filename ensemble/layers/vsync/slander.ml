@@ -35,7 +35,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   and uplm_hdlr ev hdr = match getType ev,hdr with
   (* Got slander message from another member.
    *)    
-  | (ECast|ESend), Slander(suspects) ->
+  | (ECast iovl|ESend iovl), Slander(suspects) ->
       let origin = getPeer ev in
       log (fun () -> sprintf "got Slander(%s) from %d" 
         (Arrayf.bool_to_string suspects) origin) ;
@@ -59,7 +59,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
           dnnm (suspectReason name s.suspects name) ;
         )
       ) ;
-      (*ack ev ;*) free name ev
+      Iovecl.free iovl
+
   | _ -> failwith unknown_local
    
   (* Got suspicion event.

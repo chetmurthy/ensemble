@@ -83,7 +83,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
     (* Ping Message.
      *)
-  | (ECast|ESend|ECastUnrel|ESendUnrel), Ping(failed,cnts) ->
+  | (ECast iov|ESend iov|ECastUnrel iov|ESendUnrel iov), Ping(failed,cnts) ->
       let origin = getPeer ev in
       logp (fun () -> sprintf "Ping from %d %s" origin (Arrayf.int_to_string cnts)) ;
       if origin <> ls.rank		(* Check just in case. *)
@@ -96,7 +96,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       ) else (
 	logp (fun () -> sprintf "dropping ping") ;
       ) ;
-      free name ev
+      Iovecl.free iov
 
   | _ -> failwith unknown_local
 
@@ -130,9 +130,9 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	 *)
 	let ev =
 	  if s.pad >|| len0 then (
-	    create name ECastUnrel[Iov (Iovecl.copy pad)]
+	    castUnrelIov name (Iovecl.copy pad)
 	  ) else (
-	    create name ECastUnrel[]
+	    castUnrel name
 	  )
 	in
 	array_incr s.send ls.rank ;

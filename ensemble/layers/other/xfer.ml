@@ -95,10 +95,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     (* ECast|ESend(XferDone): other member is telling me
      * that its state transfer is complete.
      *)
-  | (ECast|ESend), XferDone ->
+  | (ECast iovl|ESend iovl), XferDone ->
       check_xfer_done (getPeer ev) ;
       (*ack ev ;*)
-      free name ev
+      Iovecl.free iovl
 
   | _ -> failwith "bad uplm event"
 

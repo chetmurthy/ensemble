@@ -56,58 +56,54 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   (* Encrypt the iovec.  Note that most encryption algorithms requires that the
    * payload size be a multiple of 8.
    *)
-  let encrypt ev chan =
-    let iov = getIov ev in
-    let len = Iovecl.len iov in
-    if len =|| len0 then ev,len else (
+  let encrypt iovl chan =
+    let len = Iovecl.len iovl in
+    if len =|| len0 then iovl,len else (
       let fill = len8 -|| (len_of_int ((int_of_len len) mod 8)) in
       let fill = if fill =|| len8 then len0 else fill in
       let iov =
 	if fill =|| len0 then
-          iov
+          iovl
 	else (
 	  (* Add some random filler data to the end.
 	   *)
 	  log (fun () -> sprintf "filler=%d" (int_of_len fill));
-          Iovecl.append iov (Iovecl.of_iovec (Iovec.alloc fill))
+          Iovecl.append iovl (Iovecl.of_iovec (Iovec.alloc fill))
 	)
       in
-      let iov = core iov chan in
-      let ev = set name ev [Iov iov] in
-      ev,len
+      let iovl = core iovl chan in
+      iovl,len
     )
   in
   
   (* Decrypt the iovector and chop of excess iovec data.
    *)
-  let decrypt ev chan actual =
-    let iov = getIov ev in
-    let len = Iovecl.len iov in
-    if len =||len0 then ev else (
+  let decrypt iovl chan actual =
+    let len = Iovecl.len iovl in
+    if len =||len0 then iovl else (
       assert ((int_of_len len) mod 8 = 0);
-      let iov = core iov chan in
-      let iov_new = Iovecl.sub iov len0 actual in
-      Iovecl.free iov;
-      let ev = set name ev [Iov iov_new] in
-      ev
+      let iovl = core iovl chan in
+      let iovl_new = Iovecl.sub iovl len0 actual in
+      Iovecl.free iovl;
+      iovl_new
     )
   in
 
   
   let up_hdlr ev abv hdr = match getType ev, hdr with
-  | ECast, Encrypted actual -> 
+  | ECast iovl, Encrypted actual -> 
       log (fun () -> sprintf "[decrypting len=%d" (int_of_len actual));
       let src = getPeer ev in
       log (fun () -> "]");
-      let ev = decrypt ev s.r_cast.(src) actual in
-      up ev abv
+      let iovl = decrypt iovl s.r_cast.(src) actual in
+      up (set_typ name ev (ECast iovl)) abv
 	
-  | ESend, Encrypted actual -> 
+  | ESend iovl, Encrypted actual -> 
       log (fun () -> sprintf "[decrypting len=%d" (int_of_len actual));
       let src = getPeer ev in
-      let ev = decrypt ev s.r_send.(src) actual in
+      let iovl = decrypt iovl s.r_send.(src) actual in
       log (fun () -> "]");
-      up ev abv
+      up (set_typ name ev (ECast iovl)) abv
 	
   | _, NoHdr -> up ev abv
   | _, _     -> failwith bad_up_event
@@ -116,18 +112,18 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   and upnm_hdlr = upnm
   
   and dn_hdlr ev abv = match getType ev with
-  | ECast when getApplMsg ev -> 
+  | ECast iovl when getApplMsg ev -> 
       log (fun () -> "[encrypting");
-      let ev,len = encrypt ev s.x_cast in
+      let iovl,len = encrypt iovl s.x_cast in
       log (fun () -> sprintf "actual=%d]" (int_of_len len));
-      dn ev abv (Encrypted len)
+      dn (set_typ name ev (ECast iovl)) abv (Encrypted len)
 
-  | ESend when getApplMsg ev -> 
+  | ESend iovl when getApplMsg ev -> 
       log (fun () -> "[encrypting");
       let dst = getPeer ev in
-      let ev,len = encrypt ev s.x_send.(dst) in
+      let iovl,len = encrypt iovl s.x_send.(dst) in
       log (fun () -> sprintf "actual=%d]" (int_of_len len));
-      dn ev abv (Encrypted len)
+      dn (set_typ name ev (ESend iovl)) abv (Encrypted len)
 
   | _ -> dn ev abv NoHdr
 

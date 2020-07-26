@@ -137,7 +137,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   in
 
   let up_hdlr ev abv hdr = match getType ev, hdr with
-  | ECast, Ordered(seqno,token) ->
+  | ECast iov, Ordered(seqno,token) ->
       if s.got_view then
       	failwith "ECast(Ordered) after EView" ;
       if !verbose then
@@ -146,13 +146,12 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
         up ev abv
       ) else (
 	let origin = getPeer ev in
-	let iov = getIov ev in
 	if not (Iq.assign s.order seqno iov (origin,abv)) then
 	  failwith "2nd seqno of same seqno" ;
 	Iq.get_prefix s.order (fun seqno iov (origin,abv) ->
 	  up (castPeerIov name origin iov) abv
 	) ;
-        (*ack ev ;*) free name ev
+        Iovecl.free iov
       ) ;
 
       check_token () ;
@@ -162,19 +161,18 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       if token & (getPeer ev) = s.prev then
         got_token (succ seqno)
 
-  | ECast, Unordered ->
+  | ECast iovl, Unordered ->
       if s.got_view then
       	failwith "ECast(Unordered) after EView" ;
-      Queuee.add (abv,(getIov ev)) s.unord.((getPeer ev)) ;
-      (*ack ev ;*) free name ev
+      Queuee.add (abv,iovl) s.unord.((getPeer ev))
 
   | _, NoHdr      -> up ev abv (* all other events have NoHdr *)
   | _             -> failwith "non-NoHdr on non ECast"
 
   and uplm_hdlr ev hdr = match getType ev,hdr with
-  | ESend, TokenSend(token) ->
+  | ESend iovl, TokenSend(token) ->
       got_token token ;
-      (*ack ev ;*) free name ev
+      Iovecl.free iovl
 
   | _ -> failwith "non-NoHdr on non ECast"
 
@@ -196,20 +194,36 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
         ) s.unord.(i)
       done ;
       upnm ev
+
+  | EExit -> 
+      Queuee.clean (function (_,iovl) -> Iovecl.free iovl ) s.waiting ;
+      Array.iter (function q -> 
+	Queuee.clean (function (_,iovl) -> Iovecl.free iovl ) q
+      ) s.unord ;
+      upnm ev
+
   | _ -> upnm ev
 
   and dn_hdlr ev abv = match getType ev with
-  | ECast ->
+  | ECast iovl ->
       if getNoTotal ev then (
       	dn ev abv NoHdr
       ) else if ls.nmembers > 1 then (
 	if s.got_view then
 	  failwith "ECast after EView" ;
-	Queuee.add (abv,(getIov ev)) s.waiting ;
-        free name ev
+	Queuee.add (abv,iovl) s.waiting ;
       ) else (
-	up (castPeerIov name ls.rank (getIov ev)) abv ;
-        free name ev
+	up (castPeerIov name ls.rank iovl) abv
+      )
+
+    (* Handle local delivery for sends.
+     *)
+  | ESend iovl ->
+      let dest = getPeer ev in
+      if dest = ls.rank then (
+      	up (sendPeerIov name ls.rank iovl) abv
+      ) else (
+	dn ev abv NoHdr
       )
 
   | _ -> dn ev abv NoHdr
@@ -226,10 +240,6 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	dn (castIov name iov) abv Unordered
       ) s.waiting ;
       dnnm ev
-(*
-  | EAck ->
-      free name ev
-*)
 
   | _ -> dnnm ev
 

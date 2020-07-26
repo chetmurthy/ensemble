@@ -34,12 +34,17 @@ type 'abv state = {
 
 (**************************************************************)
 
-let msg_len s ev = (int_of_len (Iovecl.len (getIov ev))) + s.overhead
+let msg_len s iovl = (int_of_len (Iovecl.len iovl)) + s.overhead
 
 let string_of_queue_len q = string_of_int (Queuee.length q)
 let string_of_queue_bytes s q = 
   let len = ref 0 in
-  Queuee.iter (fun (ev,_) -> len := !len + msg_len s ev) q ;
+  Queuee.iter (fun (ev,_) -> 
+    match getType ev with 
+      | ECast iovl | ESend iovl | ECastUnrel iovl | ESendUnrel iovl ->
+	  len := !len + msg_len s iovl
+      | _ -> ()
+  ) q ;
   string_of_int !len
 
 let dump vf s = Layer.layer_dump name (fun (ls,vs) s -> [|
@@ -96,9 +101,9 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
      * send an acknowledgement.  Finally, deliver the
      * message.  
      *)
-  | ESend, NoHdr ->
+  | ESend iovl, NoHdr ->
       let origin = getPeer ev in
-      array_add s.recv_credit origin (msg_len s ev) ;
+      array_add s.recv_credit origin (msg_len s iovl) ;
       if s.recv_credit.(origin) > s.ack_thresh then (
 	dnlm (sendPeer name origin) (Ack(s.recv_credit.(origin))) ;
 	s.recv_credit.(origin) <- 0 ;
@@ -111,7 +116,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   and uplm_hdlr ev hdr = match getType ev,hdr with
     (* Some credit were sent back, send more data if its waiting.
      *)
-  | ESend, Ack(credit) ->
+  | ESend iovl, Ack(credit) ->
       let origin = getPeer ev in 
       array_add s.send_credit origin credit ;
 
@@ -121,7 +126,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	 *)
 	let ev,abv = Queuee.take buf in
 	dn ev abv NoHdr ;
-      	array_sub s.send_credit origin (msg_len s ev)
+      	array_sub s.send_credit origin (msg_len s iovl)
       done ;
 
       check_wmark origin ;
@@ -169,15 +174,15 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     (* Send a message to each destination.  If we don't have
      * any credit, then buffer it.  
      *)
-  | ESend ->
+  | ESend iovl ->
       let dest = getPeer ev in
       if Arrayf.get s.failed dest then (
 	log (fun () -> sprintf "send to failed member") ;
-	free name ev
+	Iovecl.free iovl
       ) else if s.send_credit.(dest) > 0 then (
 	(* Normal case. I have enough credit.
 	 *)
-	array_sub s.send_credit dest (msg_len s ev) ;
+	array_sub s.send_credit dest (msg_len s iovl) ;
         dn ev abv NoHdr
       ) else (
 	log (fun () -> sprintf "messages are buffered") ;

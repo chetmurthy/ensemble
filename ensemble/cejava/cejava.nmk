@@ -1,0 +1,16 @@
+# -*- Mode: makefile -*- 
+#*************************************************************#
+#
+# CEJAVA.MK: This set of definitions is included at the
+# beginning of the CE makefile, it includes standard definitions
+# for windows systems.
+#
+# Author: Ohad Rodeh, 7/2002
+#
+#*************************************************************#
+
+CFLAGS = -DINLINE=__inline /Ox /MT /W3 -DNDEBUG 
+CC = cl /nologo 
+LINK = link /nologo /dll
+J2SDK_PLATFORM = win32
+

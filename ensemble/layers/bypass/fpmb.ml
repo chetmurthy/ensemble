@@ -133,7 +133,7 @@ let l state vf =
 	    ignore (Iq.opt_insert_doread buf seqno iov abv_mnak) ;
 	    array_incr appl_s.Top_appl.cast_recv peer
 	  ) else (
-	    up (bodyCore name ECast peer iov) (Local(Opt0 seqno))
+	    up (bodyCore name (ECast iov) peer) (Local(Opt0 seqno))
 	  )
       and send_bypass peer seqno iov =
 	let recvs = Arrayf.get pt2pt_s.Pt2pt.recvs peer in
@@ -145,7 +145,7 @@ let l state vf =
 	  ignore (Iq.opt_update_update recvs seqno) ;
 	  array_incr appl_s.Top_appl.send_recv peer
 	) else (
-	  up (bodyCore name ESend peer iov) (Local(Opt1 seqno))
+	  up (bodyCore name (ESend iov) peer) (Local(Opt1 seqno))
 	)
       in
   
@@ -161,8 +161,8 @@ let l state vf =
       let up ev msg =
 	let peer = getPeer ev in
 	match getType ev,msg with
-	| ECast,Local(Opt0 seqno) -> cast_bypass peer seqno (getIov ev)
-	| ESend,Local(Opt1 seqno) -> send_bypass peer seqno (getIov ev)
+	| ECast iovl,Local(Opt0 seqno) -> cast_bypass peer seqno iovl
+	| ESend iovl,Local(Opt1 seqno) -> send_bypass peer seqno iovl
 	| _ -> up ev msg
       in
 

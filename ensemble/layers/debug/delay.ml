@@ -49,7 +49,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let failwith = layer_fail dump vf s name in
 
   let up_hdlr ev abv hdr = match getType ev, hdr with
-  | ECast, NoHdr -> 
+  | ECast _, NoHdr -> 
 (*	s.count <- (s.count + 1) mod s.counter;
  	if 0<=s.count & s.count<=3 then up ev abv 
 	else let r = (Random.int 10) in 

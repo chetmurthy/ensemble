@@ -187,15 +187,15 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   in
 
   let up_hdlr ev abv hdr = (*ack ev ;*) match getType ev, hdr with
-  | ECast, Ordered(token) ->
+  | ECast iovl, Ordered(token) ->
       if Iq.opt_update_old s.order token then (
 	up ev abv
       ) else (
-        add_and_deliver token (getPeer ev) abv (getIov ev) ;
-        free name ev
+        add_and_deliver token (getPeer ev) abv iovl ;
+        Iovecl.free iovl
       )
 
-  | ECast, OrderedTokenSendReq(token,next) ->
+  | ECast iovl, OrderedTokenSendReq(token,next) ->
       let origin = getPeer ev in
       s.acct_data <- succ s.acct_data ;
 
@@ -216,22 +216,21 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       if Iq.opt_update_old s.order (pred token) then (
 	up ev abv
       ) else (
-	add_and_deliver (pred token) origin abv (getIov ev) ;
-	free name ev
+	add_and_deliver (pred token) origin abv iovl ;
+	Iovecl.free iovl
       )
 
-  | ECast, Unordered ->
+  | ECast iovl, Unordered ->
       s.acct_data <- succ s.acct_data ;
       let origin = getPeer ev in
-      Queuee.add (abv,(getIov ev)) s.unord.(origin) ;
-      free name ev
+      Queuee.add (abv,iovl) s.unord.(origin)
 
-  | ECast, NoHdr -> failwith "ECast with NoHdr"
+  | ECast _, NoHdr -> failwith "ECast with NoHdr"
   | _, NoHdr -> up ev abv
   | _ -> failwith bad_up_event
 
   and uplm_hdlr ev hdr = (*ack ev ;*) match getType ev, hdr with
-  | ECast, TokenRequest ->
+  | ECast iovl, TokenRequest ->
       if not s.blocking then (
 	match s.token with
 	| Some t ->
@@ -242,15 +241,15 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	| None -> 
 	    Request.add s.request (getPeer ev)
       ) ;
-      free name ev
+      Iovecl.free iovl
 
     (* Could use sends to pass the token around... (with
      * buffering, is that more efficient?)
      *)
-  | ECast, TokenSend(token,next) ->
+  | ECast iovl, TokenSend(token,next) ->
       if ls.rank = next then
 	got_token token ;
-      free name ev
+      Iovecl.free iovl
       
   | _ -> failwith "bad uplm message"
 
@@ -264,10 +263,16 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	) item
       ) s.unord ;
       upnm ev
+
+  | EExit -> 
+      Queuee.iter (fun (_,iovl) -> Iovecl.free iovl) s.waiting;
+      Queuee.clear s.waiting ;
+      upnm ev
+
   | _ -> upnm ev
 
   and dn_hdlr ev abv = match getType ev with
-  | ECast ->
+  | ECast iovl ->
       begin
 	match s.token with
 	| Some t ->
@@ -279,9 +284,19 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	      s.requested <- true ;
 	      dnlm ev TokenRequest
 	    ) ;
-	    Queuee.add (abv,(getIov ev)) s.waiting
+	    Queuee.add (abv,iovl) s.waiting
       end ;
-      free name ev
+      Iovecl.free iovl
+
+    (* Handle local delivery for sends.
+     *)
+  | ESend iovl ->
+      let dest = getPeer ev in
+      if dest = ls.rank then (
+      	up (sendPeerIov name ls.rank iovl) abv
+      ) else (
+	dn ev abv NoHdr
+      )
 
   | _ -> dn ev abv NoHdr
 

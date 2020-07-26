@@ -208,11 +208,11 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   and uplm_hdlr ev hdr = match getType ev,hdr with
     (* Got a request to start rekeying the group.
      *)
-  | ESend, Rekey flg->
+  | ESend _, Rekey flg->
       if ls.rank<>0 then failwith "got a rekey request, but I'm not leader";
       init_rekey_full flg
 
-  | ESend, Ack (sum,mx) -> 
+  | ESend _, Ack (sum,mx) -> 
       let origin = getPeer ev in
       log2 (fun () -> sprintf "%d [%d<-%d] Ack(%d,%d)" ls.nmembers ls.rank origin sum mx);
       assert (List.mem origin s.children);
@@ -221,7 +221,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       s.mx <- max s.mx mx;
       check_send_ack ()
 
-  | ESend, Ack2 sum -> 
+  | ESend __, Ack2 sum -> 
       assert (ls.rank = 0);
       let origin = getPeer ev in
       log2 (fun () -> sprintf "%d [%d<-%d] Ack2(%d)" ls.nmembers ls.rank origin sum);
@@ -229,14 +229,14 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       s.sum2 <- s.sum2 + sum;
       check_done_ack2 ()
 
-  | (ECast|ESend), Cleanup ->
+  | (ECast _|ESend _), Cleanup ->
       got_cleanup ()
 
-  | ESend, AckCleanup ->
+  | ESend _, AckCleanup ->
       s.acks <- succ s.acks ;
       all_ack_cleanup ()
 
-  | ECast, Commit -> 
+  | ECast _, Commit -> 
       upnm (create name ERekeyCommit[]);
       s.commit <-true 
 

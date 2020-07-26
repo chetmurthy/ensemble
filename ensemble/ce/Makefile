@@ -291,7 +291,7 @@ ce_mtalk_mt$(EXE):  ce_mtalk_mt$(OBJ) libce_mt$(CE_LIB)
 	  libce_mt$(CE_LNKLIB) $(CE_LINK_FLAGS)
 
 ce_perf_mt$(EXE):  ce_perf$(OBJ) libce_mt$(CE_LIB)
-	$(CC) $(CFLAGS) -o ce_perf$(EXE)\
+	$(CC) $(CFLAGS) -o ce_perf_mt$(EXE)\
 	  ce_perf$(OBJ)\
 	  libce_mt$(CE_LNKLIB) $(CE_LINK_FLAGS)
 
@@ -305,6 +305,7 @@ install :
 	$(CP) libce*.lib $(ENSLIB)
 	$(CP) ce.h $(ENSLIB)
 	$(CP) ce_threads.h $(ENSLIB)
+	$(CP) ce_so.h $(ENSLIB)
 	for %%d in ($(DEMOS) $(DEMOSO) ce_outboard$(EXE)) do ( $(CP) %%d $(ENSBIN) )
 
 #	$(CP) libce*.exp $(ENSLIB)
@@ -315,6 +316,7 @@ install :
 	$(CP) libce*.so $(ENSLIB)
 	$(CP) ce.h $(ENSLIB)
 	$(CP) ce_threads.h $(ENSLIB)
+	$(CP) ce_so.h $(ENSLIB)
 	$(CP) $(DEMOS) $(DEMOSO) ce_outboard$(EXE) $(ENSBIN)
 endif
 
