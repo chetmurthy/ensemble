@@ -21,7 +21,7 @@ done
 #
 for i in appl mm crypto crypto/isaac crypto/OpenSSL doc doc/layers groupd \
     infr layers mk route socket socket/u socket/s socket/s/unix socket/s/nt \
-    tar trans tools type util cejava; do
+    trans tools type util cejava; do
       echo "  " $i/Makefile
       sed -f tools/ntify.sed $i/Makefile > $i/Makefile.nt
 done

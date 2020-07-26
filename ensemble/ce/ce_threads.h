@@ -8,7 +8,7 @@
 #ifndef __CE_THREADS_H__
 #define __CE_THREADS_H__
 
-#include "ce_so.h"
+#include "mm_so.h"
 
 #ifdef __cplusplus
 extern "C" {

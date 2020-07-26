@@ -16,6 +16,7 @@
 /* For computing the uptime
  */
 #ifndef _WIN32
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #endif
@@ -23,12 +24,8 @@
 /**************************************************************/
 #define NAME "CE_RAND_MT"
 /**************************************************************/
-typedef struct iov_t {
-    int len;
-    char *data;
-} iov_t;
-
-/**************************************************************/
+#define MIN(x,y)  ((x) > (y) ? (y) : (x))
+#define MAX_MSG_SIZE 16000
 
 #define RAND_PROPS    CE_DEFAULT_PROPERTIES ":XFER"
 
@@ -62,8 +59,10 @@ typedef enum {
 } status_t ;
 
 typedef struct state_t {
-    ce_local_state_t *ls;
-    ce_view_state_t *vs;
+    int rank;
+    int nmembers;
+    int xfer_view;
+    ce_endpt_t endpt;
     ce_appl_intf_t *intf ;
     double next ;
     int sent_xfer;
@@ -77,6 +76,7 @@ static int id_cnt = 0;
 static int thresh = 5;
 static int nmembers = 5;
 static int quiet = 0;
+static int size = 21;
 
 // This function is used prior to its definition. 
 void join(void);
@@ -148,20 +148,20 @@ policy (int rank, int nmembers, double *next /* OUT */, action_t *a /* OUT */) {
     if (nmembers >= thresh) {
 	if (p < 6 && q == 0 )
 	    *a= ALeave; 
-	else if (p < 9 && q == 0)
-	    *a= APrompt;
+	else  if (p < 9 && q == 0)
+	    *a= APrompt; 
 	else if (p < 15 && q == 0)
 	    *a= ASuspect;
 	else if (p < 20 && q == 0)
 	    *a= AProtocol;
 	else if (p < 25 && q == 0)
-	    *a= AProperties;
-	else if (p < 40)
-	    *a = ACast;
-	else if (p < 70)
+	    *a= AProperties; 
+	else if (p < 40) 
+	    *a = ACast; 
+	else  if (p < 70)
 	    *a = ASend;
 	else 
-	    *a = ASend1;
+	    *a = ASend1; 
     } else
 	*a = ANone;
     
@@ -169,85 +169,51 @@ policy (int rank, int nmembers, double *next /* OUT */, action_t *a /* OUT */) {
 }
 
 /**************************************************************/
-#define MSG_SIZE 21
-
 typedef struct msg_t {
     char digest[16];
-    char *data;  
+    char data[MAX_MSG_SIZE];
 } msg_t;
 
-void msg_free(msg_t *msg){
-    free(msg->data);
-    free(msg);
-}
-
-msg_t *
-gen_msg(void)
+void gen_msg(/*OUT*/ msg_t **msg_o, int *len_o)
 {
     msg_t *msg;
-    int i, x;
-    char z[10];
+    int i, len;
     struct MD5Context ctx;
-    
-    msg = record_create(msg_t*, msg);
-    msg->data = (char*) malloc(MSG_SIZE);
-    memset(msg->data,0,MSG_SIZE);
-    for (i=0; i<MSG_SIZE/sizeof(int); i++){
-	x = rand ();
-	sprintf(z,"%d",x);
-	memcpy((char*)(msg->data + (i*sizeof(int))), z, sizeof(int));
-    }
+
+    len = rand () % size ;
+    msg = (msg_t*) malloc(sizeof(msg_t) + size );
+    memset(msg,0,sizeof(msg_t));
+    for (i=0; i< len; i++) 
+	msg->data[i] = 'a' + rand () % 25 ;
     if (rand () % 100 == 0) {
 	printf("message= <");
-	for(i=0; i<MSG_SIZE; i++)
+	for(i=0; i< MIN(16, len); i++)
 	    printf("%c", msg->data[i]);
 	printf(">\n");
     }
     
     ce_MD5Init(&ctx);
-    ce_MD5Update(&ctx, msg->data, MSG_SIZE);
+    ce_MD5Update(&ctx, msg->data, len);
     ce_MD5Final(msg->digest, &ctx);
     
-    return msg;
+    *msg_o = msg;
+    *len_o = 16+len;
 }
 
-iov_t* marsh(msg_t *msg){
-    iov_t *iov;
-    
-    iov=record_create(iov_t*, iov);
-    
-    iov->len=16 + MSG_SIZE;
-    iov->data = (char*) malloc(iov->len);
-    memcpy(iov->data, (char*)msg->data, MSG_SIZE);
-    memcpy((char*) (iov->data + MSG_SIZE) , (char*)msg->digest, 16);
-    
-    return iov;
-}
-
-msg_t *unmarsh(iov_t *iov){
-    msg_t *msg;
-    
-    msg = record_create(msg_t*, msg);
-    memcpy(msg->digest, (char*)(iov->data + MSG_SIZE),  16);
-    msg->data=malloc(MSG_SIZE);
-    memcpy(msg->data, iov->data, MSG_SIZE);
-    
-    return msg;
-}
-
-void check_msg(msg_t *msg){
+void check_msg(int len, msg_t *msg)
+{
     struct MD5Context ctx;
     char new_digest[16];
     int i;
     
     //TRACE("checking msg");
     ce_MD5Init(&ctx);
-    ce_MD5Update(&ctx, msg->data, MSG_SIZE);
+    ce_MD5Update(&ctx, msg->data, len - 16);
     ce_MD5Final(new_digest, &ctx);
     if (memcmp(new_digest,msg->digest,16) != 0) {
 	printf ("Bad message, wrong digest\n");
-	printf("message=  ");
-	for(i=0; i<MSG_SIZE; i++)
+	printf("message= (len=%d) ", len);
+	for(i=0; i<MIN(16,len); i++)
 	    printf("%c", msg->data[i]);
 	printf("\n");
 	exit(1);
@@ -255,71 +221,68 @@ void check_msg(msg_t *msg){
 }
 
 void r_cast(
-    ce_appl_intf_t *c_appl,
-    msg_t *msg
-    ) {
-    iov_t *iov = marsh(msg);
-//    TRACE("r_cast(");
-    ce_trace(NAME, "CAST (id=%x)", (int)c_appl);
-    ce_flat_Cast(c_appl, iov->len, iov->data);
-//    TRACE(")");
-    msg_free(msg);
-    free(iov);  // Don't free the iovec->data, it is consumed.
+    ce_appl_intf_t *c_appl
+    )
+{
+    msg_t *msg;
+    int len;
+
+    gen_msg(&msg,&len);
+    ce_flat_Cast(c_appl, len, (char*)msg);
 }
 
 void r_send(
     ce_appl_intf_t *c_appl,
     int num,
-    ce_rank_array_t dests,
-    msg_t *msg
-    ){
-    iov_t *iov = marsh(msg);
-//    TRACE("r_send(");
-    ce_trace(NAME, "SEND (id=%x)", (int)c_appl);
-    ce_flat_Send(c_appl, num, dests, iov->len, iov->data);
-    msg_free(msg);
-    free(iov); // Don't free the iovec->data, it is consumed.
-//    TRACE(")");
+    ce_rank_array_t dests
+    )
+{
+    msg_t *msg;
+    int len;
+
+    gen_msg(&msg,&len);
+    ce_flat_Send(c_appl, num, dests, len, (char*)msg);
 }
 
 void r_send1(
     ce_appl_intf_t *c_appl,
-    ce_rank_t dest,
-    msg_t *msg
-    ){
-    iov_t *iov = marsh(msg);
-    ce_trace(NAME, "SEND1 (id=%x)", (int)c_appl);
-    ce_flat_Send1(c_appl, dest, iov->len, iov->data);
-    msg_free(msg);
-    free(iov); // Don't free the iovec->data, it is consumed.
+    ce_rank_t dest
+    )
+{
+    msg_t *msg;
+    int len;
+
+    gen_msg(&msg,&len);
+    ce_flat_Send1(c_appl, dest, len, (char*)msg);
 }
 
-int random_member(state_t *s){
+int random_member(state_t *s)
+{
     int rank ;
     
-    rank = (rand ()) % (s->ls->nmembers) ;
-    if (rank == s->ls->rank) 
+    rank = (rand ()) % (s->nmembers) ;
+    if (rank == s->rank) 
 	return random_member(s);
     else 
 	return rank;
 }
 
-void block_msg (state_t *s) {
+void block_msg (state_t *s)
+{
     TRACE_D("block_msg", s->id);
     if (rand() % 2 == 0) 
-	r_cast(s->intf, gen_msg ());
+	r_cast(s->intf);
     else
-	r_send1(s->intf, random_member(s), gen_msg());
+	r_send1(s->intf, random_member(s));
 }
 
 
-void action(void *env){
+void action(void *env)
+{
     state_t *s = (state_t*) env;
     action_t a;
-    ce_rank_array_t dests;
-    ce_rank_array_t suspects;
-    char *proto;
-    char *props;
+    ce_rank_t dests[2];
+    ce_rank_t suspects[2];
     
     //printf("blocked=%d\t xfer_view=%d\t leaving=%d\n",
     //s->blocked, s->vs->xfer_view, s->leaving);
@@ -327,56 +290,56 @@ void action(void *env){
     /* This is to slow down Xfer Views. Otherwise, the
      * application starts to thrash.
      */
-    if (s->vs->xfer_view != 0
+    if (s->xfer_view != 0
 //	&& rand () % nmembers == 0
 	&& s->sent_xfer == 0
 	&& s->status == Normal) {
-	ce_trace(NAME, "%d:XferDone(%s)", s->ls->rank, s->ls->endpt);
+	ce_trace(NAME, "%d:XferDone(%s)", s->rank, s->endpt.name);
 	s->sent_xfer = 1;
 	ce_XferDone(s->intf);
     }
     
-    //      printf ("time=%3.3f next=%3.3f\n", time, s->next);
+    //  printf ("time=%3.3f next=%3.3f\n", time, s->next);
     
     if (/*time > s->next && */
-	s->ls->nmembers >= thresh
+	s->nmembers >= thresh
 	&& s->status == Normal
-	&& s->vs->xfer_view == 0){
-	policy(s->ls->rank, s->ls->nmembers, &(s->next), &a);
+	&& s->xfer_view == 0){
+	policy(s->rank, s->nmembers, &(s->next), &a);
 //	TRACE("action");
-	
+
+	if (rand () % 10 == 0) 
 	switch (a) {
 	case ACast:
 	    TRACE_D("ACast", s->id);
-	    r_cast (s->intf, gen_msg());
-	    r_cast (s->intf, gen_msg());
+	    r_cast (s->intf);
+	    r_cast (s->intf);
 	    break;
 	    
 	case ASend:
 	    TRACE_D("ASend", s->id);
-	    dests = (int*) malloc(2 * sizeof(int));
 	    dests[0] = random_member(s);
 	    dests[1] = random_member(s);
-	    r_send(s->intf, 2, dests, gen_msg());
+	    r_send(s->intf, 2, dests);
 	    break;
 	    
 	case ASend1:
 	    TRACE_D("ASend1", s->id);
-	    r_send1(s->intf, random_member(s), gen_msg());
-	    r_send1(s->intf, random_member(s), gen_msg());
-	    r_send1(s->intf, random_member(s), gen_msg());
+	    r_send1(s->intf, random_member(s));
+	    r_send1(s->intf, random_member(s));
+	    r_send1(s->intf, random_member(s));
 	    break;
 	    
 	case ALeave:
 	    TRACE_D("ALeave", s->id);
-	    r_cast(s->intf, gen_msg());
-	    r_cast(s->intf, gen_msg());
-	    r_cast(s->intf, gen_msg());
+	    r_cast(s->intf);
+	    r_cast(s->intf);
+	    r_cast(s->intf);
 	    ce_trace(NAME, "leaving (ptr=%x)", (int)s->intf);
 	    TRACE_D("leaving ", s->id);
 	    s->status = Leaving;
 	    if (!quiet)
-		printf("CE_RAND_MT:%s:Leaving(nmembers=%d)\n", s->ls->endpt,  s->ls->nmembers);
+		printf("CE_RAND_MT:%s:Leaving(nmembers=%d)\n", s->endpt.name,  s->nmembers);
 	    ce_Leave(s->intf);
 	    
 	    break;
@@ -388,27 +351,22 @@ void action(void *env){
 	    
 	case ASuspect:
 	    TRACE_D("ASuspect", s->id);
-	    suspects = (int*) malloc(2 * sizeof(int));
 	    suspects[0] = random_member(s);
 	    suspects[1] = random_member(s);
 	    if (!quiet)
 		printf ("%d, Suspecting %d and %d\n",
-			s->ls->rank, suspects[0], suspects[1]);
+			s->rank, suspects[0], suspects[1]);
 	    ce_Suspect(s->intf, 2, suspects);
 	    break;
 	    
 	case AProtocol:
 	    TRACE_D("AProtocol", s->id);
-	    proto = malloc(strlen(RAND_PROTO));
-	    strcpy(proto, RAND_PROTO);
-	    ce_ChangeProtocol(s->intf, proto);
+	    ce_ChangeProtocol(s->intf, RAND_PROTO);
 	    break;
 	    
 	case AProperties:
 	    TRACE_D("AProperties", s->id);
-	    props = malloc(strlen(RAND_PROPS));
-	    strcpy(props, RAND_PROPS);
-	    ce_ChangeProperties(s->intf, props);
+	    ce_ChangeProperties(s->intf, RAND_PROPS);
 	    break;
 	    
 	case ANone:
@@ -431,15 +389,16 @@ void main_heartbeat(void *env, double time){}
 void main_exit(void *env){
     state_t *s = (state_t*) env;
     
-    ce_view_full_free(s->ls,s->vs);
-    s->ls = NULL;
-    s->vs = NULL;
-    s->status = LeaveDone;
+    ce_lck_Lock(s->mutex); {
+	s->status = LeaveDone;
+    } ce_lck_Unlock(s->mutex);
+ //   printf("leave, c_appl=%d\n", (int) s->intf);
     TRACE_D("LeaveDone ", s->id);
 }
 
 
-void main_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs){
+void main_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs)
+{
     state_t *s = (state_t*) env;
     int i;
     
@@ -447,9 +406,11 @@ void main_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs){
 //    TRACE("main_install(")
     
     ce_lck_Lock(s->mutex);{
-	ce_view_full_free(s->ls,s->vs);
-	s->ls = ls;
-	s->vs = vs;
+	s->rank = ls->rank;
+	s->nmembers = ls->nmembers;
+	s->xfer_view = vs->xfer_view;
+	memcpy(s->endpt.name,ls->endpt.name, CE_ENDPT_MAX_SIZE);
+	
 	if (s->status == Joining
 	    || s->status == Blocked) {
 	    TRACE_D("Normal ", s->id);
@@ -460,25 +421,25 @@ void main_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs){
     } ce_lck_Unlock(s->mutex);
     
     if (!quiet)
-	if (s->ls->rank == 0) {
+	if (s->rank == 0) {
 	    int day, hr, min, sec;
 	    get_uptime(&day,&hr,&min,&sec);
 	    printf("CE_RAND_MT:%s: View=(uptime=<%dd:%dh:%dm:%ds>,xfer=%d,nmembers=%d)  ",
-		   s->ls->endpt, day, hr, min, sec,
-		   s->vs->xfer_view, ls->nmembers);
+		   ls->endpt.name, day, hr, min, sec,
+		   vs->xfer_view, ls->nmembers);
 	    
 	    printf("[");
-	    for(i=0; i<s->ls->nmembers; i++)
-		printf("%s|", s->vs->view[i]);
+	    for(i=0; i<ls->nmembers; i++)
+		printf("%s|", vs->view[i].name);
 	    printf("]\n");
 	}
     
-//  TRACE2("main_install",s->ls->endpt);
+//  TRACE2("main_install",s->endpt.name);
 
     ce_lck_Lock(s->mutex);{
 	if (s->status == Normal)
-	    if (rand () % nmembers == 0) 
-		r_cast(s->intf, gen_msg());
+//	    if (rand () % nmembers == 0) 
+	    r_cast(s->intf);
     } ce_lck_Unlock(s->mutex);
 
     
@@ -486,21 +447,23 @@ void main_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs){
 }
 
 
-void main_flow_block(void *env, ce_rank_t rank, ce_bool_t onoff){
+void main_flow_block(void *env, ce_rank_t rank, ce_bool_t onoff)
+{
 ///  state_t *s = (state_t*) env;
     
-    //  TRACE2("main_flow_block",s->ls->endpt);
+    //  TRACE2("main_flow_block",s->ls->endpt.name);
 }
 
-void main_block(void *env){
+void main_block(void *env)
+{
     state_t *s = (state_t*) env;
     int i;
     
 //    TRACE("main_block(");
     ce_lck_Lock(s->mutex);
 
-    if (s->ls->nmembers >= thresh
-	&& s->vs->xfer_view == 0
+    if (s->nmembers >= thresh
+	&& s->xfer_view == 0
 	&& s->status == Normal
 	)
 	for(i=1; i<=5; i++)
@@ -515,57 +478,40 @@ void main_block(void *env){
 //    TRACE(")");
 }
 
-void main_recv_cast(void *env, int rank, int len, char *data) {
+void main_recv_cast(void *env, int rank, int len, char *data)
+{
 //  state_t *s = (state_t*) env;
-    iov_t iov;
-    msg_t *msg;
     
 //  printf("main_recv_cast\n"); fflush (stdout);
-    iov.len=len;
-    iov.data=data;
-    msg = unmarsh(&iov);
-    check_msg(msg);
-    msg_free(msg);
+    check_msg(len, (msg_t*)data);
 }
 
-void main_recv_send(void *env, int rank, int len, char *data) {
+void main_recv_send(void *env, int rank, int len, char *data)
+{
 //  state_t *s = (state_t*) env;
-    iov_t iov;
-    msg_t *msg;
     
-//  printf("main_recv_send\n"); fflush (stdout);
-    iov.len=len;
-    iov.data=data;
-    msg = unmarsh(&iov);
-    check_msg(msg);
-    msg_free(msg);
+    check_msg(len, (msg_t*)data);
 }
 
 
 /**************************************************************/
-ce_jops_t *
-create_Jops(void)
+void prepare_jops(ce_jops_t *jops)
 {
-    ce_jops_t *jops; 
 
     /* The rest of the fields should be zero. The
      * conversion code should be able to handle this. 
      */
-    jops = record_create(ce_jops_t*, jops);
-    record_clear(jops);
-//    jops->transports = ce_copy_string("NETSIM");
-    jops->transports = ce_copy_string("UDP");
-    jops->group_name = ce_copy_string("ce_rand2");
-    jops->properties = ce_copy_string(RAND_PROPS) ;
+    memset(jops, 0, sizeof(ce_jops_t));
+    strcpy(jops->transports, "UDP");
+    strcpy(jops->group_name, "ce_rand2");
+    strcpy(jops->properties, RAND_PROPS);
     jops->use_properties = 1;
     jops->hrtbt_rate = 3.0;
-
-    return jops;
 }
 
 void rejoin(state_t *s)
 {
-    ce_jops_t *jops; 
+    ce_jops_t jops; 
     ce_appl_intf_t *main_intf;
 
     TRACE_D("rejoin ", s->id);
@@ -576,24 +522,33 @@ void rejoin(state_t *s)
 				    main_heartbeat);
     
     s->intf= main_intf;
-    jops = create_Jops();
-
-    ce_Join(jops,main_intf);
+    prepare_jops(&jops);
+    
+    ce_Join(&jops,main_intf);
 } 
 
 
 void act_thread(void* env)
 {
     state_t *s = (state_t*) env;
-//    struct timeval tv;
-
+    struct timeval tv;
+    static int counter = 0;
+    
     while(1){
 	/* Sleep for 30msecs*/
-//	tv.tv_sec=0;
-//	tv.tv_usec=30000;
-//	select(0, NULL, NULL, NULL, &tv);
-	
+	tv.tv_sec=0;
+	tv.tv_usec=50000;
+	select(0, NULL, NULL, NULL, &tv);
+//	counter++;
+
+/*	if (counter >= 10000) {
+	    printf("Enough of this test, sleep, then exit\n");
+	    sleep(3) ;
+	    exit(1);
+	    }*/
+		
 	ce_lck_Lock(s->mutex);
+//	TRACE("act_thread: action");
 	switch (s->status) {
 	case Normal:
 	    action(env);
@@ -609,14 +564,15 @@ void act_thread(void* env)
 }
 
 
-void join(){
-    ce_jops_t *jops; 
+void join()
+{
+    ce_jops_t jops; 
     ce_appl_intf_t *main_intf;
     state_t *s;
 
-    jops = create_Jops();
-    s = (state_t*) record_create(state_t*, s);
-    record_clear(s);
+    prepare_jops(&jops);
+    s = (state_t*) malloc(sizeof(state_t));    
+    memset(s, 0, sizeof(state_t));
     s->status = Joining;
     s->mutex = ce_lck_Create();
     s->id = id_cnt++;
@@ -628,7 +584,7 @@ void join(){
 				    main_heartbeat);
     
     s->intf= main_intf;
-    ce_Join(jops,main_intf);
+    ce_Join(&jops,main_intf);
 //    TRACE(")");
 
     ce_thread_Create(act_thread, (void*)s, 10000);
@@ -636,7 +592,8 @@ void join(){
 
 
 void
-fifo_process_args(int argc, char **argv){
+fifo_process_args(int argc, char **argv)
+{
     int i,j ;
     int ml_args=0;
     char **ret = NULL;
@@ -647,54 +604,71 @@ fifo_process_args(int argc, char **argv){
 		continue ;
 	    }
 	    nmembers = atoi(argv[i]);
-	    printf ("nmembers=%d\n", nmembers);
-	} else 
-	    if (strcmp(argv[i], "-t") == 0) {
-		if (++i >= argc){
-		    continue ;
-		}
-		
-		thresh = atoi(argv[i]);
-		printf ("thresh=%d\n", thresh);
-	    } else 
-		if (strcmp(argv[i], "-quiet") == 0) {
-		    quiet = 1;
-		    printf ("quiet\n");
-		} else
-		    ml_args++ ;
+	    printf (" nmembers=%d ", nmembers);
+	}
+	else if (strcmp(argv[i], "-t") == 0) {
+	    if (++i >= argc){
+		continue ;
+	    }
+	    
+	    thresh = atoi(argv[i]);
+	    printf (" thresh=%d ", thresh);
+	}
+	else if (strcmp(argv[i], "-quiet") == 0) {
+	    quiet = 1;
+	    printf ("quiet ");
+	}
+	else if (strcmp(argv[i], "-s") == 0) {
+	    if (++i >= argc){
+		continue ;
+	    }
+	    size = atoi(argv[i]);
+	    printf (" size =%d ", size);
+	    if (size > MAX_MSG_SIZE) {
+		printf("message size too large, requested=%d, maximum=%d",
+		       size, MAX_MSG_SIZE);
+		exit(1);
+	    }
+	}
+	else
+	    ml_args++ ;
     }
+    printf("\n");
     
-    ret = (char**) malloc ((ml_args+3) * sizeof(char*));
+    ret = (char**) malloc ((ml_args+1) * sizeof(char*));
     
     for(i=0, j=0; i<argc; i++) {
-	if (strcmp(argv[i], "-n") == 0) {
+	if (strcmp(argv[i], "-n") == 0
+	    || strcmp(argv[i], "-t") == 0
+	    || strcmp(argv[i], "-s") == 0
+	    || strcmp(argv[i], "-quiet") == 0)
+	{
 	    i++;
 	    continue;
-	} else
-	    if (strcmp(argv[i], "-t") == 0) {
-		i++;
-		continue;
-	    } else {
-		ret[j]=argv[i];
-		j++;
-	    }
+	}
+	else {
+	    ret[j]=argv[i];
+	    j++;
+	}
     }
+
     ret[ml_args] = NULL;
     ce_Init(ml_args, ret); 
 }
 
-void
-exn_handler(char *info)
+void exn_handler(char *info)
 {
     printf("Uncaught ML exception: %s\n", info);
     exit(1);
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     int i;
     
+    ce_set_alloc_fun((mm_alloc_t)malloc);
+    ce_set_free_fun(free);
+
     fifo_process_args(argc, argv);
     
     for (i=0; i<nmembers; i++){

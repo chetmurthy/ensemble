@@ -16,17 +16,42 @@
 #define __CE_H__
 
 #include "e_iovec.h"
-#include "ce_so.h"
+#include "mm_so.h"
 #include <memory.h>
 
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
 
+#include "mm_basic.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+/* The maximal number of iovectors that can fit into an iovec array.
+ */
+#define CE_IOVL_MAX_SIZE 20 
+
+/* The maximal number of destinations in an suspect/send event.
+ */
+#define CE_DESTS_MAX_SIZE 10
+    
+/* Maximal sizes for the various parameters 
+ */
+#define CE_TRANSPORT_MAX_SIZE 32
+#define CE_PROTOCOL_MAX_SIZE 256
+#define CE_GROUP_NAME_MAX_SIZE 64
+#define CE_PROPERTIES_MAX_SIZE 128
+#define CE_PARAMS_MAX_SIZE 256
+#define CE_ENDPT_MAX_SIZE 48
+#define CE_ADDR_MAX_SIZE 48
+#define CE_PRINCIPAL_MAX_SIZE 32
+#define CE_KEY_SIZE 32
+#define CE_NAME_MAX_SIZE CE_ENDPT_MAX_SIZE+24
+#define CE_VERSION_MAX_SIZE 8
+    
 
 /*! The type of floats used here. Should be the same as an
  * ML float.
@@ -36,7 +61,7 @@ typedef double      ce_float_t ;
 /*! The type of boolean values.
  */
 typedef int         ce_bool_t ;
-
+    
 /*! The type of member ranks, an integer. Each group member
  * is ranked between 0 and (nmembers-1), this allows a very 
  * simple addressing scheme. 
@@ -60,15 +85,19 @@ typedef void       *ce_env_t ;
 /*! The type of time. 
  */
 typedef double      ce_time_t ;
-
+    
 /*! The type of endpoint names. This name does not change throughout an
  * endpoint's life.
  */
-typedef char*       ce_endpt_t;
-
+typedef struct ce_endpt_t {
+    char name[CE_ENDPT_MAX_SIZE];
+} ce_endpt_t;
+    
 /*! The type of addresses. 
  */
-typedef char*       ce_addr_t;
+typedef struct ce_addr_t {
+    char addr[CE_ADDR_MAX_SIZE];
+} ce_addr_t;
 
 /*! The type of data.
  */
@@ -97,6 +126,9 @@ typedef ce_rank_t  *ce_rank_array_t ;
  */
 typedef ce_addr_t  *ce_addr_array_t ;
 
+
+
+
 /*! 
  * The view_id structure describes the logical view id. 
  * The basic Ensemble supported abstraction is a group, where members
@@ -121,21 +153,21 @@ typedef ce_view_id_t **ce_view_id_array_t;
  * coordinator, and more.
  */
 typedef struct ce_view_state_t {
-    char* version ;                /*!< The Ensemble version number */
-    char* group ;                  /*!< The group name */
-    char* proto ;                  /*!< The protocol stack in use */
+    char version[CE_VERSION_MAX_SIZE] ;     /*!< The Ensemble version number */
+    char group[CE_GROUP_NAME_MAX_SIZE] ;    /*!< The group name */
+    char proto[CE_PROTOCOL_MAX_SIZE] ;      /*!< The protocol stack in use */
     ce_rank_t coord ;              /*!< The rank of the coordinator */
     int ltime ;                    /*!< The logical time of this view */
     ce_bool_t primary ;            /*!< Is this a primary view? */
     ce_bool_t groupd ;             /*!<  Are we using the group daemon? */
     ce_bool_t xfer_view ;          /*!<  Is this an xfer view? */
-    char* key ;                    /*!<  The security key */
+    char key[CE_KEY_SIZE] ;        /*!<  The security key */
     int num_ids ;                  /*!<  The number of ids in prev_ids */
-    ce_view_id_array_t prev_ids ;  /*!<  The set of previous view_id's */
-    char *params;                  /*!<  The parameters used */
+    ce_view_id_t *prev_ids ;       /*!<  The set of previous view_id's */
+    char params[CE_PARAMS_MAX_SIZE];  /*!<  The parameters used */
     ce_time_t uptime ;             /*!<  The time since this group was initiated */
-    ce_endpt_array_t view ;        /*!<  The set of endpoints in the view */
-    ce_addr_array_t address ;      /*!<  The addresses of group members */
+    ce_endpt_t *view ;             /*!<  The set of endpoints in the view */
+    ce_addr_t  *address ;          /*!<  The addresses of group members */
 } ce_view_state_t ;
 
 /*! 
@@ -146,32 +178,53 @@ typedef struct ce_local_state_t {
     ce_endpt_t endpt ;             /*!< My endpoint name */
     ce_addr_t addr ;               /*!< My address */
     ce_rank_t rank ;               /*!< My rank in the group */
-    char* name ;                   /*!< My name */
+    char name[CE_NAME_MAX_SIZE];   /*!< My name */
     int nmembers ;                 /*!< The number of members in the view */
-    ce_view_id_t *view_id ;        /*!< The current view_id */
+    ce_view_id_t view_id ;         /*!< The current view_id */
     ce_bool_t am_coord ;           /*!< Am I the coordinator? */
 } ce_local_state_t ;
 
+
 /*! 
  * A request structure that describes the list of properties an application
- * wishes from a created endpoint. 
+ * wishes from a created endpoint.
+ *
+ * The format for the string arguments is that they are either all zeros, or, look
+ * like a C-string: set of non-zero characters at the beginning, followed by zeros.
+ * There has to be at a terminating NULL character.
  */
 typedef struct ce_jops_t {
-    ce_time_t hrtbt_rate ;         /*!< The heartbeat rate */
-    char *transports ;             /*!< The transport protocols [UDP,TCP,MCAST] */
-    char *protocol ;               /*!< The protocol stack to use */
-    char *group_name ;             /*!< The group name */
-    char *properties ;             /*!< The set of properties */
-    ce_bool_t use_properties ;     /*!< Use the properties, instead of the protocol ? */
-    ce_bool_t groupd ;             /*!< Use the group daemon? */
-    char *params ;                 /*!< The set of parameters */
-    ce_bool_t client;              /*!< Are we a Client? */
-    ce_bool_t debug ;              /*!< Use the debugging version */
-    char *endpt ;                  /*!< the requested endpoint name */
-    char *princ ;                  /*!< My principal name (security) */
-    char *key ;                    /*!< The security key */
-    ce_bool_t secure ;             /*!< Do we want a secure stack (encryption + authentication? */
-} ce_jops_t;
+    ce_time_t hrtbt_rate ;                     /*!< The heartbeat rate */
+    char transports[CE_TRANSPORT_MAX_SIZE] ;   /*!< The transport protocols [UDP,TCP,MCAST] */
+    char protocol[CE_PROTOCOL_MAX_SIZE] ;      /*!< The protocol stack to use */
+    char group_name[CE_GROUP_NAME_MAX_SIZE] ;  /*!< The group name */
+    char properties[CE_PROPERTIES_MAX_SIZE] ;  /*!< The set of properties */
+    ce_bool_t use_properties ;                 /*!< Use the properties, instead of the protocol ? */
+    ce_bool_t groupd ;                         /*!< Use the group daemon? */
+    char params[CE_PARAMS_MAX_SIZE] ;          /*!< The set of parameters */
+    ce_bool_t client;                          /*!< Are we a Client? */
+    ce_bool_t debug ;                          /*!< Use the debugging version */
+
+    /* Normally, Ensemble generates a unique endpoint name for each
+     * group an application joins (this is what happens if you leave
+     * 'endpt' unmodified).  The application can optionally provide
+     * its own endpoint name.  It can, for instance, reuse an
+     * endpoint name generated by Ensemble for another group (the
+     * same endpoint name can be used to join any number of groups).
+     * The application can even generate an endpoint on its own.
+     * Such names should be unique.  It is best if they contain only
+     * printable characters and do not contain spaces because
+     * Ensemble my print them out in debugging or error messages.
+     * (The names generated by Ensemble fit these characteristics.)
+     * See Endpt.extern in ensemble/type/endpt.mli for more
+     * information.
+     */
+    ce_endpt_t endpt;                          /*!< the requested endpoint name */
+    char princ[CE_PRINCIPAL_MAX_SIZE] ;        /*!< My principal name (security) */
+    char key[CE_KEY_SIZE] ;                    /*!< The security key, has to be either all zerosL, or
+						      of CE_KEY_SIZE */
+    ce_bool_t secure ;                         /*!< Do we want a secure stack (encryption + authentication? */
+} ce_jops_t ;
 
 /*!  
  * The default set of layers. 
@@ -184,39 +237,6 @@ typedef struct ce_jops_t {
  * communication, as well as virtual synchrony. 
  */
 #define CE_DEFAULT_PROPERTIES "Gmp:Sync:Heal:Switch:Frag:Suspect:Flow:Slander"
-
-/**************************************************************/
-/*
- * Utilities
- */
-
-/*! Create a record.
- */
-#define record_create(type, var) ((type)malloc(sizeof(*var)))
-
-/*! Free a record. 
- */ 
-#define record_free(rec) free(rec)
-
-/*! Clear a record.
- */
-#define record_clear(rec) memset(rec, 0, sizeof(*rec))
-
-/*! copy a C string.
- * @param str : a C string (ends with '\0')
- */
-LINKDLL char *ce_copy_string(char *str);
-
-/*! Free a local-state and a view-state.
- * @param ls  A local-state structure.
- * @param vs  A view-state structure. 
- */
-LINKDLL void ce_view_full_free(ce_local_state_t *ls, ce_view_state_t* vs);
-
-/*! Free a jops structure.
- * @param jops A join-options structure. 
- */
-LINKDLL void ce_jops_free(ce_jops_t*) ;
 
 /**************************************************************/
 /*! The application interface. An application has to define several callbacks
@@ -345,8 +365,8 @@ LINKDLL void ce_Leave(ce_appl_intf_t *c_appl) ;
 
 /*!  Send a multicast message to the group.
  * @param c_appl The C-interface.
- * @param num The length of the iovec array.
- * @param iovl an array of io-vectors. The iovl array is consumed.
+ * @param num The length of the iovec array, maximal size is CE_IOVL_MAX_SIZE
+ * @param iovl an array of io-vectors. The iovl array is copied by CE. 
  */
 LINKDLL void ce_Cast(
     ce_appl_intf_t *c_appl,
@@ -356,10 +376,11 @@ LINKDLL void ce_Cast(
 
 /*!  Send a point-to-point message to a set of group members.
  * @param c_appl The C-interface.
- * @param dests A null terminated sequence of integers.
- * @param num_dests The number of destinations.
- * @param num The length of the iovec array.
- * @param iovl an array of io-vectors. The iovl array is consumed.
+ * @param dests An array of integers. The array is copied. 
+ * @param num_dests The number of destinations, maximal number of destinations is
+          CE_DESTS_MAX_SIZE. 
+ * @param num The length of the iovec array,  maximal size is CE_IOVL_MAX_SIZE.
+ * @param iovl an array of io-vectors. The iovl array copied. 
  */
 LINKDLL void ce_Send(
     ce_appl_intf_t *c_appl,
@@ -373,8 +394,8 @@ LINKDLL void ce_Send(
 /*!  Send a point-to-point message to the specified group member.
  * @param c_appl The C-interface.
  * @param dest The destination.
- * @param num The length of the iovec array.
- * @param iovl an array of io-vectors. The iovl array is consumed.
+ * @param num The length of the iovec array,  maximal size is CE_IOVL_MAX_SIZE
+ * @param iovl an array of io-vectors. The iovl array copied by CE.
  */
 LINKDLL void ce_Send1(
     ce_appl_intf_t *c_appl,
@@ -392,7 +413,7 @@ LINKDLL void ce_Prompt(
 
 /*!  Report specified group members as failure-suspected.
  * @param c_appl The C-interface.
- * @param num The length of the suspects array
+ * @param num The length of the suspects array, the maximal size is CE_DESTS_MAX_SIZE.
  * @param suspects A list of member ranks. The array is consumed.
  */
 LINKDLL void ce_Suspect(
@@ -423,7 +444,7 @@ LINKDLL void ce_Rekey(
  *     Inter:Intra:Elect:Merge:Sync:Suspect:
  *     Stable:Vsync:Frag_Abv:Top_appl:
  *     Frag:Pt2ptw:Mflow:Pt2pt:Mnak:Bottom"
- * The protocl_name is consumed.
+ * The protocl_name is copied
  */
 LINKDLL void ce_ChangeProtocol(
     ce_appl_intf_t *c_appl,
@@ -435,7 +456,7 @@ LINKDLL void ce_ChangeProtocol(
  * @param c_appl The C-interface.
  * @param properties a string contaning a colon separated list of
  *    properties. For example: "Gmp:Sync:Heal:Switch:Frag:Suspect:Flow:Xfer"
- * The properties string is consumed.
+ * The properties string is copied
  */
 LINKDLL void ce_ChangeProperties(
     ce_appl_intf_t *c_appl,
@@ -498,8 +519,6 @@ LINKDLL void ce_RmvSockRecv(
 /* Here is a simpler "flat" inteface.
  * No iovec's are used, as above, things are zero-copy.
  */
-
-
 
 
 

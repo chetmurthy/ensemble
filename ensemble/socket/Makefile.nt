@@ -68,6 +68,7 @@ install : $(LIBS)
 	$(CP) libsock$(ARC)  	$(ENSLIB)
 	$(CP) s\$(KIND)\sockfd.h $(ENSLIB)
 	$(CP) s\$(KIND)\e_iovec.h $(ENSLIB)
+	$(CP) s\mm_so.h	$(ENSLIB)
 	$(CP) s\mm.h	$(ENSLIB)
 	$(CP) s\mm_basic.h $(ENSLIB)
 

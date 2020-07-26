@@ -51,9 +51,9 @@ value skt_select(
     /* On Windows, don't mess around with setting
      * the fdsize minimally.
      */
-    SKTTRACE(("select() timeval sec,usec=(%d,%d)",tv.tv_sec,tv.tv_usec));
+//    SKTTRACE(("select() timeval sec,usec=(%d,%d)",tv.tv_sec,tv.tv_usec));
     retcode = select(FD_SETSIZE, rp, wp, ep, tvp) ;
-    SKTTRACE((")"));
+//    SKTTRACE((")"));
     
     /* We repeatly select as long as we get EINTR errnos.
      */

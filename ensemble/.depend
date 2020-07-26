@@ -82,14 +82,6 @@ appl/reflect.cmx: type/alarm.cmx appl/appl.cmx type/appl_intf.cmx \
     appl/arge.cmx util/arrayf.cmx mm/buf.cmx type/endpt.cmx util/hsys.cmx \
     type/property.cmx util/queuee.cmx type/time.cmx util/trace.cmx \
     util/util.cmx type/view.cmx appl/reflect.cmi 
-appl/reflect.restart.cmo: type/alarm.cmi appl/appl.cmi type/appl_intf.cmi \
-    appl/arge.cmi util/arrayf.cmi mm/buf.cmi type/endpt.cmi util/hsys.cmi \
-    type/property.cmi util/queuee.cmi type/time.cmi util/trace.cmi \
-    util/util.cmi type/view.cmi 
-appl/reflect.restart.cmx: type/alarm.cmx appl/appl.cmx type/appl_intf.cmx \
-    appl/arge.cmx util/arrayf.cmx mm/buf.cmx type/endpt.cmx util/hsys.cmx \
-    type/property.cmx util/queuee.cmx type/time.cmx util/trace.cmx \
-    util/util.cmx type/view.cmx 
 appl/timestamp.cmo: util/hsys.cmi util/queuee.cmi type/time.cmi \
     util/trace.cmi util/util.cmi appl/timestamp.cmi 
 appl/timestamp.cmx: util/hsys.cmx util/queuee.cmx type/time.cmx \

@@ -20,8 +20,9 @@
 
 
 typedef struct state_t {
-    ce_local_state_t *ls;
-    ce_view_state_t *vs;
+    int rank;
+    int nmembers;
+    ce_endpt_t endpt;
     ce_appl_intf_t *intf ;
     int blocked;
 } state_t;
@@ -41,7 +42,7 @@ void
 stdin_handler(void *env)
 {
     state_t *s = (state_t*)env;
-    char buf[100], *tmp;
+    char buf[100], *msg;
     int len ;
     
     TRACE("stdin_handler");
@@ -51,27 +52,30 @@ stdin_handler(void *env)
 	/* string too long, dumping it.
 	 */
 	return;
-    
-    tmp = ce_copy_string(buf);
-    TRACE2("Read: ", tmp);
-    cast(s, tmp);
+
+    msg = (char*) malloc(len+1);
+    memcpy(msg, buf, len);
+    msg[len] = 0;
+    cast(s, msg);
 }
 
 /**************************************************************/
 
-void main_exit(void *env){}
+void main_exit(void *env)
+{}
 
 void
 main_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs)
 {
     state_t *s = (state_t*) env;
     
-    ce_view_full_free(s->ls,s->vs);
-    s->ls = ls;
-    s->vs = vs;
+    s->rank = ls->rank;
+    s->nmembers = ls->nmembers;
     s->blocked =0;
-    printf("%s nmembers=%d\n", ls->endpt, ls->nmembers);
-    TRACE2("main_install",s->ls->endpt); 
+    memcpy(s->endpt.name, ls->endpt.name, CE_ENDPT_MAX_SIZE);
+
+    printf("%s nmembers=%d\n", ls->endpt.name, ls->nmembers);
+    TRACE2("main_install",s->endpt.name); 
 }
 
 void
@@ -91,7 +95,7 @@ main_recv_cast(void *env, int rank, ce_len_t len, char *msg)
 {
 //    state_t *s = (state_t*) env;
     
-//    TRACE2("main_recv_send", s->ls->endpt);
+//    TRACE2("main_recv_send", s->ls->endpt.name);
     printf("%d -> msg=%s", rank, msg); fflush(stdout);
 }
 
@@ -108,23 +112,21 @@ main_heartbeat(void *env, double time)
 void
 join(void)
 {
-    ce_jops_t *jops; 
+    ce_jops_t jops; 
     ce_appl_intf_t *main_intf;
     state_t *s;
     
     /* The rest of the fields should be zero. The
      * conversion code should be able to handle this. 
      */
-    jops = record_create(ce_jops_t*, jops);
-    record_clear(jops);
-    jops->hrtbt_rate=10.0;
-    //  jops->transports = ce_copy_string("UDP");
-    jops->group_name = ce_copy_string("ce_mtalk");
-    jops->properties = ce_copy_string(CE_DEFAULT_PROPERTIES);
-    jops->use_properties = 1;
+    memset(&jops, 0, sizeof(ce_jops_t));
+    jops.hrtbt_rate=10.0;
+    strcpy(jops.group_name, "ce_mtalk");
+    strcpy(jops.properties, CE_DEFAULT_PROPERTIES);
+    jops.use_properties = 1;
     
-    s = (state_t*) record_create(state_t*, s);
-    record_clear(s);
+    s = (state_t*) malloc(sizeof(state_t));
+    memset(s, 0, sizeof(state_t));
     
     main_intf = ce_create_flat_intf(s,
 				    main_exit, main_install, main_flow_block,
@@ -133,7 +135,7 @@ join(void)
 				    main_heartbeat);
     
     s->intf= main_intf;
-    ce_Join (jops, main_intf);
+    ce_Join (&jops, main_intf);
     
     ce_AddSockRecv(0, stdin_handler, s);
 }
@@ -147,6 +149,8 @@ main(int argc, char **argv)
 	   " Unix and windows\n");
     exit(0);
 #endif
+    ce_set_alloc_fun((mm_alloc_t)malloc);
+    ce_set_free_fun((mm_free_t)free);
     
     ce_Init(argc, argv); /* Call Arge.parse, and appl_process_args */
     

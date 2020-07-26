@@ -9,7 +9,7 @@
 
 #include "ce_internal.h"
 
-value Val_string_opt(char*);
+//value Val_string_opt(char*);
 
 /* Conversions between ML<->C iovec representations.
  */
@@ -26,12 +26,12 @@ ce_iovec_array_t Iovl_val(value);
 
 /* Create a copy of an ML string on the C side. 
  */
-char *String_copy_val(value);
+//char *String_copy_val(value);
 		
 //ce_view_id_t*
 //View_id_val(value view_id_v);
 
-ce_endpt_array_t Endpt_array_val(value, int n);
+//ce_endpt_array_t Endpt_array_val(value, int n);
 
 
 /* Convert a view state into a C version.
@@ -57,7 +57,7 @@ ce_appl_intf_t *C_appl_val(value);
 
 /* Convert a queue of actions into an ML value
  */
-value Val_queue(struct ce_queue *q);
+value Val_queue(struct ce_queue_t *q);
 
 #endif /*__CE_CONVERT_H__*/
 /**************************************************************/

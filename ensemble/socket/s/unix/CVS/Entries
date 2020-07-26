@@ -8,7 +8,8 @@
 /sockopt.c/1.1/Sat Oct 19 18:26:44 2002//
 /e_iovec.h/1.2/Tue Oct 22 16:07:48 2002//
 /sockfd.h/1.2/Tue Oct 22 16:07:24 2002//
-/platform.h/1.1/Tue Oct 22 19:55:16 2002//
-/select.c/1.1/Sun Oct 20 07:42:54 2002//
-/sendrecv.c/1.1/Sun Oct 20 07:43:06 2002//
+/platform.h/1.2/Mon Nov  4 17:51:43 2002//
+/.cvsignore/1.1/Sun Dec  8 07:43:46 2002//
+/select.c/1.2/Wed Dec 18 15:44:53 2002//
+/sendrecv.c/1.2/Wed Dec 18 15:42:17 2002//
 D

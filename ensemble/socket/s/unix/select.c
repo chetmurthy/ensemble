@@ -54,9 +54,9 @@ value skt_select(
     else
 	tvp = &tv ;
     
-    SKTTRACE(("select() timeval sec,usec=(%d,%d)",tv.tv_sec,tv.tv_usec));
+//    SKTTRACE(("select() timeval sec,usec=(%d,%d)",(int) tv.tv_sec, (int) tv.tv_usec));
     retcode = select(max_fd, rp, wp, ep, tvp) ;
-    SKTTRACE((")"));
+//    SKTTRACE((")"));
     
     /* We repeatly select as long as we get EINTR errnos.
      */

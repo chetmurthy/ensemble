@@ -1,15 +1,15 @@
 D/dbm////
 D/life////
 D/tk////
-/Makefile/1.58/Sun Oct 13 10:00:55 2002//
 /.cvsignore/1.12/Sat Oct 19 18:26:20 2002//
 /README/1.3/Sat Oct 19 18:26:22 2002//
-/armadillo.ml/1.34/Sat Oct 19 18:26:20 2002//
-/fifo.ml/1.20/Sat Oct 19 18:26:26 2002//
-/gossip.ml/1.17/Sat Oct 19 18:26:26 2002//
-/groupd.ml/1.16/Sat Oct 19 18:26:20 2002//
-/lensemble.ml/1.28/Sat Oct 19 18:26:20 2002//
-/mtalk.ml/1.23/Sat Oct 19 18:26:20 2002//
-/perf.ml/1.54/Sat Oct 19 18:26:22 2002//
-/rand.ml/1.44/Sat Oct 19 18:26:22 2002//
-/socktest.ml/1.6/Tue Oct 29 10:11:10 2002//
+/armadillo.ml/1.34/Tue Oct 29 11:02:04 2002//
+/fifo.ml/1.20/Tue Oct 29 11:02:04 2002//
+/gossip.ml/1.17/Tue Oct 29 11:02:04 2002//
+/groupd.ml/1.16/Tue Oct 29 11:02:04 2002//
+/lensemble.ml/1.28/Tue Oct 29 11:02:04 2002//
+/mtalk.ml/1.23/Tue Oct 29 11:02:04 2002//
+/perf.ml/1.54/Tue Oct 29 11:02:04 2002//
+/rand.ml/1.44/Tue Oct 29 11:02:04 2002//
+/socktest.ml/1.6/Tue Oct 29 11:02:04 2002//
+/Makefile/1.58/Sun Dec  8 08:16:45 2002//

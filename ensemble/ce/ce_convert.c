@@ -47,38 +47,26 @@ INLINE void set_iovl(ce_iovec_array_t iovl, int i, value iov_v)
 /**************************************************************/
 
 
-#define MAX(x,y) ((x > y) ? x : y)
-
-value
-Val_string_opt(char *s){
-    value s_v;
-    
-    if (s==NULL)
-	s_v = alloc_string(0);
-    else
-	s_v = copy_string(s);
-    
-    return s_v;
-}
-
+#define MAX(x,y) (((x) > (y)) ? (x) : (y))
 
 /*
  *  The call to alloc_string should be replaced with a call to ce_alloc_space. 
  */
-value
-Val_iovl(int num, ce_iovec_array_t iovl){
+value Val_iovl(int num, ce_iovec_array_t iovl)
+{
     int i;
     CAMLparam0();
     CAMLlocal2(msg_v, ret_v);
     
-    if (num==0)
+    if (0 == num) {
 	ret_v = Atom(0);
-    else {
+    } else {
 	ret_v = alloc(num,0);
 	for(i=0; i<num; i++) {
 	    int len = Iov_len(iovl[i]);
 	    char *buf = Iov_buf(iovl[i]);
-//	    printf("<Val_iovl[%d] len=%d>", i, len);
+	    assert(len > 0);
+//	    TRACE_GEN(("<Val_iovl[%d] len=%d>", i, len));
 	    msg_v = ce_mm_Raw_of_len_buf(len, buf);
 	    modify(&Field(ret_v,i), msg_v);
 	}
@@ -92,7 +80,8 @@ Val_iovl(int num, ce_iovec_array_t iovl){
 static ce_iovec_array_t iovl = NULL;
 static int iovl_len = 0;
 
-ce_iovec_array_t Iovl_val(value iovl_v){
+ce_iovec_array_t Iovl_val(value iovl_v)
+{
     int i;
     int num = Wosize_val(iovl_v);
     value iov_v;
@@ -112,55 +101,82 @@ ce_iovec_array_t Iovl_val(value iovl_v){
     return iovl;
 }
 
-char*
-String_copy_val(value s_v){
+void String_copy_val(value s_v, char *dest, int max_size)
+{
     int len;
-    char* s;
     
     len = string_length(s_v);
-    s = (char*) ce_malloc(len+1);
-    memcpy(s, &Byte(s_v,0),len);
-    s[len] = '\0';
-    
-    return(s);
+    len = MIN(max_size-1,len);    
+    memcpy(dest, &Byte(s_v,0), len);
+    dest[len] = '\0';
+}
+
+
+void Key_val(value key_v, char *dest)
+{
+    if (string_length(key_v) == 0)
+	return;
+    else {
+	memcpy(dest, String_val(key_v), CE_KEY_SIZE);
+    }
 }
 
 /**************************************************************/
 
-ce_endpt_array_t
-String_array_val(value sa_v, int n){
+ce_addr_array_t Addr_array_val(value sa_v, int n)
+{
     int i;
-    char **sa;
+    ce_addr_t *aa;
     
-    sa = (char**) ce_malloc((n+1) * sizeof(ce_endpt_t*));
+    aa = (ce_addr_t*) ce_malloc(n * sizeof(ce_addr_t));
+    memset(aa, 0, n * sizeof(ce_addr_t));
     for (i=0; i< n; i++)
-	sa[i] = (char*) String_copy_val(Field(sa_v, i));
-    sa[n] = NULL;
+	String_copy_val(
+	    Field(sa_v, i),
+	    aa[i].addr,
+	    CE_ADDR_MAX_SIZE
+	    );
+    return(aa);
+}
+
+
+ce_endpt_array_t Endpt_array_val(value sa_v, int n)
+{
+    int i;
+    ce_endpt_t *ea;
     
-    return(sa);
+    ea = (ce_endpt_t*) ce_malloc(n * sizeof(ce_endpt_t));
+    memset(ea, 0, n * sizeof(ce_endpt_t));
+    for (i=0; i< n; i++)
+	String_copy_val(
+	    Field(sa_v, i),
+	    ea[i].name,
+	    CE_ENDPT_MAX_SIZE
+	    );
+    return(ea);
+}
+
+
+void View_id_val(value id_v, ce_view_id_t *id)
+{
+    id->ltime = Int_val(Field(id_v,0));
+    String_copy_val(
+	Field(id_v,1),
+	id->endpt.name,
+	CE_ENDPT_MAX_SIZE
+	);
 }
 
 ce_view_id_t*
-View_id_val(value id_v){
-    ce_view_id_t *id ;
-    
-    id = record_create(ce_view_id_t*, id);
-    id->ltime = Int_val(Field(id_v,0));
-    id->endpt = String_copy_val(Field(id_v,1));
-    
-    return id;
-}
-
-ce_view_id_array_t
-View_id_array_val(value view_id_array_v, int num){
+View_id_array_val(value view_id_array_v, int num)
+{
     int i;
-    ce_view_id_array_t va;
+    ce_view_id_t *va;
     
-    va = (ce_view_id_array_t) ce_malloc((num+1) * sizeof(ce_view_id_t*));
+    va = (ce_view_id_t*) ce_malloc(num * sizeof(ce_view_id_t));
+    memset((char*)va, 0, num * sizeof(ce_view_id_t));
     for (i=0; i<num; i++) 
-	va[i] = View_id_val(Field(view_id_array_v,i));
-    va[num] = NULL;
-    
+	View_id_val(Field(view_id_array_v,i), &va[i]);
     return va;
 }
 
@@ -191,27 +207,46 @@ enum ce_view_state_enum {
  * We also need to know the number of members in the
  * view. 
  */
-void
-ViewState_of_val(value vs_v, int nmembers, ce_view_state_t *vs) {
+void ViewState_of_val(value vs_v, int nmembers, ce_view_state_t *vs)
+{
     TRACE("ViewState_of_val(");
-    vs->version   = String_copy_val(Field(vs_v, CE_VIEW_STATE_VERSION));
-    vs->group     = String_copy_val(Field(vs_v, CE_VIEW_STATE_GROUP));
-    vs->proto     = String_copy_val(Field(vs_v, CE_VIEW_STATE_PROTO));
+    String_copy_val(
+	Field(vs_v, CE_VIEW_STATE_VERSION),
+	vs->version,
+	CE_VERSION_MAX_SIZE
+	);
+    String_copy_val(
+	Field(vs_v, CE_VIEW_STATE_GROUP),
+	vs->group,
+	CE_GROUP_NAME_MAX_SIZE
+	);
+    String_copy_val(
+	Field(vs_v, CE_VIEW_STATE_PROTO),
+	vs->proto,
+	CE_PROTOCOL_MAX_SIZE
+	);
     vs->coord     = Int_val(Field(vs_v, CE_VIEW_STATE_COORD));
     vs->ltime     = Int_val(Field(vs_v, CE_VIEW_STATE_LTIME));
     vs->primary   = Bool_val(Field(vs_v, CE_VIEW_STATE_PRIMARY));
     vs->groupd    = Bool_val(Field(vs_v, CE_VIEW_STATE_GROUPD));
     vs->xfer_view = Bool_val(Field(vs_v, CE_VIEW_STATE_XFER_VIEW));
-    vs->key       = String_copy_val(Field(vs_v, CE_VIEW_STATE_KEY));
+    Key_val(
+	Field(vs_v, CE_VIEW_STATE_KEY),
+	vs->key
+	);
     TRACE(".");
     vs->num_ids   = Int_val(Field(vs_v, CE_VIEW_STATE_NUM_IDS));
     TRACE("..");
     vs->prev_ids  = View_id_array_val(Field(vs_v, CE_VIEW_STATE_PREV_IDS),
 				      vs->num_ids);
-    vs->params    = String_copy_val(Field(vs_v,CE_VIEW_STATE_PARAMS));
+    String_copy_val(
+	Field(vs_v,CE_VIEW_STATE_PARAMS),
+	vs->params,
+	CE_PARAMS_MAX_SIZE
+	);
     vs->uptime    = Double_val(Field(vs_v,CE_VIEW_STATE_UPTIME));
-    vs->view      = String_array_val(Field(vs_v, CE_VIEW_STATE_VIEW), nmembers);
-    vs->address   = String_array_val(Field(vs_v, CE_VIEW_STATE_ADDRESS), nmembers);
+    vs->view      = Endpt_array_val(Field(vs_v, CE_VIEW_STATE_VIEW), nmembers);
+    vs->address   = Addr_array_val(Field(vs_v, CE_VIEW_STATE_ADDRESS), nmembers);
     TRACE(")");
 }
 
@@ -230,18 +265,33 @@ enum ce_local_state_enum {
 
 
 void
-LocalState_of_val(value ls_v, ce_local_state_t *ls){
-    ls->endpt = String_copy_val(Field(ls_v,CE_LOCAL_STATE_ENDPT));
-    ls->addr = String_copy_val(Field(ls_v,CE_LOCAL_STATE_ADDR));
+LocalState_of_val(value ls_v, ce_local_state_t *ls)
+{
+    String_copy_val(
+	Field(ls_v,CE_LOCAL_STATE_ENDPT),
+	ls->endpt.name,
+	CE_ENDPT_MAX_SIZE
+	);
+    String_copy_val(
+	Field(ls_v,CE_LOCAL_STATE_ADDR),
+	ls->addr.addr,
+	CE_ADDR_MAX_SIZE
+	);
+		    
     ls->rank  = Int_val(Field(ls_v,CE_LOCAL_STATE_RANK));
-    ls->name  = String_copy_val(Field(ls_v,CE_LOCAL_STATE_NAME));
+    String_copy_val(
+	Field(ls_v,CE_LOCAL_STATE_NAME),
+	ls->name,
+	CE_NAME_MAX_SIZE
+	);
     ls->nmembers = Int_val(Field(ls_v,CE_LOCAL_STATE_NMEMBERS));
-    ls->view_id= View_id_val(Field(ls_v,CE_LOCAL_STATE_VIEW_ID));
+    View_id_val(Field(ls_v,CE_LOCAL_STATE_VIEW_ID), &ls->view_id);
     ls->am_coord= Bool_val(Field(ls_v,CE_LOCAL_STATE_AM_COORD));
 }
+
 /**************************************************************/
-void 
-ViewFull_val(value ls_v, value vs_v, ce_local_state_t *ls, ce_view_state_t *vs){
+void ViewFull_val(value ls_v, value vs_v, ce_local_state_t *ls, ce_view_state_t *vs)
+{
     LocalState_of_val(ls_v, ls);
     ViewState_of_val(vs_v, ls->nmembers, vs);
 }
@@ -269,25 +319,25 @@ enum ce_jops_enum {
 
 #define CE_M CE_JOPS_MAX
 
-value 
-Val_jops (ce_jops_t *jops){
+value Val_jops (ce_jops_t *jops)
+{
     CAMLparam0();
     CAMLlocalN(rt, CE_M+1);
     
-    TRACE("(Val_jops");
+//    TRACE("(Val_jops");
     rt[CE_JOPS_HRTBT_RATE] = copy_double(jops->hrtbt_rate)  ;
-    rt[CE_JOPS_TRANSPORTS] = Val_string_opt(jops->transports) ;
-    rt[CE_JOPS_PROTOCOL] = Val_string_opt(jops->protocol);
-    rt[CE_JOPS_GROUP_NAME] = Val_string_opt(jops->group_name);
-    rt[CE_JOPS_PROPERTIES] = Val_string_opt(jops->properties);
+    rt[CE_JOPS_TRANSPORTS] = copy_string(jops->transports) ;
+    rt[CE_JOPS_PROTOCOL] = copy_string(jops->protocol);
+    rt[CE_JOPS_GROUP_NAME] = copy_string(jops->group_name);
+    rt[CE_JOPS_PROPERTIES] = copy_string(jops->properties);
     rt[CE_JOPS_USE_PROPERTIES] = Val_bool(jops->use_properties);
     rt[CE_JOPS_GROUPD] = Val_bool(jops->groupd);
-    rt[CE_JOPS_PARAMS] = Val_string_opt(jops->params);
+    rt[CE_JOPS_PARAMS] = copy_string(jops->params);
     rt[CE_JOPS_CLIENT] = Val_bool(jops->client);
     rt[CE_JOPS_DEBUG] = Val_bool(jops->debug);
-    rt[CE_JOPS_ENDPT] = Val_string_opt(jops->endpt);
-    rt[CE_JOPS_PRINC] = Val_string_opt(jops->princ);
-    rt[CE_JOPS_KEY] = Val_string_opt(jops->key);
+    rt[CE_JOPS_ENDPT] = copy_string(jops->endpt.name);
+    rt[CE_JOPS_PRINC] = copy_string(jops->princ);
+    rt[CE_JOPS_KEY] = copy_string(jops->key);
     rt[CE_JOPS_SECURE] = Val_bool(jops->secure);
     
     rt[CE_M] = alloc(CE_M,0);
@@ -307,14 +357,9 @@ Val_jops (ce_jops_t *jops){
     Store_field(rt[CE_M], CE_JOPS_KEY,        rt[CE_JOPS_KEY]);
     Store_field(rt[CE_M], CE_JOPS_SECURE,     rt[CE_JOPS_SECURE]);
     
-    TRACE(")");
-    
-    TRACE("free C-jops("); 
-    ce_jops_free(jops);
-    TRACE(")"); 
+//    TRACE(")");
     
     CAMLreturn(rt[CE_M]);
-    
 }
 
 /**************************************************************/
@@ -343,8 +388,13 @@ Val_c_appl(ce_appl_intf_t *c_appl){
 }
 
 ce_appl_intf_t*
-C_appl_val(value c_appl){
-    return (ce_appl_intf_t*) C_pointer_val(c_appl);
+C_appl_val(value c_appl_v)
+{
+    ce_appl_intf_t *c_appl;
+    
+    c_appl = (ce_appl_intf_t*) C_pointer_val(c_appl_v);
+    assert(c_appl->magic == CE_MAGIC);
+    return c_appl; 
 }
 
 value
@@ -397,10 +447,12 @@ value convert_int_array(int num, int* a){
 
 
 static value
-Val_action (ce_action_t *a){
+Val_action (ce_action_t *a)
+{
     CAMLparam0() ;
     CAMLlocal3(field0, field1, a_v) ;
-    
+
+    assert(a != NULL);
     switch (a->type) {
     case APPL_CAST:
 	TRACE("APPL_CAST(");
@@ -455,9 +507,11 @@ Val_action (ce_action_t *a){
 	break;
 	
     case APPL_PROTOCOL:
+	TRACE("APPL_PROTOCOL(");
 	field0 = copy_string(a->u.proto);
 	a_v = alloc_small(1,APPL_PROTOCOL);
 	Field(a_v, 0) = field0 ;
+	TRACE(")");
 	break;
 	
     case APPL_PROPERTIES:
@@ -483,27 +537,29 @@ value
 Val_queue(ce_queue_t *q)
 {
     int i;
+    ce_action_t *a;
     CAMLparam0() ;
     CAMLlocal2(tmp,dn_v) ;
-    
-    //  sprintf(str, "Val_queue: len=%d", q->len);
-    //TRACE(str);
+
+    assert(check_queue(q));
     
     /* ML already zeros the field here. 
      */
-    TRACE("{");
     if (q->len == 0)
 	dn_v = Atom(0) ;
     else {
+	TRACE_D("Val_queue: len=", q->len);
 	dn_v = alloc(q->len,0) ;
-	
-	for (i = 0; i< q->len; i++) {
+
+	for (i = 0, a = q->head;
+	     i< q->len;
+	     i++, a = a->next) {
 	    TRACE(" .");
-	    tmp = Val_action(&(q->arr[i])) ;
+	    assert(a != NULL);
+	    tmp = Val_action(a);
 	    modify(&Field(dn_v,i),tmp);
 	}
     }
-    TRACE("}");
     
     CAMLreturn(dn_v) ;
 }

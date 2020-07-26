@@ -9,7 +9,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
-#include "ce_so.h"
+#include "mm_so.h"
 
 /******************************************************************/
 
@@ -18,7 +18,7 @@ LINKDLL int am_traced(char *name);
 LINKDLL void ce_trace(char *name, const char *s, ...);
 
 
-#ifndef NDEBUG
+#ifdef CE_TRACE
 /* Slower code, with trace support
  */
 
@@ -54,6 +54,7 @@ LINKDLL void ce_trace(char *name, const char *s, ...);
   }                             \
 }
 
+#define TRACE_GEN(x) {printf x; fflush(stdout);}
 #else
 /* Faster code, no trace support
  */
@@ -61,6 +62,7 @@ LINKDLL void ce_trace(char *name, const char *s, ...);
 #define TRACE(x) 
 #define TRACE2(x,y) 
 #define TRACE_D(x,y)
+#define TRACE_GEN(x) 
 #endif
 
 

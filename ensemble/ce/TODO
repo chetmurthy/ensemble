@@ -1,16 +1,12 @@
-TODO for release 1.0
-+2. malloc can return 0.
-+4. performance measurements.
+TODO 
++ 1. simplify the view structures 
+-+ 2. Update the documentation to describe the changes to call conventions. 
++ 3. Check the memory leak in ce_rand_mt.
+4. Check bug in (ce_rand_mt -n 7 -t 4) (after 4h:20m).
+5. Check performance. 
 
-
-That's all folks!
-
-
-For release 1.3:
-3. Convert to winsock2
-3. See if the constructors (Send, Send1, Cast, ..) can be created directly
+future
+1. See if the constructors (Send, Send1, Cast, ..) can be created directly
    from C.
 
-Release 1.4
-1. Fix makefile system.
-2. Makefiles: dynamic linking. 
+

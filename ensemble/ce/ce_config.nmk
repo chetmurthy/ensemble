@@ -11,15 +11,21 @@
 
 # static or dynamic linking?
 #
-CE_LIB = .lib  #.dll
+CE_LIB = .dll  #.lib
 CE_LNKLIB = .lib 
 
+CE_LINK_FLAGS = WS2_32.lib
 
-CE_LINK_FLAGS = \
-    ADVAPI32.lib LIBCMT.lib OLDNAMES.lib KERNEL32.lib WS2_32.lib
-
+!ifdef CE_DEBUG
 CFLAGS = \
-    -DINLINE=__inline -DNDEBUG \
-    /Ox /MT /W3 /I$(OCAML_LIB) 
+    -DINLINE=__inline \
+    /MTd /W3 /I$(OCAML_LIB) \
+    /ZI /Od /DCE_TRACE
+!else
+CFLAGS = \
+    -DINLINE=__inline /DNDEBUG \
+    /Ox /MT /W3 /I$(OCAML_LIB)
+!endif
+
 
 

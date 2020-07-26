@@ -88,7 +88,7 @@ ce_malloc(int size)
 }
 
 static char*
-cString_of_jString(JNIEnv *env, jstring jstr)
+cString_of_jString_full(JNIEnv *env, jstring jstr)
 {
     char *buf;
     int len;
@@ -97,12 +97,32 @@ cString_of_jString(JNIEnv *env, jstring jstr)
     if (jstr == NULL) return NULL;
     len = (*env) -> GetStringUTFLength(env, jstr);
     if (len == 0) return NULL;
-    cstr = (*env)->GetStringUTFChars(env, jstr, NULL); 
+    cstr = (*env)->GetStringUTFChars(env, jstr, NULL);
     buf = ce_malloc(len+1);
     strcpy(buf, cstr);
+    buf[len] = 0;
+    printf("buf=%s\n", buf); fflush(stdout);
     (*env)->ReleaseStringUTFChars(env, jstr, cstr);
     (*env)-> DeleteLocalRef(env, jstr);
     return buf;
+}
+
+static void
+cString_of_jString(JNIEnv *env, jstring jstr, char *buf, int max_len, const char *error_string)
+{
+    int len;
+    const char *cstr;
+
+    memset(buf, 0, sizeof(max_len));
+    if (jstr == NULL) return;
+    len = (*env) -> GetStringUTFLength(env, jstr);
+    if (len == 0) return;
+    cstr = (*env)->GetStringUTFChars(env, jstr, NULL);
+    if (strlen(cstr) > max_len -1)
+	cej_panic(error_string);
+    memcpy(buf, cstr, strlen(cstr));
+    (*env)->ReleaseStringUTFChars(env, jstr, cstr);
+    (*env)-> DeleteLocalRef(env, jstr);
 }
 
 /* Convert a C-iovector into a Java array.
@@ -131,7 +151,7 @@ void iovec_of_jba(JNIEnv *env, jbyteArray msg, int *len, char **data)
 {
     jbyte *elements = (*env)->GetByteArrayElements(env, msg, NULL);
     int length = (*env)->GetArrayLength(env, msg);
-    char *buf = ce_malloc(length);
+    char *buf = (char*)malloc(length);
     
     memcpy(buf, elements, length);
     *data = buf;
@@ -143,17 +163,16 @@ void iovec_of_jba(JNIEnv *env, jbyteArray msg, int *len, char **data)
 /* Convert a Java int-array into a C-array
  */
 static void
-ia_of_jia(JNIEnv *env, jintArray jia, int *len, int **data)
+ia_of_jia(JNIEnv *env, jintArray jia, int *len, int *data, int max_num, const char *error_string)
 {
     jint *elements = (*env)->GetIntArrayElements(env, jia, NULL);
     int length = (*env)->GetArrayLength(env, jia);
-    int *a = ce_malloc(sizeof(int) * length);
     int i;
     
-    for(i=0; i<length; i++) {
-	a[i] = elements[i];
-    }
-    *data = a;
+    if (length > max_num) 
+	cej_panic(error_string);
+    for(i=0; i<length; i++)
+	data[i] = elements[i];
     *len = length;
     (*env)->ReleaseIntArrayElements(env, jia, elements, JNI_ABORT);
 }
@@ -164,22 +183,41 @@ jString_of_cString(JNIEnv *env, char *s)
     return (*env)->NewStringUTF(env, s);
 }
 
-/* Convert a C stringArray into a Java stringArray.
+/* Convert a C endpoint array into a Java stringArray.
  */
 static jobject
-jStringArray_of_cStringArray(JNIEnv *env, int n, char **a)
+jStringArray_of_cEndptArray(JNIEnv *env, int n, ce_endpt_t *ea)
 {
     jobject array, name;
     int i;
     
     array = (*env)->NewObjectArray(env, n, String, NULL);
     for(i = 0; i < n; i++) {
-	name = (*env)->NewStringUTF(env, a[i]);
+	name = (*env)->NewStringUTF(env, ea[i].name);
 	(*env)->SetObjectArrayElement(env, array, i, name);
 	(*env)->DeleteLocalRef(env,name);
     }
     return array;
 }
+
+
+/* Convert a C address array into a Java stringArray.
+ */
+static jobject
+jStringArray_of_cAddrArray(JNIEnv *env, int n, ce_addr_t *aa)
+{
+    jobject array, name;
+    int i;
+    
+    array = (*env)->NewObjectArray(env, n, String, NULL);
+    for(i = 0; i < n; i++) {
+	name = (*env)->NewStringUTF(env, aa[i].addr);
+	(*env)->SetObjectArrayElement(env, array, i, name);
+	(*env)->DeleteLocalRef(env,name);
+    }
+    return array;
+}
+
 
 /* Convert a C stringArray into a Java stringArray.
  */
@@ -199,58 +237,91 @@ cArgs_of_jArgs(JNIEnv *env, jobject jsa,
     
     for(i = 0; i < n-1; i++) {
 	jstr = (*env)->GetObjectArrayElement(env, jsa, i);
-	(*a)[i+1] = cString_of_jString(env, jstr);
+	(*a)[i+1] = cString_of_jString_full(env, jstr);
     }
     trace(")");
 }
 
 
-ce_jops_t * 
-jops_of_j(JNIEnv *env, jobject j_jops)
+void
+jops_of_j(JNIEnv *env, jobject j_jops, /*OUT*/ ce_jops_t *jops)
 {
-    ce_jops_t *jops;
-    jops = record_create(ce_jops_t*, jops);
-    record_clear(jops);
+    memset(jops, 0, sizeof(ce_jops_t));
 
     jops -> hrtbt_rate = (float)
 	(*env)->GetDoubleField(env, j_jops, jops_hrtbt_rate);
-    jops -> transports = cString_of_jString(
-	 env, (*env)->GetObjectField(env, j_jops, jops_transports));
-    jops -> protocol = cString_of_jString(env, (*env) -> GetObjectField(env, j_jops, jops_protocol));
-    jops -> group_name = cString_of_jString(env, (*env) -> GetObjectField(env, j_jops, jops_group_name));
-    jops -> properties = cString_of_jString(
-	env, (*env) -> GetObjectField(env, j_jops, jops_properties));
-    jops -> use_properties =
+    cString_of_jString(
+	 env,
+	 (*env)->GetObjectField(env, j_jops, jops_transports),
+	 jops->transports,
+	 CE_TRANSPORT_MAX_SIZE,
+	 "Jops transport: field too long"
+	);
+    cString_of_jString(
+	env,
+	(*env) -> GetObjectField(env, j_jops, jops_protocol),
+	jops->protocol,
+	CE_PROTOCOL_MAX_SIZE,
+	 "Jops protocol: field too long"
+	);
+    cString_of_jString(
+	env,
+	(*env) -> GetObjectField(env, j_jops, jops_group_name),
+	jops->group_name,
+	CE_GROUP_NAME_MAX_SIZE,
+	 "Jops group_name: field too long"
+	);
+    cString_of_jString(
+	env,
+	(*env) -> GetObjectField(env, j_jops, jops_properties),
+	jops->properties,
+	CE_PROPERTIES_MAX_SIZE,
+	"Jops properties: field too long"
+	);
+    jops->use_properties =
 	(*env) -> GetIntField(env, j_jops, jops_use_properties);
-    jops -> groupd = (int)
+    jops->groupd = (int)
 	(*env) -> GetBooleanField(env, j_jops, jops_groupd) ;
-    jops -> params = cString_of_jString(
-	env, (*env) -> GetObjectField(env, j_jops, jops_params));
-    jops -> client = (int)
+    cString_of_jString(
+	env,
+	(*env) -> GetObjectField(env, j_jops, jops_params),
+	jops->params,
+	CE_PARAMS_MAX_SIZE,
+	"Jops parameters: field too long"
+	);
+    jops->client = (int)
 	(*env) -> GetBooleanField(env, j_jops, jops_client);
-    jops -> debug = (int)
+    jops->debug = (int)
 	(*env) -> GetBooleanField(env, j_jops, jops_debug);
-    jops -> endpt = cString_of_jString(
-	env, (*env) -> GetObjectField(env, j_jops, jops_endpt));
-    jops -> princ = cString_of_jString(
-	env, (*env) -> GetObjectField(env, j_jops, jops_princ));
-    jops -> secure = (int)
+    cString_of_jString(
+	env,
+	(*env) -> GetObjectField(env, j_jops, jops_endpt),
+	jops->endpt.name,
+	CE_ENDPT_MAX_SIZE,
+	"Jops endpoint: field too long"
+	);
+    cString_of_jString(
+	env,
+	(*env) -> GetObjectField(env, j_jops, jops_princ),
+	jops->princ,
+	CE_PRINCIPAL_MAX_SIZE,
+	"Jops principal: field too long"
+	);
+    jops->secure = (int)
 	(*env) -> GetBooleanField(env, j_jops, jops_secure);
-    
-    return jops;
 }
 
 /**************************************************************/
 cej_env_t*
 create_env(JNIEnv *env, jobject j_group) 
 {
-  cej_env_t* cej_env;
-
+    cej_env_t* cej_env;
+    
 //  trace("create_env");
-  cej_env =  record_create(cej_env_t*, cej_env);
-  cej_env->j_group = (*env) -> NewGlobalRef(env, j_group);
-  
-  return cej_env;
+    cej_env =  (cej_env_t*) ce_malloc(sizeof(cej_env_t));
+    cej_env->j_group = (*env) -> NewGlobalRef(env, j_group);
+    
+    return cej_env;
 }
 
 void
@@ -333,14 +404,13 @@ void cej_install(void *e, ce_local_state_t *ls, ce_view_state_t *vs)
     j_group = /*NULL*/ jString_of_cString(ens_env, vs->group);
     j_proto = /*NULL*/ jString_of_cString(ens_env, vs->proto);
     j_params = /*NULL*/ jString_of_cString(ens_env, vs->params);
-    j_view = /*NULL*/ jStringArray_of_cStringArray(ens_env, ls->nmembers, vs->view);
-    j_address = /*NULL*/ jStringArray_of_cStringArray(ens_env, ls->nmembers, vs->address);
-    j_endpt = /*NULL*/ jString_of_cString(ens_env, ls->endpt);
-    j_addr = /*NULL*/ jString_of_cString(ens_env, ls->addr);
+    j_view = /*NULL*/ jStringArray_of_cEndptArray(ens_env, ls->nmembers, vs->view);
+    j_address = /*NULL*/ jStringArray_of_cAddrArray(ens_env, ls->nmembers, vs->address);
+    j_endpt = /*NULL*/ jString_of_cString(ens_env, ls->endpt.name);
+    j_addr = /*NULL*/ jString_of_cString(ens_env, ls->addr.addr);
     j_name = /*NULL*/ jString_of_cString(ens_env, ls->name);
     trace("/");
     
-    ce_view_full_free(ls, vs);
     (*ens_env)->CallVoidMethod(
 			       ens_env, cej_env->j_group, install_cb,
 			       j_version ,
@@ -490,6 +560,9 @@ JNIEXPORT void JNICALL Java_ensemble_Group_natInit
 	{
 	    char **argv;
 	    int argc ;
+	    
+	    ce_set_alloc_fun((mm_alloc_t)malloc);
+	    ce_set_free_fun((mm_free_t)free);
 	    cArgs_of_jArgs(env, args, &argc, &argv);
 	    ce_Init(argc, argv);
 	}
@@ -500,12 +573,12 @@ JNIEXPORT void JNICALL Java_ensemble_Group_natInit
 JNIEXPORT jlong JNICALL Java_ensemble_Group_natJoin
 (JNIEnv *env, jobject j_group, jobject j_jops)
 {
-    ce_jops_t *jops;
+    ce_jops_t jops;
     cej_env_t *cej_env;
     ce_appl_intf_t *c_appl;
 
     trace("natJoin(");
-    jops = jops_of_j(env, j_jops);
+    jops_of_j(env, j_jops, &jops);
     cej_env = create_env(env, j_group);
     
     c_appl = ce_create_flat_intf(
@@ -518,7 +591,7 @@ JNIEXPORT jlong JNICALL Java_ensemble_Group_natJoin
 	cej_recv_send,
 	cej_heartbeat
 	);
-    ce_Join(jops, c_appl);
+    ce_Join(&jops, c_appl);
     cej_env->c_appl = c_appl ;
     trace(")");
     return (jlong)(int)cej_env;
@@ -549,9 +622,11 @@ JNIEXPORT void JNICALL Java_ensemble_Group_natSend
     int len;
     char *buf;
     int num_dests;
-    int* dests;
+    int dests[CE_DESTS_MAX_SIZE];
+
     trace("natSend(");
-    ia_of_jia(env, j_dests, &num_dests, &dests);
+    ia_of_jia(env, j_dests, &num_dests, dests, CE_DESTS_MAX_SIZE,
+	      "natSend: too many destinations");
     iovec_of_jba(env, msg, &len, &buf);
     ce_flat_Send(((cej_env_t*)(int)group)->c_appl, num_dests, dests, len, buf);
     trace(")");
@@ -581,9 +656,11 @@ JNIEXPORT void JNICALL Java_ensemble_Group_natSuspect
 (JNIEnv *env, jclass Group, jlong group, jintArray j_suspects)
 {
     int num;
-    int* suspects;
+    int suspects[CE_DESTS_MAX_SIZE];
+
     trace("natSuspect(");
-    ia_of_jia(env, j_suspects, &num, &suspects);
+    ia_of_jia(env, j_suspects, &num, suspects, CE_DESTS_MAX_SIZE,
+	      "natSuspect: too many suspicions");
     ce_Suspect(((cej_env_t*)(int)group)->c_appl, num, suspects);
     trace(")");
 }
@@ -603,16 +680,16 @@ JNIEXPORT void JNICALL Java_ensemble_Group_natRekey
 }
 
 JNIEXPORT void JNICALL Java_ensemble_Group_natChangeProtocol
-(JNIEnv *env, jclass Group, jlong group, jstring j_protocol_name)
+(JNIEnv *env, jclass Group, jlong group, jstring j_protocol)
 {
-    char* proto = cString_of_jString (env, j_protocol_name);
+    char* proto = (char*) (*env)->GetStringUTFChars(env, j_protocol, NULL);
     ce_ChangeProtocol(((cej_env_t*)(int)group)->c_appl, proto);
 }
 
 JNIEXPORT void JNICALL Java_ensemble_Group_natChangeProperties
 (JNIEnv *env, jclass Group, jlong group, jstring j_properties)
 {
-    char* props = cString_of_jString(env, j_properties);
+    char* props = (char*) (*env)->GetStringUTFChars(env, j_properties, NULL);
     ce_ChangeProperties(((cej_env_t*)(int)group)->c_appl, props);
 }
 

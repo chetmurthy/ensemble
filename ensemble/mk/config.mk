@@ -46,11 +46,6 @@ CFLAGS	=-DINLINE=inline \
 # LIBSYS: used for linking executables
 LIBSYS	= # default for Unix is nothing
 
-# SHELL to use for processing these makefiles must be /bin/sh
-SHELL = /bin/sh
-
-
-
 
 
 #*************************************************************#
@@ -238,6 +233,6 @@ LINK_THR	= # no threads
 # Clean this directory
 #
 CLEANDIR = \
-    $(RM) .nfs* *.cm* .err a.out *.o* *.a *.lib *.asm *~ .*~ .\#*  core *.pdb core gmon.out camlprim*
+    $(RM) .nfs* *.cm* .err a.out *.o* *.a *.lib *.asm *~ .*~ .\#*  core *.pdb core gmon.out camlprim* *.exp *.dll *.idb
 
 #*************************************************************#

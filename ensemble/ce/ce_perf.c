@@ -11,7 +11,7 @@
 /**************************************************************/
 #define NAME "CE_PERF"
 /**************************************************************/
-typedef enum test_t {RPC, THROU} test_t;
+typedef enum test_t {RPC, THROU, FLOW} test_t;
 typedef enum phase_t {START, BEGIN, END, DONE} phase_t;
 
 static char* prog ;
@@ -22,20 +22,18 @@ static int size = 4 ;
 static double terminate_time = 100.0;
 static int quiet = 0;
 /**************************************************************/
-ce_iovec_array_t create_iovl(int size){
-    ce_iovec_array_t iovl;
-    
-    iovl = (ce_iovec_array_t) malloc(1 * sizeof(ce_iovec_t));
+ce_iovec_array_t prepare_iovl(ce_iovec_t *iovl, int size)
+{
     Iov_len(iovl[0]) = size;
-    Iov_buf(iovl[0]) = malloc(size);
+    Iov_buf(iovl[0]) = (char*) malloc(size);
     
     return iovl;
 }
 
 /**************************************************************/
 typedef struct rpc_state_t {
-    ce_local_state_t *ls;
-    ce_view_state_t *vs;
+    int rank;
+    int nmembers;
     ce_appl_intf_t *intf ;
     int blocked;
     double start_time;
@@ -45,18 +43,18 @@ typedef struct rpc_state_t {
 
 void rpc_exit(void *env){}
 
-void rpc_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs){
+void rpc_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs)
+{
     rpc_state_t *s = (rpc_state_t*) env;
     
-    ce_view_full_free(s->ls,s->vs);
-    s->ls = ls;
-    s->vs = vs;
+    s->rank = ls->rank;
+    s->nmembers = ls->nmembers;
     s->blocked = 0;
     s->start_time = -1;
     s->total = 0;
     s->phase = START;
-    printf("%s nmembers=%d\n", ls->endpt, ls->nmembers);
-    TRACE2("rpc_install",s->ls->endpt);
+    printf("%s nmembers=%d\n", ls->endpt.name, ls->nmembers);
+    TRACE2("rpc_install",ls->endpt.name);
 }
 
 void rpc_flow_block(void *env, ce_rank_t rank, ce_bool_t onoff){}
@@ -65,22 +63,23 @@ void rpc_block(void *env){
     rpc_state_t *s = (rpc_state_t*) env;
     
     s->blocked=1;
-    TRACE2("rpc_block",s->ls->endpt); 
+    TRACE_D("rpc_block",s->rank); 
 }
 
 void rpc_recv_send(void *env, int rank, int num, ce_iovec_array_t iovl) {
     rpc_state_t *s = (rpc_state_t*) env;
     static int last_report = 0;
+    ce_iovec_t send_iovl[1];
     
     s->total++;
     //  TRACE("rpc_recv_send");
     if (s->blocked == 0
-	&& s->ls->nmembers ==2) {
-	if (s->ls->rank ==0) {
+	&& s->nmembers ==2) {
+	if (s->rank ==0) {
 	    if (s->phase == BEGIN || s->phase == END)
-		ce_Send1(s->intf, 1, 1, create_iovl(size));
+		ce_Send1(s->intf, 1, 1, prepare_iovl(send_iovl, size));
 	} else
-	    ce_Send1(s->intf,0, 1, create_iovl(size));
+	    ce_Send1(s->intf,0, 1, prepare_iovl(send_iovl, size));
     }
 
     if (!quiet && s->total - last_report >= 1000) {
@@ -94,9 +93,10 @@ void rpc_recv_cast(void *env, int rank, int num, ce_iovec_array_t iovl) {
 
 void rpc_heartbeat(void *env, ce_time_t time) {
     rpc_state_t *s = (rpc_state_t*) env;
+    ce_iovec_t iovl[1];
     
     if (s->phase == START
-	&& s->ls->nmembers==2){
+	&& s->nmembers==2){
 	s->phase =BEGIN;
 	s->start_time = time + 2.0;
     }
@@ -105,9 +105,9 @@ void rpc_heartbeat(void *env, ce_time_t time) {
 	&& time > s->start_time){
 	s->phase = END;
 	s->start_time = time;
-	if (s->ls->rank == 0) {
+	if (s->rank == 0) {
 	    printf ("Starting RPC test\n");
-	    ce_Send1(s->intf, 1, 1, create_iovl(size));
+	    ce_Send1(s->intf, 1, 1, prepare_iovl(iovl, size));
 	}
     }
     
@@ -122,23 +122,22 @@ void rpc_heartbeat(void *env, ce_time_t time) {
 }
 
 void rpc_join(void){
-    ce_jops_t *jops; 
+    ce_jops_t jops; 
     ce_appl_intf_t *rpc_intf;
     rpc_state_t *s;
     
     /* The rest of the fields should be zero. The
      * conversion code should be able to handle this. 
      */
-    jops = record_create(ce_jops_t*, jops);
-    record_clear(jops);
-    //  jops->transports = ce_copy_string("UDP");
-    jops->group_name = ce_copy_string("ce_perf");
-    jops->properties = ce_copy_string(CE_DEFAULT_PROPERTIES);
-    jops->use_properties = 1;
-    jops->hrtbt_rate = 1.0;
+    memset(&jops, 0, sizeof(ce_jops_t));
+    //  jops.transports = "UDP";
+    memcpy(jops.group_name, "ce_perf", strlen("ce_perf"));
+    memcpy(jops.properties, CE_DEFAULT_PROPERTIES, strlen(CE_DEFAULT_PROPERTIES));
+    jops.use_properties = 1;
+    jops.hrtbt_rate = 1.0;
     
-    s = (rpc_state_t*) record_create(rpc_state_t*, s);
-    record_clear(s);
+    s = (rpc_state_t*) malloc(sizeof(rpc_state_t));
+    memset(s, 0, sizeof(rpc_state_t));
     
     rpc_intf = ce_create_intf(s,
 			      rpc_exit, rpc_install, rpc_flow_block,
@@ -147,14 +146,14 @@ void rpc_join(void){
     
     
     s->intf= rpc_intf;
-    ce_Join(jops,rpc_intf);
+    ce_Join(&jops,rpc_intf);
 }
 
 /**************************************************************/
 
 typedef struct throu_state_t {
-    ce_local_state_t *ls;
-    ce_view_state_t *vs;
+    int rank ;
+    int nmembers;
     ce_appl_intf_t *intf ;
     int blocked;
     ce_time_t next;
@@ -166,20 +165,20 @@ typedef struct throu_state_t {
 
 void throu_exit(void *env){}
 
-void throu_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs){
+void throu_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs)
+{
     throu_state_t *s = (throu_state_t*) env;
     
-    ce_view_full_free(s->ls,s->vs);
-    s->ls = ls;
-    s->vs = vs;
+    s->rank = ls->rank;
+    s->nmembers = ls->nmembers;
     s->blocked = 0;
     s->next = -1;
     s->start_time = -1;
     s->flow_blocked = 0;
     s->total = 0;
     s->phase = START;
-    printf("%s nmembers=%d\n", ls->endpt, ls->nmembers);
-    TRACE2("throu_install",s->ls->endpt);
+    printf("%s nmembers=%d\n", ls->endpt.name, ls->nmembers);
+    TRACE2("throu_install",ls->endpt.name);
 }
 
 void throu_flow_block(void *env, ce_rank_t rank, ce_bool_t onoff){
@@ -188,11 +187,12 @@ void throu_flow_block(void *env, ce_rank_t rank, ce_bool_t onoff){
     s->flow_blocked = onoff;
 }
 
-void throu_block(void *env){
+void throu_block(void *env)
+{
     throu_state_t *s = (throu_state_t*) env;
     
     s->blocked=1;
-    TRACE2("throu_block",s->ls->endpt); 
+    TRACE_D("throu_block",s->rank); 
 }
 
 void throu_recv_send(void *env, int rank, int num, ce_iovec_array_t iovl) {
@@ -217,9 +217,10 @@ void throu_recv_cast(void *env, int rank, int num, ce_iovec_array_t iovl) {
 
 void throu_heartbeat(void *env, ce_time_t time) {
     throu_state_t *s = (throu_state_t*) env;
+    ce_iovec_t iovl[1];
     
     if (s->blocked == 0 
-	&& s->ls->nmembers == nmembers
+	&& s->nmembers == nmembers
 	) {
 	if (s->phase == START) {
 	    s->phase = BEGIN;
@@ -229,13 +230,13 @@ void throu_heartbeat(void *env, ce_time_t time) {
 	}
 	
 	if (s->phase == BEGIN
-	    && s->ls->rank == 0) {
+	    && s->rank == 0) {
 	    if (s->flow_blocked ==1)
 		s->next = time;
 	    else
 		while (time > s->next) {
 		    TRACE("Sending bcast");
-		    ce_Cast(s->intf, 1, create_iovl(size));
+		    ce_Cast(s->intf, 1, prepare_iovl(iovl, size));
 		    s->next += rate;
 		    s->total += size;
 		}
@@ -251,37 +252,150 @@ void throu_heartbeat(void *env, ce_time_t time) {
     }
 }
 
-void throu_join(void){
-    ce_jops_t *jops; 
+void throu_join(void)
+{
+    ce_jops_t jops; 
     ce_appl_intf_t *throu_intf;
     throu_state_t *s;
     
     /* The rest of the fields should be zero. The
      * conversion code should be able to handle this. 
      */
-    jops = record_create(ce_jops_t*, jops);
-    record_clear(jops);
-    jops->hrtbt_rate=0.1;
-    jops->transports = ce_copy_string ("DEERING");
-    jops->group_name = ce_copy_string("ce_perf");
-    jops->properties = ce_copy_string(CE_DEFAULT_PROPERTIES);
-    jops->use_properties = 1;
+    memset(&jops, 0, sizeof(ce_jops_t));
+    memcpy(jops.transports, "DEERING", strlen("DEERING"));
+    memcpy(jops.group_name, "ce_perf", strlen("ce_perf"));
+    memcpy(jops.properties, CE_DEFAULT_PROPERTIES, strlen(CE_DEFAULT_PROPERTIES));
+    jops.use_properties = 1;
+    jops.hrtbt_rate = 1.0;
     
-    s = (throu_state_t*) record_create(throu_state_t*, s);
-    record_clear(s);
-    
+    s = (throu_state_t*) malloc(sizeof(throu_state_t));
+    memset(s, 0, sizeof(throu_state_t));
     throu_intf = ce_create_intf(s,
 				throu_exit, throu_install, throu_flow_block,
 				throu_block, throu_recv_cast, throu_recv_send,
 				throu_heartbeat);
     
     s->intf= throu_intf;
-    ce_Join (jops, throu_intf);
+    ce_Join (&jops, throu_intf);
 }
 
 
 
 /**************************************************************/
+/* Adapted from a test by Ganesh N.
+ */
+/**************************************************************/
+
+typedef struct {
+    int rank;
+    int nmembers;
+    ce_appl_intf_t *intf ;
+    int blocked;
+    int msg_size ;
+} flow_state_t;
+
+void
+flow_help_cast(flow_state_t *s, char *msg)
+{
+    if (s->blocked == 0) 
+	ce_flat_Cast(s->intf, strlen(msg)+1, msg);
+}
+
+void flow_exit(void *env){}
+
+void flow_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs)
+{
+    flow_state_t *s = (flow_state_t*) env;
+    
+    s->rank = ls->rank;
+    s->nmembers = ls->nmembers;
+    s->blocked =0;
+    printf("%s nmembers=%d\n", ls->endpt.name, ls->nmembers);
+    TRACE2("main_install", ls->endpt.name); 
+}
+
+void
+flow_flow_block(void *env, ce_rank_t rank, ce_bool_t onoff)
+{}
+
+void
+flow_block(void *env)
+{
+    flow_state_t *s = (flow_state_t*) env;
+    
+    s->blocked=1;
+}
+
+void
+flow_recv_cast(void *env, int rank, ce_len_t len, char *msg)
+{
+    printf("%d -> msg=%s(%d)\n", rank, "rcvd", len); 
+}
+
+void
+flow_recv_send(void *env, int rank, ce_len_t len, char *msg)
+{}
+
+void
+flow_heartbeat(void *env, double time)
+{
+    int i;
+    flow_state_t *s = (flow_state_t*)env;
+    char *buf;
+    
+    TRACE("heartbeat");
+    if(s->nmembers != 2 /*3*/)
+        return;
+
+    buf = (char*) malloc(s->msg_size +1);
+    if(!buf){
+        printf("unable to alloc mem.. %d\n", s->msg_size);
+        exit(0);
+    }
+        
+    for(i=0; i<s->msg_size-1 ; i++)
+        buf[i]='0' + s->rank;
+    buf[s->msg_size-1]= '\0';
+    flow_help_cast(s, buf);
+    
+    s->msg_size = s->msg_size * 2;
+//    size = size+20;
+}
+
+void
+flow_join(void)
+{
+    ce_jops_t jops; 
+    ce_appl_intf_t *main_intf;
+    flow_state_t *s;
+    
+    /* The rest of the fields should be zero. The
+     * conversion code should be able to handle this. 
+     */
+    memset(&jops, 0, sizeof(ce_jops_t));
+
+    jops.hrtbt_rate=1.0;
+    //  jops->transports = ce_copy_string("UDP");
+    memcpy(jops.group_name, "ce_mtalk", strlen("ce_mtalk"));
+    memcpy(jops.properties, CE_DEFAULT_PROPERTIES, strlen(CE_DEFAULT_PROPERTIES));
+    jops.use_properties = 1;
+    
+    s = (flow_state_t*) malloc(sizeof(flow_state_t));
+    memset(s, 0, sizeof(flow_state_t));
+    
+    main_intf = ce_create_flat_intf(s,
+				    flow_exit, flow_install, flow_flow_block,
+				    flow_block, flow_recv_cast, flow_recv_send,
+				    
+				    flow_heartbeat);
+    
+    s->intf= main_intf;
+    s->msg_size = 2;
+    ce_Join (&jops, main_intf);
+}
+
+/**************************************************************/
+
 
 void process_args(int argc, char **argv){
     int i,j ;
@@ -354,27 +468,34 @@ void process_args(int argc, char **argv){
     TRACE(")"); 
 }
 
-void
-usage(void)
+void usage(void)
 {
     if (prog !=NULL) {
 	if (strcmp(prog,"rpc") ==0) {
 	    test = RPC;
-	} else
-	    if (strcmp(prog,"throu") ==0
+	}
+	else if (strcmp(prog,"throu") == 0
 		|| strcmp(prog,"1-n") ==0) {
 		test = THROU;
-	    } else {
-		printf("Usage: ce_perf -n _ -prog [rpc|1-n|throu]\n");
-		printf("Other tests are not supported\n");
-		exit(1);
 	    }
+	else if (strcmp(prog,"flow") == 0) {
+	    test = FLOW;
+	}
+	else {
+	    printf("Usage: ce_perf -n _ -prog [rpc|1-n|throu|flow]\n");
+	    printf("Other tests are not supported\n");
+	    exit(1);
+	}
     }
 }
 
-int main(int argc, char **argv){
+int main(int argc, char **argv)
+{
     void (*join_fun)(void);
     
+    ce_set_alloc_fun((mm_alloc_t)malloc);
+    ce_set_free_fun((mm_free_t)free);
+
     //ce_Init(argc, argv);
     process_args(argc, argv);
     usage();
@@ -387,6 +508,9 @@ int main(int argc, char **argv){
 	break;
     case THROU:
 	join_fun = throu_join;
+	break;
+    case FLOW:
+	join_fun = flow_join;
 	break;
     default:
 	printf("Bad test\n");

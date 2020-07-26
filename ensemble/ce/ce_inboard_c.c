@@ -1,4 +1,3 @@
-
 /****************************************************************************/
 /* CE_INBOARD_C.C */
 /* Author:  Ohad Rodeh, Aug. 2001. */
@@ -13,21 +12,33 @@
 /****************************************************************************/
 /* These functions are exported from ML.
  */
-value *ce_add_sock_recv_v = NULL;
-value *ce_rmv_sock_recv_v = NULL;
-value *ce_async_v = NULL;
-value *ce_join_v = NULL;
-value *ce_main_loop_v = NULL;
+static value *ce_add_sock_recv_v = NULL;
+static value *ce_rmv_sock_recv_v = NULL;
+static value *ce_async_v = NULL;
+static value *ce_join_v = NULL;
+static value *ce_main_loop_v = NULL;
+/****************************************************************************/
+/* Global variables
+ */
+
+/* A pool of free actions
+ */
+static ce_pool_t *pool;
+
+ce_pool_t *ce_st_get_allocation_pool(void)
+{
+    return pool;
+}
 /****************************************************************************/
 
-value
-ce_actions_of_queue(ce_queue_t *q){
+value ce_actions_of_queue(ce_queue_t *q)
+{
     value ret;
     //  printf("ce_actions_of_queue("); fflush (stdout);
 //    TRACE("Val_queue(");
     ret = Val_queue(q);
 //    TRACE(".");
-    ce_queue_clear(q);
+    ce_queue_clear(pool, q);
 //    TRACE(")");
     
     return(ret);
@@ -36,8 +47,8 @@ ce_actions_of_queue(ce_queue_t *q){
 /* Called from ML to get the pending actions of an endpoint.
  */
 /*
-value
-ce_GetActions(value c_appl_v){
+value ce_GetActions(value c_appl_v)
+{
     ce_appl_intf_t *intf = C_appl_val(c_appl_v);
     
     intf->req_heartbeat = 0;
@@ -45,51 +56,57 @@ ce_GetActions(value c_appl_v){
 }
 */
 
-void
-ce_Async(ce_appl_intf_t *intf){
-    callback (*ce_async_v,Val_c_appl(intf));
+void ce_Async(ce_appl_intf_t *c_appl)
+{
+    callback (*ce_async_v,Val_c_appl(c_appl));
 }
 
 /****************************************************************************/
-value
-ce_Exit_cbd (value c_appl_v) {
-    ce_appl_intf_t *intf = C_appl_val(c_appl_v);
-    (intf->exit) (intf->env);
-    ce_intf_free(intf);
+value ce_Exit_cbd (value c_appl_v)
+{
+    ce_appl_intf_t *c_appl = C_appl_val(c_appl_v);
+    (c_appl->exit) (c_appl->env);
+    ce_intf_free(pool, c_appl);
     
     return (Val_unit);
 }
 
-value
-ce_Install_cbd (value c_appl_v, value ls_v, value vs_v) {
-    ce_appl_intf_t *intf = C_appl_val(c_appl_v);
+value ce_Install_cbd (value c_appl_v, value ls_v, value vs_v)
+{
+    ce_appl_intf_t *c_appl;
     ce_local_state_t *ls;
     ce_view_state_t *vs; 
     
     TRACE("ce_Install_cbd("); 
-    ls = record_create(ce_local_state_t*,ls);
-    vs = record_create(ce_view_state_t*,vs);
-    record_clear(ls);
-    record_clear(vs);
+    c_appl = C_appl_val(c_appl_v);
+
+    assert(check_queue(c_appl->aq));
+    ls = (ce_local_state_t*) ce_malloc(sizeof(ce_local_state_t));
+    vs = (ce_view_state_t*) ce_malloc(sizeof(ce_view_state_t));
+    memset((char*)ls, 0, sizeof(ce_local_state_t));
+    memset((char*)vs, 0, sizeof(ce_view_state_t));
     ViewFull_val(ls_v, vs_v, ls, vs);
-    intf->req_heartbeat = 1;
-    intf->blocked = 0;
-    if (intf->joining == 1) intf->joining = 0;
+    c_appl->req_heartbeat = 1;
+    c_appl->blocked = 0;
+    if (c_appl->joining == 1) c_appl->joining = 0;
     TRACE("."); 
-    (intf->install) (intf->env, ls, vs);
-    TRACE("."); 
-    intf->req_heartbeat = 0;
+    (c_appl->install) (c_appl->env, ls, vs);
+    TRACE(".");
+    ce_view_full_free(ls,vs);
+    c_appl->req_heartbeat = 0;
     TRACE(")"); 
-    return (ce_actions_of_queue(intf->aq));
+    return (ce_actions_of_queue(c_appl->aq));
 }
 
-value
-ce_FlowBlock_cbd (value c_appl_v, value rank_opt_v, value onoff_v) {
-    ce_appl_intf_t *intf = C_appl_val(c_appl_v);
+value ce_FlowBlock_cbd (value c_appl_v, value rank_opt_v, value onoff_v)
+{
+    ce_appl_intf_t *c_appl;
     ce_bool_t onoff = Bool_val(onoff_v);
     int rank = -1;
     
     TRACE("ce_FlowBlock_cbd(");
+	c_appl = C_appl_val(c_appl_v);
+	assert(check_queue(c_appl->aq));
     if (Int_val(rank_opt_v) == 0) {
 	TRACE("None");
 	rank = -1;
@@ -97,40 +114,38 @@ ce_FlowBlock_cbd (value c_appl_v, value rank_opt_v, value onoff_v) {
 	TRACE("Some");
 	rank = Int_val (Field(rank_opt_v,0));
     }
-    TRACE(".");
-    intf->req_heartbeat = 1;
-    TRACE(".");
-    printf("rank=%d, onoff=%d\n", rank, onoff);
-//    (intf->block) (intf->env);
-    (intf->flow_block) (intf->env, rank, onoff);
-    intf->req_heartbeat = 0;
+    c_appl->req_heartbeat = 1;
+    TRACE_D("flow_control onoff=", onoff);
+    (c_appl->flow_block) (c_appl->env, rank, onoff);
+    c_appl->req_heartbeat = 0;
     
     TRACE(")");
     return Val_unit;
 }
 
-value
-ce_Block_cbd(value c_appl_v) {
-    ce_appl_intf_t *intf = C_appl_val(c_appl_v);
+value ce_Block_cbd(value c_appl_v)
+{
+    ce_appl_intf_t *c_appl = C_appl_val(c_appl_v);
     
+    assert(check_queue(c_appl->aq));
 //    TRACE("ce_Block_cbd"); 
-    intf->req_heartbeat = 1;
-    (intf->block) (intf->env);
-    intf->req_heartbeat = 0;
-    intf->blocked = 1;
+    c_appl->req_heartbeat = 1;
+    (c_appl->block) (c_appl->env);
+    c_appl->req_heartbeat = 0;
+    c_appl->blocked = 1;
 
-    return (ce_actions_of_queue(intf->aq));
+    return (ce_actions_of_queue(c_appl->aq));
 }
 
 /*
   value
   ce_Disable_cbd(value c_appl_v) {
-  ce_appl_intf_t *intf = C_appl_val(c_appl_v);
+  ce_appl_intf_t *c_appl = C_appl_val(c_appl_v);
   
   TRACE("ce_Disblae_cbd"); 
-  intf->req_heartbeat = 1;
-  (intf->disable) (intf->env);
-  intf->req_heartbeat = 0;
+  c_appl->req_heartbeat = 1;
+  (c_appl->disable) (c_appl->env);
+  c_appl->req_heartbeat = 0;
   
   return Val_unit;
   }
@@ -139,57 +154,67 @@ ce_Block_cbd(value c_appl_v) {
 /* We do not return a list of actions, because polling
  * is done on the ML side right after this callback.
  */
-value
-ce_Heartbeat_cbd(value c_appl_v, value time_v) {
-    ce_appl_intf_t *intf = C_appl_val(c_appl_v);
+value ce_Heartbeat_cbd(value c_appl_v, value time_v)
+{
+    ce_appl_intf_t *c_appl = C_appl_val(c_appl_v);
     double time = Double_val(time_v);
     
+    assert(check_queue(c_appl->aq));
 //    TRACE("ce_Heartbeat_cbd"); 
-    intf->req_heartbeat = 1;
-    (intf->heartbeat) (intf->env, time);
-    intf->req_heartbeat = 0;
+    c_appl->req_heartbeat = 1;
+
+    /* If this is not an async request, then call the application callback.
+     */
+    if (0 == c_appl->req_async)
+	(c_appl->heartbeat) (c_appl->env, time);
+    c_appl->req_async = 0;
+    c_appl->req_heartbeat = 0;
     
-    return (ce_actions_of_queue(intf->aq));
+    return (ce_actions_of_queue(c_appl->aq));
 }
 
-value
-ce_ReceiveCast_cbd(value c_appl_v, value origin_v, value iovl_v){
-    ce_appl_intf_t *intf = C_appl_val(c_appl_v);
+value ce_ReceiveCast_cbd(value c_appl_v, value origin_v, value iovl_v)
+{
+    ce_appl_intf_t *c_appl = C_appl_val(c_appl_v);
     ce_bool_t origin = Int_val(origin_v);
     ce_iovec_array_t iovl = Iovl_val(iovl_v);
     int num = Wosize_val(iovl_v);
     
-    TRACE("ce_ReceiveCast_cbd");
+    TRACE("ce_ReceiveCast_cbd(");
+    assert(check_queue(c_appl->aq));
     /* The application does not own the msg.
      */
-    intf->req_heartbeat = 1;
-    (intf->receive_cast) (intf->env, origin, num, iovl);
-    intf->req_heartbeat = 0;
+    c_appl->req_heartbeat = 1;
+    (c_appl->receive_cast) (c_appl->env, origin, num, iovl);
+
+    c_appl->req_heartbeat = 0;
+    TRACE(")");
     
     /* No need to free the iovl, it is static.
      */
     //free(iovl);
     
-    return (ce_actions_of_queue(intf->aq));
+    return (ce_actions_of_queue(c_appl->aq));
 }
 
-value
-ce_ReceiveSend_cbd(value c_appl_v, value origin_v, value iovl_v){
-    ce_appl_intf_t *intf = C_appl_val(c_appl_v);
+value ce_ReceiveSend_cbd(value c_appl_v, value origin_v, value iovl_v)
+{
+    ce_appl_intf_t *c_appl = C_appl_val(c_appl_v);
     ce_bool_t origin = Int_val(origin_v);
     ce_iovec_array_t iovl = Iovl_val(iovl_v);
     int num = Wosize_val(iovl_v);
     
 //    TRACE("ce_ReceiveSend_cbd"); 
-    intf->req_heartbeat = 1;
-    (intf->receive_send) (intf->env, origin, num, iovl);  
-    intf->req_heartbeat = 0;
+    assert(check_queue(c_appl->aq));
+    c_appl->req_heartbeat = 1;
+    (c_appl->receive_send) (c_appl->env, origin, num, iovl);  
+    c_appl->req_heartbeat = 0;
     
     /* No need to free the iovl, it is static.
      */
     //free(iovl);
     
-    return (ce_actions_of_queue(intf->aq));
+    return (ce_actions_of_queue(c_appl->aq));
 }
 
 /****************************************************************************/
@@ -200,12 +225,14 @@ static void (*MLPrinter)(char *) = NULL ;
 void
 ce_st_MLPrintOverride(
     void (*handler)(char *msg)
-    ) {
+    )
+{
     MLPrinter = handler ;
 }
 
 value
-ce_st_MLDoPrint(value msg_v) {
+ce_st_MLDoPrint(value msg_v)
+{
     if (MLPrinter != NULL) {
 	MLPrinter(String_val(msg_v)) ;
 	return Val_true ;
@@ -215,15 +242,15 @@ ce_st_MLDoPrint(value msg_v) {
 
 static void (*MLHandler)(char *) = NULL ;
 
-void
-ce_st_MLUncaughtException(
+void ce_st_MLUncaughtException(
     void (*handler)(char *info)
-    ) {
+    )
+{
     MLHandler = handler ;
 }
 
-value
-ce_st_MLHandleException(value msg_v) {
+value ce_st_MLHandleException(value msg_v)
+{
     if (MLHandler != NULL) {
 	MLHandler(String_val(msg_v)) ;
 	exit(1) ;
@@ -237,11 +264,13 @@ ce_st_MLHandleException(value msg_v) {
 
 /* Request an asynchrous call if this hasn't been done already. 
  */
-#define check_heartbeat(c_appl){\
-  if (!(c_appl -> req_heartbeat)){ \
-    c_appl->req_heartbeat = 1; \
-    ce_Async(c_appl); \
-  } \
+void ce_st_check_heartbeat(ce_appl_intf_t *c_appl)
+{
+    if (!(c_appl -> req_heartbeat)){ 
+	c_appl->req_heartbeat = 1; 
+	c_appl->req_async = 1;
+	ce_Async(c_appl); 
+    }
 }
 
 static void
@@ -269,113 +298,112 @@ check_valid(ce_appl_intf_t *c_appl)
 }
 
 
-void
-ce_st_Cast(
+void ce_st_Cast(
     ce_appl_intf_t *c_appl,
     ce_len_t num,
     ce_iovec_array_t iovl
-    ) {
+    )
+{
     check_valid(c_appl);
-    check_heartbeat(c_appl);
+    ce_st_check_heartbeat(c_appl);
     TRACE("cast");
-    ce_appl_cast(c_appl->aq, num, iovl);
+    ce_action_cast(pool, c_appl->aq, num, iovl);
 }
 
-void
-ce_st_Send(
+void ce_st_Send(
     ce_appl_intf_t *c_appl,
     int num_dests,
     ce_rank_array_t dests,
     int num,
     ce_iovec_array_t iovl
-    ) {
+    )
+{
     check_valid(c_appl);
-    check_heartbeat(c_appl);
-    ce_appl_send(c_appl->aq, num_dests, dests, num, iovl);
+    ce_st_check_heartbeat(c_appl);
+    ce_action_send(pool, c_appl->aq, num_dests, dests, num, iovl);
 }
 
-void
-ce_st_Send1(
+void ce_st_Send1(
     ce_appl_intf_t *c_appl,
     ce_rank_t dest,
     int num,
     ce_iovec_array_t iovl
-    ) {
+    )
+{
     check_valid(c_appl);
-    check_heartbeat(c_appl);
-    ce_appl_send1(c_appl->aq, dest, num, iovl);
+    ce_st_check_heartbeat(c_appl);
+    ce_action_send1(pool, c_appl->aq, dest, num, iovl);
 }
 
 
-void
-ce_st_Leave(
-    ce_appl_intf_t *c_appl
-    ) {
-    check_valid(c_appl);
-    check_heartbeat(c_appl);
-    c_appl->leaving = 1;
-    ce_appl_leave(c_appl->aq);
-}
-
-void
-ce_st_Prompt(
-    ce_appl_intf_t *c_appl
-    ) {
-    check_valid(c_appl);
-    check_heartbeat(c_appl);
-    ce_appl_prompt(c_appl->aq);
-}
-
-void
-ce_st_Suspect(
-    ce_appl_intf_t *c_appl,
-    int num,
-    ce_rank_array_t suspects
-    ){
-    check_valid(c_appl);
-    check_heartbeat(c_appl);
-    ce_appl_suspect(c_appl->aq, num, suspects);
-}
-
-void
-ce_st_XferDone(
-    ce_appl_intf_t *c_appl
-    ) {
-    check_valid(c_appl);
-    check_heartbeat(c_appl);
-    TRACE("XferDone");
-    ce_appl_xfer_done(c_appl->aq);
-}
-
-void
-ce_st_Rekey(
+void ce_st_Leave(
     ce_appl_intf_t *c_appl
     )
 {
     check_valid(c_appl);
-    check_heartbeat(c_appl);
-    TRACE("Rekey");
-    ce_appl_rekey(c_appl->aq);
+    ce_st_check_heartbeat(c_appl);
+    c_appl->leaving = 1;
+    ce_action_leave(pool, c_appl->aq);
 }
 
-void
-ce_st_ChangeProtocol(
+void ce_st_Prompt(
+    ce_appl_intf_t *c_appl
+    )
+{
+    check_valid(c_appl);
+    ce_st_check_heartbeat(c_appl);
+    ce_action_prompt(pool, c_appl->aq);
+}
+
+void ce_st_Suspect(
+    ce_appl_intf_t *c_appl,
+    int num,
+    ce_rank_array_t suspects
+    )
+{
+    check_valid(c_appl);
+    ce_st_check_heartbeat(c_appl);
+    ce_action_suspect(pool, c_appl->aq, num, suspects);
+}
+
+void ce_st_XferDone(
+    ce_appl_intf_t *c_appl
+    )
+{
+    check_valid(c_appl);
+    ce_st_check_heartbeat(c_appl);
+    TRACE("XferDone");
+    ce_action_xfer_done(pool, c_appl->aq);
+}
+
+void ce_st_Rekey(
+    ce_appl_intf_t *c_appl
+    )
+{
+    check_valid(c_appl);
+    ce_st_check_heartbeat(c_appl);
+    TRACE("Rekey");
+    ce_action_rekey(pool, c_appl->aq);
+}
+
+void ce_st_ChangeProtocol(
     ce_appl_intf_t *c_appl,
     char *proto
-    ) {
+    )
+{
     check_valid(c_appl);
-    check_heartbeat(c_appl);
-    ce_appl_protocol(c_appl->aq, proto);
+    ce_st_check_heartbeat(c_appl);
+    ce_action_protocol(pool, c_appl->aq, proto);
 }
 
-void
-ce_st_ChangeProperties(
+void ce_st_ChangeProperties(
     ce_appl_intf_t *c_appl,
     char *properties
-    ) {
+    )
+{
     check_valid(c_appl);
-    check_heartbeat(c_appl);
-    ce_appl_properties(c_appl->aq, properties);
+    ce_st_check_heartbeat(c_appl);
+    ce_action_properties(pool, c_appl->aq, properties);
 }
 
 /*****************************************************************************/
@@ -430,8 +458,7 @@ ce_st_RmvSockRecv(ocaml_skt_t socket)
 /* Initialize the interface, start Ensemble/OCAML if necessary.
  * Pass the command line arguements to Ensemble. 
  */ 
-void
-ce_st_Init(int argc, char **argv)
+void ce_st_Init(int argc, char **argv)
 {
     char **ml_args;
 
@@ -446,6 +473,10 @@ ce_st_Init(int argc, char **argv)
     ce_async_v = caml_named_value((char*)"ce_async_v") ;
     ce_join_v = caml_named_value((char*)"ce_join_v") ;
     ce_main_loop_v = caml_named_value((char*)"ce_main_loop_v") ;
+
+    /* Initialize global data structures
+     */
+    pool = ce_pool_create();
 }
 
 /* Join a group
@@ -467,6 +498,7 @@ ce_st_Join(ce_jops_t *jops, ce_appl_intf_t *c_appl)
     
     jops_v = Val_jops(jops);
     c_appl_v = Val_c_appl(c_appl);
+//    printf("c_appl=%d\n", (int) c_appl);
     TRACE("before the callback"); 
     callback2(*ce_join_v, c_appl_v, jops_v);
     CAMLreturn0;

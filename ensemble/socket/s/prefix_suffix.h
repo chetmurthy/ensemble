@@ -336,6 +336,41 @@ void prefixed_gather_p_flat(value prefix_v, value ofs_v, value len_v, value iova
     iobuf_len = ofs;
 }
 
+void prefixed_gather_flat(value prefix_v, value ofs_v, value len_v, value iova_v)
+{
+    value t_v, iov_v;
+    int i, nvecs, len, iovlen, ofs, len1;
+    char *buf;
+
+    /* Prepare the ML header
+     */
+    *((int*)&iobuf[0]) = htonl(Int_val(len_v));
+    *((int*)&iobuf[SIZE_INT32]) = htonl(iovl_len(iova_v));
+    ofs = SIZE_INT32 * 2;
+
+    nvecs = Wosize_val(iova_v) ; /* inspired by array.c */
+    assert(nvecs + 1 <= N_IOVS) ;
+    iovlen = nvecs + 1 ;
+
+    /* Fill in for the prefix. 
+     */
+    len1 = Int_val(len_v);
+    memcpy(iobuf + ofs, (char*) &Byte(prefix_v,Int_val(ofs_v)), len1);
+    
+    ofs += len1;
+    for(i=0;i<nvecs;i++) {
+	t_v = Field(iova_v,i) ;   // Extract Basic_iov.t
+	iov_v = Field(t_v,1) ;      // Extract Basic_iov.iovec
+	len   = Int_val(Field(iov_v,0)) ;
+	buf   = mm_Cbuf_val(Field(iov_v,1));
+	memcpy((char*)iobuf + ofs, buf, len);
+	ofs +=len;
+    }
+    
+    /* Set the length of the "returned" buffer.
+     */
+    iobuf_len = ofs;
+}
 
 void prefixed2_gather_p_flat(value prefix1_v, value prefix2_v, value ofs2_v, value len2_v, value iova_v)
 {

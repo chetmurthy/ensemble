@@ -1,13 +1,13 @@
 D/hide.Attic////
 /.cvsignore/1.4/Sat Oct 19 18:25:12 2002//
-/Makefile/1.5/Sat Oct 19 18:25:14 2002//
-/elect.ml/1.18/Sat Oct 19 18:25:12 2002//
-/inter.ml/1.27/Sat Oct 19 18:25:12 2002//
-/intra.ml/1.21/Sat Oct 19 18:25:14 2002//
-/leave.ml/1.23/Sat Oct 19 18:25:14 2002//
-/merge.ml/1.21/Sat Oct 19 18:25:14 2002//
-/present.ml/1.14/Sat Oct 19 18:25:14 2002//
-/slander.ml/1.26/Sat Oct 19 18:25:14 2002//
-/suspect.ml/1.38/Sat Oct 19 18:25:14 2002//
-/sync.ml/1.28/Sat Oct 19 18:25:16 2002//
-/vsync.ml/1.19/Sat Oct 19 18:25:16 2002//
+/Makefile/1.5/Tue Oct 29 11:02:04 2002//
+/elect.ml/1.18/Tue Oct 29 11:02:05 2002//
+/inter.ml/1.27/Tue Oct 29 11:02:05 2002//
+/intra.ml/1.21/Tue Oct 29 11:02:05 2002//
+/leave.ml/1.23/Tue Oct 29 11:02:05 2002//
+/merge.ml/1.21/Tue Oct 29 11:02:05 2002//
+/present.ml/1.14/Tue Oct 29 11:02:05 2002//
+/slander.ml/1.26/Tue Oct 29 11:02:05 2002//
+/suspect.ml/1.38/Tue Oct 29 11:02:05 2002//
+/sync.ml/1.28/Tue Oct 29 11:02:05 2002//
+/vsync.ml/1.19/Tue Oct 29 11:02:05 2002//

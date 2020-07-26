@@ -1,6 +1,6 @@
 #*************************************************************#
 #
-# MAKEFILE: root Ensemble Makefile
+# Makefile: root Ensemble Makefile
 #
 # Author: Ohad Rodeh  12/2001
 # Based on code by Mark Hayden
@@ -127,17 +127,14 @@ dos2unix :
 src: dos2unix
 	make realclean
 	make depend
-	cd tar; tarcr 1.39 /home/orodeh/e/1.39/ensemble #$(VERSION) #$(BASEDIR)
+	cd tar; tarcr 1.40 /home/orodeh/e/1.40/ensemble 
 	cd doc; make build
 
 
 # build a tar file containing executables and libraries.
 #
 dist : 
-	$(MKDIR) ../build
-	cd bin; \
-	for d in *; do ( mkdir -p ../../build/$$d; mkdir -p ../../build/$$d/bin; mkdir -p ../../build/$$d/lib; 	mv $$d/* ../../build/$$d/bin/; mv ../lib/$$d/* ../../build/$$d/lib/); done
-	cd ../build; for d in *; do (tar -cf ensemble-$(VERSION)-$$d.tar $$d; gzip ensemble-$(VERSION)-$$d.tar; rm -rf $$d); done
+	cd ../build; for d in *; do (tar -cf ensemble-1_40-$$d.tar $$d; gzip ensemble-1_40-$$d.tar; rm -rf $$d); done
 
 
 depend:

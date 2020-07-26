@@ -155,6 +155,17 @@ value skt_sendtosv(
 	 */
 	ret = WSASendTo(sock, iov, iovlen, &len, 0,
 			&info->sa[i], info->addrlen, 0, NULL);
+/*	{
+	    int j;
+	    struct sockaddr_in *addr = (struct sockaddr_in*) &info->sa[i];
+	    
+	    for(j=0; j<iovlen; j++) {
+		SKTTRACE((" <iov[%d].len=%d> ", j, Iov_len(iov[j])));
+	    }
+	    SKTTRACE(("\n sock=%d  iovlen=%d sent_len=%d", sock, iovlen, ret));
+	    SKTTRACE(("\n port=%d ip=%s", ntohs(addr->sin_port),
+		      inet_ntoa(addr->sin_addr)));
+		      }*/
 	if (SOCKET_ERROR == ret) skt_udp_recv_error();
     }
     

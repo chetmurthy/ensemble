@@ -8,6 +8,7 @@
 #include "ce.h"
 #include "ce_threads.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <memory.h>
 #include <malloc.h>
 /**************************************************************/
@@ -16,8 +17,9 @@
 
 
 typedef struct state_t {
-    ce_local_state_t *ls;
-    ce_view_state_t *vs;
+    int rank;
+    int nmembers;
+    ce_endpt_t endpt;
     ce_appl_intf_t *intf ;
     int blocked;
     int joining;
@@ -35,14 +37,15 @@ main_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs)
     state_t *s = (state_t*) env;
     
     ce_lck_Lock(s->mutex);{
-	ce_view_full_free(s->ls,s->vs);
-	s->ls = ls;
-	s->vs = vs;
+	s->rank = ls->rank;
+	s->nmembers = ls->nmembers;
+	s->blocked =0;
+	memcpy(s->endpt.name, ls->endpt.name, CE_ENDPT_MAX_SIZE);
 	s->blocked =0;
 	s->joining =0;
 	
-	printf("%s nmembers=%d\n", ls->endpt, ls->nmembers);
-	TRACE2("main_install",s->ls->endpt); 
+	printf("%s nmembers=%d\n", ls->endpt.name, ls->nmembers);
+	TRACE2("main_install",ls->endpt.name); 
     } ce_lck_Unlock(s->mutex);
 }
 
@@ -73,6 +76,8 @@ main_recv_send(void *env, int rank, ce_len_t len, char *msg)
 void
 main_heartbeat(void *env, double time)
 {
+    static int counter = 0;
+
     TRACE("heartbeat");
 }
 
@@ -95,14 +100,16 @@ get_input(void *env)
 	     */
 	    return;
 	
-	msg = ce_copy_string(buf);
+	msg = (char*) malloc(len+1);
+	memcpy(msg, buf, len);
+	msg[len] = 0;
 	TRACE2("Read: ", msg);
 	
 	ce_lck_Lock(s->mutex);{
 	    if (s->joining || s->leaving || s->blocked)
 		printf("Cannot send while group is joining/leaving/blocked, try later\n");
 	    else {
-		ce_flat_Cast(s->intf, strlen(msg), msg);
+		ce_flat_Cast(s->intf, strlen(msg)+1, msg);
 	    }
 	} ce_lck_Unlock(s->mutex);
     }
@@ -111,28 +118,21 @@ get_input(void *env)
 state_t *
 join(void)
 {
-    ce_jops_t *jops; 
+    ce_jops_t jops; 
     ce_appl_intf_t *main_intf;
     state_t *s;
     
     /* The rest of the fields should be zero. The
      * conversion code should be able to handle this. 
      */
-    jops = record_create(ce_jops_t*, jops);
-    record_clear(jops);
-    jops->hrtbt_rate=10.0;
-//    jops->transports = ce_copy_string("DEERING");
-    jops->transports = ce_copy_string("UDP");
-    jops->group_name = ce_copy_string("ce_mtalk");
-    jops->properties = ce_copy_string(
-"Gmp:Sync:Heal:Switch:Frag:Suspect:Flow:Slander:Local"
-	);
-
-/*CE_DEFAULT_PROPERTIES);*/
-    jops->use_properties = 1;
+    memset(&jops, 0, sizeof(ce_jops_t));
+    jops.hrtbt_rate=3.0;
+    strcpy(jops.group_name, "ce_mtalk_mt");
+    strcpy(jops.properties, CE_DEFAULT_PROPERTIES);
+    jops.use_properties = 1;
     
-    s = (state_t*) record_create(state_t*, s);
-    record_clear(s);
+    s = (state_t*) malloc(sizeof(state_t));
+    memset(s, 0, sizeof(state_t));
     
     main_intf = ce_create_flat_intf(s,
 				    main_exit, main_install, main_flow_block,
@@ -143,7 +143,7 @@ join(void)
     s->intf= main_intf;
     s->mutex = ce_lck_Create();
     s->joining = 1;
-    ce_Join (jops, main_intf);
+    ce_Join (&jops, main_intf);
     return s;
 }
 
@@ -152,6 +152,9 @@ main(int argc, char **argv)
 {
     state_t *s;
     
+    ce_set_alloc_fun((mm_alloc_t)malloc);
+    ce_set_free_fun((mm_free_t)free);
+
     ce_Init(argc, argv); /* Call Arge.parse, and appl_process_args */
 
     /* Join the group

@@ -284,7 +284,7 @@ let run () =
     (recv,disable,())
   in
 
-  (* as of version 1.3, we only use TCP.
+  (* as of version 1.30, we only use TCP.
    *)
   let chan =
     let port = Arge.get tcp_port in

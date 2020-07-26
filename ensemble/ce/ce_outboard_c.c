@@ -10,6 +10,7 @@
 #include "ce_context_table.h"
 #include "ce_sock_table.h"
 #include "ce_comm.h"
+#include "ce_actions.h"
 #include <stdio.h>
 #include <assert.h>
 
@@ -54,7 +55,7 @@ static struct {
     int write_hdr_len  ;
     int write_iov_len  ;
     int num_iovl ;              /* The number of iovectors in [iovl] */
-    ce_iovec_array_t iovl;      /* A pointer to an iovec to send */
+    ce_iovec_t iovl[CE_IOVL_MAX_SIZE] ;      /* An iovec array to send */
 } g ;
 
 
@@ -75,21 +76,6 @@ static void mt_lock(void)
 static void mt_unlock(void)
 {
     if (unlock_fun != NULL) (*unlock_fun)();
-}
-/**************************************************************/
-
-
-/* This is to maintain the memory conventions of the inboard
- * mode
- */
-static void
-free_iovl(int num, ce_iovec_array_t iovl)
-{
-    int i;
-    
-    for(i=0; i<num; i++)
-	free(Iov_buf(iovl[i]));
-    free(iovl);
 }
 /**************************************************************/
 
@@ -126,7 +112,7 @@ do_write(void *buf,int len)
 INLINE static void
 end_write(void)
 {
-    int size ;
+    int size, i ;
     
     /* Compute header length, and ML header length.
      * In case these arguments have not been set, then
@@ -155,14 +141,19 @@ end_write(void)
     
     if (g.write_iov_len == 0)
 	tcp_send(g.fd, g.write_pos, g.write_buf); 
-    else
+    else {
 	tcp_send_iov(g.fd, g.write_hdr_len, g.write_buf,
 		     g.num_iovl, g.iovl);
+
+	/* Free the message body after sending.
+	 */
+	for (i=0; i< g.num_iovl; i++)
+	    ce_free_msg_space(Iov_buf(g.iovl[i]));
+    }
     
     g.write_pos = 0 ;
     g.write_iov_len = 0;
-    free_iovl(g.num_iovl, g.iovl);
-    g.iovl = NULL;
+    memset(g.iovl, 0, CE_IOVL_MAX_SIZE * sizeof(ce_iovec_t));
     g.num_iovl = 0;
 
     /* Shrink the buffer if it is >64K.
@@ -210,7 +201,7 @@ begin_read(void)
 	tcp_recv(g.fd,g.read_hdr_len, g.read_buf);
     else {
 	Iov_len(g.iovec) = g.read_iov_len;
-	Iov_buf(g.iovec) = mm_alloc_fun(g.read_iov_len);
+	Iov_buf(g.iovec) = ce_alloc_msg_space(g.read_iov_len);
 	tcp_recv_iov(g.fd, g.read_hdr_len, g.read_buf, &g.iovec);
     }
     g.read_pos = 0 ;
@@ -236,7 +227,7 @@ end_read(void)
     /* To match the semantics of the inboard mode, we need to free
      * the buffer.
      */
-    mm_free_fun(Iov_buf(g.iovec));
+    ce_free_msg_space(Iov_buf(g.iovec));
     Iov_buf(g.iovec) = NULL;
 }
 
@@ -386,12 +377,6 @@ write_time(double time)
 }
 
 
-INLINE static void
-write_endpID(ce_endpt_t ep)
-{
-    write_string(ep);
-}
-
 struct header {
     int id ;
     int type ;
@@ -428,10 +413,10 @@ write_iovl(int num, ce_iovec_array_t iovl)
     g.write_hdr_len  = g.write_pos;
     g.write_iov_len  = size;
    
-    /* Attach the iovec to the global structure.
+    /* Copy the iovec to the global structure.
      */
     g.num_iovl = num;
-    g.iovl = iovl;
+    memcpy(g.iovl, iovl, num * sizeof(ce_iovec_t));
 	
 //    ce_trace(NAME, "write_iovl: size = %d", size);
 }
@@ -479,26 +464,54 @@ read_time(void)
 
 /* Allocate and copy into a buffer.
  */
-INLINE static char *
-read_string(void)
+INLINE static void
+read_string(char *s, int max_size)
 {
     int size, tmp;
-    char *buf;
-
+    int len = 0;
+    
     do_read(&tmp, INT_SIZE);
     size = ntohl(tmp);
-    buf = (char*) ce_malloc(size+1);
-    do_read(buf, size);
-    buf[size] = 0;
+    if (size > max_size-1) {
+	printf("CE-outboard, internal error, string larger than requested <%d bytes>",
+	       max_size-1);
+	exit(1);
+    }
+    do_read(s, size);
 //    ce_trace(NAME, "read_string: <%d> %s", size, buf);
-
-    return buf;
+    
+    len = MIN(size, max_size-1);
+    s[len] = 0;
 }
 
-INLINE static ce_endpt_t
-read_endpt(void)
+/* Allocate and copy into a buffer.
+ */
+INLINE static void
+read_key(char *s)
 {
-    return (ce_endpt_t) read_string();
+    int size, tmp;
+    int len = 0;
+        
+    do_read(&tmp, INT_SIZE);
+    size = ntohl(tmp);
+    if (0 == size) {
+	return;
+    }
+    else if (size != CE_KEY_SIZE && size != 0) {
+	printf("CE internal error, bad key size, (size=%d)", size);
+	exit(1);
+    }
+    else {
+	do_read(s, CE_KEY_SIZE);
+//    ce_trace(NAME, "read_string: <%d> %s", size, buf);
+    }
+}
+
+
+INLINE static void
+read_endpt(ce_endpt_t *endpt)
+{
+    read_string(endpt->name, CE_ENDPT_MAX_SIZE);
 }
 
 INLINE static ce_ctx_id_t
@@ -524,27 +537,27 @@ read_endpt_array(void)
     ce_endpt_array_t epa;
 
     size = read_int ();
-    epa = (ce_endpt_array_t) ce_malloc((size+1) *sizeof(int)); 
-
+    epa = (ce_endpt_array_t) ce_malloc(size *sizeof(ce_endpt_t)); 
+    memset(epa, 0, size *sizeof(ce_endpt_t));
+    
     for (i = 0; i < size; i++)
-	epa[i] = read_endpt();
-    epa[size] = NULL;
+	read_endpt(&epa[i]);
 
     return epa;
 }
 
-INLINE static ce_addr_array_t
+INLINE static ce_addr_t*
 read_addr_array(void)
 {
     int i, size;
-    ce_addr_array_t aa;
+    ce_addr_t *aa;
 
     size = read_int ();
-    aa = (ce_addr_array_t) ce_malloc((size+1) *sizeof(int)); 
+    aa = (ce_addr_t*) ce_malloc(size *sizeof(ce_addr_t)); 
+    memset(aa, 0, size * sizeof(ce_endpt_t));
 
     for (i = 0; i < size; i++)
-	aa[i] = read_string();
-    aa[size] = NULL;
+	read_string(aa[i].addr, CE_ADDR_MAX_SIZE);
 
     return aa;
 }
@@ -556,29 +569,25 @@ read_cbType(void)
 }
 
 
-INLINE static ce_view_id_t *
-read_view_id(void)
+INLINE static void
+read_view_id(ce_view_id_t *vid)
 {
-    ce_view_id_t *vid;
-
-    vid = (ce_view_id_t*) ce_malloc(sizeof(ce_view_id_t));
     vid -> ltime = read_int();
-    vid -> endpt = read_string();
-
-    return vid;
+    read_string(vid->endpt.name, CE_ENDPT_MAX_SIZE);
 }
 
-static ce_view_id_array_t  
+static ce_view_id_t*
 read_view_id_array(void)
 {
-    ce_view_id_array_t a;
+    ce_view_id_t *a;
     int i, num;
 
     num = read_int ();
-    a = (ce_view_id_array_t) ce_malloc((num+1) * sizeof(int));
+    if (0 == num) return NULL;
+    a = (ce_view_id_t*) ce_malloc(num * sizeof(ce_view_id_t));
+    memset(a, 0, sizeof(num * sizeof(ce_view_id_t)));
     for (i=0; i<num; i++)
-	a[i] = read_view_id();
-    a[num] = NULL;
+	read_view_id(&a[i]);
     return a;
 }
 
@@ -593,49 +602,50 @@ cb_View(ce_ctx_t *s)
 {
     ce_view_state_t *vs;
     ce_local_state_t *ls;
+
+    ls = (ce_local_state_t*) ce_malloc(sizeof(ce_local_state_t));
+    vs = (ce_view_state_t*) ce_malloc(sizeof(ce_view_state_t));
+    memset(ls, 0, sizeof(ce_local_state_t));
+    memset(vs, 0, sizeof(ce_view_state_t));
     
-    ls = record_create(ce_local_state_t*,ls);
-    vs = record_create(ce_view_state_t*,vs);
-    record_clear(ls);
-    record_clear(vs);
-    
-//    ce_trace(NAME, "VIEW");
+    TRACE("VIEW");
 
     /* Reading local state
      */
-    ls->endpt = read_endpt ();
-    ls->addr =  read_string ();
+    read_endpt (&ls->endpt);
+    read_string (ls->addr.addr, CE_ENDPT_MAX_SIZE);
     ls->rank = read_int ();
-//    ce_trace(NAME,"\t rank: %d", ls->rank);
-    ls->name = read_string ();
+    TRACE_D("\t rank: ", ls->rank);
+    read_string (ls->name, CE_NAME_MAX_SIZE);
     ls->nmembers = read_int ();
-    ls->view_id = read_view_id ();
-//    ce_trace(NAME, "\t view_id.ltime: %d", ls->view_id->ltime);
-//    ce_trace(NAME,"\t view_id.coord: %s", ls->view_id->endpt);
+    read_view_id (&ls->view_id);
+    TRACE_D("\t view_id.ltime: ", ls->view_id.ltime);
+    TRACE2("\t view_id.coord: ", ls->view_id.endpt.name);
     ls->am_coord = read_bool ();
 
     /* Reading view state
      */
-    vs->version = read_string ();
-//    ce_trace("\t version: %s", vs->version);
-    vs->group = read_string ();
-//    ce_trace("\t group_name: %s", vs->group);
-    vs->proto = read_string ();
-//    ce_trace("\t protocol: %s", vs->proto);
+    read_string (vs->version, CE_VERSION_MAX_SIZE);
+    TRACE2("\t version: ", vs->version);
+    read_string (vs->group, CE_GROUP_NAME_MAX_SIZE);
+    TRACE2("\t group_name: ", vs->group);
+    read_string (vs->proto , CE_PROTOCOL_MAX_SIZE);
+    TRACE2("\t protocol: ", vs->proto);
     vs->coord = read_int ();
     vs->ltime = read_int ();
     vs->primary = read_bool ();
-//    ce_trace(NAME, "\t primary: %d", vs->primary);
+    TRACE_D("\t primary: ", vs->primary);
     vs->groupd = read_bool ();
-//    ce_trace(NAME,"\t groupd: %d", vs->groupd);
+    TRACE_D("\t groupd:", vs->groupd);
     vs->xfer_view = read_bool ();
-//    ce_trace(NAME, "\t xfer_view: %d", vs->xfer_view);
-    vs->key = read_string ();
-//    ce_trace("\t key: %s", vs->key);
+    TRACE_D("\t xfer_view: ", vs->xfer_view);
+    read_key(vs->key);
+    TRACE("\t key:"); 
     vs->num_ids = read_int ();
+    TRACE_D("\t num_ids:", vs->num_ids); 
     vs->prev_ids = read_view_id_array ();
-    vs->params = read_string ();
-//    ce_trace("\t params: %s", vs->params);
+    read_string (vs->params, CE_PARAMS_MAX_SIZE);
+    TRACE2("\t params: ", vs->params);
     vs->uptime = read_time ();
     vs->view = read_endpt_array ();
 //    ce_trace(NAME, "\t nmembers: %d", ls->nmembers);
@@ -651,7 +661,8 @@ cb_View(ce_ctx_t *s)
     s->blocked = 0;
     s->nmembers = ls->nmembers ;
     (s->intf->install) (s->intf->env, ls, vs);
-
+    ce_view_full_free(ls,vs);
+    
     s->joining = 0 ;
 }
 
@@ -768,13 +779,13 @@ ce_st_Main_loop(void)
 	if (FD_ISSET(g.fd, &g.readfds)){
 	    begin_read() ; {
 		id = read_contextID();
-//		ce_trace(NAME, "CALLBACK: group ID: %d", id);
+		TRACE_D("CALLBACK: group ID: ", id);
 		
 		cb = read_cbType();
-//		ce_trace("CALLBACK: callback type: %s", string_of_cbType(cb));
+		TRACE2("CALLBACK: callback type: ", string_of_cbType(cb));
 		
 		if (cb > CB_EXIT) {
-//		    ce_trace(NAME, "bad callback type (%d)", cb);
+		    TRACE_D("bad callback type ", cb);
 		    ce_panic("");
 		}
 		s = lookup_context(id);
@@ -919,15 +930,12 @@ ce_st_Join(ce_jops_t *ops,	ce_appl_intf_t *c_appl)
 //	ce_trace(NAME, "write ops->debug:");
 	write_bool(ops->debug);
 	
-	if (ops->endpt != NULL) {
+	if (ops->endpt.name[0] != 0) {
 	    printf("CE_OUTBOARD does not support 'endpt' in join ops\n");
-	    ops->endpt = NULL;
 	}
 	write_string(ops->princ);
 	write_string(ops->key);
 	write_bool(ops->secure);
-
-	ce_jops_free(ops);
     } end_write();
 }
 
@@ -1004,7 +1012,7 @@ ce_st_Send(
     ce_ctx_t *s = lookup_context(c_appl->id);
     int i;
 
-    //printf("ce_st_Send");
+    TRACE("ce_st_Send");
     check_valid(c_appl, "ce_st_Send");
     begin_write(); { 
 	write_hdr(s,DN_SEND);
@@ -1013,7 +1021,6 @@ ce_st_Send(
 	    assert(dests[i] < s->nmembers) ;
 	    write_int(dests[i]);
 	}
-	free(dests);
 	write_iovl(num, iovl);
     } end_write();
 }
@@ -1055,8 +1062,6 @@ ce_st_Suspect(
 	    assert(suspects[i] < s->nmembers);
 	    write_int(suspects[i]);
 	}
-
-	free(suspects);
     } end_write();
 }
 
@@ -1087,7 +1092,6 @@ ce_st_ChangeProtocol(ce_appl_intf_t *c_appl, char *protocol_name)
     begin_write(); {
 	write_hdr(s,DN_PROTOCOL);
 	write_string(protocol_name); 
-	free(protocol_name);
     } end_write();
 }
 
@@ -1103,7 +1107,6 @@ ce_st_ChangeProperties(ce_appl_intf_t *c_appl, char *properties)
     begin_write(); {
 	write_hdr(s,DN_PROPERTIES);
 	write_string(properties);
-	free(properties);
     } end_write();
 }
 

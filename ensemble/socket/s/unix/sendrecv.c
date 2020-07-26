@@ -131,7 +131,7 @@ value skt_udp_recv_packet(
     Iov_len(recv_iov[2]) =  usr_len ;
     Iov_buf(recv_iov[2]) = usr_buf ;
     
-    SKTTRACE2(("SENDRECV: ml buffer=%d\n", string_length(buf_v)));
+    SKTTRACE2(("SENDRECV: ml buffer=%ld\n", string_length(buf_v)));
     
     /*  
 	printf("iovlen=%d\n", ctx->recv_msghdr.msg_iovlen);

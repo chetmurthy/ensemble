@@ -13,20 +13,6 @@
 /* This section deals with converting flat actions into regular actions.
  */
 
-/* Create an iovl, to wrap the arguments.
- */
-static ce_iovec_array_t
-ce_iovl_wrap(ce_len_t len, ce_data_t data){
-    ce_iovec_array_t iovl;
-    
-    iovl = (ce_iovec_array_t)malloc(1 * sizeof(ce_iovec_t));
-    Iov_len(iovl[0]) = len;
-    Iov_buf(iovl[0]) = data;
-    
-//    printf("ce_iovl_wrap: len=%d\n", Iov_len(iovl[0]));
-    return iovl;
-}
-
 /* Flatten an iovec array. Use mm_alloc_fun to allocate
  * memory and copy into it if the iovec has more then one
  * element.
@@ -56,13 +42,16 @@ ce_iovl_flatten(int num, ce_iovec_array_t iovl,
 	
 	/* Compute the total length
 	 */
-	for (i=0, total_len=0;
-	     i<num;
-	     i++, total_len += Iov_len(iovl[i]));
+	total_len = 0;
+	TRACE_D("CE_FLAT: the number of iovecs", num);
+	for (i=0; i<num; i++) {
+	    TRACE_D("CE_FLAT: total_len=", total_len);
+	    total_len += Iov_len(iovl[i]);
+	}
 	
 	/* Allocate memory
 	 */
-	buf = mm_alloc_fun(total_len);
+	buf = ce_alloc_msg_space(total_len);
 	
 	/* Copy into it.
 	 */
@@ -83,10 +72,11 @@ ce_iovl_flatten(int num, ce_iovec_array_t iovl,
 LINKDLL void
 ce_flat_Cast(ce_appl_intf_t *c_appl, ce_len_t len, ce_data_t buf)
 {
-    ce_iovec_array_t iovl;
+    ce_iovec_t iovl[1];
 
     TRACE("ce_flat_Cast(");
-    iovl = ce_iovl_wrap(len,buf);
+    Iov_len(iovl[0]) = len;
+    Iov_buf(iovl[0]) = buf;
     ce_Cast(c_appl, 1, iovl);
     TRACE(")");
 }
@@ -95,9 +85,10 @@ LINKDLL void
 ce_flat_Send(ce_appl_intf_t *c_appl, int num_dests,
 		   ce_rank_array_t dests, ce_len_t len, ce_data_t buf)
 {
-    ce_iovec_array_t iovl;
+    ce_iovec_t iovl[1];
     
-    iovl = ce_iovl_wrap(len,buf);
+    Iov_len(iovl[0]) = len;
+    Iov_buf(iovl[0]) = buf;
     ce_Send(c_appl, num_dests, dests, 1, iovl);
 }
 
@@ -105,9 +96,10 @@ LINKDLL void
 ce_flat_Send1(ce_appl_intf_t *c_appl, ce_rank_t dest, ce_len_t len,
 	      ce_data_t buf)
 {
-    ce_iovec_array_t iovl;
+    ce_iovec_t iovl[1];
     
-    iovl = ce_iovl_wrap(len,buf);
+    Iov_len(iovl[0]) = len;
+    Iov_buf(iovl[0]) = buf;
     ce_Send1(c_appl, dest, 1, iovl);
 }
 
@@ -183,7 +175,7 @@ ce_flat_send_cbd(ce_env_t env, ce_rank_t origin, int num,
      * newly allocated here. Otherwise, Ensemble's
      * refcounting will free it.
      */
-    if (num>1) mm_free_fun(buf);
+    if (num>1) ce_free_msg_space(buf);
 }
 
 void
@@ -202,7 +194,7 @@ ce_flat_cast_cbd(ce_env_t env, ce_rank_t origin, int num,
      * newly allocated here. Otherwise, Ensemble's
      * refcounting will free it.
      */
-    if (num>1) mm_free_fun(buf);
+    if (num>1) ce_free_msg_space(buf);
 }
 
 
@@ -228,7 +220,7 @@ ce_create_flat_intf(ce_env_t env,
 		    ce_appl_heartbeat_t heartbeat
     ){
     ce_flat_env_t *flat_env;
-    flat_env = record_create(ce_flat_env_t*, flat_env);
+    flat_env = (ce_flat_env_t*) ce_malloc(sizeof(ce_flat_env_t));
     TRACE("ce_create_flat_intf");
     
     flat_env -> env = env;

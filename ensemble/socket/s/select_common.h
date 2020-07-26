@@ -42,7 +42,7 @@ file_descr_set *fdarray_to_fdset(
     FD_ZERO(fdset) ;
     for (i=0;i<n;i++) {
 	fd = Socket_val(Field(sock_arr_v,i)) ;
-	SKTTRACE(("select: fd=%d\n", fd));
+//	SKTTRACE(("select: fd=%d\n", fd));
 	FD_SET(fd, fdset) ;
     }
     

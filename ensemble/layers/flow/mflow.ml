@@ -30,6 +30,7 @@ type mark_state =
   | Low
 
 type 'abv state = {
+  mutable exiting : bool ;
   mutable mark : mark_state ;
   hi_wmark   : int ;
   stagger    : bool ;
@@ -99,7 +100,8 @@ let init _ (ls,vs) =
     )
   in
 
-  { mark       = Low ;
+  { exiting    = false ;
+    mark       = Low ;
     hi_wmark   = hi_wmark;
     window     = window ;
     stagger    = stagger ;
@@ -123,19 +125,20 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
    * multicasting messagses; if it is high, tell it to block.
    *)
   let check_wmark () = 
-    if Queuee.length s.send_buf >= s.hi_wmark
-    && s.mark = Low then (
-      logc (fun () -> "Hi");
-      s.mark <- Hi;
-      let ev = create name EFlowBlock[FlowBlock (None,true)] in
-      upnm ev 
-    ) else if Queuee.length s.send_buf = 0 
-      && s.mark=Hi then (
-      logc (fun () -> sprintf "Low, credit_left=%d" (Mcredit.left s.credit));
-      s.mark <- Low;
-      let ev = create name EFlowBlock[FlowBlock (None,false)] in
-      upnm ev 
-    )
+    if not s.exiting then 
+      if Queuee.length s.send_buf >= s.hi_wmark
+	&& s.mark = Low then (
+	  logc (fun () -> "Hi");
+	  s.mark <- Hi;
+	  let ev = create name EFlowBlock[FlowBlock (None,true)] in
+	  upnm ev 
+	) else if Queuee.length s.send_buf = 0 
+	  && s.mark=Hi then (
+	    logc (fun () -> sprintf "Low, credit_left=%d" (Mcredit.left s.credit));
+	    s.mark <- Low;
+	    let ev = create name EFlowBlock[FlowBlock (None,false)] in
+	    upnm ev 
+	  )
   in				
 
   let check_msg s = 
@@ -215,6 +218,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | EExit -> 
       (* Release all events in the send queue.
        *)
+      s.exiting <- true;
       Queuee.clean (fun (ev,_) -> free name ev) s.send_buf ;
       upnm ev
 

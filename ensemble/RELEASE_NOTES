@@ -1,54 +1,46 @@
-     RELEASE_NOTES for Ensemble version 1.39
+     RELEASE_NOTES for Ensemble version 1.40
 
 Author: Ohad Rodeh
-Last updated: 26/10/2002
+Last updated: 19/December/2002
 
 RELEASE_NOTES
 
-  This distribution includes ports to HPUX and Solaris donated by
-Bernd Harries (bha@gmx.de). The socket library has been reworked,
-generic code was split away from platform specific code. The five
-supported total ordering protocols have been brought up to date. A
-document describing the Ensemble lower-level transport and io-vector
-system has been added to the tutorial. 
+  This release primarily solves a long standing problem with the use
+of DLLs on win32 platforms. CE was rewritten so as to compiled into a
+DLL instead of a static library. Since JNI requires shared libraries,
+this finally allows cejava to work on win32 and not just Unix. The second
+problem solved in this release is the gossip bug on win32, this was due
+to problems with UDP sockets. 
 
-  A bug affecting use of gossip on win32 systems has been reported,
-and has not been fixed in this distibution. The next distribution will
-include a fix for it.
+The major change in the CE API is in memory allocation
+conventions. Instead of the application allocating memory chunks, such
+as arrays of destinations and vectors pointing to C-memory chunks, CE
+now copies these auxiliary buffers into its own memory areas. This
+completely separates the memory areas used by the application and
+CE/Ensemble. The only sharing occurs for message bodies which are not
+copied. To this end the application must set the message alloc/free
+functions used by CE for messages, for example:
 
-   IBM research in Israel has been added to the list of copyright
- holders along with Cornell and the Hebrew University. This does not
- change the terms of the licence, the system remains free of charge
- in the spirit of its BSD licence. 
+    ce_set_alloc_fun((mm_alloc_t)malloc);
+    ce_set_free_fun((mm_free_t)free);
 
-A more specific list of changes:
-1. Port to Solaris and HPUX, donated by Bernd Harries (bha@gmx.de).
-3. Improved SEQBB performance. 
-4. Fixed ref-count and correctness bugs in SEQUENCER, TOTEM, TOTAL.
-5. Reworked the socket library
-   - Use the new ocaml-3.06 Unix setsock calls 
-   - split between the Unix stuff and win32 stuff, this gets read of the
-     all the #ifdefs. 
-   - Rewritten the makefiles
-   - Improved the exported .H files
-   - cleanup
-6. Improved safety of reference counted buffers. 
-7. Added a first version of a document describing the Ensemble lower-level 
-   transport and io-vector system. It can be found in the tutorial.
-8. Removed the need for the ENS_ABSROOT environment variable. This was
-   previously needed on win32 systems for 'make clean' purposes.
-9. Bug effecting gossip on win32 systems. When an application using a
-   gossip server dies, the gossip server goes into an infinite loop
-   due to an endless sequence of socket errors. We are working on
-   fixing this behaviour.
+will allows messages allocated by the application using malloc to freed by Ensemble.
 
+The API change would require CE applications to be modified for the
+new memory conventions, which is not a "good thing". This was done
+primarily to allow using DLLs, where each DLL keeps a private copy of
+LIBC. Therefore, memory allocated by one DLL (the application) cannot be
+freed by another DLL (CE). In the longer term, it separates the
+application and library from each other and should make developement
+easier. It also saves allocations for iovector arrays and destination arrays on
+the critical message send path.
 
 OCAML COMPILER VERSION
   We are using version 3.06 for this version. 
 
 PORTABILITY
-  This version was tested on Linux, and WIN2000. It was also used on Solaris 
-(with a gcc system) and HPUX.
+  This version was tested on Linux (RedHat 7.1, 7.2, 7.3, i386 architecture) and windows XP. 
+
 
 
 

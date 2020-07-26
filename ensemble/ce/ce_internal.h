@@ -30,10 +30,14 @@ typedef enum {
     CE_NO
 } ce_reply_t;
 
+#define ce_free(x) if (x != NULL) free(x)
+
 /* A serial tag attached to the interface. Used internally by the
  * outboard mode.
  */
 typedef int ce_ctx_id_t;
+
+#define CE_MAGIC 2178
 
 /* The representation of the application interface. This should
  * hidden from
@@ -45,12 +49,14 @@ struct ce_appl_intf_t {
     ce_env_t env;
     ce_ctx_id_t id;
 
+	int magic; // Used for debugging only
     int joining;
     int leaving;
     int blocked;
 
-    struct ce_queue *aq; /*  Contains the current set of queued actions */
-    ce_bool_t req_heartbeat;   /*  For internal use */
+    ce_queue_t *aq; /*  Contains the current set of queued actions */
+    ce_bool_t req_heartbeat;   /*  Have we already requested a heartbeat? */
+    ce_bool_t req_async;       /*  Is this an async-request? */
     
     /*  After this is called, the interface (ce_appl_intf_f*) is freed.
      */
@@ -87,15 +93,32 @@ void* ce_realloc(void*, int);
 /* The user should not free application interfaces.
  * This is performed by the system upon the exit callback. 
  */
-void ce_intf_free(ce_appl_intf_t*);
+void ce_intf_free(ce_pool_t*, ce_appl_intf_t*);
+
+/*! copy a C string.
+ * @param str : a C string (ends with '\0')
+ */
+char *ce_copy_string(char *str);
+
+#define CE_ERROR(x) {printf x; fflush(stdout); exit(1);}
+
+/* Free a local-state and a view-state.
+ */
+void ce_view_full_free(ce_local_state_t *ls, ce_view_state_t* vs);
+
+/* Free/copy a Join-options structure
+ */
+void ce_jops_copy(ce_jops_t *src, ce_jops_t *trg);
+void ce_jops_free(ce_jops_t *jops);
 
 
 /* Process command line arguments. Return un-processed arguments.
  */
-char **
-ce_process_args(int argc, char **argv); 
+char **ce_process_args(int argc, char **argv); 
 
 void ce_panic(char *s);
+
+#define MIN(x,y)  ((x) > (y) ? (y) : (x))
 
 /**************************************************************/
 /* The internal functions. These are used to allow wrapping
@@ -118,7 +141,6 @@ ce_mt_create_intf(ce_env_t env, ce_appl_exit_t exit,
 		     ce_appl_block_t block, ce_appl_receive_cast_t cast,
 		     ce_appl_receive_send_t send, ce_appl_heartbeat_t heartbeat
     );
-
 
 /**************************************************************/
 /* The single-threaded functions
@@ -157,6 +179,10 @@ void ce_st_AddSockRecv(CE_SOCKET socket, ce_handler_t handler, ce_env_t env);
 
 void ce_st_RmvSockRecv(CE_SOCKET socket);
 
+/* Used only by ce_inboard_mt.c
+ */
+void ce_st_check_heartbeat(ce_appl_intf_t *c_appl);
+ce_pool_t *ce_st_get_allocation_pool(void);
 /**************************************************************/
 
 /* The multi-threaded functions

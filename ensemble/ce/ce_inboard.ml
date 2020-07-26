@@ -86,8 +86,11 @@ let c_interface c_appl heartbeat_rate =
   let install ((ls,vs) as vf) = 
     log (fun () -> "(pre cback_install");
     let dncall_of_c = dncall_of_c (ls,vs) in
+    log (fun () -> ".");
     let c_map = Array.map dncall_of_c  in
+    log (fun () -> ".");
     let (c_ls,c_vs) = c_view_full vf in
+    log (fun () -> ".");
     let c_init_acs = c_map (cback_install c_appl c_ls c_vs) in
     log (fun () -> ")");
 
@@ -104,9 +107,9 @@ let c_interface c_appl heartbeat_rate =
       fun iovl ->
       	let iovec_a = Iovecl.to_iovec_raw_array iovl in
       	let c_acs = upcall iovec_a in
-	log (fun () -> "freeing(");
+(*	log (fun () -> "freeing(");*)
       	Iovecl.free iovl ;
-	log (fun () -> ")");
+	(*log (fun () -> ")");*)
 	c_map c_acs
     in
     let heartbeat time = 

@@ -52,7 +52,7 @@ LINKDLL int am_traced(char* s0) {
     return (i < nlogs) ;
 }
 
-#ifndef NDBEUG
+#ifdef CE_TRACE
 LINKDLL void
 ce_trace(char *name, const char *s, ...)
 {

@@ -5,6 +5,6 @@
 
 type id = string
 
-let id = "1.39"
+let id = "1.40"
 
 let string_of_id = Util.ident

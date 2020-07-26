@@ -22,17 +22,55 @@ let remove_timeout = Time.of_int 20
 let repeat_timeout = Time.of_string "0.1"
 
 let max_msg_len = Buf.int_of_len Buf.max_msg_len
+  
+  
+let create_server_sock port = 
+  (* Create datagram socket.
+   *)
+  let sock = Hsys.socket_dgram () in
+  
+  (* Try to disable error ICMP error reporting.
+   *)
+  begin try
+    Hsys.setsockopt sock (Hsys.Bsdcompat true)
+  with e ->
+    log (fun () -> sprintf "warning:setsockopt:Bsdcompat:%s" (Util.error e))
+  end ;
+  
+  (* Bind it to the gossip port.
+   *)
+  begin
+    try Hsys.bind sock (Hsys.inet_any()) port with e ->
+      (* Don't bother closing the socket.
+       *)
+      if not !quiet then (
+	printf "REFLECT:error when binding to port\n" ;
+	printf "  (this probably means that a gossip server is already running)\n" ;
+      ) ;
+      raise e
+  end ;
+  sock
 
 (* This function returns the interface record that defines
  * the callbacks for the application.
  *)
-let intf alarm sock =
+let intf alarm initial_sock port = 
   let clients = Hashtbl.create (*name*) 10 in
 
   let recv_gossip_r = ref (fun () -> ()) in
   let recv_gossip () = !recv_gossip_r () in
 
-  Alarm.add_sock_recv alarm name sock (Hsys.Handler0 recv_gossip) ;
+  let sock_r = ref initial_sock in
+  Alarm.add_sock_recv alarm name !sock_r (Hsys.Handler0 recv_gossip) ;
+
+  let replace_socket () = 
+    printf "REFLECT:server socket closed due to errors, creating a new one\n"; 
+    Alarm.rmv_sock_recv alarm !sock_r ;
+    Hsys.close !sock_r;
+    let new_sock = create_server_sock port in
+    sock_r := new_sock ;
+    Alarm.add_sock_recv alarm name new_sock (Hsys.Handler0 recv_gossip) ;
+  in
 
   let install (ls,vs) =
     if not !quiet then
@@ -44,7 +82,7 @@ let intf alarm sock =
 	let time = Alarm.gettime alarm in
 	let _,time',digest' = 
 	  try Hashtbl.find clients (inet,port) with Not_found ->
-	    let sendinfo = Hsys.sendto_info sock [|inet,port|] in
+	    let sendinfo = Hsys.sendto_info !sock_r [|inet,port|] in
 	    let digest = Buf.digest_sub Buf.empty Buf.len0 Buf.len0 in
 	    let info = (sendinfo,(ref time),(ref digest)) in
 	    Hashtbl.add clients (inet,port) info ;
@@ -85,13 +123,13 @@ let intf alarm sock =
 	if !verbose then 
 	  printf "REFLECT:#clients=%d\n" (hashtbl_size clients) ;
 	try
-          let (len,inet,port) = Hsys.recvfrom sock buf Buf.len0 Buf.max_msg_len in
+          let (len,inet,port) = Hsys.recvfrom !sock_r buf Buf.len0 Buf.max_msg_len in
 	  if !verbose then (
 	    printf "REFLECT:recv_gossip: from (%s,%d)\n" 
 	      (Hsys.string_of_inet inet) port ;
 	    ) ;
 	  let msg = Buf.sub buf Buf.len0 len in
-	  printf "REFLECT:sending msg_len=%d\n" (Buf.int_of_len len);
+	  (*printf "REFLECT:sending msg_len=%d\n" (Buf.int_of_len len);*)
 	  reflect (inet,port) msg
 	with (Unix.Unix_error(err,s1,s2) as exn)-> 
 	  match err with 
@@ -104,11 +142,13 @@ let intf alarm sock =
 	    | Unix.EPIPE 
 	    | Unix.EINTR	
 	    | Unix.EAGAIN 
-	    | Unix.EBADF -> 
+	    | Unix.EFAULT              (** Bad address *)
+	    | Unix.EBADF ->
 		if !verbose then
 		  printf "REFLECT:warning:%s\n" (Util.error exn)
 	    | _ -> 
-		raise exn
+		printf "Unix.error=%s" (Util.error exn);
+		replace_socket ()
     in
     recv_gossip_r := recv_gossip ;
 
@@ -122,20 +162,20 @@ let intf alarm sock =
 	      	(Hsys.string_of_inet (fst from)) (snd from) ;
 	    reflect from msg ;
 	    [||]			(*BUG*)
-	 )
+	)
       |	_ -> null
     in
     let block () = [||] in
-
+    
     let heartbeat time =
       let sactions = Queuee.to_list actions in
       Queuee.clear actions ;
       let actions = Array.of_list sactions in
       actions
     in
-
+    
     let handlers = { 
-			flow_block = (fun _ -> ());
+      flow_block = (fun _ -> ());
       heartbeat = heartbeat ;
       receive = receive ;
       block = block ;
@@ -182,38 +222,16 @@ let init alarm (ls,vs) port force =
   if not !quiet then
     printf "REFLECT:server binding to port %d\n" port ;
 
-  (* Create datagram socket.
-   *)
-  let sock = Hsys.socket_dgram () in
-
-  (* Try to disable error ICMP error reporting.
-   *)
-  begin try
-    Hsys.setsockopt sock (Hsys.Bsdcompat true)
-  with e ->
-    log (fun () -> sprintf "warning:setsockopt:Bsdcompat:%s" (Util.error e))
-  end ;
-
-  (* Bind it to the gossip port.
-   *)
-  begin
-    try Hsys.bind sock (Hsys.inet_any()) port with e ->
-      (* Don't bother closing the socket.
-       *)
-      if not !quiet then (
-	printf "REFLECT:error when binding to port\n" ;
-	printf "  (this probably means that a gossip server is already running)\n" ;
-      ) ;
-      raise e
-  end ;
 
   if not !quiet then
     printf "REFLECT:server ready\n" ;
 
+  let sock = create_server_sock port in
+
   (*
    * Initialize the application interface.
    *)
-  let interface = intf alarm sock in
+  let interface = intf alarm sock port in
 
   (* Ensure that groupd is unset.
    *)

@@ -119,12 +119,11 @@ value skt_socket(value domain_v, value type_v, value proto_v){
     
     if (sock == INVALID_SOCKET) serror("skt_socket");
     
-    //SKTTRACE(("skt_socket: sock=%d,\n", sock));
-    printf("skt_socket: sock=%d, domain=%d type=%d proto=%d\n", sock,
+    SKTTRACE(("skt_socket: sock=%d, domain=%d type=%d proto=%d\n", sock,
 	   Int_val(domain_v),
 	   Int_val(type_v),
 	   Int_val(proto_v)
-	);
+	));
     return Val_socket(sock);
 }
 

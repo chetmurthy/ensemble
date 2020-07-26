@@ -69,14 +69,19 @@ let dncall_of_c (ls,vs) =
       | C_Send1(dest,iovl) -> 
 	  let iovl = of_iovec_array iovl in
 	  Send1(dest,iovl)
-      | C_Leave () -> Control Leave
-      | C_Prompt () -> Control Prompt
+      | C_Leave () -> 
+	  log (fun () -> "Leave");
+	  Control Leave
+      | C_Prompt () -> 
+	  log (fun () -> "Prompt");
+	  Control Prompt
       | C_Suspect sa -> Control (Suspect (Array.to_list sa))
       | C_XferDone () -> 
 	  log (fun () -> "XferDone");
 	  Control XferDone
       | C_Rekey () -> Control (Rekey false)
-      | C_Protocol s -> Control (Protocol (Proto.id_of_string s))
+      | C_Protocol proto -> 
+	  Control (Protocol (Proto.id_of_string proto))
       | C_Properties properties ->
 	  let protocol =
 	    let props = 
@@ -294,7 +299,6 @@ let init_view_full jops =
   let clients = Arrayf.fset vs.View.clients 0 jops.jops_client in
   let vs = View.set vs [
     View.Vs_params params ;
-    View.Vs_key key ;
     View.Vs_clients clients
   ] in
   let (ls,vs) = add_principal princ (ls,vs) in
@@ -303,6 +307,9 @@ let init_view_full jops =
       | None -> 
 	  failwith "Cannot set a secure group, without the properties"
       | Some props -> 
+	  let vs = View.set vs [
+	    View.Vs_key key ;
+	  ] in
 	  Appl.set_secure (ls,vs) props
     else (ls,vs)
   in
@@ -316,7 +323,7 @@ let init_view_full jops =
 let c_view_full (ls,vs) = 
   let key = match vs.key with 
     | Security.NoKey -> ""
-    | Security.Common _ -> hex_of_string (Buf.string_of (Security.buf_of_key vs.key))
+    | Security.Common _ -> Buf.string_of (Security.buf_of_key vs.key)
   in    
   let c_prev_ids = Array.of_list (List.map c_view_id_of_ml vs.prev_ids) in
   let c_vs = { 

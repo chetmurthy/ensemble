@@ -45,31 +45,32 @@ CRYPTO_LINK = # no crypto by default
 MSDEV_INCLUDE	= /I"C:\Program Files\Microsoft Visual Studio\VC98\Include"
 
 # CFLAGS: used for compilation of C files
-CFLAGS	= -DINLINE=__inline /Ox /MT /W3 -DNDEBUG \
-	$(MSDEV_INCLUDE) /I$(OCAML_LIB) 
 
-# /MTd
+#DEBUG = 1
+
+!ifndef DEBUG
+CFLAGS	= \
+	-DINLINE=__inline \
+	$(MSDEV_INCLUDE) /I$(OCAML_LIB) \
+	/Ox /MT /W3 /DNDEBUG
+!else
+CFLAGS = \
+    -DINLINE=__inline \
+   $(MSDEV_INCLUDE) /I$(OCAML_LIB) \
+    /MT /W3 /I$(OCAML_LIB) \
+    /Yd /Zi /ZI
+!endif
+
+
 #	$(OPENSSL_INC)
-
-# SHELL to use for processing these makefiles must be /bin/sh
-ENS_SHELL = cmd.exe
 
 #*************************************************************#
 
 # LIBSYS: used for linking executables
-LIBSYS	= \
-	-cclib 	WS2_32$(ARCS) \
-	-cclib ADVAPI32$(ARCS)	\
-	-cclib LIBCMT$(ARCS)	\
-	-cclib OLDNAMES$(ARCS)	\
-	-cclib KERNEL32$(ARCS)	\
+LIBSYS	= -cclib WS2_32$(ARCS) 
 
-C_LINK  = \
-	WS2_32$(ARCS) \
-	ADVAPI32$(ARCS)	\
-	LIBCMT$(ARCS)	\
-	OLDNAMES$(ARCS)	\
-	KERNEL32$(ARCS)	
+
+C_LINK  = WS2_32$(ARCS) 
 
 
 #*************************************************************#
@@ -202,7 +203,7 @@ MKLIBO  = /out:
 #*************************************************************#
 ## Shared libraries, DLLs on win32
 
-MKSHRLIB   = link /nologo /dll 
+MKSHRLIB   = link /nologo /dll #/FORCE /INCREMENTAL:NO
 MKSHRLIBO   = /out:
 SO = .dll
 #*************************************************************#
@@ -251,7 +252,7 @@ LINK_THR	= # no threads
 # Clean this directory
 #
 CLEANDIR = \
-    $(RM) .nfs* *.cm* *.ppo .err a.out *.o *.obj *.a *.lib *.asm *~ .*~ core *.pdb core gmon.out camlprim*
+    $(RM) .nfs* *.cm* *.ppo .err a.out *.o *.obj *.a *.lib *.asm *~ .*~ core *.pdb core gmon.out camlprim* *.exp *.dll *.idb
 
 #*************************************************************#
 

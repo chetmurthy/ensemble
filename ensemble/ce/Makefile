@@ -74,6 +74,7 @@ OUTBOARD_OBJ = \
 MT_OBJ = \
 	ce_intf_mt$(OBJ)\
 	ce_threads$(OBJ) \
+	ce_appl_env_list$(OBJ) \
 	ce_actions_mt$(OBJ) 
 
 INBOARD_MT_OBJ = \
@@ -122,6 +123,9 @@ DEMOSO = \
 # bad behavior of the generated Ensemble DLL on that platform. 
 # For unix, we use shared libraries. 
 #
+#tst : tst.c
+#	gcc -o tst tst.c -lpthread
+
 all: \
 	libce$(CE_LIB) libceo$(CE_LIB) \
 	libce_mt$(CE_LIB) libceo_mt$(CE_LIB) \
@@ -130,6 +134,8 @@ all: \
 opt : 
 	$(MAKE) OPT=yes all
 
+debug : 
+	$(MAKE) OPT=yes CE_DEBUG=yes all
 #*************************************************************#
 
 # Need to copy the latest version of mm_basic.c
@@ -156,14 +162,14 @@ libce$(SO): $(INBOARD_OBJ) ce$(OBJ)
 	  $(INBOARD_OBJ)\
 	  ../lib/$(PLATFORM)/libsock$(ARC)\
 	  $(OCAML_LIB)/libunix$(ARCS)\
-	  $(MLRUNTIME)\
-	  $(CE_LINK_FLAGS)
+	  $(MLRUNTIME) \
+	$(CE_LINK_FLAGS)
 
 # Put C outboard objects into one library
 libceo$(SO): $(OUTBOARD_OBJ)
 	$(MKSHRLIB) $(MKSHRLIBO)libceo$(SO) \
 	  $(OUTBOARD_OBJ)\
-	  $(CE_LINK_FLAGS)
+	$(CE_LINK_FLAGS)
 
 ##
 #  Thread safe version of the above
@@ -178,13 +184,13 @@ libce_mt$(SO): $(INBOARD_MT_OBJ) ce$(OBJ)
 	  ../lib/$(PLATFORM)/libsock$(ARC)\
 	  $(OCAML_LIB)/libunix$(ARCS)\
 	  $(MLRUNTIME)\
-	  $(CE_LINK_FLAGS)
+	$(CE_LINK_FLAGS)
 
 # Put C outboard objects into one library
 libceo_mt$(SO): $(OUTBOARD_MT_OBJ)
 	$(MKSHRLIB) $(MKSHRLIBO)libceo_mt$(SO)\
-	  $(OUTBOARD_MT_OBJ)\
-	  $(CE_LINK_FLAGS)
+	  $(OUTBOARD_MT_OBJ) \
+	$(CE_LINK_FLAGS)
 
 #*************************************************************#
 # static libraries for the above
@@ -306,18 +312,15 @@ install :
 	$(CP) libce*.lib $(ENSLIB)
 	$(CP) ce.h $(ENSLIB)
 	$(CP) ce_threads.h $(ENSLIB)
-	$(CP) ce_so.h $(ENSLIB)
 	for %%d in ($(DEMOS) $(DEMOSO) ce_outboard$(EXE)) do ( $(CP) %%d $(ENSBIN) )
-
-#	$(CP) libce*.exp $(ENSLIB)
-#	$(CP) libce*.dll $(ENSLIB)
+	$(CP) libce*.exp $(ENSLIB)
+	$(CP) libce*.dll $(ENSLIB)
 
 else
 install : 
 	$(CP) libce*$(CE_LIB) $(ENSLIB)
 	$(CP) ce.h $(ENSLIB)
 	$(CP) ce_threads.h $(ENSLIB)
-	$(CP) ce_so.h $(ENSLIB)
 	$(CP) $(DEMOS) $(DEMOSO) ce_outboard$(EXE) $(ENSBIN)
 endif
 

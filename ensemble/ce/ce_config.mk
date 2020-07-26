@@ -16,14 +16,14 @@
 
 #i386-linux
 ifeq ("$(PLATFORM)" , "i386-linux")
-CE_LIB = .so     
-CE_LNKLIB = .so  
+CE_LIB = .so
+CE_LNKLIB = .so
 
-CE_LINK_FLAGS = -ltermcap -lm -ldl -lpthread
-CFLAGS = -DINLINE=inline -DNDEBUG \
-	-O2 -Wall -Wno-unused -Wstrict-prototypes \
-	-I $(OCAML_LIB)		
-#-g -p/-pg 
+CE_LINK_FLAGS = -ltermcap -lm -ldl -lpthread 
+CFLAGS = -DINLINE=inline \
+	 -O2 -DNDEBUG -Wall -Wno-unused -Wstrict-prototypes \
+	 -I $(OCAML_LIB)		
+#-p/-pg  -g  -DCE_TRACE
 endif
 
 

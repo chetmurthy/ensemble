@@ -1,0 +1,92 @@
+#*************************************************************#
+#
+# Main CEJAVA Makefile
+#
+# Author: Ohad Rodeh 7\2002
+#
+#*************************************************************#
+ENSROOT = ..
+!include $(ENSROOT)\mk\config.nmk
+!include $(ENSROOT)\cejava\cejava.nmk
+#*************************************************************#
+
+# Java 2 SDK (1.4 should work)
+J2SDK = $(JAVA_HOME)
+JAVA = $(J2SDK)\bin\java
+JAVAC = $(J2SDK)\bin\javac
+JAVAH = $(J2SDK)\bin\javah
+
+CEINCLUDE= -I $(ENSROOT)\lib\$(PLATFORM)
+
+
+#*************************************************************#
+# The target native library name
+#
+!if "$(PLATFORM)" == "nt"
+LIBCEJAVA = cejava
+!else
+LIBCEJAVA = libcejava
+!endif
+
+#*************************************************************#
+opt : all
+
+all: compileClasses generateHeader compileJni buildLibrary demos
+
+
+depend : 
+	echo "cejava depend"
+
+demos :
+	$(JAVAC) -classpath classes RandTest.java PerfTest.java
+
+install : 
+	$(MKDIR) $(ENSBIN)\java_demo
+	$(CP) classes\ensemble.jar $(ENSLIB)
+	$(CP) lib\* $(ENSLIB)
+	$(CP) *Test*.class $(ENSBIN)\java_demo
+
+compileClasses: 
+	$(MKDIR) classes
+	$(JAVAC) -d classes View.java JoinOps.java Callbacks.java Group.java 
+	cd classes & jar cf ensemble.jar ensemble
+
+generateHeader:
+	$(JAVAH) -classpath classes ensemble.Group
+
+compileJni:
+	$(CC) -c  -I . -I $(J2SDK)\include -I $(J2SDK)\include\$(J2SDK_PLATFORM) $(CEINCLUDE) ensemble_Ce.c
+
+buildLibrary:
+	$(MKDIR) lib
+	$(MKSHRLIB) $(MKSHRLIBO)$(LIBCEJAVA)$(SO) ensemble_Ce$(OBJS) $(ENSLIB)\libce_mt$(CELIB) $(CEJAVA_LINK_FLAGS)
+	$(MV) $(LIBCEJAVA).* lib\
+
+doc :
+	javadoc -public -classpath classes -d docs Callbacks.java JoinOps.java Group.java View.java
+
+clean:
+	$(RM) ensemble_Ce.h hs_err* core* *.class *.o *.obj lib\* *.jar 
+	$(RMDIR) classes\ensemble  classes\*
+	$(RMDIR) docs
+
+
+# 
+# Running the demos
+#
+# The classpath should include ensemble.jar, and the library path should include libcejava.lib\libcejava.so
+#
+run_rand:
+	$(JAVA) RandTest -n 5 -t 3 
+
+run_perf:
+	$(JAVA) PerfTest -prog rpc -s 1000 -r 0.01
+
+
+#run_rand:
+#	$(JAVA) -jar Rand -Djava.class.path=".&classes\ensemble.jar" -Djava.library.path=lib -n 5 -t 3  
+#        -trace CE_INBOARD -ctrace CE_INBOARD_C -ctrace CE_INBOARD_MT 
+
+
+#*************************************************************#
+

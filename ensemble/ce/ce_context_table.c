@@ -36,7 +36,7 @@ static void
 free_item(item_t *item)
 {
     if (item==NULL) return;
-    ce_intf_free(item->ctx->intf);
+    ce_intf_free(NULL, item->ctx->intf);
     free(item->ctx);
     free(item);
 }
