@@ -353,22 +353,6 @@ void ce_RmvSockRecv(ocaml_skt_t socket){
   CAMLreturn0;
 }
 /*****************************************************************************/
-#ifndef _WIN32
-void startup(){}
-#else
-void startup()
-{
-  WSADATA wsaData;
-  HANDLE h;
-
-  (void) WSAStartup(MAKEWORD(2, 0), &wsaData);
-  DuplicateHandle(GetCurrentProcess(), GetCurrentProcess(),
-                  GetCurrentProcess(), &h, 0, TRUE,
-                  DUPLICATE_SAME_ACCESS);
-}
-#endif
-/*****************************************************************************/
-
 
 /* Initialize the interface, start Ensemble/OCAML if necessary.
  * Pass the command line arguements to Ensemble. 
@@ -387,10 +371,6 @@ ce_Init(int argc, char **argv){
   ce_async_v = caml_named_value((char*)"ce_async_v") ;
   ce_join_v = caml_named_value((char*)"ce_join_v") ;
   ce_main_loop_v = caml_named_value((char*)"ce_main_loop_v") ;
-
-  /* We need to startup winsock on WIN32.
-   */
-  startup ();
 }
 
 /* Join a group

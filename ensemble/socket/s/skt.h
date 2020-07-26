@@ -36,6 +36,10 @@
 #include "caml/fail.h"
 #include "caml/callback.h"
 
+/* This is for zero-copy marshaling.
+ */
+//#include "caml/intext.h"
+
 /**************************************************************/
 /* Include the memory functions.
  */
@@ -83,14 +87,6 @@ int skt_tcp_recv_error(char *debug);
 
 extern void serror(const char * cmdname);
 
-/* Begin: from minor_gc.h */
-extern char *young_start, *young_ptr, *young_end, *young_limit;
-#define Is_young(val) \
-  ((addr)(val) > (addr)young_start && (addr)(val) < (addr)young_end)
-extern void minor_collection(void);
-/* End: from minor_gc.h */
-
-
 #ifdef HAS_SOCKETS
 #include <sys/types.h>
 
@@ -127,5 +123,8 @@ typedef int socklen_param_type;
 extern void get_sockaddr(value mladr,
 			 union sock_addr_union * adr /*out*/,
 			 socklen_param_type * adr_len /*out*/);
+
+extern value alloc_sockaddr(union sock_addr_union * adr /*in*/,
+			    socklen_param_type adr_len);
 
 #endif /* HAS_SOCKETS */

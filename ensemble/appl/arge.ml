@@ -205,7 +205,7 @@ let sock_buf_default = 64*1024*1024/(2*128+1024) (* = 52428 *)
  *)
 let gc_verb () =
   let r = Gc.get () in		
-  r.Gc.verbose <- 127 ;		
+  r.Gc.verbose <- 3 (*127*) ;		
   Gc.set r			
 
 (* Set the compaction rate for the Ocaml garbage collector.
@@ -214,6 +214,9 @@ let gc_compact pct =
   let r = Gc.get () in		
   r.Gc.max_overhead <- pct;
   Gc.set r			
+
+let socket_verb () = Socket.set_verbose true
+
 (**************************************************************)
 
 let aggregate    = bool set_ident false "aggregate" "aggregate messages"
@@ -423,6 +426,7 @@ let args () =
     "-secure",		Arg.Unit Route.set_secure, ": prevent insecure communication" ;
     "-seed",		Arg.Unit(Random.self_init), ": seed the random number generator" ;
     "-seedval",		Arg.String(seedval), ": seed the random number generator" ;
+    "-socket_verb",     Arg.Unit socket_verb, "enable socket library msgs";
     "-test",		Arg.String(Trace.test_exec), ": run named test (-print_config lists available tests)" ;
     "-time",            Arg.String(timestamp_use), ": enable timers for performance testing" ;
     "-total",           Arg.Unit add_total, ": add total ordering property" ;

@@ -63,7 +63,7 @@ all:
 
 just:
 	$(MAKE_BASE) -f Makefile.top all; $(MAKE_BASE) -f Makefile.top install
-	cd demo ; $(MAKE) 
+	cd demo ; $(MAKE) just
 
 # Make the optimized versions
 opt: 
@@ -84,41 +84,26 @@ tk :
 tk_opt :
 	$(MAKE_BASE) -f Makefile.top OPT=yes tk
 
+
 # build a tar file containing the source only.
 #
 src:
 	make realclean
 	make depend
 	tools/ntify.sh
-	cd tar; tarcr 1_33
+	cd tar; tarcr $(VERSION)
 	cd doc; make build
 
-# build a tar file containing executables and sources.
+# build a tar file containing executables and libraries.
 #
 dist : 
-	make realclean
-	make depend
-	tools/ntify.sh
-	make opt
-	make clean
-	cd tar; tarcr 1_33
-	mv ../ensemble-1_33.tar.gz ../ensemble-$(PLATFORM)-1_33.tar.gz
-	cd doc; make build
+	mkdir -p ../build
+	cd bin; \
+	for d in *; do ( mkdir -p ../../build/$$d; mkdir -p ../../build/$$d/bin; mkdir -p ../../build/$$d/lib; 	mv $$d/* ../../build/$$d/bin/; mv ../lib/$$d/* ../../build/$$d/lib/); done
+	cd ../build; for d in *; do (tar -cf ensemble-$(VERSION)-$$d.tar $$d; gzip ensemble-$(VERSION)-$$d.tar; rm -rf $$d); done
 
-# On NT we don't want to 'make depend'
-#
-dist_nt : 
-	make realclean
-	make opt
-	make clean
-	cd tar; tarcr 1_33
-	mv ../ensemble-1_33.tar.gz ../ensemble-$(PLATFORM)-1_33.tar.gz
-	cd doc; make build
-
-
-depend:
-	ocamldep $(INCLUDE) -I crypto/OpenSSL -I crypto/isaac \
-	*/*.{ml,mli} */*/*.{ml,mli} */*/*/*.{ml,mli} > .depend
+depend: 
+	$(MAKE_BASE) -f Makefile.top depend
 
 
 # This gets around a difference between NMAKE and MAKE. 

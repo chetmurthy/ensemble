@@ -9,10 +9,13 @@ let failwith s = failwith (name^":"^s)
 open Printf
 open Socksupp
 (**************************************************************)
-let verbose = false
+let verbose = ref false
+
+let set_verbose flag =
+  verbose := flag
 
 let log f = 
-  if verbose then (
+  if !verbose then (
     let s = f () in
     print_string s; print_string "\n"; flush stdout;
   ) else ()
@@ -84,6 +87,10 @@ module Basic_iov = struct
   (* Return a bogus value.
    *)
   let num_refs _ = (-1)
+
+  let marshal obj flags = Marshal.to_string obj flags
+
+  let unmarshal iov = Marshal.from_string iov 0
 end
 
 let flatten = Basic_iov.flatten
@@ -155,7 +162,6 @@ let setsockopt_nonblock s b =
 (**************************************************************)
 
 let stdin () = Unix.stdin
-let socket_of_fd s = s
 let read = Unix.read
 let sendto_info s a = (s,a)
 let send_info s = s
@@ -168,13 +174,20 @@ let setsockopt_leave _ _ = failwith "setsockopt_leave"
 let setsockopt_sendbuf _ _ = failwith "setsockopt_sendbuf"
 let setsockopt_recvbuf _ _ = failwith "setsockopt_recvbuf"
 let setsockopt_bsdcompat _ _ = failwith "setsockopt_bsdcompat"
+let setsockopt_reuse sock onoff = Unix.setsockopt sock Unix.SO_REUSEADDR onoff
 external int_of_file_descr : Unix.file_descr -> int = "%identity"
 let int_of_socket = int_of_file_descr
-let fd_of_socket s = s
-let socket_of_fd s = s
-let socket = Unix.socket
+let socket dom typ proto = 
+  let s = Unix.socket dom typ proto in
+  (*printf "sock=%d\n" (int_of_socket s);*)
+  s
+
 let socket_mcast = Unix.socket
 let connect = Unix.connect
+let bind = Unix.bind
+let close = Unix.close
+let listen =Unix.listen
+let accept = Unix.accept
 (**************************************************************)
 
 type md5_ctx = string list ref
@@ -330,23 +343,46 @@ let max_msg_len = 8192
 
 let s = String.create max_msg_len
 
+let recvfrom s b o l = Unix.recvfrom s b o l []
+
 let udp_recv_packet sock = 
-  let len = Unix.recv sock s 0 max_msg_len [] in
-  if len = max_msg_len then (
-    eprintf "USOCKET:udp_recv_packet:warning:got packet that is maximum size (probably truncated), dropping (len=%d)\n" len ;
-    flush stderr ;
-    empty,empty
-  ) else
-    let hdr_len = read_int32 s 0 in
-    let iovec_len = read_int32 s 4 in
-    if 8+hdr_len+iovec_len <> len then 
+  try 
+    (* NT requires recvfrom for non-connected sockets.
+     *)
+    let len = 
+      if is_unix then 
+	Unix.recv sock s 0 max_msg_len [] 
+      else
+	let len,_ = Unix.recvfrom sock s 0 max_msg_len [] in 
+	len
+    in
+    if len = max_msg_len then (
+      eprintf "USOCKET:udp_recv_packet:warning:got packet that is maximum size (probably truncated), dropping (len=%d)\n" len ;
+      flush stderr ;
       empty,empty
-    else (
-      (*log (fun () -> sprintf "udp_recv_packet, hdr=%d iovl=%d\n" hdr_len iovec_len); *)
-      let hdr = String.sub s 8 hdr_len in
-      let iovec = String.sub s (8+hdr_len) (len-hdr_len-8) in
-      hdr, iovec
-    )
+    ) else
+      let hdr_len = read_int32 s 0 in
+      let iovec_len = read_int32 s 4 in
+      if 8+hdr_len+iovec_len <> len then 
+	empty,empty
+      else (
+	(*log (fun () -> sprintf "udp_recv_packet, hdr=%d iovl=%d\n" hdr_len iovec_len); *)
+	let hdr = String.sub s 8 hdr_len in
+	let iovec = String.sub s (8+hdr_len) (len-hdr_len-8) in
+	hdr, iovec
+      )
+  with Unix.Unix_error(e,_,_) as exn -> 
+    match e with 
+	Unix.EPIPE
+      | Unix.EINTR
+      | Unix.EAGAIN
+      | Unix.ECONNREFUSED
+      | Unix.ECONNRESET
+      | Unix.ENETUNREACH
+      | Unix.EHOSTDOWN
+      | Unix.EISCONN
+      | Unix.EMSGSIZE -> empty,empty
+      | _ -> raise exn
 
 (**************************************************************)
 
@@ -387,6 +423,10 @@ let select_help (socks,ret) out =
     ret.(i) <- List.memq socks.(i) out
   done
 
+let string_of_list     f l = sprintf "[%s]" (String.concat "|" (List.map f l))
+let string_of_int_list l = string_of_list string_of_int l
+let string_of_fd_list  l = string_of_int_list (List.map int_of_file_descr l)
+  
 let select (a,b,c) timeout =
   let timeout =
     ((float timeout.sec10) *. 10.) +. ((float timeout.usec) /. 1.0E6)
@@ -399,7 +439,11 @@ let select (a,b,c) timeout =
 	  loop a b c d
       | Unix.Unix_error(err,s1,s2) ->
       	  eprintf "USOCKET:select:%s\n" (Unix.error_message err) ;
-          failwith "error calling select"
+          failwith (sprintf "error calling select a=%s b=%s c=%s"
+	    (string_of_fd_list a)
+	    (string_of_fd_list b)
+	    (string_of_fd_list c)
+	  )
     in loop (snd a) (snd b) (snd c) timeout 
   in
   select_help (fst a) a' ;
@@ -409,13 +453,6 @@ let select (a,b,c) timeout =
 
 let time_zero = {sec10=0;usec=0}
 let poll si = select si time_zero
-
-(**************************************************************)
-
-let weak_check w i =
-  match Weak.get w i with
-  | Some _ -> true
-  | None -> false
 
 (**************************************************************)
 
@@ -440,6 +477,8 @@ type win =
 type os_t_v = 
     OS_Unix
   | OS_Win of win
+
+let is_unix = is_unix
 
 let os_type_and_version () = 
   failwith "fcuntion os_type_and_version not supported (under usocket). You need the optimized socket library."

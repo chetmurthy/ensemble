@@ -5,9 +5,13 @@
 #include "skt.h"
 /**************************************************************/
 
-extern value gc_full_major(value v) ;
-extern void failwith(char *c) ;
+/* Begin: from minor_gc.h */
+extern char *young_start, *young_ptr, *young_end, *young_limit;
 extern char *heap_start ;
+/* End: from minor_gc.h */
+
+
+extern value gc_full_major(value v) ;
 
 typedef struct {
   asize_t size;

@@ -200,3 +200,38 @@ value mm_alloc(value len_v){
 }
 
 /**************************************************************/
+#if 0
+value mm_output_val(value obj_v, value iov_v, value flags_v){
+  CAMLparam3(obj_v, iov_v, flags_v);
+
+  int len = Int_val(Field(iov_v,0));
+  char *cbuf = mm_Cbuf_val(Field(iov_v,1));
+  int ret;
+
+  SKTTRACE(("output_value_to_block, cbuf=%x, len=%d\n", (int)cbuf, len));
+  ret = output_value_to_block(obj_v, flags_v, cbuf, len);
+  CAMLreturn(Val_int(ret));
+}
+
+value mm_input_val(value iov_v){
+  CAMLparam1(iov_v);
+  CAMLlocal1(ret_v);
+  int len = Int_val(Field(iov_v,0));
+  char *cbuf = mm_Cbuf_val(Field(iov_v,1));
+
+  SKTTRACE(("input_value_from_block, cbuf=%x, len=%d\n",(int)cbuf, len));
+  ret_v = input_value_from_block(cbuf, len);
+  SKTTRACE((")\n"));
+  CAMLreturn(ret_v);
+}
+#endif
+
+value mm_output_val(value obj_v, value iov_v, value flags_v){
+  invalid_argument("mm_output_val: buggy under 3.04");
+}
+
+value mm_input_val(value iov_v){
+  invalid_argument("mm_input_val: buggy under 3.04");
+}
+
+/**************************************************************/

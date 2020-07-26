@@ -53,7 +53,7 @@ else
 ifeq ("$(PLATFORM)" , "i386-linux")
 HOT_CFLAGS	= -DTHREADED_SELECT -DUSE_PTHREAD_SEMAPHORE -DUSE_PTHREAD_LOCK -D_REENTRANT -DLINUX_THREADS
 HOT_MLLINK	= # empty
-HOT_LINK	= -lpthread -ltermcap -lm 
+HOT_LINK	= -lpthread -ltermcap -lm -ldl
 HOT_THREAD_OBJ = pthread_intf$(OBJ)
 else
 
@@ -153,14 +153,14 @@ HOT_OUTBOARDCOBJ = \
 
 # No crypto
 #
-BASIC_ENSCONF_skt = $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(ENSLIBS) $(LINK_THR) 
+BASIC_ENSCONF_skt = $(CUSTOM) $(LIBUNIX) $(LIBMLSOCK) $(ENSLIBS) $(LINK_THR) 
 CLIBS = 
 CRYPTO_CLIBS = 
 
 
 # To compile with cryptographic support
 #
-#BASIC_ENSCONF_skt = $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(ENSLIBS) $(LINK_THR) \
+#BASIC_ENSCONF_skt = $(CUSTOM) $(LIBUNIX) $(LIBMLSOCK) $(ENSLIBS) $(LINK_THR) \
 #	$(CRYPTOLIB_ML)
 #CLIBS = $(CRYPTOLIB_C)
 #CRYPTO_CLIBS = $(CRYPTOLIB_JUST_C)

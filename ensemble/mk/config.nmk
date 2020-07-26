@@ -143,7 +143,7 @@ ENSLIBS_full = $(ENSLIBS_min) $(ENSRESTLIB)
 # embedded macros don't work on NT
 #ENSLIBS_DEP	= $(ENSLIBS_$(ENSLIBS_TYPE)_$(COMPTYPE))
 #ENSLIBS	= $(DYNLINKSTUFF) $(ENSLIBS_DEP)
-ENSLIBS_DEP     = ENSLIBS_full
+ENSLIBS_DEP     = $(ENSLIBS_full)
 ENSLIBS         = $(ENSCORELIB) $(ENSMINLIB) $(ENSRESTLIB)
 
 #*************************************************************#
@@ -159,11 +159,11 @@ ENSCONFDEP_skt	= $(LINKTHR) $(LIBSOCKDEP) $(ENSLIBS)
 ENSCONF_skt	= $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS)
 
 # Unix library
-ENSCONFDEP_unix	= $(LINKTHR) $(LIBUSOCK) $(ENSLIBS_DEP)
-ENSCONF_unix    = $(CUSTOM) $(LIBUNIX) $(LIBUSOCK) $(LINK_THR) $(ENSLIBS) $(CRYPTO_LINK)
+ENSCONFDEP_unix	= $(LINKTHR) $(LIBUSOCK) $(ENSLIBS)
+ENSCONF_unix    = $(CUSTOM) $(LIBUNIX) $(LIBUSOCK) $(LINK_THR) $(ENSLIBS) 
 
-ENSCONF		= $(ENSCONF_skt) 
 ENSCONFDEP      = $(ENSCONFDEP_skt)
+ENSCONF		= $(ENSCONF_skt) 
 
 
 
@@ -249,8 +249,9 @@ HOT_LINK	= $(LIBSYSCL)
 # Clean this directory
 #
 CLEANDIR = \
-    $(RM) .nfs* *.cm* *.ppo .err a.out *.o *.obj *.a *.lib *.asm *~ .*~ core *.pdb core gmon.out
+    $(RM) .nfs* *.cm* *.ppo .err a.out *.o *.obj *.a *.lib *.asm *~ .*~ core *.pdb core gmon.out camlprim*
 
+VERSION = 1_34
 #*************************************************************#
 
 

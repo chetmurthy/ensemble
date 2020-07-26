@@ -200,6 +200,17 @@ let sum_refs iovl =
   Util.string_of_int_array rep
 
 (**************************************************************)
+let singleton iov = Arrayf.singleton iov
+
+let is_singleton il =
+  Arrayf.length il = 1
+
+let get_singleton il =
+  assert (Arrayf.length il = 1) ;
+  Arrayf.get il 0
+
+(**************************************************************)
+
 exception Bad_message of string
 
 (* The unmarshalling function frees the iovec according to the flag 
@@ -231,6 +242,15 @@ let flatten_buf iovl buf =
 
 let make_marsh free_iovl = 
   let marsh obj = 
+    (* Fast path, we can marshal directly into the iovec.
+     * Thanks to Xavier (ocaml version 3.04).
+     * 
+     * Still buggy in 3.04, hopefully, will be fixed in 3.05.
+     *)
+
+(*    let iov = Iovec.marshal obj [Marshal.Closures] in
+    of_iovec iov
+*)
     let iov = 
       try 
 	let len = Marshal.to_buffer (Buf.string_of static_buf) 0 10000 obj [] in
@@ -243,10 +263,27 @@ let make_marsh free_iovl =
     in
     of_iovec iov
 
-  (* First check if we can flatten into the preallocated buffer.
+
+  (* If this is a singleton, unmarshal directly from it.
+   * Otherwise, check if we can flatten into the preallocated buffer.
    * If not, then allocate a special buffer.
    *)
   and unmarsh iovl = 
+    (* Fast path, we can unmarshal directly from the iovec.
+     * (ocaml version 3.04).
+     *)
+(*    if is_singleton iovl then (
+      try Iovec.unmarshal (get_singleton iovl)
+      with Failure msg -> raise (Bad_message msg)
+    ) else (
+*)
+    
+    (* Slow path, the iovec is composed of several parts, we need
+     * to combine them. 
+     * The faster path here is to copy into a preallocated buffer.
+     * This can be done if length is below 10000 bytes. Othersize, 
+     * a single use buffer is created. 
+     *)
     let total_len = len iovl in
     if total_len =|| len0 then 
       raise (Invalid_argument "cannot unmarshal an empty iovecl");
@@ -266,10 +303,24 @@ let make_marsh free_iovl =
       if free_iovl then free iovl;
       obj
     with Failure msg -> 
+      
       if free_iovl then free iovl;
       raise (Bad_message msg)
+	(* ) *)
   in
   (marsh,unmarsh) 
+  
+(**************************************************************)
+  
+let count_nonempty il =
+  let nonempty = Pervasives.ref 0 in
+  for i = 0 to pred (Arrayf.length il) do
+    if Iovec.len (Arrayf.get il i) <>|| len0 then
+      incr nonempty
+  done ;
+  !nonempty
+
+(**************************************************************)
 
 let _ = Trace.test_declare name (fun () ->
   let ma,um = make_marsh true in
@@ -280,45 +331,21 @@ let _ = Trace.test_declare name (fun () ->
       failwith "failed IOVECL marshal test";
     eprintf "."
   done;
-  eprintf "\nPassed Iovecl marshal test\n"
-)
-
-(**************************************************************)
-
-let count_nonempty il =
-  let nonempty = Pervasives.ref 0 in
-  for i = 0 to pred (Arrayf.length il) do
-    if Iovec.len (Arrayf.get il i) <>|| len0 then
-      incr nonempty
-  done ;
-  !nonempty
-
-(**************************************************************)
-let singleton iov = Arrayf.singleton iov
-
-let is_singleton il =
-  Arrayf.length il = 1
-
-let get_singleton il =
-  assert (Arrayf.length il = 1) ;
-  Arrayf.get il 0
-
-(**************************************************************)
-(* Testing marsh,unmarsh from/to iovecls.
-*)
-(*
-let _ = 
+  eprintf "\nPassed Iovecl marshal test\n";
+    
+  (* Testing marsh,unmarsh from/to iovecls.
+   *)
+    
   printf "Running iovecl sanity test\n";
-  let marsh,unmarsh = make_marsh () in
+  let marsh,unmarsh = make_marsh true in
   
   let iovl = marsh (1,2,("A","B")) in
   let str = unmarsh iovl in
   begin match str with 
       x,y,(z,w) -> 
 	printf "x=%d, y=%d z=%s w=%s\n" x y z w
-    | _ -> failwith "bad marshaling code"
   end;
   ()
-*)
-
+)
+  
 (**************************************************************)

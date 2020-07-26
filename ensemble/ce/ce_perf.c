@@ -18,9 +18,9 @@ static char* prog ;
 static test_t test = RPC;
 static int nmembers = 2;
 static double rate = 0.1;
-static int size = 1000 ;
-static double terminate_time = 10.0;
-
+static int size = 4 ;
+static double terminate_time = 100.0;
+static int quiet = 0;
 /**************************************************************/
 ce_iovec_array_t create_iovl(int size){
   ce_iovec_array_t iovl;
@@ -195,11 +195,17 @@ void throu_recv_send(void *env, int rank, int num, ce_iovec_array_t iovl) {
 void throu_recv_cast(void *env, int rank, int num, ce_iovec_array_t iovl) {
   throu_state_t *s = (throu_state_t*) env;
   int i;
+  static int last_report = 0;
 
   /* Sum up the total received length
    */
   for(i=0; i< num; i++) 
     s->total += Iov_len(iovl[i]);
+
+  if (!quiet && s->total - last_report > 100*1024) {
+    last_report = s->total;
+    printf ("received %d\n", s->total);
+  }
 }
 
 void throu_heartbeat(void *env, double time) {
@@ -303,33 +309,37 @@ void process_args(int argc, char **argv){
 	      }
 	      size = atoi(argv[i]);
 	      printf ("size=%d\n", size);
-	  } else 
-	    ml_args++ ;
+	    } else 
+	      if (strcmp(argv[i], "-terminate_time") == 0) {
+		if (++i >= argc){
+		  continue ;
+		}
+		terminate_time = (float) atoi(argv[i]);
+		printf ("terminate_time=%d\n", size);
+	      } else 
+		if (strcmp(argv[i], "-quiet") == 0) {
+		  quiet = 1;
+		  printf ("quiet mode\n");
+		} else
+		  ml_args++ ;
     }
 
     ret = (char**) malloc ((ml_args+1) * sizeof(char*));
     ret[ml_args] = NULL;
     
     for(i=0, j=0; i<argc; i++) {
-      if (strcmp(argv[i], "-prog") == 0) {
+      if ((strcmp(argv[i], "-prog") == 0)
+	  ||(strcmp(argv[i], "-n") == 0)
+	  || (strcmp(argv[i], "-r") == 0)
+	  || (strcmp(argv[i], "-s") == 0)
+	  || (strcmp(argv[i], "-quiet") == 0)
+	  || (strcmp(argv[i], "-terminate_time") == 0)) {
 	i++;
-	continue;
-      } else
-	if (strcmp(argv[i], "-n") == 0) {
-	  i++;
-	  continue;
-	} else
-	  if (strcmp(argv[i], "-r") == 0) {
-	    i++;
-	    continue;
-	  } else
-	    if (strcmp(argv[i], "-s") == 0) {
-	      i++;
-	      continue;
-	    } else {
-	      ret[j]=argv[i];
-	      j++;
-	    }
+	continue ;
+      } else {
+	ret[j]=argv[i];
+	j++;
+      }
     }
 
     TRACE("before init("); 
@@ -358,6 +368,7 @@ int main(int argc, char **argv){
   //ce_Init(argc, argv);
   process_args(argc, argv);
   usage();
+  printf("nmembers=%d, rate=%1.4f, size=%d\n", nmembers, rate, size);
 
   TRACE("determining test");
   switch (test) {

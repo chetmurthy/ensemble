@@ -1,0 +1,111 @@
+#*************************************************************#
+ENSROOT = ..
+include ../mk/config.mk
+#*************************************************************#
+
+.SUFFIXES: .dvi .tex 
+.tex.dvi:
+	latex $< 
+#*************************************************************#
+
+all: hevea ce.html ref.ps tut.ps java_doc #projects.ps
+
+tut.dvi: \
+	tut.tex		\
+	install.tex	\
+	config.tex	\
+	def.tex		\
+	demo.tex	\
+	appl_ml.tex	\
+	appl_c.tex	\
+	appl_text.tex	\
+	exec_tut.tex	\
+	property.tex	\
+	pgp.tex		\
+	view_state.tex
+
+
+ref.dvi: layers/*.tex \
+	ref.tex		\
+	id.tex		\
+	def.tex		\
+	event.tex	\
+	event_prot.tex	\
+	layer_antmy.tex	\
+	layer_model.tex	\
+	layer_hdlrs.tex	\
+	layer_ref.tex	\
+	vsync.tex	\
+	exec_ref.tex	\
+	membership.tex	\
+	bimodal.tex	\
+	security.tex	\
+	unsafe.tex
+
+ref.ps : ref.dvi
+	latex ref
+	latex ref
+	dvips ref.dvi -o ref.ps 
+
+tut.ps : tut.dvi
+	latex tut
+	latex tut
+	dvips tut.dvi -o tut.ps 
+
+projects.dvi: projects.tex
+	latex projects
+	latex projects
+	dvips projects.dvi -o projects.ps 
+
+clean:
+	$(RM) *.dvi *~ *.log *.aux *.toc *.lof *.lot TAGS layers/*.aux .nfs* *~ .*~ *.haux *.image.tex .#?*  
+	$(RMDIR) ce/html
+	cd layers; $(MAKE) clean
+	$(RMDIR) tut ref 
+	$(RM) ref.html tut.html 
+
+realclean: clean
+	$(RM) tut.ps ref.ps
+
+force: clean all
+
+tags:
+	etags *.tex ../layers/*/*.tex
+
+hevea: setup tut.html ref.html cleanup
+
+setup : 
+	$(RM) def.tex
+	ln def-hevea.tex def.tex
+
+cleanup : 
+	$(RM) def.tex
+	ln def-reg.tex def.tex
+
+tut.html : 
+	hevea tut.tex
+	$(RMDIR) tut
+	$(MKDIR) tut
+	$(MV) tut.html tut
+	cd tut; hacha tut.html
+
+ref.html : 
+	hevea ref.tex
+	imagen ref
+	$(RMDIR) ref
+	$(MKDIR) ref
+	$(MV) ref.html *.gif ref/
+	cd ref;	hacha ref.html
+
+ce.html : 
+	cd ce; doxygen ce-config.doxygen
+
+java_doc : 
+	$(RMDIR) ejava
+	$(RMDIR) docs
+	cd ../ejava; $(MAKE) doc
+	$(MV) ../ejava/docs .
+	$(MV) docs ejava
+
+build : all
+	cd ..; tar -cf doc-$(VERSION).tar doc/{*.ps,tut,ref,ce/html,maestro,ejava}; gzip -f doc-$(VERSION).tar; mv doc-$(VERSION).tar.gz ..

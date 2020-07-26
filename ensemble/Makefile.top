@@ -137,7 +137,7 @@ ensemble.ml: socket/socket$(CMI) $(ENSEMBLEMLI) $(EMRG)
 	$(EMRG) -ml $(ENSEMBLEMLI) -o ensemble.ml
 
 ensemble$(CMI): ensemble.mli 
-	$(ENSCOMP) ensemble.mli
+	$(ENSCOMP) -c ensemble.mli
 
 ensemble$(CMO): ensemble$(CMI) ensemble.ml ensemble.mli 
 	$(ENSCOMP) -c $(INCLUDE) ensemble.ml
@@ -158,6 +158,10 @@ ssocket$(CMA) : socket/socket$(CMI) socket/s/socket.mli socket/s/socket$(CMI) $(
 	$(MLLIBR) -o ssocket$(CMA) -linkall $(SSOCKOBJ)
 
 #*************************************************************#
+depend:
+	ocamldep $(INCLUDE) -I crypto/OpenSSL -I crypto/isaac \
+	*/*.{ml,mli} */*/*.{ml,mli} */*/*/*.{ml,mli} > .depend
+
 include $(DEPEND)
 #*************************************************************#
 

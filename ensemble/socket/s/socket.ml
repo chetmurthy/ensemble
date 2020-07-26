@@ -20,7 +20,17 @@ let max_msg_size = 8 * 1024
 
 (* Debugging
 *)
-let print s = () (*print_string (s^"\n"); flush stdout;*)
+let verbose = ref false
+
+let set_verbose flag =
+  printf "Socket verbose\n"; Pervasives.flush Pervasives.stdout;
+  verbose := flag
+
+let log f = 
+  if !verbose then (
+    let s = f () in
+    print_string s; print_string "\n"; flush stdout;
+  ) else ()
 
 module Basic_iov = struct
 
@@ -38,7 +48,7 @@ module Basic_iov = struct
   external (+||) : int -> int -> int = "%addint"
   external (-||) : int -> int -> int = "%subint"
   external ( *||) : int -> int -> int = "%mulint"
-  
+
   (* The type of a C memory-buffer. It is opaque.
    *)
   type cbuf  
@@ -147,38 +157,43 @@ module Basic_iov = struct
 
   type alloc_state = {
     chunk_size : int ;
-    mutable chunk : base ; (* The current chunk *)
+    mutable chunk : t ; (* The current chunk  *)
     mutable pos : int ;
   }
 
   let size = 32 * max_msg_size   (* Current size is 256K *)
 
-  let s = {
-    chunk_size = size;
-    chunk = {count=1; base_iov = mm_alloc size};
-    pos = 0 ;
-  }
+  let s = 
+    let raw = mm_alloc size in
+    {
+      chunk_size = size;
+      chunk = {
+	base=  {count=1; base_iov = raw};
+	iov = raw
+      };
+      pos = 0 ;
+    }
 
   let free_old_chunk () = 
-    print "free_old_chunk";
-    s.chunk.count <- pred s.chunk.count ;
-    if s.chunk.count =|| 0 then (
-      print "freeing old chunk";
-      free_cbuf s.chunk.base_iov.cbuf;
+    log (fun () -> "free_old_chunk");
+    s.chunk.base.count <- pred s.chunk.base.count ;
+    if s.chunk.base.count =|| 0 then (
+      log (fun () -> "freeing old chunk");
+      free_cbuf s.chunk.base.base_iov.cbuf;
     )
 
   let alloc len = 
     if s.chunk_size -|| s.pos >=|| len then (
-      (*printf "simple_alloc %d\n" len; flush stdout;*)
-      let iov = mm_sub s.chunk.base_iov s.pos len in
-      s.chunk.count <- succ s.chunk.count;
+      log (fun () -> sprintf "simple_alloc %d\n" len);
+      let iov = mm_sub s.chunk.base.base_iov s.pos len in
+      s.chunk.base.count <- succ s.chunk.base.count;
       s.pos <- s.pos +|| len;
-      t_of_iovec s.chunk iov
+      t_of_iovec s.chunk.base iov
     ) else 
       (* requested size too large, allocating a fresh (C) region.
        *)
       if len >=|| s.chunk_size then (
-	(*printf "large_alloc %d\n" len; flush stdout;*)
+	log (fun () -> sprintf "large_alloc %d\n" len);
 	let large_iov = mm_alloc len in
 	t_of_iovec {count=1;base_iov=large_iov} large_iov
       ) else (
@@ -193,9 +208,9 @@ module Basic_iov = struct
 	free_old_chunk ();
 	let new_chunk = mm_alloc s.chunk_size in
 	let iov = mm_sub new_chunk 0 len in
-	s.chunk <- {count=2;base_iov=new_chunk};
+	s.chunk <- {base={count=2;base_iov=new_chunk}; iov=new_chunk};
 	s.pos <- len;
-	t_of_iovec s.chunk iov
+	t_of_iovec s.chunk.base iov
       )
 
   (* check that there is enough space in the cached iovec before
@@ -213,17 +228,22 @@ module Basic_iov = struct
       (* Here we waste the end of the cached iovec.
        *)
       free_old_chunk ();
-      s.chunk <- {count=1; base_iov=mm_alloc s.chunk_size};
+
+      let raw = mm_alloc s.chunk_size in
+      s.chunk <- {
+	base = {count=1; base_iov=raw};
+	iov = raw;
+      };
       s.pos <- 0;
-      mm_cbuf_sub s.chunk.base_iov 0
+      mm_cbuf_sub s.chunk.base.base_iov 0
     ) else
-      mm_cbuf_sub s.chunk.base_iov s.pos
+      mm_cbuf_sub s.chunk.base.base_iov s.pos
 
   (* We have allocated [len] space from the cached iovec.
    * Update our postion in it.
    *)
   let advance len = 
-    s.chunk.count <- succ s.chunk.count;
+    s.chunk.base.count <- succ s.chunk.base.count;
     s.pos <- s.pos +|| len;
     assert (s.pos <=|| s.chunk_size)
 	
@@ -261,10 +281,11 @@ module Basic_iov = struct
       iov= mm_sub t.iov ofs len 
     } 
 
+
   (* Increment the refount, do not really copy. 
    *)
   let copy t = 
-    print "copy";
+    log (fun () -> "copy");
     t.base.count <- succ t.base.count ;
     t
       
@@ -315,6 +336,62 @@ module Basic_iov = struct
    *)
   let num_refs t = t.base.count
 
+
+  external mm_marshal : 'a -> raw -> Marshal.extern_flags list -> int
+    = "mm_output_val"
+
+  external mm_unmarshal : raw -> 'a
+    = "mm_input_val"
+
+  let mm_marshal obj t flags = mm_marshal obj t.iov flags
+
+  let marshal obj flags = 
+    let space_left = s.chunk_size -|| s.pos in
+    let tail = sub s.chunk s.pos space_left in
+    try 
+      let len = mm_marshal obj tail flags in
+      advance len;
+      let res = sub tail 0 len in
+      free tail;
+      res
+    with Failure _ -> 
+      (* Not enough space.
+       * We waste the end of the cached iovec, and 
+       * allocate a new chunk.
+       *)
+      free_old_chunk ();
+      let raw = mm_alloc s.chunk_size in
+      s.chunk <- {
+	base = {count=1; base_iov=raw};
+	iov = raw
+      };
+      s.pos <- 0;
+      try 
+	let len = mm_marshal obj s.chunk flags in
+	advance len;
+	sub s.chunk 0 len
+      with Failure _ -> 
+	(* The messgae is larger than a chunk size, hence too long.
+	 *)
+	failwith (sprintf "message is too longer (> %d)" s.chunk_size)
+
+  let unmarshal t =  mm_unmarshal t.iov 
+
+(*
+  let _ = 
+    printf "Running Socket iovec marshal/unmarshal sanity test\n"; flush stdout;
+    let iov = alloc 100 in
+    ignore (marshal (1,2,("A","B")) iov []);
+    let obj = unmarshal iov in
+    printf "xxx\n"; Pervasives.flush Pervasives.stdout;
+    begin match obj with 
+	x,y,(z,w) -> 
+	  printf "x=%d, y=%d z=%s w=%s\n" x y z w
+    end;
+    printf "Passed)\n"; flush stdout;
+    ()
+*)
+
 end
 
 open Basic_iov
@@ -327,11 +404,6 @@ let trace =
     true 
   with Not_found -> 
     false
-
-let debug_msg s = 
-  if trace then (
-    print_line ("SOCKET:trace:"^s)
-  )
 
 (**************************************************************)
 
@@ -360,12 +432,13 @@ let stdin =
     fun () -> Unix.stdin 
   ) else (
     fun () ->
+      (*failwith "stdin not supported --- just for debugging";*)
       match !stdin with
-      | None ->
-	  let s = start_input () in
-	  stdin := Some s ;
-	  s
-      | Some s -> s
+	| None ->
+	    let s = start_input () in
+	    stdin := Some s ;
+	    s
+	| Some s -> s
   )
 
 (**************************************************************)
@@ -380,14 +453,25 @@ external frames : unit -> int array array
   = "skt_frame_descriptors"
 
 (**************************************************************)
+external skt_recvfrom : socket -> buf -> ofs -> len -> len * Unix.sockaddr
+  = "skt_recvfrom" 
+
+let recvfrom s b o l = 
+  if is_unix then Unix.recvfrom s b o l []
+  else skt_recvfrom s b o l 
+
+
 (* READ: Depending on the system, call either read or recv.
  * This is only used for stdin (where on Nt it is a socket).
  *)
+external skt_recvfrom2 : socket -> buf -> ofs -> len -> len 
+  = "skt_recvfrom2" 
+
 let read =
   if is_unix then 
     fun s b o l -> Unix.read s b o l
   else
-    fun s b o l -> fst (Unix.recvfrom s b o l [])
+    fun s b o l -> skt_recvfrom2 s b o l
 
 (**************************************************************)
 
@@ -416,21 +500,36 @@ let int_of_socket s =
   int_of_file_descr s
 
 (**************************************************************)
+external skt_socket_mcast : 
+  Unix.socket_domain -> Unix.socket_type -> int -> Unix.file_descr
+    = "skt_socket_mcast"
+
 external skt_socket : 
   Unix.socket_domain -> Unix.socket_type -> int -> Unix.file_descr
   = "skt_socket"
 
-external skt_socket_mcast : 
-  Unix.socket_domain -> Unix.socket_type -> int -> Unix.file_descr
-  = "skt_socket_mcast"
+external skt_connect : Unix.file_descr -> Unix.sockaddr -> unit
+  = "skt_connect"
 
-external skt_connect : 
-  Unix.file_descr -> Unix.sockaddr -> unit
-    = "skt_connect"
+external skt_bind : Unix.file_descr -> Unix.sockaddr -> unit
+  = "skt_bind"
 
-let socket = 
-  if is_unix then Unix.socket
-  else skt_socket
+external skt_close : Unix.file_descr -> unit
+  = "skt_close"
+
+external skt_listen : Unix.file_descr -> int -> unit
+  = "skt_listen"
+
+external skt_accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr 
+  = "skt_accept"
+
+let socket dom typ proto = 
+  let s = 
+    if is_unix then Unix.socket dom typ proto 
+    else skt_socket dom typ proto 
+  in
+  log (fun () -> sprintf "sock=%d\n" (int_of_socket s));
+  s
 
 let socket_mcast = 
   if is_unix then Unix.socket
@@ -440,8 +539,27 @@ let connect =
   if is_unix then Unix.connect
   else skt_connect
 
+let bind = 
+  if is_unix then Unix.bind
+  else skt_bind
+
+(* will work only on sockets on WIN32.
+*)
+let close = 
+  if is_unix then Unix.close
+  else skt_close
+
+let listen = 
+  if is_unix then Unix.listen
+  else skt_listen
+
+let accept = 
+  if is_unix then Unix.accept
+  else skt_accept
 
 (**************************************************************)
+    
+    
 (* Optimized socket operations.
  * - unsafe
  * - no exceptions
@@ -499,10 +617,16 @@ let udp_recv_packet sock =
   let buf,iov = skt_udp_recv_packet sock cbuf in
 
   (* Update our position in the cached memory chunk.
+   * On WIN32, since we don't have MSG_PEEK, we read everything into
+   * user buffers. Hence, we need to copy the ML header into a string, 
+   * and advance past 8byte pre-header + ML header + user-buffer.
    *)
   if iov.len >|| 0 then (
-    Basic_iov.advance iov.len;
-    buf, Basic_iov.t_of_iovec s.chunk iov
+    if is_unix then 
+      Basic_iov.advance iov.len
+    else
+      Basic_iov.advance (String.length buf + iov.len + 8);
+    buf, Basic_iov.t_of_iovec s.chunk.base iov
   ) else
     buf, empty
   
@@ -566,7 +690,11 @@ external setsockopt_nonblock : socket -> bool -> unit
   = "skt_setsockopt_nonblock"
 external setsockopt_bsdcompat : socket -> bool -> unit
   = "skt_setsockopt_bsdcompat"
-
+external setsockopt_reuse : socket -> bool -> unit
+  = "skt_setsockopt_reuse"
+let setsockopt_reuse sock onoff = 
+  if is_unix then Unix.setsockopt sock Unix.SO_REUSEADDR onoff
+  else setsockopt_reuse sock onoff
 (**************************************************************)
 (* MD5 hash functions. We need to have it work on Iovecs as
  * well as regular strings. 
@@ -661,8 +789,7 @@ let os_type_and_version () =
 	ver
 
 (**************************************************************)
+let is_unix = is_unix
 
-let _ = debug_msg "socket_e"
-  
 (**************************************************************)
 

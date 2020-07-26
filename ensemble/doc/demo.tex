@@ -1,0 +1,339 @@
+\section{The Programs}
+
+Notes:
+\begin{itemize}
+\item
+please note that warning and error messages printed by Ensemble are
+not prefixed with the name of the program generating the message, but
+rather the name of the module.
+\end{itemize}
+
+\subsection{Mtalk: Multi-person Talk}
+This is a multi-person talk demo.  As \mlval{mtalk} processes are created, they merge
+into a single group.  Input typed at one process is broadcast to the rest of the
+processes in the group.
+
+\subsection{Wbml: Distributed Whiteboard}
+This is a graphical white board demo.  It uses the CamlTk library to implement a
+graphical user interface\footnote{not supported under Windows/NT}.  When members are
+in the same group, lines drawn on one instance are broadcast to the rest of the
+group, who also draw the lines.  It supports the switching of protocols.  Initially,
+wbml has an auto-merge protocol in its stack so the members merge together.  This can
+be removed to disable partition healing.  Adding the XFER protocol, causes members to
+transfer their state on view changes; the TOTAL protocol enable totally ordered
+communication.  Initially, these extra protocols are not included in the protocol
+stack.
+
+\subsection{Ensemble: Text-based Interface}
+\label{section:ensemble-demo}
+This program provides a text-based interface to the Ensemble group
+communication facilities.  You can run it to directly see what happens in an
+Ensemble application.  You start up the program and it prints out messages
+decribing changes to the membership of the group.  You can type in commands
+such as ``cast hello'' which causes Ensemble to broadcast ``hello'' to the
+other members of the group, who get ``cast hello'' printed out.  This program
+can be used as a subprocess of an application for doing basic group
+communication.  The normal usage is to set up pipes to and from the standard
+input and output of the \mlval{ensemble} process.
+
+In order to distinguish different applications that are using this interface to
+communicate, you may wish to use the \mlval{-group\_name} option to set the
+name of the group.
+
+The input of the program must be formatted in text lines as follows:
+\begin{itemize}
+\item
+{[cast \mlval{msg}]} broadcasts the following message to the group, where
+\mlval{msg} is the remainder of the input line.  (Normally, the broadcaster
+will not receive the message).
+\item
+{[send \mlval{dest} \mlval{msg}]} sends a point-to-point message to the rest of the
+group.  \mlval{dest} is the endpoint identifier of the group member you wish to send
+the message to.  \mlval{msg} is the remainder of the input line.
+\item
+{[leave]} causes the member to leave the group.  This will eventually result in
+an exit message being output and then the \mlval{ensemble} process will exit.
+\item
+{[prompt]} prompt for a view change
+\item
+{[suspect \mlval{suspect}]} suspect a member, this will cause that
+member to be expelled from the view.
+\item
+{[xferdone]} state transfer is complete for this member. If you are
+  using the state-transfer layer, then this actions has effect. Once
+all members notify the system that state-transfer is complete, a fresh
+view is created, with the xfer bit set to false. For more information,
+look up the XFER layer. 
+\item
+{[rekey]} rekey the group.
+\item
+{[protocol \mlval{proto\_id} ]} switch the protocol
+\end{itemize}
+
+The output of the program consists of lines in one of the following formats:
+\begin{itemize}
+\item
+{[endpt \mlval{endpoint\_id}]} is output as the first line and only
+appears once.  It gives the name of this application as it will appear
+in views.
+
+\item
+{[view \mlval{nmembers} \mlval{my\_rank} \mlval{view}]} describes a
+new view of the group.  Initially, every member begins in its own
+singleton view.  Other members are added through automatic merging
+with other views.  Members are removed through failure detections.
+\mlval{nmembers} is the number of members of the group.
+\mlval{my\_rank} is this member's rank in the new view.
+\mlval{protocol} is the name of the protocol being used.  \mlval{view}
+is a space-separated list of the endpoint identifiers of the members
+of the group.
+
+\item 
+{[cast \mlval{origin} \mlval{msg}]} displays a broadcast received from
+the member of rank \mlval{origin}.
+\item
+{[send \mlval{origin} \mlval{msg}]} displays a point-to-point message
+received from member of rank \mlval{origin}.
+\item
+{[exit]} notifies that this member has left the group as a result of a
+previous \mlval{leave}.  This is the last line output by
+\mlval{ensemble}.
+\end{itemize}
+
+\subsection{Gossip: Group Locator Service}
+This is not really an application.  The gossip server works in
+conjunction with the Ensemble \mlval{UDP} communication transport to
+simulate low-bandwidth gossip broadcast for systems that do not have
+IP multicast.  See the discussion on transports below.  The group
+communication protocols require some ``gossipping'' mechanism in order
+to detect and heal partitions in the system.  When an application
+wishes to gossip with other partitions, it broadcasts a message via
+the \mlval{gossip} servers.  This sends messages to the \mlval{gossip}
+servers.  The \mlval{gossip} servers then forward the message to all
+processes they have heard from recently to simulate a broadcast.  When
+an application is using the \mlval{UDP} transport and not the
+\mlval{DEERING} transport (\mlval{UDP} is the default), it is
+necessary for a \mlval{gossip} process to be running somewhere in the
+system.
+
+\subsection{Groupd: Membership Service (formerly called Domain)}
+\label{section:groupd}
+Normally, \ensemble\ application groups implement their own group
+membership protocol.  However, they have the option of using the
+\ensemble\ membership service implemented by the \mlval{groupd}
+application.  \mlval{groupd} is a service for managing multiple
+process groups.  It uses a \emph{core} group of \ensemble\ processes
+to participate in managing these groups.  Clients connect to the
+service via TCP connections, through which they request to join and
+leave groups.  The service supports a simple protocol through which
+the clients can obtain virtual synchronous properties.  The service
+also supports weaker properties that give faster membership
+notifications.
+
+\note{We emphasize that Ensemble applications can operate independently of a
+membership service.}
+
+Some of the benefits of using this service are:
+\begin{itemize}
+\item
+When there are no membership changes, the clients communicate directly
+between themselves, so the membership service has no affect on
+performance.
+\item
+The service implements group membership for multiple groups.  The
+costs of the group membership protocols (such as failure detection)
+are shared over the groups.
+\item
+Because applications are sharing the same membership service, they see
+consistent views and failure detections.
+\item
+The client part of the protocol for implementing virtual synchrony is
+simple.  Most of the complexity is in the server.  This allows client
+programs to be implemented in languages other than ML, but save much
+of the programming burden because the servers handle the ``hard''
+group membership protocols.  The client TCP interface is described in
+the \ensemble\ reference manual.
+\item
+Applications that do not need the full virtual synchrony properties
+can use weaker synchronization protocols and get faster view changes.
+\item
+The service allows groups to scale to larger sizes.  The membership
+servers do not need to run on all the hosts on which the clients run,
+so clients can be on more hosts than are normally supported by
+\ensemble.
+\end{itemize}
+
+\paragraph{Executing Groupd:}
+In order to run Groupd, set the \mlval{ENS\_GROUPD\_PORT} environment
+variable to select the TCP port for the service to use.  The
+membership service is executed through the \mlval{groupd} application
+program:
+\begin{verbatim}
+% groupd
+\end{verbatim}
+It takes command-line arguments similar to the other \ensemble\
+demonstration programs.  Normally, each host runs a server.
+
+Other demo applications use the service when the \mlval{-groupd}
+command-line argument is selected.  For example:
+\begin{verbatim}
+% mtalk -groupd
+\end{verbatim}
+Note that you must have a \mlval{groupd} server running on the same host as
+mtalk for this to work.
+
+
+\subsection{Perf: Performance Tests}
+This program includes a variety of performance tests for Ensemble.
+
+\paragraph{Ring:}
+This test is run with the \mlval{-prog ring} option.  Say that there
+are $n$ members.  Each process first waits until there are $n$
+members.  It then sends $k$ messages, and waits for $(n - 1)k$
+messages from other members.  It measures the time for this, and does
+so a number of times to determine the average and variance.  This can
+be done for varying $n$, $k$, message size, and protocol.
+
+The time between the rounds is a measure of latency.  The total amount
+of data sent between the rounds is a measure of bandwidth.  The total
+number of messages sent between rounds is a measure of throughput.
+For good measurements, set the parameters as follows:
+
+\begin{center}
+\begin{tabular}{|l|c|c|}			   \hline
+measure		& $k$		& message size	\\ \hline \hline
+latency		&  1		& 0		\\ \hline
+throughput	& large		& 0		\\ \hline
+bandwidth	&  1		& large		\\ \hline
+\end{tabular}
+\end{center}
+
+Additional command-line arguments (with default values in parentheses):
+\begin{description}
+\item [-n \#]: number of members ($2$ members)
+\item [-s \#]: size in bytes of application messages ($0$ bytes)
+\item [-r \#]: number of rounds ($300$ rounds)
+\item [-k \#]: messages per round ($1$ message per round)
+\end{description}
+These values must be set by all members.  All members must use the
+same values for all of the arguments except message size.
+
+\todo{The other performance tests are undocumented.}
+
+\subsection{Rand: Virtual Synchrony Debugging Tool}
+This demo is used to test \ensemble.  It uses simulated communication and
+introduces random process failures to check for proper behavior of the group
+membership protocols.
+
+\subsection{Fifo: Fifo Communication Debugging Tool}
+This demo is used to test \ensemble.  It uses simulated communication
+structured in such a way as to trigger bugs in FIFO, reliable communication
+protocols.
+
+\subsection{Armadillo: testing Ensemble security extensions}
+This program tests \ensemble\ security features. It has several
+command line options:
+\begin{description}
+\item[-n \#]  number of endpoints to create
+\item[-t \#]  after what threshold to start the test
+\item[-prog] which security to use? [policy,rekey,exchange,reg,prompt]
+\item[-pa]   simulate partitions? 
+\item[-net]  run everything in a single process or run throughout the  network
+\item[-real\_pgp]  use PGP for authentication? otherwise, simulate it.
+\item[-group]    set the group name
+\end{description}
+
+The ``exchange'' test checks that the Exchange layer functions
+correctly. For example, running:
+\begin{verbatim}
+% armadillo -n 20 -prog exchange
+\end{verbatim}
+will create 20 endpoints with random intial keys. the endpoints should
+merge into one group after a short while.
+
+The ``rekey'' test creates a group and once its size is above the
+threshold it start rekeying it. The test: {\tt Use: armadillo -n 7 -t
+7 -prog rekey} will create a group of 7 members and once the group
+reaches this size, will start to rekey it.
+		
+To see what happens when the group partitions use: {\tt armadillo -n 5
+-t 3 -prog rekey -pa}. This will create a group of 5 members and start
+partitioning and remerging the group. Everytime the membership in a
+group component exceeds 3, the component leader will try rekeying it. 
+
+The ``policy'' test checks that Ensemble respects application trust
+policies. For example running:
+\begin{verbatim}
+% armadillo -n 7 -prog policy
+\end{verbatim}
+will create a static group of 7 processes, numbered 0 through 6, and
+dynamically change the endpoints trust policies. Ensemble forms
+subgroups according to the trust relationship. The policies are
+designed to change in stages:
+\begin{enumerate}
+\item All endpoints trust each other.
+\item 
+All endpoints of the same (mod 2) trust each other. That is we
+have to trust domains: $\{0,2,4,6\}$ and $\{1,3,5\}$.
+\item 
+All endpoints of the same (mod 3) trust each other. That is we
+have three trust domains: $\{0,3,6\}$, $\{1,4\}$ $\{2,5\}$.
+\end{enumerate}
+
+The ``prompt'', and ``reg'' tests are auxillary tests not related
+to security. 
+
+
+\subsection{Life: Game of Life Demo}
+This is a graphical version of the \emph{Game of Life} that was
+originally ``invented'' by J.H.~Conway in 1969 (and was first
+reported in \emph{Scientific American}, October 1970).  The Game of
+Life is not actually a game: ``it is the study of phenomena which can
+be observed in evolving configurations of populations.  One can think
+of a population as a generation of living and non-living beings.  A
+generation can be modeled by a rectangular grid of cells in which
+each being occupies exactly one cell and each cell can be either on
+or off.  If a being is alive, then the corresponding cell is on; if
+the being is dead, then the cell is off.  From this point on we refer
+to beings of a population and cells of the rectangular grid
+interchangeably.''  In this implementation, each cell of the grid is
+implemented by a separate endpoint and all communication is through
+asynchronous Ensemble communication.  Anyway, this program requires
+the CamlTk library and should be self-explanatory to run (note that
+you only need to run one Life process: it creates multiple endpoints
+within the process).
+
+\emph{This application was written by Samuel Weber.}
+
+\subsection{Socktest}
+This is a simple application that tests the soundness of the
+lower level Ensemble interface to sockets and IP-multicast.
+
+The current menu is as follows:
+\begin{itemize}
+\item
+{[Join \mlval{ipm\_addr} ]} Join a multicast group.
+\item 
+{[Leave \mlval{ipm\_addr} ]} Leave a multicast group.
+\item 
+{[Cast \mlval{ipm\_addr} \mlval{msg}]} Send a message to a multicast
+group.
+\item 
+{[Ttl \mlval{num} ]} set the time-to-live.
+\item 
+{[Loopback \mlval{onoff} ]} set the loopack. If this is on, then
+messages sent to a multicast group will also be locally received.
+\item 
+{[Sendbuf \mlval{size} ]} Set the send-buffer size in the kernel.
+Normally, to little space is reserved in the kernel for storing IP
+packets, therefore, it is common practice to increase it.
+\item 
+{[Recvbuf \mlval{size}]} 
+Same, as Sendbuf, only for received packets.
+\item 
+{[Nonblock \mlval{onoff} ]} set a socket to blocking or non-blocking
+mode.
+\end{itemize}
+
+
+

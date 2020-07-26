@@ -513,6 +513,21 @@ value skt_udp_recv_packet(
   goto ret;
 }
 
+/* Not needed on unix.
+ */
+value skt_recvfrom(sock, buff, ofs, len) /* ML */
+     value sock, buff, ofs, len;
+{
+  invalid_argument("calling: skt_recvfrom on a Unix platform");
+}
+
+/* Not needed on unix.
+ */
+value skt_recvfrom2(sock, buff, ofs, len) /* ML */
+     value sock, buff, ofs, len;
+{
+  invalid_argument("calling: skt_recvfrom2 on a Unix platform");
+}
 
 /**************************************************************/
 /**************************************************************/
@@ -784,11 +799,6 @@ value skt_tcp_recv_packet(
 
 #else /* WIN32 */
 
-/* The FLAT code is for NT, and WIN2000 where iovectors and MSG_PEEK
- * don't really work. The non-FLAT branch is reserved for the future. 
- */
-#define FLAT
-
 /* Read from a TCP socket into a string.
  */
 value skt_recv(sock, buff, ofs, len) /* ML */
@@ -952,7 +962,6 @@ value skt_tcp_recv_packet(
   return Val_int(len);
 }
 
-#ifdef FLAT
 /**************************************************************/
 /* Receive a packet, allocated a user buffer and read the data into
  * it. 
@@ -962,6 +971,9 @@ value skt_tcp_recv_packet(
 
  * sock_v : a socket
  * cbuf_v : a memory pointer in which to write user date.
+ *
+ * Since NT4 and WIN2000 do not support MSG_PEEK, we need to
+ * to receive everthing into the pre-allocated user-buffer.
  */
 value skt_udp_recv_packet(
 			  value sock_v,
@@ -973,6 +985,7 @@ value skt_udp_recv_packet(
   int ret = 0 ;
   int header_peek = (int) HEADER_PEEK;
   int flags = 0;
+  char *cbuf = mm_Cbuf_val(cbuf_v);
   
   CAMLparam2(sock_v, cbuf_v);
   CAMLlocal3(buf_v, iov_v, ret_v);
@@ -982,15 +995,12 @@ value skt_udp_recv_packet(
   
   /* On NT, PEEK does not work, we must read the whole packet.
    */
-  len = recvfrom(sock,  iobuf, MAX_MSG_SIZE, 0,
-		 NULL, 0);
-  SKTTRACE2(("SENDRECV:(peek), len=%d\n", len));
+  len = recvfrom(sock, cbuf, MAX_MSG_SIZE, 0, NULL, 0);
   
   /* Header is too short, read the rest of the packet and dump
    * it. 
    */
   if (len == -1){
-    //printf ("Error, errno=%d.\n", h_errno); 
     goto dump_packet;
   }
   
@@ -998,8 +1008,8 @@ value skt_udp_recv_packet(
     printf ("Packet too short.\n"); 
     goto dump_packet;
   }
-  ml_len = ntohl (*(uint32*) &(iobuf[0]));
-  usr_len = ntohl (*(uint32*) &(iobuf[SIZE_INT32]));
+  ml_len = ntohl (*(uint32*) &(cbuf[0]));
+  usr_len = ntohl (*(uint32*) &(cbuf[SIZE_INT32]));
 
   SKTTRACE(("SENDRECV:udp_recv: ml_len=%d usr_len=%d\n", ml_len, usr_len));
 
@@ -1023,15 +1033,13 @@ value skt_udp_recv_packet(
     ml_buf = String_val(buf_v);
   }
 
-  /* The user-buffer has already been allocated, no
-   * need to allocate it. 
+  /* Place usr_buf at the start of user-data.
    */
-  usr_buf = mm_Cbuf_val(cbuf_v);
+  usr_buf = (char*)cbuf + HEADER_PEEK + ml_len;
 
-  /* On NT, we just copy from the iobuf.
+  /* Copy the ML header.
    */
-  memcpy(ml_buf, (char*)iobuf + HEADER_PEEK, ml_len);
-  memcpy(usr_buf, (char*)iobuf + HEADER_PEEK+ ml_len, usr_len);
+  memcpy(ml_buf, (char*)cbuf + HEADER_PEEK, ml_len);
 	 
   if (usr_len > 0)
     iov_v =  mm_Raw_of_len_buf(usr_len, usr_buf);
@@ -1057,193 +1065,38 @@ value skt_udp_recv_packet(
   goto ret;
 }
 
-value skt_sendv_p(
-	value sock_v,
-	value iova_v
-) {
-  int ret=0, len=0;
-  ocaml_skt_t sock;
+value skt_recvfrom(value sock_v, value buf_v, value ofs_v, value len_v)
+{
+  CAMLparam4(sock_v, buf_v, ofs_v, len_v);
+  CAMLlocal2(pair_v, addr_v);
+  int ret;
+  union sock_addr_union addr;
+  socklen_param_type addr_len;
 
-  gather_p_flat(iova_v) ;
-  sock = Socket_val(sock_v);
-  ret = send(sock, iobuf, iobuf_len, 0);
+  SKTTRACE(("skt_recvfrom(\n"));
+  ret = recvfrom(Socket_val(sock_v), &Byte(buf_v, Long_val(ofs_v)), Int_val(len_v),
+		 0, &addr.s_gen, &addr_len);
+  if (ret == -1) serror("recvfrom");
+  SKTTRACE2(("len=%d)\n",ret));
 
-  if (ret == -1) serror("sendv_p");
-  return(Val_int(len));
+  addr_v = alloc_sockaddr(&addr, addr_len);
+  pair_v = alloc_small(2, 0);
+  Field(pair_v, 0) = Val_int(ret);
+  Field(pair_v, 1) = addr_v;
+  CAMLreturn (pair_v);
 }
 
-value skt_sendsv_p(
-	value sock_v,
-	value prefix_v,
-	value ofs_v,
-	value len_v,
-	value iova_v
-) {
-  int ret=0, len=0;
-  ocaml_skt_t sock=0 ;
+value skt_recvfrom2(value sock_v, value buf_v, value ofs_v, value len_v)
+{
+  int ret;
 
-  prefixed_gather_p_flat(prefix_v, ofs_v, len_v, iova_v) ;
-  sock = Socket_val(sock_v);
-  ret = send(sock, iobuf, iobuf_len, 0);
+  SKTTRACE(("skt_recvfrom2(\n"));
+  ret = recvfrom(Socket_val(sock_v), &Byte(buf_v, Long_val(ofs_v)), Int_val(len_v),
+		 0, NULL, NULL);
+  if (ret == -1) serror("recvfrom2");
+  SKTTRACE2(("len=%d)\n",ret));
 
-  if (ret == -1) serror("sendsv_p");
-  return (Val_int(len));
-}
-
-value skt_sends2v_p_native(
-	value sock_v,
-	value prefix1_v,
-	value prefix2_v,
-	value ofs2_v,
-	value len2_v,
-	value iova_v
-) {
-  int ret=0, len=0;
-  ocaml_skt_t sock=0 ;
-
-
-  prefixed2_gather_p_flat(prefix1_v, prefix2_v, ofs2_v, len2_v, iova_v) ;
-  sock = Socket_val(sock_v);
-  ret = send(sock, iobuf, iobuf_len, 0);
-  
-  if (ret == -1) serror("sends2v_p");
   return (Val_int(ret));
-}
-
-value skt_sends2v_p_bytecode(value *argv, int argn){
-  return skt_sends2v_p_native(argv[0], argv[1], argv[2], argv[3],
-			     argv[4], argv[5]);
-}
-
-#else
-
-/**************************************************************/
-/* Code with real iovec-support is here. 
- */
-value skt_udp_recv_packet(
-			  value sock_v,
-			  value cbuf_v
-			  ){
-  int len =0, ml_len, usr_len;
-  ocaml_skt_t sock;
-  char *usr_buf  = NULL, *ml_buf = NULL;
-  int ret = 0 ;
-  int header_peek = (int) HEADER_PEEK;
-  int flags = 0;
-  
-  CAMLparam2(sock_v, cbuf_v);
-  CAMLlocal3(buf_v, iov_v, ret_v);
-
-  SKTTRACE2(("Udp_recv_packet(\n"));
-  sock = Socket_val(sock_v);
-  
-  /* Peek to read the headers. 
-   */
-  //len = recvfrom(sock,  peek_buf, header_peek, MSG_PEEK,
-  //NULL, 0);
-  Iov_len(recv_iov[0]) = header_peek;
-  Iov_buf(recv_iov[0]) = peek_buf;
-
-  flags = MSG_PEEK | MSG_PARTIAL;
-  ret = WSARecvFrom(sock, recv_iov, 1, &len, &flags,
-		    NULL,0,  NULL, NULL);
-
-  SKTTRACE2(("SENDRECV:(peek), len=%d\n", len));
-
-  /* There was an error
-   */
-  if (ret != 0) {
-    printf ("Error in first read, errno=%d\n", h_errno); 
-    goto dump_packet;
-  }
-  
-  /* Header is too short, read the rest of the packet and dump
-   * it. 
-   */
-  if (len < header_peek) {
-    printf ("Packet too short, len=%d\n", len); 
-    len = recvfrom(sock,  peek_buf, HEADER_PEEK, 0,
-		   NULL, 0);
-    goto dump_packet;
-  }
-
-  ml_len = ntohl (*(uint32*) &(peek_buf[0]));
-  usr_len = ntohl (*(uint32*) &(peek_buf[SIZE_INT32]));
-
-  SKTTRACE(("SENDRECV:udp_recv: ml_len=%d usr_len=%d\n", ml_len, usr_len));
-
-  /* The headers read will be too long. This is a bogus
-   * packet, dump it. 
-   */
-  if ((ml_len + usr_len) >= MAX_MSG_SIZE) {
-    printf ("Hdr length too long.\n"); 
-    len = recvfrom(sock,  peek_buf, HEADER_PEEK, 0,
-		   NULL, 0);
-    goto dump_packet;
-  }
-
-  if (ml_len ==0 && usr_len ==0) {
-    printf ("No msg body.\n"); 
-    len = recvfrom(sock,  peek_buf, HEADER_PEEK, 0,
-		   NULL, 0);
-    goto dump_packet;
-  }
-
-  /* Allocate an ML buffer.
-   */
-  if (ml_len > 0) {
-    buf_v = alloc_string(ml_len);
-    ml_buf = String_val(buf_v);
-  }
-
-  /* The user-buffer has already been allocated, no
-   * need to allocate it. 
-   */
-  usr_buf = mm_Cbuf_val(cbuf_v);
-
-  /* Preparing the receiving IO-vector.
-   * PERF: The 0'th buffer could be precomputed. 
-   */
-  Iov_len(recv_iov[0]) = header_peek ;
-  Iov_buf(recv_iov[0]) = peek_buf ;
-  Iov_len(recv_iov[1]) = ml_len ;
-  Iov_buf(recv_iov[1]) = ml_buf ;
-  Iov_len(recv_iov[2]) = usr_len ;
-  Iov_buf(recv_iov[2]) = usr_buf ;
-  
-  SKTTRACE2(("SENDRECV: ml buffer=%d\n", string_length(buf_v)));
-  
-  ret = WSARecvFrom(sock, recv_iov, 3, &len, 0,
-		    NULL,0,  NULL, NULL);
-
-  if (ret != 0
-      || len != header_peek + ml_len + usr_len) {
-    printf("len2=%d, bad packet length, dumping the packet\n", len);
-    goto dump_packet;
-  }
-	 
-  if (usr_len > 0)
-    iov_v =  mm_Raw_of_len_buf(usr_len, usr_buf);
-  else
-    iov_v = mm_empty();
-  
-  ret_v = alloc_small(2, 0);
-  Field(ret_v, 0) = buf_v;
-  Field(ret_v, 1) = iov_v;
-    
- ret:
-  SKTTRACE2((")\n"));
-  CAMLreturn(ret_v);
-
-  /* PREF: Could precompute some of this stuff.
-   */
- dump_packet:
-  ret_v = alloc_small(2, 0);
-  Field(ret_v, 0) = alloc_string(0);
-  Field(ret_v, 1) = mm_empty ();
-  if (len == -1) skt_udp_recv_error () ;
-  // printf("dump_packet)\n"); fflush (stdout);
-  goto ret;
 }
 
 
@@ -1303,9 +1156,6 @@ value skt_sends2v_p_bytecode(value *argv, int argn){
   return skt_sends2v_p_native(argv[0], argv[1], argv[2], argv[3],
 			     argv[4], argv[5]);
 }
-
-/**************************************************************/
-#endif // End of non-FLAT code
 
 #endif
 /**************************************************************/

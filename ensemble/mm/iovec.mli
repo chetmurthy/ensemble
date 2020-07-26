@@ -73,6 +73,14 @@ val num_refs : t -> int
  *)
 val debug : unit -> int * int
 
+(* Marshal directly into an iovec.
+ *
+ * Unmarshal directly from an iovec. Raises an exception if there
+ * is a problem, and checks for out-of-bounds problems. 
+ *)
+val marshal : 'a -> Marshal.extern_flags list -> t
+val unmarshal : t-> 'a
+
 (**************************************************************)
 (* This is a hack to remove the need to copy iovec arrays, for the
  * sole need of changing their type, to Socket.Iovec.t.

@@ -24,14 +24,15 @@ CC	= gcc
 #*************************************************************#
 
 # CFLAGS: used for compilation of C files
-CFLAGS	= -O2 \
-	-Wall \
+CFLAGS	=-Wall 				\
         $(CODEGEN)                      \
 	-I $(OCAML_LIB)			\
 	$(PURIFY_CFLAGS)		\
 	-DOSTYPE=$(ENS_OSTYPE)		\
 	-DMACHTYPE=$(ENS_MACHTYPE)	\
 	$(OPENSSL_INC)
+
+ # -O2 
 
 
 # LIBSYS: used for linking executables
@@ -145,9 +146,8 @@ ENSCONF_skt	= $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS) $(CRYPTO_LI
 ENSCONFDEP_unix	= $(LINKTHR) $(LIBUSOCK) $(ENSLIBS_DEP)
 ENSCONF_unix    = $(CUSTOM) $(LIBUNIX) $(LIBUSOCK) $(LINK_THR) $(ENSLIBS) $(CRYPTO_LINK)
 
-ENSCONF		= $(ENSCONF_$(HSYS_TYPE)) 
 ENSCONFDEP      = $(ENSCONFDEP_$(HSYS_TYPE))
-HSYS_BUILD	= socket
+ENSCONF		= $(ENSCONF_$(HSYS_TYPE)) 
 
 #*************************************************************#
 # OCAML_LIB should point to the library directory.  For
@@ -241,5 +241,7 @@ PURIFY 		= $(PURIFY_$(PLATFORM))
 # Clean this directory
 #
 CLEANDIR = \
-    $(RM) .nfs* *.cm* .err a.out *.o* *.a *.lib *.asm *~ .*~ .\#*  core *.pdb core gmon.out
+    $(RM) .nfs* *.cm* .err a.out *.o* *.a *.lib *.asm *~ .*~ .\#*  core *.pdb core gmon.out camlprim*
+
+VERSION = 1_34
 #*************************************************************#

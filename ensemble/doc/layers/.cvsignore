@@ -1,0 +1,8 @@
+*.aux
+*.toc
+*.dvi
+*.lof
+*.lot
+*.ps
+*.log
+Makefile.nt

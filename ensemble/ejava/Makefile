@@ -23,6 +23,8 @@ all: $(CLASSFILES) EnsDemoOutboard.class
 	cp $(ENSROOT)/demo/outboard .
 
 clean:
-	rm -rf ensemble/hot/*.class *.class
+	rm -rf ensemble/hot/*.class *.class 
 
-
+doc : 
+	mkdir -p docs
+	javadoc ensemble/hot/*.java -d docs

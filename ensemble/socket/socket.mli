@@ -1,8 +1,14 @@
 (**************************************************************)
 (* SOCKET.MLI *)
-(* Authors: Robbert vanRenesse and Mark Hayden, 4/95 *)
-(* Memory mangement support by Ohad Rodeh 9/2001 *)
+(* Authors: Robbert vanRenesse and Mark Hayden, 4/95  *)
+(* Ohad Rodeh :                                       *)
+(*         C-Memory mangement support          9/2001 *)
+(*         Winsock2 support                   11/2001 *)
 (**************************************************************)
+
+(* Set the verbosity level
+*)
+val set_verbose : bool -> unit
 
 module Basic_iov : sig 
   (* The type of a C memory-buffer. It is opaque.
@@ -58,6 +64,16 @@ module Basic_iov : sig
   (* For debugging. The number of references to the iovec.
    *)
   val num_refs : t -> int
+
+  (* Marshal into a preallocated iovec. Raise's exception if
+   * there is not enough space. Returns the marshaled iovec.
+   *)
+  val marshal : 'a -> Marshal.extern_flags list -> t
+
+  (* Unmarshal directly from an iovec. Raises an exception if there
+   * is a problem, and checks for out-of-bounds problems. 
+   *)
+  val unmarshal : t -> 'a
 end
   
 (**************************************************************)
@@ -75,7 +91,6 @@ type timeval = {
 } 
 
 (**************************************************************)
-
 (* Open a file descriptor for reading from stdin.  This is
  * for compatibility with Windows NT.  See
  * ensemble/socket/stdin.c for an explanation.  
@@ -119,6 +134,7 @@ val sendto : sendto_info -> buf -> ofs -> len -> unit
 val sendtov : sendto_info -> Basic_iov.t array -> unit
 val sendtosv : sendto_info -> buf -> ofs -> len -> Basic_iov.t array -> unit
 
+val recvfrom : socket -> buf -> ofs -> len -> len * Unix.sockaddr
 val udp_recv_packet : socket -> string * Basic_iov.t
 
 (* These functions are used in Hsyssupp in receiving 
@@ -179,6 +195,10 @@ val setsockopt_nonblock : socket -> bool -> unit
  *)
 val setsockopt_bsdcompat : socket -> bool -> unit
 
+(* Set the socket to reusable (or not).
+*)
+val setsockopt_reuse : socket -> bool -> unit
+
 (**************************************************************)
 (* MD5 support.
  *)
@@ -203,7 +223,14 @@ val int_of_socket : socket -> int
 val socket : Unix.socket_domain -> Unix.socket_type -> int -> Unix.file_descr
 val socket_mcast : Unix.socket_domain -> Unix.socket_type -> int -> Unix.file_descr
 val connect : Unix.file_descr -> Unix.sockaddr -> unit
+val bind : Unix.file_descr -> Unix.sockaddr -> unit
 
+(* Will work only on sockets on win32.
+*)
+val close : Unix.file_descr -> unit
+
+val listen : Unix.file_descr -> int -> unit
+val accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr
 (**************************************************************)
 
 (* Same as Unix.gettimeofday.  Except that
@@ -234,7 +261,7 @@ type os_t_v =
 (* Return the version of the windows OS.
  *)
 val os_type_and_version : unit -> os_t_v
-
+val is_unix : bool
 (**************************************************************)
 
       

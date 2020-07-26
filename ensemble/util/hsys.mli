@@ -188,6 +188,9 @@ type socket_option =
  *)
 val setsockopt : socket -> socket_option -> unit
 
+(* Is this a class D address ?
+*)
+val in_multicast : Unix.inet_addr -> bool
 (**************************************************************)
 
 (* Create a datagram (UDP) or a stream (TCP) socket.

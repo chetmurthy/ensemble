@@ -2,10 +2,9 @@
 (* SOCKTEST.ML: A test program for the native socket library. *)
 (* Author: Ohad Rodeh 7/2001 *)
 (**************************************************************)
-open Unix
 open Ensemble
-open Socket
 open Printf
+open Buf
 
 let ident x = x
 let string_of_list f c l = "[" ^ String.concat c (List.map f l) ^ "]"
@@ -32,33 +31,34 @@ let split s =
 
 (**************************************************************)
 let setup_xmit_sock xmitport = 
-  let local_addr = ADDR_INET (inet_addr_any, xmitport) in
-  let sock = socket PF_INET SOCK_DGRAM 0 in
-  setsockopt sock SO_REUSEADDR true;
-  bind sock local_addr;
-  setsockopt_nonblock sock true;
-  sock
+  try 
+    let sock = Hsys.socket_mcast () in
+    Hsys.setsockopt sock Hsys.Reuse;
+    Hsys.bind sock Unix.inet_addr_any xmitport;
+    Hsys.setsockopt sock (Hsys.Nonblock true);
+    sock
+  with e -> 
+    printf "%s\n" (Util.error e);
+    raise e
 
 let setup_recv_sock rmtaddr = 
   printf "setup_recv_sock\n"; flush ();
   let port = 
     match rmtaddr with 
-      ADDR_INET (inet,port) -> 
-	if not (in_multicast inet) then (
-	  printf "address = %s is not a D class address\n" 
-	  (string_of_inet_addr inet); 
+	Unix.ADDR_INET (inet,port) -> 
+	  if not (Hsys.in_multicast inet) then (
+	    printf "address = %s is not a D class address\n" 
+	  (Unix.string_of_inet_addr inet); 
 	  flush ();
 	  failwith "Sanity"
 	) else
 	  port
     | _ -> failwith "Sanity"
   in
-  let sock = socket PF_INET SOCK_DGRAM 0 in
-  setsockopt sock SO_REUSEADDR true;
-  printf "Before bind \n"; flush ();
-  (*bind sock ADDR_INET(INADDR_ANTrmtaddr;*)
-  bind sock (ADDR_INET(inet_addr_any,port));
-  setsockopt_nonblock sock true;
+  let sock = Hsys.socket_dgram () in
+  Hsys.setsockopt sock Hsys.Reuse;
+  Hsys.bind sock Unix.inet_addr_any port;
+  Hsys.setsockopt sock (Hsys.Nonblock true);
   sock
 
 
@@ -66,13 +66,13 @@ let setup_recv_sock rmtaddr =
 let xmit_sock = ref None
 
 type ipm_rec = {
-  addr : inet_addr ;
-  recv_sock : file_descr
+  addr : Unix.inet_addr ;
+  recv_sock : Unix.file_descr
 }
 
 type gs = {
   group_arr : ipm_rec option array ;
-  mutable sock_l : file_descr list
+  mutable sock_l : Unix.file_descr list
 }
 
 let gs = {
@@ -86,8 +86,8 @@ let remove_addr addr =
 	None -> () 
       | Some x -> 
 	  if x.addr = addr then (
-	    setsockopt_leave x.recv_sock addr ;
-	    close x.recv_sock;
+	    Hsys.setsockopt x.recv_sock (Hsys.Leave addr);
+	    Hsys.close x.recv_sock;
 	    gs.group_arr.(i) <- None
 	  ) 
   ) gs.group_arr;
@@ -109,8 +109,9 @@ let send_addr addr msg =
 		None -> 
 		  printf "No xmit socket yet\n"
 	      | Some xmit -> 
-		  let rmt_addr = ADDR_INET(addr,2000) in
-		  let _ = Unix.sendto xmit msg 0 (String.length msg) [] rmt_addr in
+		  let info = Hsys.sendto_info xmit [|addr,2000|] in
+		  let msg = Buf.of_string msg in
+		  Hsys.sendto info msg len0 (Buf.length msg);
 		  ()
 	  )
   ) gs.group_arr;
@@ -135,7 +136,7 @@ let add_new_group sock ipm_rec =
 let input_handler xmitsock line = 
   try (
     let words = split line in 
-    (*printf "words=%s\n" (string_of_string_list words); flush ();*)
+    printf "words=%s\n" (string_of_string_list words); flush ();
     match words with 
 	[] ->
 	  raise Exit
@@ -149,14 +150,14 @@ let input_handler xmitsock line =
 			printf "wrong number of arguments\n";
 			raise Exit
 		in
-		let ipm_addr = inet_addr_of_string ipm_addr in
-		let rmt_addr = ADDR_INET(ipm_addr,2000) in
+		let ipm_addr = Unix.inet_addr_of_string ipm_addr in
+		let rmt_addr = Unix.ADDR_INET(ipm_addr,2000) in
 		let recv_sock = setup_recv_sock rmt_addr in
 		let ipm_rec = {
 		  addr = ipm_addr;
 		  recv_sock = recv_sock
 		} in
-		setsockopt_join recv_sock ipm_addr ;
+		Hsys.setsockopt recv_sock (Hsys.Join ipm_addr) ;
 		add_new_group recv_sock ipm_rec ;
 		()
 
@@ -168,7 +169,7 @@ let input_handler xmitsock line =
 			printf "wrong number of arguments";
 			raise Exit
 		in
-		let ipm_addr = inet_addr_of_string ipm_addr in
+		let ipm_addr = Unix.inet_addr_of_string ipm_addr in
 		remove_addr ipm_addr;
 		printf "Leave\n"; flush () ;
 		()
@@ -181,7 +182,7 @@ let input_handler xmitsock line =
 			printf "wrong number of arguments\n";
 			raise Exit
 		in
-		let ipm_addr = inet_addr_of_string ipm_addr in
+		let ipm_addr = Unix.inet_addr_of_string ipm_addr in
 		send_addr ipm_addr msg;
 		()
 	    | "Ttl" -> 
@@ -198,7 +199,7 @@ let input_handler xmitsock line =
 			printf "wrong number of arguments\n";
 			raise Exit
 		in
-		setsockopt_ttl xmitsock ttl;
+		Hsys.setsockopt xmitsock (Hsys.Ttl ttl);
 		printf "Set the xmit TTL to %d\n" ttl;
 		()
 
@@ -216,7 +217,7 @@ let input_handler xmitsock line =
 			printf "wrong number of arguments\n";
 			raise Exit
 		in
-		setsockopt_loop xmitsock onoff;
+		Hsys.setsockopt xmitsock (Hsys.Loopback onoff);
 		printf "Set the loopback on the xmit socket to %b\n" onoff;
 		()
 
@@ -234,7 +235,7 @@ let input_handler xmitsock line =
 			printf "wrong number of arguments\n";
 			raise Exit
 		in
-		setsockopt_sendbuf xmitsock size;
+		Hsys.setsockopt xmitsock (Hsys.Sendbuf size);
 		printf "Set the size of the sendbuf to to %d\n" size;
 		()
 
@@ -252,7 +253,7 @@ let input_handler xmitsock line =
 			printf "wrong number of arguments\n";
 			raise Exit
 		in
-		setsockopt_recvbuf xmitsock size;
+		Hsys.setsockopt xmitsock (Hsys.Recvbuf size);
 		printf "Set the size of the recvbuf to to %d\n" size;
 		()
 
@@ -270,7 +271,7 @@ let input_handler xmitsock line =
 			printf "wrong number of arguments\n";
 			raise Exit
 		in
-		setsockopt_nonblock xmitsock onoff;
+		Hsys.setsockopt xmitsock (Hsys.Nonblock onoff);
 		printf "Set the xmit socket (blocking mode) to %b\n" onoff;
 		()
 
@@ -291,23 +292,23 @@ let input_handler xmitsock line =
 	printf "\t Nonblock [onoff]\n";
 	flush ();
 	()
-    | Unix_error(e,s1,s2) -> 
-	printf "Uncaught Unix error (%s,%s,%s)\n" (error_message e) s1 s2;
+    | e -> 
+	printf "Uncaught error %s\n" (Util.error e);
 	flush ();
 	exit 0    
 
 (**************************************************************)
 
-let _ = 
+let run () = 
   let xmitport = 0 in
   let recvport = 2000 in
 
   let xmitsock = setup_xmit_sock xmitport in
-  printf "setp_xmit_sock Ok.\n"; flush ();
+  printf "setup_xmit_sock Ok.\n"; flush ();
 
   begin try 
-    setsockopt_loop xmitsock true;
-    setsockopt_ttl xmitsock 1;
+    Hsys.setsockopt xmitsock (Hsys.Loopback true);
+    Hsys.setsockopt xmitsock (Hsys.Ttl 1);
   with _ -> 
     let os_t_v = Socket.os_type_and_version () in
     match os_t_v with 
@@ -321,41 +322,49 @@ let _ =
 
   xmit_sock := Some xmitsock ;
 
-  let stdin = Socket.stdin () in
+  let stdin = Hsys.stdin () in
   let buf = String.create 100 in
 
   let input_line () =
-    let len = read stdin buf 0 100 in
+    let len = Hsys.read stdin buf 0 100 in
     String.sub buf 0 len
   in
 
+  printf "before mainloop\n"; flush ();
   try 
     while true do 
-      let l,_,_ = Unix.select (stdin::gs.sock_l) [] [] (-1.0) in
-      List.iter (fun sock -> 
+      let r = Array.of_list (stdin::gs.sock_l) in
+      let b = Array.map (fun _ -> false) r in
+      let info = Hsys.select_info (Some (r,b)) None None in
+      let num = Hsys.select  info {Hsys.sec10=1; Hsys.usec=0} in
+      printf "select done\n"; flush ();
+      (*printf "num>0(\n"; flush ();*)
 
-	(* A windows bug, equality should be supported on
-	 * sockets.
-	 *)
-	if sock==stdin then (
+	(*stdin*)
+	if b.(0) then (
+	  printf "reading from stdin\n"; flush ();
 	  let line = input_line () in
-	  
 	  (* Remove the newline character from the end of the line
 	    *)
 	  if String.length line > 0 then (
 	    let line = String.sub line 0 (String.length line - 1) in
 	    input_handler xmitsock line
 	  )
-	) else (
-	  let len,_ = recvfrom sock buf 0 100 [] in
-	  printf "recv: %s\n" (String.sub buf 0 len);
-	  flush ()
-	)
-      ) l 
-    done
-  with 
-      Unix_error(e,s1,s2) -> 
-	printf "Uncaught Unix error (%s,%s,%s)\n" (error_message e) s1 s2;
-	flush ();
-	exit 0   
+	);
 
+	(* The rest of the sockets.
+	 *)
+	for i=1 to (Array.length b -1) do 
+	  if b.(i) then (
+	    let len,_ = Socket.recvfrom r.(i) buf 0 100 in
+	    printf "recv: %s\n" (String.sub buf 0 len);
+	    flush ()
+	  )
+	done
+    done
+  with e -> 
+    printf "Uncaught Unix error %s\n" (Util.error e);
+    exit 0   
+
+let _ = 
+  Appl.exec ["socktest"] run

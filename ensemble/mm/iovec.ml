@@ -12,6 +12,7 @@ let log = Trace.log name
 (**************************************************************)
 open Trans
 open Buf
+open Printf
 (**************************************************************)
 
 (* optmized version
@@ -74,6 +75,10 @@ module Opt = struct
   let num_refs t = Socket.Basic_iov.num_refs t
 
   let debug () = (-1,-1)
+
+  let marshal a flags = Socket.Basic_iov.marshal a flags
+
+  let unmarshal t = Socket.Basic_iov.unmarshal t
 
   let sendtov = Socket.sendtov
   let sendtosv = Socket.sendtosv 
@@ -202,16 +207,20 @@ module Debug = struct
   let num_refs (key,t) = Socket.Basic_iov.num_refs t
 
   let debug () = 
-    failwith "need to uncomment this function, does not work in 3.01"
-  (*let sum = Hashtbl.fold (fun _ iov (num,sum_len) -> 
+    let sum = Hashtbl.fold (fun _ iov (num,sum_len) -> 
       let len = Socket.Basic_iov.len iov in 
       if len>0 then 
 	(succ num, sum_len+len)
       else
 	(num,sum_len)
     ) h (0,0) in
-    sum*)
+    sum
 
+  let marshal obj flags = 
+    let iov = Socket.Basic_iov.marshal obj flags in
+    log_iov iov
+
+  let unmarshal (key,t) = Socket.Basic_iov.unmarshal t 
 
   let sendtov info iovec_a = 
     let iovec_a = Array.map (fun (_,t) -> t) iovec_a in
@@ -275,6 +284,8 @@ let flatten = M.flatten
 let flatten_w_copy = M.flatten_w_copy
 let num_refs = M.num_refs
 let debug = M.debug
+let marshal = M.marshal
+let unmarshal = M.unmarshal
 
 module Priv = struct
   let md5_update_iov = M.md5_update_iov

@@ -15,7 +15,7 @@ Last updated: 7/29/2001, by Ohad Rodeh
 
 Notes:
 
-  * Please read the file INSTALL.txt or INSTALL.htm (from a Web 
+  * Please read the file INSTALL.htm (from a Web 
     browser) to find out how to build and install the Ensemble 
     distribution.  Also please read RELEASE_NOTES for version
     specific updates.
@@ -36,9 +36,6 @@ DIRECTORIES
 
   mk		Makefile directory
   doc		documentation directory
-  doc/maestro   Maestro C++ docs
-  doc/tut.ps	tutorial (Postscript file)
-  doc/ref.ps	reference manual (Postscript file)
   util		general purpose utility modules
   mm            Memory management.
   type		abstract data types
@@ -60,9 +57,8 @@ DIRECTORIES
   ejava		Java application interface (contributed)
   socket	Ensemble Socket library (with Robbert vanRenesse)
 
-  tools		dependency generation tools, etc...
+  tools		conversion of makefiles between unix and NT
+	        packaging of ML modules.
 
   lib		compiled libraries and interfaces
-  def		default compilation directory (bytecode)
-  opt		native code compilation directory
 

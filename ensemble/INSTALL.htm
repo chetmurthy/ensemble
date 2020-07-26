@@ -6,7 +6,7 @@
 <body text="#000000" bgcolor="#FFFFFF">
 
 <center>
-<h1>Ensemble 1.33</h1></center>
+<h1>Ensemble 1.34</h1></center>
 
 <center><h2>
 Release Notes and Installation Instructions
@@ -43,7 +43,7 @@ only significant when Ensemble is used in high-performance settings.
 <a NAME="software"></a>
 <h2>Required Software</h2>
 <p>
-To compile Ensemble you need <b>Version 3.01</b> of the Objective
+To compile Ensemble you need <b>Version 3.04</b> of the Objective
 Caml (O'Caml) compiler. For unix systems, you also need the make
 version by GNU, also known as GNU-make. For windows, you'll need the
 Visual Studio compiler verion 6 and the nmake tool.
@@ -55,7 +55,7 @@ you have the correct version. See the instructions below on how to
 obtain it. This is a different compiler version than required by
 previous versions of Ensemble! Version 0.40 of Ensemble used
 ocaml-1.05; Version 0.50 of Ensemble used ocaml-1.07; version 0.60
-used ocaml-2.01; and we are now up to ocaml-3.01.
+used ocaml-2.01; and we are now up to ocaml-3.04.
 <p>
 On Unix platforms, to compile the HOT C interface, you need a POSIX
 compliant threads package. (On Solaris, you can use the native
@@ -88,7 +88,7 @@ get the O'Caml compiler, extract the Ensemble software, and then compile
 the portions you wish to use.
 <ul>
   <li>
-      Make sure you have <a href="#ocaml">Objective Caml version 3.01</a>
+      Make sure you have <a href="#ocaml">Objective Caml version 3.04</a>
       installed.
   <li>
       Set the <b>CAMLLIB</b> environment variable, and put the path to the
@@ -106,9 +106,9 @@ the portions you wish to use.
 <hr>
 
 <a NAME="ocaml"></a>
-<h2>How to obtain Objective Caml 3.01</h2>
+<h2>How to obtain Objective Caml 3.04</h2>
 <p>
-To compile Ensemble you need Objective Caml version 3.01. <b>Other
+To compile Ensemble you need Objective Caml version 3.04. <b>Other
 versions of the compiler may NOT work.</b> This is because the O'Caml
 bytecode format and libraries are not guaranteed to be compatible
 across versions.
@@ -120,9 +120,9 @@ If you already have OCaml you can check which version you have by typing:
 This gives you the version of the compiler in your path (if there is
 one).  The first line of the output should be:
 <pre>
-&nbsp;&nbsp;&nbsp; The Objective Caml compiler, version 3.01
+&nbsp;&nbsp;&nbsp; The Objective Caml compiler, version 3.04
 </pre>
-If you have some other version, then obtain version 3.01 and install
+If you have some other version, then obtain version 3.04 and install
 it.  O'Caml is freely available from <a
 href="http://caml.inria.fr/ocaml">http://caml.inria.fr/ocaml</a>
 and is easy to install (precompiled binaries are available for
@@ -175,7 +175,7 @@ If all went smoothly, the initial installation is now complete, and you
 can try out the demo programs following the instructions below.
 Note that currently, the dependencies for windows come with the
 distribution, so you do need to make the dependencies. Due to a bug in
-ocaml-3.01, the dependecies will be <i>erased</i>. This bug will be
+ocaml-3.04, the dependecies will be <i>erased</i>. This bug will be
 fixed in version 3.03, in the mean time, simply refrain from the first
 step. You can also compile for your native instruction set. <a
 href="#native">instruction set</a>. In order to
@@ -254,7 +254,7 @@ installed the O'Caml libraries. O'Caml will give you the correct value
 for this if you type:
 <pre>
 &nbsp;&nbsp;&nbsp; % ocamlc -v
-&nbsp;&nbsp;&nbsp; The Objective Caml compiler, version 3.01
+&nbsp;&nbsp;&nbsp; The Objective Caml compiler, version 3.04
 &nbsp;&nbsp;&nbsp; Standard library directory: /usr/local/lib/ocaml
 </pre>
 The second line printed out by this is the location where O'Caml installed
@@ -717,6 +717,6 @@ setenv ENS_ABSROOT "/home/orodeh/e/1.20a"
 <br>
 </body>
 <!-- hhmts start -->
-Last modified: Thu Dec 06 10:11:53 E. Europe Standard Time 2001
+Last modified: Wed Dec 19 10:26:55 E. Europe Standard Time 2001
 <!-- hhmts end -->
 </html>

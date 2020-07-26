@@ -6,7 +6,6 @@
 # Author: Mark Hayden, 3/96
 #
 #*************************************************************#
-OBJD		= obj/$(PLATFORM)
 ENSLIB		= $(ENSROOT)/lib/$(PLATFORM)
 ENS		= $(ENSLIB)/libens$(CMA)	# main ENS library 
 ENSMINLIB	= $(ENSLIB)/libensmin$(CMA)	# core of Ensemble library 

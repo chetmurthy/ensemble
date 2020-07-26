@@ -6,3 +6,4 @@ ce_mtalk ce_rand ce_fifo ce_perf
 .depend*
 Makefile.nt
 gmon.out
+ce.c

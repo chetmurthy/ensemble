@@ -1,29 +1,20 @@
 
-     RELEASE_NOTES for Ensemble version 1.33
+     RELEASE_NOTES for Ensemble version 1.34
 Author: Ohad Rodeh
-Last updated: 6/12/2001
+Last updated: 19/12/2001
 
 
 CHANGES
 
-Removed proprietery build tools.
-
-1. Rewritten all the makefiles, all proprietery build tools have been removed. 
-   The makefiles have been simplified, and can be easily read. Only standard
-   tools are now used (ocamlc, ocamlopt, ocamldep, GNU-make, gcc, cl, nmake).
-2. A large number of makefile bugs have been removed, makefile code has been
-   considerably reduced.
-2. Cleanup up and updated INSTALL.htm.
-3. Copyright violations have been fixed, the Ensembel code base contains
-   no CAML code, nor any other code that is not BSD.
-4. Work is underway to add IBM to the copyright holders. 
-5. Many small bug fixes. 
-
+1. Added zero-copy to WIN32, and complete scatter-gather support.
+2. Ported CE to WIN32.
+4. Port to ocaml-3.04.
+5. Moveed java documentation to doc/
 
 OCAML COMPILER VERSION
-  We are using version 3.01 for this version. 
+  We are using version 3.04 for this version. 
 
 PORTABILITY
-  This version was tested on Linux, WIN2000, and NT4. Light testing was carried out on Sparc/Solaris. CE still does not run on WIN32 (yet). 
+  This version was tested on Linux, WIN2000, and NT4. Light testing was carried out on Sparc/Solaris. 
 
 

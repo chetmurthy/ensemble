@@ -1,3 +1,19 @@
+Ensemble 1.33
+-------------
+Removed proprietery build tools.
+
+1. Rewritten all the makefiles, all proprietery build tools have been removed. 
+   The makefiles have been simplified, and can be easily read. Only standard
+   tools are now used (ocamlc, ocamlopt, ocamldep, GNU-make, gcc, cl, nmake).
+2. A large number of makefile bugs have been removed, makefile code has been
+   considerably reduced.
+2. Cleanup up and updated INSTALL.htm.
+3. Copyright violations have been fixed, the Ensembel code base contains
+   no CAML code, nor any other code that is not BSD.
+4. Work is underway to add IBM to the copyright holders. 
+5. Many small bug fixes. 
+
+
 Ensemble 1.32
 -------------
 Port to WIN32 and some bug fixes.

@@ -36,17 +36,30 @@ Version 1.33
 6. Work is underway to add IBM to the copyright holders. 
 7. Use iovectors on WIN2000: (Check), does not really work. 
 
+-----------------------------------------------------------
+1.34
+----
+DONE
+1. Added (almost) zero-copy to WIN32, and complete scatter-gather support.
+2. Port CE to WIN32.
+4. Port to ocaml-3.04.
+5. Move java documentation to doc/
 
 1.35
 ----
-6. Port CE to WIN32.
-3. More serious testing.
+0. Re-Added zero-copy marhaling for ML applications. (!)
+1. Check that ocamldep works (win32).
+2. Check that zero-copy marshaling is bug free.
+4. complete porting of socktest to win32. reading from stdin does not
+   work.
 
+--------------------------------------------------------
+TESTING: 
+
+--------------------------------------------------------
 1.36
 ----
-1. Port to ocaml-3.03: 
-   - WINSOCK2 error codes, 
-   - native support for marshaling into C.
+4. More serious testing.
 2. Shared libraries (Unix), Dlls (on windows).
 
 

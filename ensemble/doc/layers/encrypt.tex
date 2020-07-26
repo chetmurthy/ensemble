@@ -1,0 +1,44 @@
+\begin{Layer}{ENCRYPT}
+
+This layer encrypts application data for privacy.  Uses keys in the view state
+record.  Authentication needs to be provided by the lower layers in the system.
+The protocol headers are not encrypted.  This layer must reside above FIFO
+layers for sending and receiving because it uses encryption contexts whereby
+the encryption of a message is dependent on the previous messages from this
+member.  These contexts are dropped at the end of a view.  A smarter protocol
+would try to maintain them, as they improve the quality of the encryption.
+
+\begin{Protocol}
+Does chained encryption on the message payload in the \mlval{iov} field of
+events.  Each member keeps track of the encryption state for all incoming and
+outgoing point-to-point and multicast channels.  Messages marked
+\mlval{Unreliable} are not encrypted (these should not be application
+messages).
+\end{Protocol}
+
+\begin{Parameters}
+\item None
+\end{Parameters}
+
+\begin{Properties}
+\item
+Guarantees (modulo encryption being broken) that only processes that know the
+shared group key can read the contents of the application portion of data
+messages.
+\item
+Requires FIFO ordering on point-to-point and multicast messages.
+\end{Properties}
+
+\begin{Sources}
+\sourcesfile{encrypt.ml}
+\end{Sources}
+
+\begin{GenEvent}
+\genevent{None}
+\end{GenEvent}
+
+\begin{Testing}
+\item
+see the VSYNC stack
+\end{Testing}
+\end{Layer}

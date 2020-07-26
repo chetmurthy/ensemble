@@ -45,11 +45,6 @@ let alarm debug =
   match !alarm_ref with
   | Some a -> a
   | None -> 
-      if Arge.get Arge.refcount then (
-	if not !quiet then 
-      	  eprintf "APPL:warning:using reference counted Iovecs\n" ;
-      ) ;
-
       let handlers = Route.handlers () in
       let sched = Sched.create name in
       let async = Async.create sched in
@@ -163,7 +158,6 @@ let default_info name =
    * Unique generator.
    *)
   let _ = Domain.of_mode alarm Addr.Udp in
-
   let endpt = Endpt.id (Alarm.unique alarm) in
 
   let properties =
@@ -227,7 +221,8 @@ let exec names run =
       let error_msg = Util.error exc in
       eprintf "ENSEMBLE:uncaught exception:%s\n" error_msg ;
       eprintf "  (Ensemble Version.id is %s)\n" (Version.string_of_id Version.id) ;
-      exit 1
+      raise exc
+	(*exit 1*)
   )
 
 (**************************************************************)
@@ -428,7 +423,7 @@ let main_loop () =
   let pollcount = max 0 (Arge.get Arge.pollcount) in
   let count = Arge.get Arge.sched_step in
   if count <= 0 then failwith "non-positive scheduler counter" ;
-
+  
   (* Compact the ML heap if it gets too large. This needs to be
    * further investigated.
    *)

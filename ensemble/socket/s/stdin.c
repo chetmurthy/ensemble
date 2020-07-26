@@ -37,7 +37,7 @@ static DWORD skt_input_thread(LPDWORD p){
     n = sendto(skt_stdin, buf, n, 0, (struct sockaddr *) &skt_addr,
 	       sizeof(skt_addr));
     if (n <= 0) {
-      printf("sendto --> %d %d\n", n, h_errno);
+      printf("sendto --> %d %d\n", n, WSAGetLastError ());
       break;
     }
   }
@@ -49,15 +49,17 @@ static DWORD skt_input_thread(LPDWORD p){
 /* This function returns Socket.stdin.  It creates a socket for this, and a
  * thread that sends messages to this socket.
  */
-value skt_start_input(value unit){
+value skt_start_input(){
+  CAMLparam0();
+  CAMLlocal1(skt_stdin_v);
   int fromlen;
   char buf[SKT_BUFSIZE];
   DWORD tid;
   struct sockaddr_in from;
   struct hostent *h;
   
-  skt_stdin = socket(AF_INET, SOCK_DGRAM, 0);
-  if (skt_stdin < 0)
+  skt_stdin = WSASocket(AF_INET, SOCK_DGRAM, 0, NULL, 0, 0);
+  if (skt_stdin == -1)
     serror("start_input:socket");
   memset(&skt_addr, 0, sizeof(skt_addr));
   skt_addr.sin_family = AF_INET;
@@ -75,7 +77,9 @@ value skt_start_input(value unit){
   skt_addr.sin_port = from.sin_port;
   CreateThread(0, 0, (LPTHREAD_START_ROUTINE) skt_input_thread,
 	       0, 0, &tid);
-  return Val_socket(skt_stdin);
+
+  skt_stdin_v = Val_socket(skt_stdin);
+  CAMLreturn(skt_stdin_v);
 }
 
 #else

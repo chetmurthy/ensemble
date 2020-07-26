@@ -15,11 +15,10 @@ CMAS		= .cma
 CMO		= $(CMOS)
 CMA		= $(CMAS)
 #*************************************************************#
-COMPTYPE	= byte
 MLWARN		=
 MLFAST		=# -unsafe
 PROFILE         =# -profile
-DEBUGGER        =# -g -ccopt -lefence
+DEBUGGER        =#-g -ccopt -lefence
 MLFLAGS		= $(DEBUGGER) $(MLFAST) $(COMP_THR) $(PROFILE)
 MLLINKFLAGS	= $(DEBUGGER) $(MLWARN) $(MLFAST) $(MLTHREAD)
 DEPFLAGS	= -noopt

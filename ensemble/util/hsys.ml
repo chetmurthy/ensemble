@@ -3,6 +3,7 @@
 (* Author: Mark Hayden, 5/95 *)
 (**************************************************************)
 open Buf
+open Printf
 (**************************************************************)
 let name = "HSYS"
 let failwith s = failwith (name^":"^s)
@@ -82,8 +83,8 @@ let rec unix_wrap_again debug f =
 	  
 (**************************************************************)
 
-let bind sock inet port = Unix.bind sock (Unix.ADDR_INET(inet,port))
-let close sock		= Unix.close sock
+let bind sock inet port = Socket.bind sock (Unix.ADDR_INET(inet,port))
+let close sock		= Socket.close sock
 let connect sock inet port = Socket.connect sock (Unix.ADDR_INET(inet,port))
 let getlogin 		= Unix.getlogin
 let getpid              = Unix.getpid
@@ -92,14 +93,18 @@ let has_ip_multicast 	= Socket.has_ip_multicast
 let inet_any () 	= Unix.inet_addr_any
 let int_of_socket 	= Socket.int_of_socket
 (*let int_of_substring	= Socket.int_of_substring*)
-let listen sock i	= Unix.listen sock i
+let listen sock i	= Socket.listen sock i
 let select      	= Socket.select
 let poll        	= Socket.poll
 
 (* Convert errors on stdin into a return value of 0.
 *)
 let read s buf ofs len  = 
-  try Socket.read s buf ofs len with _ -> 0
+  try Socket.read s buf ofs len 
+  with e -> 
+    log (fun () -> sprintf "error in stdin %s\n" (Util.error e));
+    (*printf "error in stdin %s\n" (Util.error e); Pervasives.flush Pervasives.stdout;*)
+    0
 (**************************************************************)
 let sendto_info s a 	= Socket.sendto_info s (Array.map (fun (i,p) -> Unix.ADDR_INET(i,p)) a)
 
@@ -249,7 +254,7 @@ let gettimeofday () =
  *)
 
 let setsockopt sock = function
-  | Reuse       -> Unix.setsockopt sock Unix.SO_REUSEADDR true
+  | Reuse       -> Socket.setsockopt_reuse sock true
   | Nonblock f  -> Socket.setsockopt_nonblock sock f
   | Join inet   -> Socket.setsockopt_join sock inet
   | Leave inet  -> Socket.setsockopt_leave sock inet
@@ -257,12 +262,13 @@ let setsockopt sock = function
   | Loopback onoff -> Socket.setsockopt_loop sock onoff
   | Sendbuf len -> Socket.setsockopt_sendbuf sock len
   | Recvbuf len -> Socket.setsockopt_recvbuf sock len
-  | Bsdcompat b    -> Socket.setsockopt_bsdcompat sock b
+  | Bsdcompat b  -> Socket.setsockopt_bsdcompat sock b
 
+let in_multicast = Socket.in_multicast 
 (**************************************************************)
 
 let recvfrom s b o l = 
-  let l,sa = Unix.recvfrom s b o l [] in
+  let l,sa = Socket.recvfrom s b o l in
   match sa with 
   | Unix.ADDR_INET(i,p) -> (l,i,p)
   | _ -> failwith "recv_from:non-ADDR_INET"
@@ -382,7 +388,7 @@ let getlocalhost () =
 (**************************************************************)
 
 let accept sock =
-  match Unix.accept sock with
+  match Socket.accept sock with
   | (fd,Unix.ADDR_INET(inet,port)) -> (fd,inet,port)
   | _ -> failwith "accept:non-ADDR_INET"
 
@@ -439,35 +445,54 @@ let simple_inet_of_string inet = Unix.inet_addr_of_string inet
 let fork = Unix.fork
 
 (**************************************************************)
-
 (* Bind to any port.  This causes the kernel to select an
  * arbitrary open port to bind to.  We then call getsockname
  * to find out which port it was.  
  *)
+
 let bind_any debug sock host =
-  begin 
-    try bind sock host 0 with _ ->
+  if Socket.is_unix then (
+    begin 
       try bind sock host 0 with _ ->
-      	try bind sock host 0 with e ->
-  	  eprintf "HSYS:error:binding socket to port 0 (tried 3 times):%s\n" (Util.error e) ;
-  	  eprintf "  (Note: this should not fail because binding to port 0 is\n" ;
-  	  eprintf "   a request to bind to any available port.  However, on some\n" ;
-  	  eprintf "   platforms (i.e., Linux) this occasionally fails and trying\n" ;
-  	  eprintf "   again will often work)\n" ;
-  	  exit 1
-  end ;
-
-  let port =
-    try
-      let (_,port) = getsockname sock in
-      port
-    with e ->
-      eprintf "HSYS:error:getsockname:%s\n" (Util.error e) ;
-      exit 1
-  in
-
-  port
-
+	try bind sock host 0 with _ ->
+      	  try bind sock host 0 with e -> (
+  	    eprintf "HSYS:error:binding socket to port 0 (tried 3 times):%s\n" (Util.error e) ;
+  	    eprintf "  (Note: this should not fail because binding to port 0 is\n" ;
+  	    eprintf "   a request to bind to any available port.  However, on some\n" ;
+  	    eprintf "   platforms (i.e., Linux) this occasionally fails and trying\n" ;
+  	    eprintf "   again will often work)\n" ;
+	    exit 1
+	  )
+    end ;
+    
+    let port =
+      try
+	let (_,port) = getsockname sock in
+	port
+      with e ->
+	eprintf "HSYS:error:getsockname:%s\n" (Util.error e) ;
+	exit 1
+    in
+    
+    port
+  ) else (
+    (* On win32, getsockname does not work properly. 
+     *)
+    let rec loop i = 
+      if i=0 then (
+  	eprintf "HSYS:error:binding socket to random port (tried 10 times)\n";
+	exit 1
+      ) else (
+	let port = 1024 + Random.int 10000 in
+	try 
+	  bind sock host port; 
+	  port 
+	with Unix.Unix_error _ -> loop (pred i)
+      )
+    in
+    loop 10 
+  )
+    
 (**************************************************************)
 
 let heap = Socket.heap

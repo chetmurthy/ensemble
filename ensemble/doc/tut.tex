@@ -1,0 +1,54 @@
+\documentclass[11pt]{article}
+\usepackage{fullpage}
+\usepackage{alltt}
+\usepackage[dvips]{graphics}
+
+\include{def}
+
+\title{\ensemble\ Tutorial}
+\author{Mark Hayden, Ohad Rodeh \\
+\small{Copyright \copyright\ 1997 Cornell University,
+                             2000 Hebrew  University}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\ensemble\ is a reimplementation of the \horus\ reliable group communication
+system in the \caml\ programming language.  This document describes:
+\begin{itemize}
+\item
+How to configure and execute the applications included with \ensemble.
+\item
+The text-based \ensemble\ application interface.
+\item
+The ML \ensemble\ application interface.
+\item
+The native C \ensemble\ application interface ({\it CE}).
+\item 
+The HOT C interface, a legacy from Horus.
+\end{itemize}
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+
+%\section{Introduction}
+%This documentation assumes that the reader has some familiarity with group
+%communication.
+
+\include{install}
+\include{demo}
+%\include{exec_tut}
+\include{config}
+\include{appl_text}
+\include{appl_ml}
+\include{pgp}
+\include{appl_c}
+\include{hot}
+
+\section*{Acknowledgements}
+Thanks to Greg Sharp for comments on previous versions of this document.
+\end{document}

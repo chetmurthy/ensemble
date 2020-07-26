@@ -1,0 +1,185 @@
+<!-- File: sync-xfer-example.htm -->
+<!-- Author: Alexey Vaysburd -->
+<!-- Contents:  Code sample for asynchronous (non-blocking) state transfer in Maestro. -->
+<!-- Created: Feb 1997 -->
+
+<html>
+
+<head>
+<title>Maestro Open Toolkit:  An example of asynchronous (non-blocking) state transfer.
+</title>
+<link rev="made" href="mailto:alexey@cs.cornell.edu (Alexey Vaysburd)">
+</head>
+
+<BODY TEXT="#000000" BGCOLOR="#FCD5AD" LINK="#0000FF" VLINK="#551A8B" ALINK="#FF0000">
+<TABLE WIDTH="800" >
+<TR>
+<TD ALIGN=LEFT VALIGN=TOP WIDTH="100"><IMG SRC="maestro-logo.jpg" VSPACE=20 HSPACE=20 HEIGHT=105 WIDTH=70 ALIGN=LEFT></TD>
+
+<TD WIDTH="500" BORDER="0">
+<h1>Maestro Open Toolkit:  An example of asynchronous (non-blocking) state transfer.</h1>
+</TD>
+</TR>
+</TABLE>
+
+This document is a part of online 
+<a href="http://www.cs.cornell.edu/Info/Projects/Ensemble/index.htm">
+Ensemble</a> documentation, under 
+<a href="Maestro.htm">Maestro Open Toolkit</a>.
+<hr>
+<p>
+
+
+State transfer can be done asynchronously (using the 
+<a href="Maestro_CSX.htm#getState_nonblocking">non-blocking version of <tt>getState</tt></a>
+) when Maestro is running in either
+
+<a href="Maestro_Overview.htm#Threading_issues">multi-threaded</a> or
+<a href="Maestro_Overview.htm#Threading_issues">single-threaded</a> mode.
+
+In the single-threaded mode, asynchronous state transfer is the only option.
+In the multi-threaded mode, state transfer can also be done 
+<a href="sync-xfer-example.htm">synchronously</a>.
+
+<p>
+
+The program below defines a subclass (called <tt>MyServer</tt>) of the 
+
+<a href="Maestro_CSX.htm#Maestro_CSX"><tt>Maestro_CSX</tt></a>
+
+class.  State transfer methods 
+
+<a href="Maestro_CSX.htm#resetState"><tt>resetState</tt></a>,
+<a href="Maestro_CSX.htm#stateTransfer_Callback"><tt>stateTransfer_Callback</tt></a>, 
+<a href="Maestro_CSX.htm#askState_Callback"><tt>askState_Callback</tt></a>,
+<a href="Maestro_CSX.htm#xferCanceled_Callback"><tt>xferCanceled_Callback</tt></a>, and
+<a href="Maestro_CSX.htm#gotState_Callback"><tt>gotState_Callback</tt></a>
+
+are overloaded in <tt>MyServer</tt> to implement application-specific state-transfer 
+functionality.
+
+<p>
+
+The local state of a server replica is represented by an integer <tt>state</tt>.
+The value of <tt>state</tt> is sent to a joining server during state 
+transfer.
+
+<p>
+<hr>
+<pre>
+#include "Maestro.h"
+#define NMEMBERS 10
+
+class  MyServer: public Maestro_CSX {
+public:
+	
+  // Initialize the state of the server replica and join the group.
+  MyServer(Maestro_CSX_Options &ops) : Maestro_CSX(ops) {
+    resetState();
+    join();
+  }
+  
+protected:
+
+  void resetState() { state = 0; }
+
+  // State transfer is being (re)started.
+  void stateTransfer_Callback(Maestro_XferID &xferID) { 
+    Maestro_Message requestMsg, stateMsg;
+    Maestro_XferStatus xferStatus;
+
+    resetState();
+
+    // Invoke the non-blocking version of getState.
+    getState(xferID, requestMsg, xferStatus);
+    if (xferStatus == MAESTRO_XFER_TERMINATED) {
+      cout << "(Asynchronous) Xfer Terminated" << endl;
+    }	
+  }
+ 
+  // (Asynchronous) state transfer has been canceled.
+  void xferCanceled_Callback(Maestro_XferID &xferID) {
+    cout << "(Asynchronous) Xfer Canceled" << endl;
+  }
+
+  // Got a reply to an asynchronous call to getState.
+  void gotState_Callback(Maestro_XferID &xferID,
+			 Maestro_Message &stateMsg) {
+    stateMsg >> state;
+    cout << "(Asynchronous) Xfer Successful, got state: " << state << endl;
+    xferDone(xferID); 
+  }
+
+  // Got a state request from a joining server.  
+  // Reply with (a portion of) the state.
+  void askState_Callback(Maestro_EndpID &origin, 
+			 Maestro_XferID &xferID,
+			 Maestro_Message &requestMsg) {
+    Maestro_Message stateMsg;
+    stateMsg << state;
+    sendState(origin, xferID, stateMsg);
+  }
+
+  // Got a multicast message.
+  void csx_ReceiveCast_Callback(Maestro_EndpID &origin,
+				Maestro_Message &msg) {
+    // .....
+  }
+
+  // Got a point-to-point message.
+  void csx_ReceiveSend_Callback(Maestro_EndpID &origin,
+				Maestro_Message &msg) {
+    // .....
+  }
+
+  // Got a new view.
+  void csx_AcceptedView_Callback(Maestro_CSX_ViewData &viewData,
+				 Maestro_Message &msg) {
+    // .....
+  }
+
+private:
+
+  int state;
+};
+
+main(int argc, char *argv[]) {
+  MyServer *svr[NMEMBERS];
+  int i;
+
+  Maestro_CSX_Options ops;
+  ops.heartbeatRate = 1000;
+
+  ops.groupName = "lapa";
+  ops.protocol = "Top:Heal:Switch:Leave:Inter:Intra:Elect:Merge:Sync:Suspect:Top_appl:Pt2pt:Frag:Stable:Mnak:Bottom";
+  ops.transports = "UDP";
+  ops.programName = argv[0];
+
+  // Asynchronous state transfer can be done in both modes
+  // (single-threaded and multi-threaded).
+  ops.threadMode = MAESTRO_MODE_SINGLE_THREADED;
+
+  // Join the group as a server;  request state transfer.
+  ops.mbrshipType = MAESTRO_SERVER;
+  ops.xferType = MAESTRO_ATOMIC_XFER;
+
+  for (i = 0; i < NMEMBERS; i++)
+    svr[i] = new MyServer(i, ops);
+
+  // Start Ensemble in the current thread.
+  // The call to Maestro_CSX::start() does not return.
+  Maestro_String progName(argv[0]);
+  Maestro_CSX::start(progName);
+  assert(0);
+
+}
+</pre>
+
+<hr>
+<address>
+send mail to
+<a href="mailto:alexey@cs.cornell.edu">alexey@cs.cornell.edu</a>
+</address>
+
+</body>
+</html>

@@ -9,7 +9,7 @@ Last updated: Ohad Rodeh  12/2001
 * the groupd application is still not very stable
   - It does not support SVS
 
-* CE has not been fully ported to WIN32
-
 * TCP mode on large messages does not work very well.
 
+* socktest does work on WIN32. This is due to a problem with
+  reading input from stdin. 

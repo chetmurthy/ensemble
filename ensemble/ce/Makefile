@@ -31,7 +31,7 @@ else
 ifeq ("$(PLATFORM)" , "i386-linux")
 MLFLAGS = #-p
 CFLAGS =  -O2 #-g -p
-CE_LINK_FLAGS = -ltermcap -lm #-lefence
+CE_LINK_FLAGS = -ltermcap -lm -ldl #-lefence
 else
 
 # SPARC-SOLARIS
@@ -77,7 +77,7 @@ MLIOBJ =\
 	ce_util.cmi
 
 DEMOS_CLEAN = ce_perf ce_rand ce_fifo ce_mtalk *.exe
-DEMOS = ce_perf$(EXE) ce_rand$(EXE) ce_fifo$(EXE) ce_mtalk$(EXE) 
+DEMOS = ce_rand$(EXE) ce_perf$(EXE) ce_fifo$(EXE) ce_mtalk$(EXE) 
 
 all: $(DEMOS) 
 
@@ -85,7 +85,7 @@ opt :
 	$(MAKE) OPT=yes all
 
 #BASIC_ENSCONF_skt = $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS) 
-BASIC_ENSCONF_skt = $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS) 
+BASIC_ENSCONF_skt = $(LIBUNIX) $(LIBMLSOCK) $(LINK_THR) $(ENSLIBS) 
 
 
 
