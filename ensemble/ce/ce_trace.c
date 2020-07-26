@@ -14,10 +14,10 @@
 static char* logs[MAX_LOGS] ;
 static int nlogs = 0 ;
 
-void trace_add(char* s) {
+LINKDLL void trace_add(char* s) {
     int i ;
 
-    //    printf("trace_add\n"); fflush(stdout);
+    printf("trace_add\n"); fflush(stdout);
     for (i=0;i<nlogs;i++) {
 	if (!logs[i]) continue ;
 	if (strcmp(logs[i], s) ==0) break ;
@@ -35,7 +35,7 @@ void trace_add(char* s) {
     nlogs ++ ;
 }
 
-int am_traced(char* s0) {
+LINKDLL int am_traced(char* s0) {
     int i ;
 
     for (i=0;i<nlogs;i++) {

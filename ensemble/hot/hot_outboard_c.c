@@ -274,7 +274,6 @@ struct hot_gctx {
   int blocked;			/* is group blocked? */
   int joining ;			/* are we joining? */
   int leaving ;			/* are we leaving? */
-  int ltime ;			/* logical time */
 } ;
 
  /****************************************************************************/
@@ -678,7 +677,6 @@ static void write_endpID(
 
 struct header {
   hot_uint32 id ;
-  hot_uint32 ltime ;
   hot_uint32 type ;
 } ;
 
@@ -692,9 +690,8 @@ static void write_hdr(
 ) {
     struct header h ;
     assert(s) ;
-    trace("write_hdr:id=%d, ltime=%d, type=%d(%s)",s->id, s->ltime, type, string_of_dntype(type)) ;
+    trace("write_hdr:id=%d, type=%d(%s)",s->id, type, string_of_dntype(type)) ;
     h.id = htonl(s->id) ;
-    h.ltime = htonl(s->ltime) ;
     h.type = htonl(type) ;
     do_write(&h,sizeof(h)) ;
 }
@@ -993,7 +990,6 @@ static void cb_View(
 	/* The group is unblocked now.
 	 */
 	s->blocked = 0;
-	s->ltime = vs.view_id.ltime ;
     } end_critical();
 
     if (s->view) {
@@ -1225,7 +1221,7 @@ int sock[2];
 
 static pid_t cid;
 
-static void ens_died() {
+static void ens_died(int signum) {
   int status;
   pid_t pid = wait(&status);
   if (pid == cid)

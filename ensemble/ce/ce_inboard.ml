@@ -79,7 +79,6 @@ let c_interface c_appl heartbeat_rate =
   (* When is the next heartbeat due 
    *)
   let alarm = Appl.alarm name in
-  let now = Time.to_float (Alarm.gettime alarm) in
   let hb_requested = ref false in
   let in_handler = ref false in
 

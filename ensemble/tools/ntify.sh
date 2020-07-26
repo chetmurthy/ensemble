@@ -33,5 +33,5 @@ done
 
 #
 # take care of the dependencies
-echo "   .depend" 
-sed -f tools/ntify.sed .depend > .depend.nt
+#echo "   .depend" 
+#sed -f tools/ntify.sed .depend > .depend.nt

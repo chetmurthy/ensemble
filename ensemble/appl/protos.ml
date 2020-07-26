@@ -35,9 +35,9 @@ type endpt = string
 type 'a message_gen =
   | Create of id * View.state * Time.t * (Addr.id list)
   | Upcall of id * 'a upcall_gen
-  | Dncall of id * ltime * 'a dncall_gen
-  | SendEndpt of id * ltime * endpt * 'a
-  | SuspectEndpts of id * ltime * endpt list
+  | Dncall of id * 'a dncall_gen
+  | SendEndpt of id * endpt * 'a
+  | SuspectEndpts of id * endpt list
       
 type message = Iovecl.t message_gen
 type dncall = Iovecl.t dncall_gen
@@ -63,16 +63,17 @@ let string_of_message = function
  	(string_of_list Addr.string_of_id modes)
   | Upcall(id,upcall) ->
       sprintf "Upcall(%d,%s)" id (string_of_upcall upcall)
-  | Dncall(id,ltime,dncall) ->
-      sprintf "Dncall(%d,%d,%s)" id ltime (string_of_dncall dncall)
-  | SendEndpt(id,ltime,endpt,iov) -> "SendEndpt(_)"
-  | SuspectEndpts(id,ltime,endpts) -> "SuspectEndpts(_)"
+  | Dncall(id,dncall) ->
+      sprintf "Dncall(%d,%s)" id (string_of_dncall dncall)
+  | SendEndpt(id,endpt,iov) -> "SendEndpt(_)"
+  | SuspectEndpts(id,endpts) -> "SuspectEndpts(_)"
 
 (**************************************************************)
 
 (* Create an interface for a new member.
  *)
 let interface dncalls deliver_upcall exited id heartbeat_rate disabled =
+  log (fun () -> sprintf "heartbeat_rate=%f\n" (Time.to_float heartbeat_rate));
   let write_upcall msg = 
     let msg = Upcall(id,msg) in
     log (fun () -> string_of_message msg) ;
@@ -96,7 +97,7 @@ let interface dncalls deliver_upcall exited id heartbeat_rate disabled =
     ) vs.view ;
 
     let transl_dncall = function
-      | Dncall(_,_,d) ->
+      | Dncall(_,d) ->
 	  begin
 	    match d with
 	    | Control Leave ->
@@ -106,13 +107,13 @@ let interface dncalls deliver_upcall exited id heartbeat_rate disabled =
 	    | _ -> ()
 	  end ;
 	  d
-      | SendEndpt(_,_,e,m) ->
+      | SendEndpt(_,e,m) ->
 	  let rank = 
 	    try Hashtbl.find viewh e
 	    with Not_found -> failwith (sanityn 1)
 	  in
 	  Send1(rank,m)
-      | SuspectEndpts(_,_,s) ->
+      | SuspectEndpts(_,s) ->
 	  failwith "unimplemented"
       | _ -> failwith (sanityn 2)
     in
@@ -237,7 +238,7 @@ let server alarm addr config debug_ignored deliver_upcall =
     with Not_found -> 
       fun msg ->
 	match msg with
-	| Dncall(_,_,Control(Block _)) ->
+	| Dncall(_,Control(Block _)) ->
 	    eprintf "PROTOS:ignoring BlockOk for id not found in table (should not be a problem)\n"
 	|  _ ->
 	    eprintf "PROTOS:id=%d ids=%s msg=%s\n"
@@ -251,7 +252,7 @@ let server alarm addr config debug_ignored deliver_upcall =
   let disable () = 
     disabled := true ;
     Hashtbl.iter (fun id handler ->
-      handler (Dncall(id,0,Control(Leave)))
+      handler (Dncall(id,Control(Leave)))
     ) table
   and recv msg =
     log (fun () -> string_of_message msg) ;
@@ -312,11 +313,11 @@ let server alarm addr config debug_ignored deliver_upcall =
       (* Dispatch the message to the handler corresponding
        * to the group context.  
        *)
-    | Dncall(id,_,_) as msg -> 
+    | Dncall(id,_) as msg -> 
 	get_handler id msg
-    | SendEndpt(id,_,_,_) as msg ->
+    | SendEndpt(id,_,_) as msg ->
 	get_handler id msg
-    | SuspectEndpts(id,_,_) as msg ->
+    | SuspectEndpts(id,_) as msg ->
 	get_handler id msg
     | _ -> failwith (sanityn 3)
   in (recv,disable,())
@@ -345,7 +346,7 @@ let make_marsh () =
 	    | UExit -> UExit, Iovecl.empty
 	  in
 	  Upcall(id,msg),iovl
-      |	Dncall(id,ltime,msg) ->
+      |	Dncall(id,msg) ->
 	  let msg,iovl = 
 	    match msg with
 	    | Cast(i) -> Cast(),i
@@ -353,11 +354,11 @@ let make_marsh () =
 	    | Send1(d,i) -> Send1(d,()),i
 	    | Control c -> Control c, Iovecl.empty
 	  in
-	  Dncall(id,ltime,msg),iovl
-      | SendEndpt(id,ltime,endpt,i) ->
-	  SendEndpt(id,ltime,endpt,()),i
-      | SuspectEndpts(id,ltime,endpts) ->
-	  SuspectEndpts(id,ltime,endpts), Iovecl.empty
+	  Dncall(id,msg),iovl
+      | SendEndpt(id,endpt,i) ->
+	  SendEndpt(id,endpt,()),i
+      | SuspectEndpts(id,endpts) ->
+	  SuspectEndpts(id,endpts), Iovecl.empty
       | Create(id,vs,hbr,modes) ->
 	  Create(id,vs,hbr,modes), Iovecl.empty
     in
@@ -389,7 +390,7 @@ let make_marsh () =
 	      UExit
 	in
 	Upcall(id,msg)
-    | Dncall(id,ltime,msg) ->
+    | Dncall(id,msg) ->
 	let msg = 
 	  match msg with
 	  | Cast () ->
@@ -402,12 +403,12 @@ let make_marsh () =
 	      assert (Iovecl.is_empty iovl) ;
 	      Control c
 	in
-	Dncall(id,ltime,msg)
-    | SendEndpt(id,ltime,endpt,()) ->
-	SendEndpt(id,ltime,endpt,iovl)
-    | SuspectEndpts(id,ltime,endpts) ->
+	Dncall(id,msg)
+    | SendEndpt(id,endpt,()) ->
+	SendEndpt(id,endpt,iovl)
+    | SuspectEndpts(id,endpts) ->
 	assert (Iovecl.is_empty iovl) ;
-	SuspectEndpts(id,ltime,endpts)
+	SuspectEndpts(id,endpts)
     | Create(id,vs,hbr,modes) ->
 	assert (Iovecl.is_empty iovl) ;
 	Create(id,vs,hbr,modes)
@@ -423,7 +424,6 @@ type state = {
   interface : Appl_intf.New.t ;
   mutable vs : View.state ;
   mutable handlers : Iovecl.t handlers ;
-  mutable cltime : ltime ;
   mutable blocked : blocked ;
   mutable recv_cast : (Iovecl.t -> Iovecl.t naction array) Arrayf.t ;
   mutable recv_send : (Iovecl.t -> Iovecl.t naction array) Arrayf.t
@@ -448,7 +448,7 @@ type config = View.full -> Layer.state -> unit
 let handle_actions c actions =
   Array.iter (fun dncall ->
     assert (c.blocked = U) ;
-    c.c_send (Dncall(c.id,c.cltime,dncall))
+    c.c_send (Dncall(c.id,dncall))
   ) actions
 
 let config s (_,vs) state =
@@ -462,7 +462,6 @@ let config s (_,vs) state =
     c_send = s.send ;
     handlers = failed_handlers ;
     interface = interface ;
-    cltime = vs.ltime ;
     blocked = B ;
     recv_cast = Arrayf.empty ;
     recv_send = Arrayf.empty
@@ -535,7 +534,6 @@ let client alarm info send =
     match upcall with
     | UInstall((ls,vs) as vf) ->
 	c.blocked <- U ;
-	c.cltime <- vs.ltime ;
 	let actions,handlers' = c.interface.install vf in
 	c.handlers <- handlers' ;
 	c.vs <- vs ;

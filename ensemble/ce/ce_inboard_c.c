@@ -182,7 +182,7 @@ ce_ReceiveSend_cbd(value c_appl_v, value origin_v, value iovl_v){
 static void (*MLPrinter)(char *) = NULL ;
 
 void
-ce_MLPrintOverride(
+ce_intrn_MLPrintOverride(
 	void (*handler)(char *msg)
 ) {
     MLPrinter = handler ;
@@ -200,7 +200,7 @@ ce_MLDoPrint(value msg_v) {
 static void (*MLHandler)(char *) = NULL ;
 
 void
-ce_MLUncaughtException(
+ce_intrn_MLUncaughtException(
 	void (*handler)(char *info)
 ) {
     MLHandler = handler ;
@@ -229,7 +229,7 @@ ce_MLHandleException(value msg_v) {
 }
 
 void
-ce_Cast(
+ce_intrn_Cast(
 	ce_appl_intf_t *c_appl,
 	ce_len_t num,
 	ce_iovec_array_t iovl
@@ -239,7 +239,7 @@ ce_Cast(
 }
 
 void
-ce_Send(
+ce_intrn_Send(
 	ce_appl_intf_t *c_appl,
 	int num_dests,
 	ce_rank_array_t dests,
@@ -251,7 +251,7 @@ ce_Send(
 }
 
 void
-ce_Send1(
+ce_intrn_Send1(
 	 ce_appl_intf_t *c_appl,
 	 ce_rank_t dest,
 	 int num,
@@ -263,7 +263,7 @@ ce_Send1(
 
 
 void
-ce_Leave(
+ce_intrn_Leave(
 	 ce_appl_intf_t *c_appl
 	 ) {
   check_heartbeat(c_appl);
@@ -271,7 +271,7 @@ ce_Leave(
 }
 
 void
-ce_Prompt(
+ce_intrn_Prompt(
 	  ce_appl_intf_t *c_appl
 	  ) {
   check_heartbeat(c_appl);
@@ -279,7 +279,7 @@ ce_Prompt(
 }
 
 void
-ce_Suspect(
+ce_intrn_Suspect(
 	   ce_appl_intf_t *c_appl,
 	   int num,
 	   ce_rank_array_t suspects
@@ -289,7 +289,7 @@ ce_Suspect(
 }
 
 void
-ce_XferDone(
+ce_intrn_XferDone(
 	    ce_appl_intf_t *c_appl
 	    ) {
   check_heartbeat(c_appl);
@@ -297,7 +297,7 @@ ce_XferDone(
 }
 
 void
-ce_ChangeProtocol(
+ce_intrn_ChangeProtocol(
 		  ce_appl_intf_t *c_appl,
 		  char *proto
 		  ) {
@@ -306,7 +306,7 @@ ce_ChangeProtocol(
 }
 
 void
-ce_ChangeProperties(
+ce_intrn_ChangeProperties(
 		    ce_appl_intf_t *c_appl,
 		    char *properties
 		    ) {
@@ -322,35 +322,41 @@ ce_ChangeProperties(
  * on the specified socket. The registered C-upcall is then called
  * with its environment variable. 
  */
-void ce_PassSock(value handler_v, value env_v){
-  ce_handler_t handler;
-  ce_env_t env;
-
-  handler = Handler_val(handler_v);
-  env = Env_val(env_v);
-  (*handler)(env);
+void
+ce_PassSock(value handler_v, value env_v)
+{
+    ce_handler_t handler;
+    ce_env_t env;
+    
+    handler = Handler_val(handler_v);
+    env = Env_val(env_v);
+    (*handler)(env);
 }
 
-void ce_AddSockRecv(ocaml_skt_t socket, ce_handler_t handler, ce_env_t env){
-  CAMLparam0();
-  CAMLlocal3(socket_v,env_v, handler_v);
-
-  socket_v = Val_socket(socket);
-  env_v = Val_env(env);
-  handler_v = Val_handler(handler);
-  callback3(*ce_add_sock_recv_v, socket_v, handler_v, env_v);
-
-  CAMLreturn0;
+void
+ce_intrn_AddSockRecv(ocaml_skt_t socket, ce_handler_t handler, ce_env_t env)
+{
+    CAMLparam0();
+    CAMLlocal3(socket_v,env_v, handler_v);
+    
+    socket_v = Val_socket(socket);
+    env_v = Val_env(env);
+    handler_v = Val_handler(handler);
+    callback3(*ce_add_sock_recv_v, socket_v, handler_v, env_v);
+    
+    CAMLreturn0;
 }
 
-void ce_RmvSockRecv(ocaml_skt_t socket){
-  CAMLparam0();
-  CAMLlocal1(socket_v);
-
-  socket_v = Val_socket(socket);
-  callback(*ce_rmv_sock_recv_v, socket_v);
-
-  CAMLreturn0;
+void
+ce_intrn_RmvSockRecv(ocaml_skt_t socket)
+{
+    CAMLparam0();
+    CAMLlocal1(socket_v);
+    
+    socket_v = Val_socket(socket);
+    callback(*ce_rmv_sock_recv_v, socket_v);
+    
+    CAMLreturn0;
 }
 /*****************************************************************************/
 
@@ -358,54 +364,55 @@ void ce_RmvSockRecv(ocaml_skt_t socket){
  * Pass the command line arguements to Ensemble. 
  */ 
 void
-ce_Init(int argc, char **argv){
-  char **ml_args;
-  
-  ml_args = ce_process_args(argc, argv);
-  caml_startup(ml_args) ;
-
-  /* Read the set of exported CAML callbacks.
-   */
-  ce_add_sock_recv_v = caml_named_value((char*) "ce_add_sock_recv_v");
-  ce_rmv_sock_recv_v = caml_named_value((char*) "ce_rmv_sock_recv_v");
-  ce_async_v = caml_named_value((char*)"ce_async_v") ;
-  ce_join_v = caml_named_value((char*)"ce_join_v") ;
-  ce_main_loop_v = caml_named_value((char*)"ce_main_loop_v") ;
+ce_intrn_Init(int argc, char **argv)
+{
+    char **ml_args;
+    
+    ml_args = ce_process_args(argc, argv);
+    caml_startup(ml_args) ;
+    
+    /* Read the set of exported CAML callbacks.
+     */
+    ce_add_sock_recv_v = caml_named_value((char*) "ce_add_sock_recv_v");
+    ce_rmv_sock_recv_v = caml_named_value((char*) "ce_rmv_sock_recv_v");
+    ce_async_v = caml_named_value((char*)"ce_async_v") ;
+    ce_join_v = caml_named_value((char*)"ce_join_v") ;
+    ce_main_loop_v = caml_named_value((char*)"ce_main_loop_v") ;
 }
 
 /* Join a group
  */
 void
-ce_Join(
-        ce_jops_t *jops,
-	ce_appl_intf_t *c_appl
-) {
-  CAMLparam0();
-  CAMLlocal2(jops_v, c_appl_v);
-
-  if (ce_join_v == NULL){
-    printf("Main loop callback not initialized yet. You need to do"
-	   "ce_process_args first.\n");
-    exit(1);
-  }
-
-  jops_v = Val_jops(jops);
-  c_appl_v = Val_c_appl(c_appl);
-  TRACE("before the callback"); 
-  callback2(*ce_join_v, c_appl_v, jops_v);
-  CAMLreturn0;
+ce_intrn_Join(ce_jops_t *jops, ce_appl_intf_t *c_appl)
+{
+    CAMLparam0();
+    CAMLlocal2(jops_v, c_appl_v);
+    
+    if (ce_join_v == NULL){
+	printf("Main loop callback not initialized yet. You need to do"
+	       "ce_process_args first.\n");
+	exit(1);
+    }
+    
+    jops_v = Val_jops(jops);
+    c_appl_v = Val_c_appl(c_appl);
+    TRACE("before the callback"); 
+    callback2(*ce_join_v, c_appl_v, jops_v);
+    CAMLreturn0;
 }
 
 
 /* Start the Ensemble main_loop
  */
-void ce_Main_loop () {
-  if (ce_main_loop_v == NULL){
-    printf("Main loop callback not initialized yet. You need to do"
-	   "ce_process_args first.\n");
-    exit(1);
-  }
-  callback(*ce_main_loop_v, Val_unit);
+void
+ce_intrn_Main_loop ()
+{
+    if (ce_main_loop_v == NULL){
+	printf("Main loop callback not initialized yet. You need to do"
+	       "ce_process_args first.\n");
+	exit(1);
+    }
+    callback(*ce_main_loop_v, Val_unit);
 }
 
 /****************************************************************************/

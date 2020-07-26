@@ -1,14 +1,4 @@
-D/bypass////
-D/debug////
-D/flow////
-D/gossip////
-D/other////
-D/scale////
-D/security////
-D/total////
-D/trans////
-D/transis////
-D/vsync////
-/.cvsignore/1.1/Wed Dec  5 14:00:46 2001//
-/Makefile/1.2/Mon Dec 17 09:54:10 2001//
-/README/1.8/Mon Dec 17 09:54:10 2001//
+/.cvsignore/1.1/Mon Dec  3 16:36:46 2001//
+/Makefile/1.2/Sun Jul 29 09:50:59 2001//
+/README/1.8/Sun Oct 24 05:40:55 1999//
+D

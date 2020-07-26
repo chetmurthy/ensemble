@@ -88,7 +88,7 @@ policy (int rank, int nmembers, double *next /* OUT */, action_t *a /* OUT */) {
     else if (p < 20)
       *a= AProtocol;
     else if (p < 25)
-      *a= AProperties;
+    *a= AProperties;
     else if (p < 40)
       *a = ACast;
     else if (p < 70)
@@ -98,7 +98,7 @@ policy (int rank, int nmembers, double *next /* OUT */, action_t *a /* OUT */) {
   } else
     *a = ANone;
 
-  *next = (rand () % 100) * nmembers;
+  *next = (rand () % 100) * nmembers + *next;
 }
 
 /**************************************************************/
@@ -114,7 +114,9 @@ void msg_free(msg_t *msg){
   free(msg);
 }
 
-msg_t *gen_msg(){
+msg_t *
+gen_msg(void)
+{
   msg_t *msg;
   int i, x;
   char z[10];
@@ -273,7 +275,7 @@ void main_heartbeat(void *env, double time){
 	break;
 	
       case ASend:
-	//	TRACE("ASend");
+	TRACE("ASend");
 	dests = (int*) malloc(2 * sizeof(int));
 	dests[0] = random_member(s);
 	dests[1] = random_member(s);
@@ -382,7 +384,7 @@ void main_install(void *env, ce_local_state_t *ls, ce_view_state_t *vs){
 
 
 void main_flow_block(void *env, ce_rank_t rank, ce_bool_t onoff){
-  state_t *s = (state_t*) env;
+///  state_t *s = (state_t*) env;
   
   //  TRACE2("main_flow_block",s->ls->endpt);
 }
@@ -391,6 +393,7 @@ void main_block(void *env){
   state_t *s = (state_t*) env;
   int i;
   
+//  printf("main_block\n"); fflush (stdout);
   s->blocked=1;
   
   if (s->ls->nmembers >= thresh
@@ -400,10 +403,11 @@ void main_block(void *env){
 }
 
 void main_recv_cast(void *env, int rank, int len, char *data) {
-  state_t *s = (state_t*) env;
+//  state_t *s = (state_t*) env;
   iov_t iov;
   msg_t *msg;
   
+//  printf("main_recv_cast\n"); fflush (stdout);
   iov.len=len;
   iov.data=data;
   msg = unmarsh(&iov);
@@ -412,10 +416,11 @@ void main_recv_cast(void *env, int rank, int len, char *data) {
 }
 
 void main_recv_send(void *env, int rank, int len, char *data) {
-  state_t *s = (state_t*) env;
+//  state_t *s = (state_t*) env;
   iov_t iov;
   msg_t *msg;
   
+//  printf("main_recv_send\n"); fflush (stdout);
   iov.len=len;
   iov.data=data;
   msg = unmarsh(&iov);
@@ -439,7 +444,7 @@ void join(){
   jops->group_name = ce_copy_string("ce_rand");
   jops->properties = ce_copy_string(RAND_PROPS) ;
   jops->use_properties = 1;
-  jops->hrtbt_rate = 10.0;
+  jops->hrtbt_rate = 3.0;
 
   s = (state_t*) record_create(state_t*, s);
   record_clear(s);
@@ -505,7 +510,9 @@ fifo_process_args(int argc, char **argv){
     ce_Init(ml_args+2, ret); /* Call Arge.parse, and appl_process_args */
 }
 
-int main(int argc, char **argv){
+int
+main(int argc, char **argv)
+{
   int i;
 
   fifo_process_args(argc, argv);
@@ -513,7 +520,8 @@ int main(int argc, char **argv){
   for (i=0; i<nmembers; i++){
     join();
   }
-  
+
+  printf("starting the ce_Main_loop\n");
   ce_Main_loop ();
   return 0;
 }

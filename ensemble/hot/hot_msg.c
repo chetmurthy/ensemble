@@ -160,7 +160,7 @@ static void hot_msg_FitToSize(struct hot_msg_ctl *ctl, unsigned new_size) {
 /* Initialize the message module.  We check for initialization at
  * message creation time.
  */
-static void hot_msg_Init() {
+static void hot_msg_Init(void) {
   int i;
   hot_err_t err;
 

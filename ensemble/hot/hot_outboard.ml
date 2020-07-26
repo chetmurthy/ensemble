@@ -108,9 +108,8 @@ let dncall_unmarsh buf iovl =
   in
   let read_endpt = read_string in
   let id = read_int () in
-  let ltime = read_int () in
   let dntype = read_int () in
-  log (fun () -> sprintf "id=%d ltime=%d dntype=%d" id ltime dntype);
+  log (fun () -> sprintf "id=%d dntype=%d" id  dntype);
   let ret =
     match dntype with
     | 0 ->
@@ -153,10 +152,10 @@ let dncall_unmarsh buf iovl =
 	let modes = Arrayf.to_list (Addr.ids_of_set (Arrayf.get vs.address 0)) in
 	Create(id,vs,heartbeat_rate,modes)
     | 1 ->				(* Cast *)
-	Dncall(id,ltime,Cast(iovl))
+	Dncall(id,Cast(iovl))
     | 2 ->				(* Send*)
 	let dest = read_endpt () in
-	SendEndpt(id,ltime,dest,iovl)
+	SendEndpt(id,dest,iovl)
     | 3 ->				(* Suspect *)
 	let size = read_int () in
 	let susp = ref [] in
@@ -165,12 +164,12 @@ let dncall_unmarsh buf iovl =
 	  susp := endpt :: !susp
 	done;
 	let suspects = List.rev !susp in
-	SuspectEndpts(id,ltime,suspects)
+	SuspectEndpts(id,suspects)
     | 4 ->                              (* XferDone *)
-	Dncall(id,ltime,Control XferDone)
+	Dncall(id,Control XferDone)
     | 5 ->				(* Protocol *)
 	let proto = read_string () in
-	Dncall(id,ltime,Control(Protocol(Proto.id_of_string proto)))
+	Dncall(id,Control(Protocol(Proto.id_of_string proto)))
     | 6 ->				(* Property *)
 	let props = read_string () in
 	let protocol =
@@ -181,18 +180,18 @@ let dncall_unmarsh buf iovl =
 	  in
 	  Property.choose props
 	in
-	Dncall(id,ltime,Control(Protocol protocol))
+	Dncall(id,Control(Protocol protocol))
     | 7 ->				(* Leave *)
-	Dncall(id,ltime,Control Leave)
+	Dncall(id,Control Leave)
     | 8 ->				(* Prompt *)
-	Dncall(id,ltime,Control Prompt)
+	Dncall(id,Control Prompt)
     | 9 ->				(* Rekey *)
-	Dncall(id,ltime,Control (Rekey false))
+	Dncall(id,Control (Rekey false))
     | 10 ->				(* Block *)
-	Dncall(id,ltime,Control(Block true))
+	Dncall(id,Control(Block true))
     | 11 ->
 	let dest = read_int () in
-	Dncall(id,ltime,Send1(dest,iovl))
+	Dncall(id,Send1(dest,iovl))
     | _ -> failwith sanity
   in
   Marsh.unmarsh_check_done_all m ;

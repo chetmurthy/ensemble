@@ -1,7 +1,9 @@
+--------------------------------------------------------
 Next
 ----
-6. Check the port to solaris.
+1. Check the port to solaris.
 
+--------------------------------------------------------
 
 Check
 -----
@@ -48,7 +50,7 @@ DONE
 1.35
 ----
 0. Re-Added zero-copy marhaling for ML applications. (!)
-1. Check that ocamldep works (win32).
+1. Check that ocamldep works (win32). +
 2. Check that zero-copy marshaling is bug free.
 4. complete porting of socktest to win32. reading from stdin does not
    work.

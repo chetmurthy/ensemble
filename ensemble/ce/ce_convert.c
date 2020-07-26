@@ -5,6 +5,7 @@
 /**************************************************************/
 #include "ce_internal.h"
 #include "ce_trace.h"
+#include "mm.h"
 #include <stdio.h>
 #include <assert.h>
 /**************************************************************/
@@ -50,7 +51,7 @@ Val_iovl(int num, ce_iovec_array_t iovl){
 /* We cache a local iovl. The user MAY NOT free it. 
  */
 static ce_iovec_array_t iovl = NULL;
-static iovl_len = 0;
+static int iovl_len = 0;
 
 ce_iovec_array_t Iovl_val(value iovl_v){
   int i;
@@ -157,10 +158,10 @@ ViewState_of_val(value vs_v, int nmembers, ce_view_state_t *vs) {
   TRACE("ViewState_of_val(");
   vs->version   = String_copy_val(Field(vs_v, CE_VIEW_STATE_VERSION));
   vs->group     = String_copy_val(Field(vs_v, CE_VIEW_STATE_GROUP));
+  vs->proto     = String_copy_val(Field(vs_v, CE_VIEW_STATE_PROTO));
   vs->coord     = Int_val(Field(vs_v, CE_VIEW_STATE_COORD));
   vs->ltime     = Int_val(Field(vs_v, CE_VIEW_STATE_LTIME));
   vs->primary   = Bool_val(Field(vs_v, CE_VIEW_STATE_PRIMARY));
-  vs->proto     = String_copy_val(Field(vs_v, CE_VIEW_STATE_PROTO));
   vs->groupd    = Bool_val(Field(vs_v, CE_VIEW_STATE_GROUPD));
   vs->xfer_view = Bool_val(Field(vs_v, CE_VIEW_STATE_XFER_VIEW));
   vs->key       = String_copy_val(Field(vs_v, CE_VIEW_STATE_KEY));
@@ -326,5 +327,141 @@ Val_handler(ce_handler_t handler){
 ce_handler_t
 Handler_val(value handler_v){
   return (ce_handler_t)C_pointer_val(handler_v);
+}
+/**************************************************************/
+/* Conversions
+ */
+
+/* A function that wrapps Val_int
+ */
+value Val_int_fun(const char *p){
+  int i = (int)p;
+
+  return (Val_int(i));
+}
+		  
+value convert_int_array(int num, int* a){
+  int i;
+  CAMLparam0();
+  CAMLlocal1(ret_v);
+
+  if (num==0)
+    ret_v = Atom(0);
+  else {
+    ret_v = alloc(num,0);
+    for(i=0; i<num; i++) {
+      modify(&Field(ret_v,i), Val_int(a[i]));
+    }
+  }
+
+  CAMLreturn(ret_v);
+}
+
+
+static value
+Val_action (ce_action_t *a){
+  CAMLparam0() ;
+  CAMLlocal3(field0, field1, a_v) ;
+
+  switch (a->type) {
+  case APPL_CAST:
+    TRACE("APPL_CAST(");
+    field0 = Val_iovl(a->u.cast.num, a->u.cast.iovl);
+    a_v = alloc_small(1, APPL_CAST);
+    Field(a_v, 0) = field0;
+    TRACE(")");
+    break;
+    
+  case APPL_SEND:
+    TRACE("APPL_CAST(");
+    field0 = convert_int_array(a->u.send.num,a->u.send.dests);
+    field1 = Val_iovl(a->u.send.num, a->u.send.iovl);
+    a_v = alloc_small(2, APPL_SEND);
+    Field(a_v, 0) = field0;
+    Field(a_v, 1) = field1;
+    TRACE(")");
+    break;
+
+  case APPL_SEND1:
+    field0 = Val_int(a->u.send1.dest);
+    field1 = Val_iovl(a->u.send1.num, a->u.send1.iovl);
+    a_v = alloc_small(2, APPL_SEND1);
+    Field(a_v, 0) = field0;
+    Field(a_v, 1) = field1;
+    break;
+    
+  case APPL_LEAVE:
+    a_v = alloc_small(1,APPL_LEAVE);
+    Field(a_v, 0) = Val_unit ;
+    break;
+
+  case APPL_PROMPT:
+    a_v = alloc_small(1,APPL_PROMPT);
+    Field(a_v, 0) = Val_unit ;
+    break;
+
+  case APPL_SUSPECT:
+    field0 = convert_int_array(a->u.suspect.num,a->u.suspect.members);
+    a_v = alloc_small(1,APPL_SUSPECT);
+    Field(a_v, 0) = field0;
+    break;
+    
+  case APPL_XFERDONE:
+    a_v = alloc_small(1,APPL_XFERDONE);
+    Field(a_v, 0) = Val_unit ;
+    break;
+    
+  case APPL_REKEY:
+    a_v = alloc_small(1,APPL_REKEY);
+    Field(a_v, 0) = Val_unit ;
+    break;
+
+  case APPL_PROTOCOL:
+    field0 = copy_string(a->u.proto);
+    a_v = alloc_small(1,APPL_PROTOCOL);
+    Field(a_v, 0) = field0 ;
+    break;
+
+  case APPL_PROPERTIES:
+    field0 = copy_string(a->u.properties);
+    a_v = alloc_small(1,APPL_PROPERTIES);
+    Field(a_v, 0) = field0 ;
+    break;
+    
+  default:
+    printf("Bad action type");
+    exit(1);
+  }
+  
+  CAMLreturn(a_v) ;
+}
+
+value
+Val_queue(ce_queue_t *q)
+{
+  int i;
+  CAMLparam0() ;
+  CAMLlocal2(tmp,dn_v) ;
+
+  //  sprintf(str, "Val_queue: len=%d", q->len);
+  //TRACE(str);
+
+  /* ML already zeros the field here. 
+   */
+  TRACE("{");
+  if (q->len == 0)
+    dn_v = Atom(0) ;
+  else {
+    dn_v = alloc(q->len,0) ;
+    
+    for (i = 0; i< q->len; i++) {
+      TRACE(" .");
+      tmp = Val_action(&(q->arr[i])) ;
+      modify(&Field(dn_v,i),tmp);
+    }
+  }
+  TRACE("}");
+  
+  CAMLreturn(dn_v) ;
 }
 /**************************************************************/

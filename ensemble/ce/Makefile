@@ -20,31 +20,38 @@ include $(ENSROOT)/mk/ocaml.mk
 endif
 #*************************************************************#
 
+FLAG = no
+
 # NT
 ifeq ("$(PLATFORM)" , "nt")
-MLFLAGS = #-p
-CFLAGS	= #
-CE_LINK_FLAGS	= $(LIBSYSCL)
-else
+FLAG = ok
+#MLFLAGS = #-p
+#CFLAGS	= -DINLINE=__inline 
+CE_LINK_FLAGS	= $(SOLNKFLAGS)
+endif
 
 #i386-linux
 ifeq ("$(PLATFORM)" , "i386-linux")
+FLAG = ok
 MLFLAGS = #-p
-CFLAGS =  -O2 #-g -p
-CE_LINK_FLAGS = -ltermcap -lm -ldl #-lefence
-else
+#CFLAGS = -DINLINE=inline -O2 -Wall -Wstrict-prototypes #-g -p
+CE_LINK_FLAGS = -ltermcap -lm -ldl
+endif
 
 # SPARC-SOLARIS
 ifeq ("$(PLATFORM)" , "sparc-solaris")
+FLAG = ok
 MLFLAGS = #-p
-CFLAGS =  -O2 #-g -p
+#CFLAGS =  -DINLINE= -O2 #-g -p
 CE_LINK_FLAGS = -lposix4 -ltermcap -lsocket -lnsl -lm -ldl
-else
+endif
 
-ERROR = yes
+# If nothing is applicable
+ifeq ("$(FLAG)" , "no")
+all : 
+	echo "No configuration for this architecture"
 endif
-endif
-endif
+
 
 #*************************************************************#
 .SUFFIXES: .ml .cmo .cmx .mli .cmi .c .o .obj .obj .cmx
@@ -60,98 +67,197 @@ endif
 	$(CC) -c -I$(CAMLLIB) -I $(ENSLIB) $(CFLAGS) $< $(OBJRULE)$@
 
 #*************************************************************#
+COMMON = \
+	ce_trace$(OBJ)\
+	ce_misc$(OBJ) \
+	ce_flat$(OBJ) \
+	ce_actions$(OBJ)
+
+CE_OUTBOARDCOBJ = \
+	$(COMMON) \
+	mm_basic$(OBJ) \
+	ce_sock_table$(OBJ) \
+	ce_context_table$(OBJ) \
+	ce_outboard_comm$(OBJ) \
+	ce_outboard_c$(OBJ)
+
+NONTHREADOBJ = \
+	ce_intf$(OBJ)
+
+THREADOBJ = \
+	ce_threads$(OBJ) \
+	ce_thread_safe$(OBJ)
 
 COBJ =\
-	ce_trace$(OBJ)\
+	$(COMMON) \
 	ce_convert$(OBJ)\
-	ce_misc$(OBJ)\
-	ce_actions$(OBJ)\
 	ce_inboard_c$(OBJ) \
-	ce_flat$(OBJ) 
 
 MLOBJ =\
 	ce_util$(CMO)\
 	ce_inboard$(CMO) 
 
 MLIOBJ =\
-	ce_util.cmi
+	ce_util$(CMI)
 
-DEMOS_CLEAN = ce_perf ce_rand ce_fifo ce_mtalk *.exe
+DEMOS_CLEAN = \
+	ce_perf ce_rand ce_fifo ce_mtalk \
+	ce_perfo ce_rando ce_fifoo ce_mtalko \
+	*.exe ce_outboard
+
 DEMOS = ce_rand$(EXE) ce_perf$(EXE) ce_fifo$(EXE) ce_mtalk$(EXE) 
+DEMOSO = ce_mtalko$(EXE)  ce_rando$(EXE) ce_perfo$(EXE) ce_fifoo$(EXE) 
 
-all: $(DEMOS) 
+all: libce$(SO) libceo$(SO) ce_outboard$(EXE) $(DEMOSO) $(DEMOS) 
+#	libce_ts$(SO) libceo_ts$(SO) 
 
 opt : 
 	$(MAKE) OPT=yes all
 
 #BASIC_ENSCONF_skt = $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS) 
-BASIC_ENSCONF_skt = $(LIBUNIX) $(LIBMLSOCK) $(LINK_THR) $(ENSLIBS) 
+BASIC_ENSCONF_skt = $(LIBUNIX) $(LIBMLSOCK) $(LINK_THR) $(ENSLIBS)
 
+#*************************************************************#
 
+# Need to copy the latest version of mm_basic.c
+# This contains the basic declarations of iovec utility
+# functions.
+#
+mm_basic.c : $(ENSROOT)/socket/s/mm_basic.c
+	$(CP) $(ENSROOT)/socket/s/mm_basic.c .
+
+mm_basic$(OBJ) : mm_basic.c
+#*************************************************************#
 
 ce$(OBJ): $(MLIOBJ) $(MLOBJ) $(ENSLIBS) 
 	$(MLCOMP) -output-obj $(MLFLAGS) -o ce$(OBJ) $(BASIC_ENSCONF_skt) $(MLOBJ) $(HOT_MLLINK)
 
 # Put all the libraries, ML code, and runtime into one library
-libce$(ARC): $(COBJ) ce$(OBJ)
+libce$(SO): $(COBJ) $(NONTHREADOBJ) ce$(OBJ)
 	$(RM) ce.c
-	$(PARTIALLD) $(PARTIALLDO)libce$(OBJ)\
+	$(MKSHRLIB) $(MKSHRLIBO)libce$(SO) \
 	  ce$(OBJ)\
 	  $(COBJ)\
+	  $(NONTHREADOBJ) \
 	  ../lib/$(PLATFORM)/libsock$(ARC)\
 	  $(OCAML_LIB)/libunix$(ARCS)\
-	  $(MLRUNTIME)
-	$(MKLIB) $(MKLIBO)libce$(ARC) libce$(OBJ)
-	$(RANLIB) libce$(ARC)
+	  $(MLRUNTIME) \
+	  $(CE_LINK_FLAGS)
 
-ce_mtalk$(EXE): $(COBJ) ce_mtalk$(OBJ) libce$(ARC)
-	$(CC) $(CFLAGS) -o ce_mtalk$(EXE)\
+# Put C outboard objects into one library
+# Put C outboard objects into one library
+libceo$(SO): $(CE_OUTBOARDCOBJ) $(NONTHREADOBJ)
+	$(MKSHRLIB) $(MKSHRLIBO)libceo$(SO) \
+	  $(CE_OUTBOARDCOBJ) \
+	  $(NONTHREADOBJ) \
+	  $(CE_LINK_FLAGS)
+#	$(MKLIB) $(MKLIBO)libceo$(ARC) $(CE_OUTBOARDCOBJ) 
+#	$(RANLIB) libceo$(ARC)
+
+##
+#  Thread safe version of the above
+##
+
+# Put all the libraries, ML code, and runtime into one library
+libce_ts$(SO): $(COBJ) $(THREADOBJ) ce$(OBJ)
+	$(RM) ce.c
+	$(MKSHRLIB) $(MKSHRLIBO)libce_ts$(SO) \
+	  ce$(OBJ)\
+	  $(COBJ)\
+	  $(THREADOBJ)\
+	  ../lib/$(PLATFORM)/libsock$(ARC)\
+	  $(OCAML_LIB)/libunix$(ARCS)\
+	  $(MLRUNTIME) \
+	  $(CE_LINK_FLAGS)
+
+# Put C outboard objects into one library
+libceo_ts$(SO): $(CE_OUTBOARDCOBJ) $(THREADOBJ) 
+	$(MKSHRLIB) $(MKSHRLIBO)libceo_ts$(SO)\
+	  $(CE_OUTBOARDCOBJ) \
+	  $(THREADOBJ)\
+	  $(CE_LINK_FLAGS)
+#	$(MKLIB) $(MKLIBO)libceo$(ARC) $(CE_OUTBOARDCOBJ) 
+#	$(RANLIB) libceo$(ARC)
+
+
+#*************************************************************#
+
+# Generate the outboard executable
+ce_outboard$(EXE): $(MLIOBJ) ce_util$(CMO) ce_outboard$(CMO) 
+	$(MLLINK) -o ce_outboard$(EXE) \
+	$(LIBSYS) $(ENSCONF) ce_util$(CMO) ce_outboard$(CMO) 
+
+
+ce_rando$(EXE): $(COBJ) ce_rand$(OBJ) ce_md5$(OBJ) libceo$(SO)
+	$(CC) $(CFLAGS) -o ce_rando$(EXE)\
+	  ce_rand$(OBJ)\
+	  ce_md5$(OBJ)\
+	  libceo$(SOLNK)
+
+ce_mtalko$(EXE): $(COBJ) ce_mtalk$(OBJ) libceo$(SO)
+	$(CC) $(CFLAGS) -o ce_mtalko$(EXE)\
 	  ce_mtalk$(OBJ)\
-	  libce$(ARC) \
-	$(CE_LINK_FLAGS)
+	  libceo$(SOLNK) 
 
-ce_fifo$(EXE): $(COBJ) ce_fifo$(OBJ) libce$(ARC)
-	$(CC) $(CFLAGS) -o ce_fifo$(EXE)\
+ce_fifoo$(EXE): $(COBJ) ce_fifo$(OBJ) libceo$(SO)
+	$(CC) $(CFLAGS) -o ce_fifoo$(EXE)\
 	  ce_fifo$(OBJ)\
-	  libce$(ARC) \
-	$(CE_LINK_FLAGS)
+	  libceo$(SOLNK) 
 
-ce_rand$(EXE): $(COBJ) ce_rand$(OBJ) libce$(ARC)
+ce_perfo$(EXE): $(COBJ) ce_perf$(OBJ) libceo$(SO)
+	$(CC) $(CFLAGS) -o ce_perfo$(EXE)\
+	  ce_perf$(OBJ)\
+	  libceo$(SOLNK)
+
+ce_rand$(EXE): $(COBJ) ce_rand$(OBJ) libce$(SO)
 	$(CC) $(CFLAGS) -o ce_rand$(EXE)\
 	  ce_rand$(OBJ)\
-	  libce$(ARC)\
-	$(CE_LINK_FLAGS)
+	  ce_md5$(OBJ)\
+	  libce$(SOLNK)
 
-ce_perf$(EXE): $(COBJ) ce_perf$(OBJ) libce$(ARC)
+ce_mtalk$(EXE): $(COBJ) ce_mtalk$(OBJ) libce$(SO)
+	$(CC) $(CFLAGS) -o ce_mtalk$(EXE)\
+	  ce_mtalk$(OBJ)\
+	  libce$(SOLNK) 
+
+ce_fifo$(EXE): $(COBJ) ce_fifo$(OBJ) libce$(SO)
+	$(CC) $(CFLAGS) -o ce_fifo$(EXE)\
+	  ce_fifo$(OBJ)\
+	  libce$(SOLNK) 
+
+ce_perf$(EXE): $(COBJ) ce_perf$(OBJ) libce$(SO)
 	$(CC) $(CFLAGS) -o ce_perf$(EXE)\
 	  ce_perf$(OBJ)\
-	  libce$(ARC)\
-	$(CE_LINK_FLAGS)
+	  libce$(SOLNK)
 
 #*************************************************************#
 # Get's around a difference between forall syntax between
 # WIN32 and Unix.
 #
 ifeq ("$(PLATFORM)" , "nt")
-INSTALL = for %%d in ($(DEMOS)) do ( $(CP) %%d $(ENSBIN) )
+INSTALL = for %%d in ($(DEMOS) $(DEMOSO) ce_outboard$(EXE)) do ( $(CP) %%d $(ENSBIN) )
 else
-INSTALL = $(CP) $(DEMOS) $(ENSBIN)
+INSTALL = $(CP) $(DEMOS) $(DEMOSO) ce_outboard$(EXE) $(ENSBIN)
 endif
 
 install : 
-	$(CP) libce$(ARC) $(ENSLIB)
+	$(CP) libce.* $(ENSLIB)
+	$(CP) libceo.* $(ENSLIB)
 	$(INSTALL)
 
 #*************************************************************#
 
 clean:
 	$(CLEANDIR)
-	$(RM) *.a *.lib *.dll $(DEMOS_CLEAN) 
+	$(RM) ce.c mm_basic.c *.lib *.dll *.exp *.so *.a $(DEMOS_CLEAN) 
 
 realclean: clean 
 
 
 force: clean all
+
+depend : 
+	ocamldep -I $(ENSROOT)/lib/$(PLATFORM) *.ml *.mli > $(DEPEND)
 
 #*************************************************************#
 

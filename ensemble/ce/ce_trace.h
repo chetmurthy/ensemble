@@ -7,8 +7,25 @@
 #ifndef __CE_TRACE_H__
 #define __CE_TRACE_H__
 
-void trace_add(char* s) ;
-int am_traced(char *name);
+/******************************************************************/
+/* This is for defining DLLs on windows. Do NOT define CE_DLL_LINK
+ * in applications that use the CE library.
+ */
+#ifdef _WIN32
+#ifdef CE_MAKE_A_DLL
+#define LINKDLL __declspec( dllexport)
+#else
+#define LINKDLL __declspec( dllimport)
+#endif
+#else
+/* This is unused on Unix
+ */
+#define LINKDLL 
+#endif
+/******************************************************************/
+
+LINKDLL void trace_add(char* s) ;
+LINKDLL int am_traced(char *name);
 
 
 #define TRACE(x) {\

@@ -3,8 +3,11 @@
 /* Author: Ohad Rodeh  8/2001 */
 /* Conversion of ML <-> C data-structures */
 /**************************************************************/
-#include "ce.h"
-#include "ce_actions.h"
+
+#ifndef __CE_CONVERT_H__
+#define __CE_CONVERT_H__
+
+#include "ce_internal.h"
 
 value Val_string_opt(char*);
 
@@ -50,6 +53,11 @@ ce_handler_t Handler_val(value);
 
 ce_appl_intf_t *C_appl_val(value);
 
-value Val_action (ce_action_t*);
+//value Val_action (ce_action_t*);
 
+/* Convert a queue of actions into an ML value
+ */
+value Val_queue(struct ce_queue *q);
+
+#endif /*__CE_CONVERT_H__*/
 /**************************************************************/

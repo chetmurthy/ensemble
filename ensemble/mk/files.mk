@@ -288,9 +288,9 @@ SSOCKOBJ = \
 	socket/socksupp$(CMO)	\
 	socket/s/socket$(CMO)
 
-
 SOCKCOBJ = \
 	socket/s/gettimeofday$(OBJ) \
+	socket/s/mm_basic$(OBJ) \
 	socket/s/mm$(OBJ) \
 	socket/s/md5c$(OBJ)	\
 	socket/s/miscsupp$(OBJ)	\

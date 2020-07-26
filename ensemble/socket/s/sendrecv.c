@@ -515,16 +515,14 @@ value skt_udp_recv_packet(
 
 /* Not needed on unix.
  */
-value skt_recvfrom(sock, buff, ofs, len) /* ML */
-     value sock, buff, ofs, len;
+value skt_recvfrom(value sock, value buff, value ofs, value len) /* ML */
 {
   invalid_argument("calling: skt_recvfrom on a Unix platform");
 }
 
 /* Not needed on unix.
  */
-value skt_recvfrom2(sock, buff, ofs, len) /* ML */
-     value sock, buff, ofs, len;
+value skt_recvfrom2(value sock, value buff, value ofs, value len) /* ML */
 {
   invalid_argument("calling: skt_recvfrom2 on a Unix platform");
 }
@@ -649,8 +647,7 @@ value skt_sendtosv(
 
 /* Read from a TCP socket into a string.
  */
-value skt_recv(sock, buff, ofs, len) /* ML */
-     value sock, buff, ofs, len;
+value skt_recv(value sock, value buff, value ofs, value len) /* ML */
 {
   int ret;
 
@@ -663,8 +660,7 @@ value skt_recv(sock, buff, ofs, len) /* ML */
 
 /* Read from a TCP socket into an iovec.
  */
-value skt_recv_iov(sock_v, iov_v, ofs_v, len_v) /* ML */
-     value sock_v, iov_v, ofs_v, len_v;
+value skt_recv_iov(value sock_v, value iov_v, value ofs_v, value len_v) /* ML */
 {
   int ret;
   ocaml_skt_t sock = Socket_val(sock_v);

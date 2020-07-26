@@ -23,6 +23,10 @@ type header = Gossip of (seqno Arrayf.t) * (bool Arrayf.t)
 
 type state = {
   sweep		   : Time.t ;
+
+  (* The space of time over which to stagger messages 
+   *)
+  spacing          : Time.t ;  
   acks             : seqno array array ;
   mutable failed   : bool Arrayf.t ;
   mutable next_gossip : Time.t ;
@@ -41,15 +45,26 @@ let dump = Layer.layer_dump name (fun (ls,vs) s -> Array.append [|
   sprintf "acks(%02d)=%s\n" i (string_of_int_array a)
 ) s.acks))
 
+
+(* Stagger out stability events based on the rank and the time
+ * frame over which to space things. 
+*)
+let space_out rank nmembers spacing = 
+  let spacing = Time.to_float spacing in
+  let rltv = (float rank) /. (float nmembers) in
+  let time = mod_float rltv spacing in
+  Time.of_float time
+
 (**************************************************************)
 
 let init _ (ls,vs) = {
   sweep	        = Param.time vs.params "stable_sweep" ;
+  spacing       = Param.time vs.params "stable_spacing" ;
 
   failed        = ls.falses ;
   acks          = Array.create_matrix ls.nmembers ls.nmembers 0 ; (* matrix (from,to) *)
-  next_gossip   = Time.invalid ;
 
+  next_gossip = Time.invalid;
   dbg_mins	= ls.zeroes ;
   dbg_maxs  	= ls.zeroes
 }
@@ -153,13 +168,20 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       (*if !verbose then dump vf s ;*)
       if Time.Ord.ge time s.next_gossip then (
       	let old = s.next_gossip in
+
+	(* This check prevents immediate broadcasts after a view.
+	 * We stagger heartbeats a little bit. 
+	 *)
+      	if Time.is_invalid old then
+	  s.next_gossip <- space_out ls.rank ls.nmembers s.spacing
+	else (
+          dnnm (create name EStableReq[]);
+	  log (fun () -> sprintf "sending stability %s" 
+	    (Time.to_string time))
+	);
+	  
 	s.next_gossip <- Time.add time s.sweep ;
 	dnnm (timerAlarm name s.next_gossip) ; (* request next gossip *)
-	
-	(* This check prevents immediate broadcasts after a view.
-	 *)
-      	if not (Time.is_invalid old) then
-          dnnm (create name EStableReq[])
       ) ;
       upnm ev
 
@@ -203,6 +225,7 @@ in {up_in=up_hdlr;uplm_in=uplm_hdlr;upnm_in=upnm_hdlr;dn_in=dn_hdlr;dnnm_in=dnnm
 let l args vs = Layer.hdr init hdlrs None (FullNoHdr ()) args vs
 
 let _ = 
+  Param.default "stable_spacing" (Param.Time (Time.of_float 0.5));
   Param.default "stable_sweep" (Param.Time (Time.of_int 1)) ;
   Param.default "stable_explicit_ack" (Param.Bool false) ;
   Layer.install name l

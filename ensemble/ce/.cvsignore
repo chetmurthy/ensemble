@@ -1,8 +1,9 @@
 ce_mtalk ce_rand ce_fifo ce_perf 
+ce_outboard ce_rando ce_perfo ce_fifoo ce_mtalko
+mm_basic.c
 *.cm*
-*.a
-*.o*
-*.lib
+*.o *.a *.so
+*.obj *.dll *.lib *.exp 
 .depend*
 Makefile.nt
 gmon.out

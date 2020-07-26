@@ -44,7 +44,7 @@ sparc-solaris_LIB 	= -lsocket -lposix4 -lthread -lpthread \
 # SUNOS defaults to rvr_threads
 sparc-sunos4_LIB	= $(ENS)/contrib/rvr_threads/SUNOS/libthread.a -lm -ltermcap
 
-i386-linux_LIB		= -lpthread -ltermcap -lm
+i386-linux_LIB		= -lpthread -ltermcap -lm -ldl
 
 SYSLIB		= $($(PLATFORM)_LIB)
 

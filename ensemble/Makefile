@@ -7,7 +7,7 @@
 #
 #*************************************************************#
 
-.PHONY: socket tar hot ce maestro
+.PHONY: socket tar hot ce maestro tools
 
 include mk/config.mk
 
@@ -92,19 +92,24 @@ src:
 	make depend
 	tools/ntify.sh
 	cd tar; tarcr $(VERSION)
-	cd doc; make build
+
+#	cd doc; make build
 
 # build a tar file containing executables and libraries.
 #
 dist : 
-	mkdir -p ../build
+	$(MKDIR) ../build
 	cd bin; \
 	for d in *; do ( mkdir -p ../../build/$$d; mkdir -p ../../build/$$d/bin; mkdir -p ../../build/$$d/lib; 	mv $$d/* ../../build/$$d/bin/; mv ../lib/$$d/* ../../build/$$d/lib/); done
 	cd ../build; for d in *; do (tar -cf ensemble-$(VERSION)-$$d.tar $$d; gzip ensemble-$(VERSION)-$$d.tar; rm -rf $$d); done
 
-depend: 
-	$(MAKE_BASE) -f Makefile.top depend
 
+depend:
+	cd ce; $(MAKE) depend
+	cd hot; $(MAKE) depend
+	cd demo; $(MAKE) depend
+	cd maestro; $(MAKE) depend
+	$(MAKE_BASE) -f Makefile.top depend
 
 # This gets around a difference between NMAKE and MAKE. 
 #
@@ -135,3 +140,4 @@ realclean: clean
 
 
 #*************************************************************#
+

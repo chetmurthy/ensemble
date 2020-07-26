@@ -58,7 +58,7 @@ type c_view_state = {
   c_num_ids : int ;
   c_prev_ids : c_view_id array ; 
   c_params   : string ;
-  c_uptime     : float ;
+  c_uptime   : float ;
 
   (* Per-member arrays.
    *)

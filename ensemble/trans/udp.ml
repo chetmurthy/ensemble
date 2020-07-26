@@ -19,7 +19,7 @@ let init_sock host =
 
   let rec loop port =
     try
-      Hsys.bind sock (Hsys.inet_any ()) port;
+      Hsys.bind sock host port;
       port
     with e ->
       log (fun () -> Util.error e);

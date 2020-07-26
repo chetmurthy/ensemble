@@ -268,9 +268,9 @@ let in_multicast = Socket.in_multicast
 (**************************************************************)
 
 let recvfrom s b o l = 
-  let l,sa = Socket.recvfrom s b o l in
+  let l,sa = Socket.recvfrom s (Buf.string_of b) (Buf.int_of_len o) (Buf.int_of_len l) in
   match sa with 
-  | Unix.ADDR_INET(i,p) -> (l,i,p)
+  | Unix.ADDR_INET(i,p) -> (Buf.len_of_int l,i,p)
   | _ -> failwith "recv_from:non-ADDR_INET"
 
 (**************************************************************)

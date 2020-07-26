@@ -7,7 +7,7 @@
 #
 #*************************************************************#
 
-.PHONY: socket tar hot ce maestro
+.PHONY: socket tar hot ce maestro tools
 
 include mk/config.mk
 include mk/preamble.mk
@@ -79,6 +79,7 @@ install: dirs
 	$(CP) socket/s/sockfd.h $(ENSLIB)
 	$(CP) socket/s/e_iovec.h $(ENSLIB)
 	$(CP) socket/s/mm.h	$(ENSLIB)
+	$(CP) socket/s/mm_basic.h $(ENSLIB)
 	$(CP) libenscore.* 	$(ENSLIB)
 	$(CP) libensmin.* 	$(ENSLIB)
 	$(CP) libensrest.*  	$(ENSLIB)
@@ -95,9 +96,10 @@ tk : libhtk$(CMA)
 #
 #Special tools
 
-$(EMRG): tools/emrg.ml tools/mkutil.ml
-	ocamlc -c -I tools tools/mkutil.ml tools/emrg.ml 
-	ocamlc -o $(EMRG) tools/mkutil.cmo tools/emrg.cmo
+$(EMRG): tools/emrg.ml 
+	ocamlc -c -I tools tools/emrg.ml 
+	ocamlc -o $(EMRG) tools/emrg.cmo
+
 
 #*************************************************************#
 # Make libraries and global interface files.
@@ -130,11 +132,11 @@ libsock$(ARC): $(SOCKCOBJ)
 
 ensemble.mli: socket/socket$(CMI) $(ENSEMBLEMLI) $(EMRG)
 	$(RM) ensemble.mli
-	$(EMRG) -mli $(ENSEMBLEMLI) -o ensemble.mli
+	$(ENSROOT)/$(EMRG) -mli $(ENSEMBLEMLI) -o ensemble.mli
 
 ensemble.ml: socket/socket$(CMI) $(ENSEMBLEMLI) $(EMRG)
 	$(RM) ensemble.ml
-	$(EMRG) -ml $(ENSEMBLEMLI) -o ensemble.ml
+	$(ENSROOT)/$(EMRG) -ml $(ENSEMBLEMLI) -o ensemble.ml
 
 ensemble$(CMI): ensemble.mli 
 	$(ENSCOMP) -c ensemble.mli
@@ -158,9 +160,36 @@ ssocket$(CMA) : socket/socket$(CMI) socket/s/socket.mli socket/s/socket$(CMI) $(
 	$(MLLIBR) -o ssocket$(CMA) -linkall $(SSOCKOBJ)
 
 #*************************************************************#
+
+
+DEPENDS = \
+	appl/*.ml	appl/*.mli		\
+	crypto/*.ml 	crypto/*.mli	\
+	groupd/*.ml 	groupd/*.mli	\
+	infr/*.ml 	infr/*.mli		\
+	layers/*.ml 	layers/*.mli	\
+	layers/bypass/*.ml	layers/bypass/*.mli	\
+	layers/debug/*.ml	layers/debug/*.mli		\
+	layers/flow/*.ml	layers/flow/*.mli		\
+	layers/total/*.ml	layers/total/*.mli		\
+	layers/vsync/*.ml	layers/vsync/*.mli		\
+	layers/other/*.ml	layers/other/*.mli		\
+	layers/trans/*.ml	layers/trans/*.mli		\
+	layers/gossip/*.ml	layers/gossip/*.mli	\
+	layers/scale/*.ml	layers/scale/*.mli		\
+	layers/security/*.ml	layers/security/*.mli	\
+	mm/*.ml	mm/*.mli			\
+	route/*.ml	route/*.mli	\
+	socket/*.ml	socket/*.mli	\
+	socket/u/*.ml	socket/u/*.mli		\
+	socket/s/*.ml	socket/s/*.mli		\
+	trans/*.ml	trans/*.mli		\
+	type/*.ml	type/*.mli			\
+	util/*.ml	util/*.mli 
+
 depend:
 	ocamldep $(INCLUDE) -I crypto/OpenSSL -I crypto/isaac \
-	*/*.{ml,mli} */*/*.{ml,mli} */*/*/*.{ml,mli} > .depend
+	$(DEPENDS) > $(DEPEND)
 
 include $(DEPEND)
 #*************************************************************#

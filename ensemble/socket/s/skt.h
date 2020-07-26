@@ -85,7 +85,7 @@ int skt_tcp_recv_error(char *debug);
 
 #include <stdio.h>
 
-extern void serror(const char * cmdname);
+extern void serror(char * cmdname);
 
 #ifdef HAS_SOCKETS
 #include <sys/types.h>

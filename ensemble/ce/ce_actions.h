@@ -82,7 +82,14 @@ typedef struct ce_action_t {
 /* The type of message queues. The type is obscured to prevent outside
  * access. The struct itself is defined in ce_actions.c
  */
-typedef struct ce_queue_t ce_queue_t ; 
+typedef struct ce_queue ce_queue_t;
+
+struct ce_queue {
+  ce_action_t *arr ;
+  int len ;
+  int alen ;		/* power of 2 */
+} ;
+
 
 ce_queue_t* ce_create_queue(void);
 ce_bool_t ce_queue_empty(ce_queue_t*) ;
@@ -90,7 +97,6 @@ int ce_queue_length(ce_queue_t*) ;
 ce_action_t* ce_queue_alloc(ce_queue_t *q);
 void ce_queue_clear(ce_queue_t*) ;
 void ce_queue_free(ce_queue_t*) ;
-value Val_queue(ce_queue_t*);
 
 
 
@@ -106,7 +112,6 @@ ce_action_t *ce_appl_protocol(ce_queue_t*, char *proto) ;
 ce_action_t *ce_appl_properties(ce_queue_t*, char *properties) ;
 	    
 void ce_action_free(ce_action_t*) ;
-
 
 
 #endif /* __CE_ACTIONS_H__ */

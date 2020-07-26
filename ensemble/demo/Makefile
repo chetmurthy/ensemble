@@ -23,7 +23,7 @@ DEMOS_CLEAN = \
 	mtalk groupd gossip rand fifo perf ensemble armadillo socktest *.exe
 DEMOS	= mtalk$(EXE) groupd$(EXE) gossip$(EXE) rand$(EXE) fifo$(EXE) \
           perf$(EXE) armadillo$(EXE) ensemble$(EXE) socktest$(EXE)
-#DEMOS	= perf$(EXE)
+#DEMOS	= socktest$(EXE)
 OBJS	= mtalk$(CMO) groupd$(CMO) gossip$(CMO) rand$(CMO) fifo$(CMO) perf$(CMO)  \
 	  lensemble$(CMO) armadillo$(CMO) socktest$(CMO)
 #OBJS	= armadillo$(CMO)

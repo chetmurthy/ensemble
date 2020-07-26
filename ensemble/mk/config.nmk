@@ -44,7 +44,7 @@ CRYPTO_LINK = # no crypto by default
 MSDEV_INCLUDE	= /I"C:\Program Files\Microsoft Visual Studio\VC98\Include"
 
 # CFLAGS: used for compilation of C files
-CFLAGS	= /Ox /MT /W3 $(MSDEV_INCLUDE) /I$(OCAML_LIB)
+CFLAGS	= -DINLINE=__inline /Ox /MT /W3 $(MSDEV_INCLUDE) /I$(OCAML_LIB)
 
 
 #	$(OPENSSL_INC)
@@ -198,6 +198,16 @@ MAKE	= nmake -f Makefile.nt
 MAKE_BASE = nmake               #sometimes we need the basic command
 MKLIB	= lib /nologo /debugtype:CV
 MKLIBO  = /out:
+#*************************************************************#
+## Shared libraries, DLLs on win32
+
+MKSHRLIB   = link /nologo /dll 
+MKSHRLIBO   = /out:
+SO = .dll
+SOLNK = .lib
+SOLNKFLAGS =/NODEFAULTLIB  \
+	ADVAPI32.lib LIBCMT.lib OLDNAMES.lib KERNEL32.lib WS2_32.lib
+#*************************************************************#
 RANLIB  = echo			# not needed on NT
 SUBMAKE = & $(MAKE)           #SUBMAKE = "& echo"
 DEPEND  = .depend.nt
@@ -251,7 +261,7 @@ HOT_LINK	= $(LIBSYSCL)
 CLEANDIR = \
     $(RM) .nfs* *.cm* *.ppo .err a.out *.o *.obj *.a *.lib *.asm *~ .*~ core *.pdb core gmon.out camlprim*
 
-VERSION = 1_34
+VERSION = 1_35
 #*************************************************************#
 
 

@@ -173,11 +173,7 @@ system and demonstration programs as follows:
 </pre>
 If all went smoothly, the initial installation is now complete, and you
 can try out the demo programs following the instructions below.
-Note that currently, the dependencies for windows come with the
-distribution, so you do need to make the dependencies. Due to a bug in
-ocaml-3.04, the dependecies will be <i>erased</i>. This bug will be
-fixed in version 3.03, in the mean time, simply refrain from the first
-step. You can also compile for your native instruction set. <a
+You can also compile for your native instruction set. <a
 href="#native">instruction set</a>. In order to
 clean up the object files do:
 <pre>
@@ -238,7 +234,10 @@ such as these:
 <b>ENS_OSTYPE : sunos4, solaris, aix, linux, osf1, ...</b>
 <p>
 On WIN32 the configuration files already set the PLATFORM to nt.
-
+Make sure that these variables are set correctly, values such as i686
+are not handled correctly by the makefiles. With a Pentium processor,
+make sure to set the ENS_MACHTYPE to i386, and not i486/i586/i686.
+    
 In <b>sh</b>, you set them like this:
 <pre>
 &nbsp;&nbsp;&nbsp; ENS_MACHTYPE=i386
@@ -299,10 +298,16 @@ The source files are in directory <b>ce</b>,
 atutorial appears as a chapter in the doc/tut.ps.
 Documentation for the header files appears under 'doc/ce' as well.
 The build process generates the file
-<b>ensemble/lib/PLATFORM/libce.a</b>
+<b>ensemble/lib/PLATFORM/libce.so</b>
 (where PLATFORM is the name of your platform) and installs the CE library
 files into 'ensemble/lib/PLATFORM'. The demos are installed in
-'ensemble/bin/PLATFORM'
+'ensemble/bin/PLATFORM'.
+
+We are now using dynamic linking for the native interface, this
+requires the ensemble/lib/PLATFORM directory to be in your load path.
+On Unix this requires setting the LD_LIBRARY_PATH, on windows this
+requires adding it to the path. Note that on win32 you'll need to link
+your application with libce.lib, while the real DLL is libce.dll. 
 
 <a NAME="hot"></a>
 <h3>Building the HOT tools</h3>
@@ -428,12 +433,6 @@ the demos) and will take awhile.
 &nbsp;&nbsp;&nbsp; # directory: ensemble
 &nbsp;&nbsp;&nbsp; make opt
 </pre>
-
-<i><b>Note:</b></i> On windows do not use 'make depend', because it
-will erase your dependencies. This is a bug in the Caml dependency
-generator, it will be fixed in version 3.03. In the meanwhile, use the
-dependencies that come pre-computed with the system. 
-<p>
 
 <a NAME="java"></a>
 <h3>Building the EJava Interface</h3>
@@ -717,6 +716,6 @@ setenv ENS_ABSROOT "/home/orodeh/e/1.20a"
 <br>
 </body>
 <!-- hhmts start -->
-Last modified: Wed Dec 19 10:26:55 E. Europe Standard Time 2001
+Last modified: Thu Apr  4 11:50:22 IDT 2002
 <!-- hhmts end -->
 </html>

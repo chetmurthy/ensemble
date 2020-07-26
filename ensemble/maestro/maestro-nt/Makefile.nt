@@ -1,5 +1,5 @@
 ENSLIB = ..\..\lib\nt
-LIBHOT = libhot-nt.lib
+LIBHOT = libhot.lib
 LIBMAE = libmae-nt.lib
 CC = cl /nologo
 LIBCRYPTO =
@@ -15,7 +15,7 @@ MAESTRO_OBJ = 	Maestro_Types.obj \
 CFLAGS = /TP /I$(ENSLIB) 
 LDFLAGS = /link $(LIBMAE) $(LIBCRYPTO) /NODEFAULTLIB \
 	libcmt.lib libcpmt.lib libcimt.lib \
-	oldnames.lib kernel32.lib wsock32.lib
+	oldnames.lib kernel32.lib ws2_32.lib
 
 all: maestro_test.exe maestro_perf.exe group.exe
 

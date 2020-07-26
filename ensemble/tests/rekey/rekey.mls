@@ -1,0 +1,12 @@
+#load "unix.cma"
+#load "str.cma"
+open Unix;;
+
+#load "../aux.cmo"
+#load "../coord.cmo"
+#load "rekey.cmo"
+
+open Rekey;;
+
+run ();
+exit 0;;

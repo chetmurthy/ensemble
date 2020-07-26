@@ -4,7 +4,7 @@
 
 /**************************************************************/
 #ifndef _WIN32
-value win_version(){ invalid_argument("Calling win_version on a Unix system");}
+value win_version(void){ invalid_argument("Calling win_version on a Unix system");}
 #else
 
 value
@@ -166,7 +166,7 @@ void skt_udp_recv_error(void) {
 extern void uerror(char *cmdname, value cmdarg);
 
 #ifndef _WIN32
-void serror(const char *cmdname)
+void serror(char *cmdname)
 {
   uerror(cmdname, Nothing);
 }

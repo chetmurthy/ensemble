@@ -1,14 +1,36 @@
 (**************************************************************)
 (* EMV.ML *)
 (* Author: Mark Hayden, 12/96 *)
+(* Changes: Ohad Rodeh 1/2001 *)
 (**************************************************************)
-open Mkutil
 open Printf
+
+(**************************************************************)
+type platform =
+  | Unix
+  | Other
+
+let platform = match Sys.os_type with
+  | "Unix" -> Unix
+  | _ -> Other
+
+let read_lines c =
+  let lines = ref [] in
+  try
+    while true do
+      let line = input_line c in
+      lines := line :: !lines
+    done ; []
+  with End_of_file ->
+    List.rev !lines
+(**************************************************************)
+
 
 let path = ref []
 let files = ref []
 let dest = ref None
 let mlfile = ref false
+let copy = ref false
 
 let proc_file oc file =
 (*
@@ -21,37 +43,24 @@ let proc_file oc file =
   let modul = Filename.chop_extension modul in
   let modul = String.capitalize modul in
 
+  if not (Sys.file_exists file) then
+    failwith "file does not exist" ;
+
   if !mlfile then (
-    fprintf oc "module %s = %s\n" modul modul
-(*
-    fprintf oc "module %s : sig\n" modul ;
-
-    if not (Sys.file_exists file) then
-      failwith "file does not exist" ;
-    let ch = open_in file in
-    let lines = read_lines ch in
-    List.iter (fun line ->
-      fprintf oc "    %s\n" line
-    ) lines ;
-
-    fprintf oc "end = struct\n" ;
-
-    let file = (Filename.chop_extension file)^".ml" in
-    if not (Sys.file_exists file) then
-      failwith ("file does not exist:"^file) ;
-    let ch = open_in file in
-    let lines = read_lines ch in
-    List.iter (fun line ->
-      fprintf oc "    %s\n" line
-    ) lines ;
-
-    fprintf oc "end\n\n"
-*)
+    if not !copy then (
+      fprintf oc "module %s = %s\n" modul modul
+    ) else (
+      fprintf oc "module %s = struct\n" modul ;
+      let ch = open_in file in
+      let lines = read_lines ch in
+      List.iter (fun line ->
+	fprintf oc "  %s\n" line
+      ) lines ;
+      fprintf oc "end\n\n"
+    )
   ) else (
     fprintf oc "module %s : sig\n" modul ;
 
-    if not (Sys.file_exists file) then
-      failwith "file does not exist" ;
     let ch = open_in file in
     let lines = read_lines ch in
     List.iter (fun line ->
@@ -66,7 +75,8 @@ let main () =
     "-I",Arg.String(fun s -> path := s :: !path),": add dir to path" ;
     "-o",Arg.String(fun s -> dest := Some s),"" ;
     "-ml",Arg.Set mlfile,"" ;
-    "-mli",Arg.Clear mlfile,""
+    "-mli",Arg.Clear mlfile,"";
+    "-copy",Arg.Set copy, "copy ML module bodies"
   ] (fun file -> files := file :: !files) "" ;
 
   let dest = 

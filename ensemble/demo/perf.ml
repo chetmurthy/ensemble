@@ -990,6 +990,20 @@ let run () =
   | None -> ()
   end ;
 
+
+  (* This allows killing this process by closing stdin.
+   *)
+  let stdin = Hsys.stdin () in
+  let buf = String.create 100 in
+  let get_input () =
+    let len = Hsys.read stdin buf 0 (String.length buf) in 
+    if len=0 then (
+      printf "Killing process\n";
+      exit 0
+    )
+  in
+  Alarm.add_sock_recv alarm name stdin (Hsys.Handler0 get_input) ;
+
   let ready () =
     for i = 1 to !nlocal do
       let (ls,vs) =

@@ -1,20 +1,54 @@
+     RELEASE_NOTES for Ensemble version 1.35
 
-     RELEASE_NOTES for Ensemble version 1.34
 Author: Ohad Rodeh
-Last updated: 19/12/2001
+Last updated: 4/04/2002
 
+RELEASE_NOTES
 
-CHANGES
+1. Added a "local" stack, which simply adds property local to vsync. 
 
-1. Added zero-copy to WIN32, and complete scatter-gather support.
-2. Ported CE to WIN32.
-4. Port to ocaml-3.04.
-5. Moveed java documentation to doc/
+2. Some slight typing changes in the Hsys module, requested by Roy Friedman.
+
+3. Removed spurious logical-time in outboard mode (HOT). This improves
+   line-utilization for HOT applications using outboard mode.
+
+4. Added outboard mode to CE. This allows using Ensemble though a
+   server and a thin client library. This is a step forward in the
+   rewrite of the HOT interface. Eventually, we intend to completely
+   replace it with CE, using a thin overlay layer to mimic HOT semantics.
+
+5. make depend now works on WIN32. The make sequence is now on all platforms:
+    for bytecode:
+      make depend
+      make all
+    for optimized code:
+      make depend
+      make opt
+
+6. Added staggering to the Suspect and Stablity layers. This means
+   that instead of a flood of messages sent when suspicions and
+   stability information is computed, such events are scattered.  This
+   prevents implosion at the group leader. This was suggested by Roy Friedman.
+
+6. Some makefiles and build fixes
+  - libceo.lib was not included in the library
+  - make clean bug in CE
+
+7. Conversion to dynamic linking for CE.
+
+8. Documentation provided now in PDF and HTML formats, instead
+   of postscript and HTML.
+
+9. Build fixes for Maestro.
+
+10. Fixes for the Java interface.
+
+11. Started working on a Thread safe version of the CE libraries. 
 
 OCAML COMPILER VERSION
   We are using version 3.04 for this version. 
 
 PORTABILITY
-  This version was tested on Linux, WIN2000, and NT4. Light testing was carried out on Sparc/Solaris. 
+  This version was tested on Linux, and WIN2000. 
 
 

@@ -51,6 +51,7 @@ val causal : id list			(* vsync + Causal *)
 val total : id list			(* vsync + Total *)
 val scale : id list			(* vsync + Scale *)
 val fifo : id list			(* only Fifo (no membership) *)
+val local : id list                     (* vsync + Local *)
 
 val string_of_id : id -> string
 val id_of_string : string -> id

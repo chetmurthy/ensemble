@@ -34,7 +34,7 @@ val inet_any : unit -> inet
 val inet_of_string : string -> inet
 val listen : socket -> int -> unit
 val read : socket -> string -> int (*ofs*) -> int (*len*) -> int
-val recvfrom : socket -> string -> int -> int -> int * inet * port
+val recvfrom : socket -> Buf.t -> Buf.ofs -> Buf.len -> Buf.len * inet * port
 val string_of_inet : inet -> string	(* i.e. gethostbyname *)
 val string_of_inet_nums : inet -> string
 val getenv : string -> string option

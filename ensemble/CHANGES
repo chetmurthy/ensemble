@@ -1,3 +1,33 @@
+Ensemble 1.36
+-------------
+
+
+
+Ensemble 1.35
+-------------
+1. Added a "local" stack, which simply adds property local to vsync. 
+2. Some slight typing changes in the Hsys module, requested by Roy Friedman.
+3. Removed spurious logical-time in outboard mode (HOT).
+4. Added outboard mode to CE. 
+5. make depend now works on WIN32.
+6. Some makefiles and build fixes
+  - libceo.lib was not included in the library
+  - make clean bug in CE
+7. Conversion to dynamic linking for CE.
+8. Documentation provided now in PDF and HTML formats, instead
+   of postscript and HTML.
+9. Build fixes for Maestro.
+10. Fixes for the Java interface.
+11. Started working on a Thread safe version of the CE libraries. 
+
+
+Ensemble 1.34
+-------------
+1. Added zero-copy to WIN32, and complete scatter-gather support.
+2. Ported CE to WIN32.
+4. Port to ocaml-3.04.
+5. Moved java documentation to doc/
+
 Ensemble 1.33
 -------------
 Removed proprietery build tools.

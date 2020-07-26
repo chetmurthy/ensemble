@@ -23,9 +23,9 @@ type endpt = string
 type 'a message_gen =
   | Create of id * View.state * Time.t * (Addr.id list)
   | Upcall of id * 'a upcall_gen
-  | Dncall of id * ltime * 'a dncall_gen
-  | SendEndpt of id * ltime * endpt * 'a
-  | SuspectEndpts of id * ltime * endpt list
+  | Dncall of id * 'a dncall_gen
+  | SendEndpt of id * endpt * 'a
+  | SuspectEndpts of id * endpt list
       
 type message = Iovecl.t message_gen
 type dncall = Iovecl.t dncall_gen

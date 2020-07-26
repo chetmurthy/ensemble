@@ -24,15 +24,16 @@ CC	= gcc
 #*************************************************************#
 
 # CFLAGS: used for compilation of C files
-CFLAGS	=-Wall 				\
+CFLAGS	=-DINLINE=inline \
+	-O2 -Wall -Wstrict-prototypes \
         $(CODEGEN)                      \
 	-I $(OCAML_LIB)			\
 	$(PURIFY_CFLAGS)		\
 	-DOSTYPE=$(ENS_OSTYPE)		\
 	-DMACHTYPE=$(ENS_MACHTYPE)	\
-	$(OPENSSL_INC)
+	$(OPENSSL_INC) 
 
- # -O2 
+#-g -p
 
 
 # LIBSYS: used for linking executables
@@ -179,8 +180,17 @@ RM	= rm -f
 MAKE	= make	
 MAKE_BASE = make	
 MKLIB   = ar cr 		# comment forces spaces
-MKLIBO  =
 RANLIB  = ranlib
+MKLIBO  =
+#*************************************************************#
+## Shared libraryies
+
+MKSHRLIB   = ld -shared
+MKSHRLIBO   = -o #comment forces a space
+SO = .so
+SOLNK = .so
+SOLNKFLAGS =
+#*************************************************************#
 SUBMAKE = ; $(MAKE)
 DEPEND  = .depend
 PARTIALLD = ld $(CODEGEN) -r
@@ -243,5 +253,5 @@ PURIFY 		= $(PURIFY_$(PLATFORM))
 CLEANDIR = \
     $(RM) .nfs* *.cm* .err a.out *.o* *.a *.lib *.asm *~ .*~ .\#*  core *.pdb core gmon.out camlprim*
 
-VERSION = 1_34
+VERSION = 1_35
 #*************************************************************#

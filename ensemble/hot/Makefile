@@ -23,81 +23,85 @@ endif
 
 # Configuration infromation for threads and the C interfaces.
 
+FLAG = no
 
 # WIN32
 ifeq ("$(PLATFORM)" , "nt")
+FLAG = ok
 HOT_THREAD_OBJ	= ntthread$(OBJ)
 HOT_CFLAGS	= -DTHREADED_SELECT
 HOT_MLLINK	= #?
 HOT_LINK	= $(LIBSYSCL)
-else
+endif
 
 # SPARC-SOLARIS
 ifeq ("$(PLATFORM)" , "sparc-solaris")
+FLAG = ok
 HOT_CFLAGS = -DTHREADED_SELECT
 HOT_MLLINK = # empty
 HOT_LINK  = -lthread -lposix4 -ltermcap -lsocket -lnsl -lm -ldl
 HOT_THREAD_OBJ = solaris_thread$(OBJ)
-else
+endif
 
 # I386-SOLARIS: same as for sparc_solaris
 ifeq ("$(PLATFORM)" , "i386-solaris")
+FLAG = ok
 HOT_CFLAGS = -DTHREADED_SELECT
 HOT_MLLINK = # empty
 HOT_LINK = -lthread -lposix4 -ltermcap -lsocket -lnsl -lm -ldl
 HOT_THREAD_OBJ = solaris_thread$(OBJ)
-else
+endif
 
 # I386-LINUX
 # The -D_RENTRANT is needed for the use of threads
 ifeq ("$(PLATFORM)" , "i386-linux")
+FLAG = ok
 HOT_CFLAGS	= -DTHREADED_SELECT -DUSE_PTHREAD_SEMAPHORE -DUSE_PTHREAD_LOCK -D_REENTRANT -DLINUX_THREADS
 HOT_MLLINK	= # empty
 HOT_LINK	= -lpthread -ltermcap -lm -ldl
 HOT_THREAD_OBJ = pthread_intf$(OBJ)
-else
+endif
 
 # ALPHA-OSF1
 ifeq ("$(PLATFORM)" , "alpha-osf1")
+FLAG = ok
 HOT_CFLAGS	= -DOSF1_THREADS
 HOT_MLLINK	=
 HOT_LINK	= -lrt -lpthreads -lmach -lexc -lc_r -lm -ltermcap -taso
 HOT_THREAD_OBJ  = pthread_intf$(OBJ)
-else
+endif
 
 # RS6000-AIX
 ifeq ("$(PLATFORM)" , "rs6000-aix")
+FLAG = ok
 HOT_CFLAGS	= -DOSF1_THREADS
 HOT_MLLINK	= # empty
 HOT_LINK	= -lpthreads -lm -ltermcap
 HOT_THREAD_OBJ = pthread_intf$(OBJ)
-else
+endif
 
 # HP9000-HPUX
 ifeq ("$(PLATFORM)" , "hp9000-hpux")
+FLAG = ok
 HOT_CFLAGS	= -DINLINE_PRAGMA
 HOT_MLLINK	= # empty
 HOT_LINK	=
 HOT_THREAD_OBJ = pthread_intf$(OBJ)
-else
+endif
 
 # MIPS-IRIX64
 ifeq ("$(PLATFORM)" , "mips-irix64")
+FLAG = ok
 HOT_CFLAGS_mips_irix64 = -DINLINE_PRAGMA -DTHREADED_SELECT
 HOT_MLLINK_mips_irix64 = # empty
 HOT_LINK_mips_irix64 = -lpthread -ltermcap -lm
 HOT_THREAD_OBJ_mips_irix64 = pthread_intf$(OBJ)
-else
+endif
 
-# Currently, there is no handling for this case.
-ERROR = yes
-endif
-endif
-endif
-endif
-endif
-endif
-endif
+# If nothing is applicable
+ifeq ("$(FLAG)" , "no")
+all : 
+	echo "No configuration for this architecture"
 endif
 
 #*************************************************************#
@@ -289,7 +293,8 @@ clean:
 	$(CLEANDIR)
 
 depend:
-	ocamldep *.{ml,mli} > $(DEPEND)
+	ocamldep -I $(ENSROOT)/lib/$(PLATFORM) *.ml *.mli > $(DEPEND)
+
 
 include $(DEPEND)
 

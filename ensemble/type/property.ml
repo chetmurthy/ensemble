@@ -340,6 +340,7 @@ let total = vsync @ [Total]
 let scale = vsync @ [Scale]
 let fifo = [Frag;Flow]
 let causal = vsync @ [Causal]
+let local =  vsync @ [Local]
 
 (**************************************************************)
 

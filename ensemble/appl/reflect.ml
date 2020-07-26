@@ -21,8 +21,6 @@ let remove_timeout = Time.of_int 20
  *)
 let repeat_timeout = Time.of_string "0.1"
 
-let max_msg_len = Buf.int_of_len Buf.max_msg_len
-
 (* This function returns the interface record that defines
  * the callbacks for the application.
  *)
@@ -45,12 +43,12 @@ let intf alarm sock =
 	let _,time',digest' = 
 	  try Hashtbl.find clients (inet,port) with Not_found ->
 	    let sendinfo = Hsys.sendto_info sock [|inet,port|] in
-	    let digest = Digest.string "" in
+	    let digest = Buf.digest_sub Buf.empty Buf.len0 Buf.len0 in
 	    let info = (sendinfo,(ref time),(ref digest)) in
 	    Hashtbl.add clients (inet,port) info ;
 	    info
 	in
-	let digest = Digest.string msg in
+	let digest = Buf.digest_sub msg Buf.len0 (Buf.length msg) in
 	
 	if digest <> !digest' 
         || Time.ge time (Time.add !time' repeat_timeout)
@@ -68,8 +66,7 @@ let intf alarm sock =
 	      if !verbose then
 		printf "REFLECT:send_gossip: to   (%s,%d)\n" 
 		  (Hsys.string_of_inet inet) port ;
-	      let buf = Buf.of_string msg in
-	      ignore (Hsys.sendto info buf Buf.len0 (Buf.length buf))
+	      ignore (Hsys.sendto info msg Buf.len0 (Buf.length msg))
 	    )
 	  ) dests
 	)
@@ -81,17 +78,17 @@ let intf alarm sock =
     in
       
     let recv_gossip =
-      let buf = String.create max_msg_len in
+      let buf = Buf.create Buf.max_msg_len in
       fun () ->
 	if !verbose then 
 	  printf "REFLECT:#clients=%d\n" (hashtbl_size clients) ;
 	try
-          let (len,inet,port) = Hsys.recvfrom sock buf 0 max_msg_len in
+          let (len,inet,port) = Hsys.recvfrom sock buf Buf.len0 Buf.max_msg_len in
 	  if !verbose then (
 	    printf "REFLECT:recv_gossip: from (%s,%d)\n" 
 	      (Hsys.string_of_inet inet) port ;
 	    ) ;
-	  let msg = String.sub buf 0 len in
+	  let msg = Buf.sub buf Buf.len0 len in
 	  reflect (inet,port) msg
 	with e -> 
 	  if !verbose then
