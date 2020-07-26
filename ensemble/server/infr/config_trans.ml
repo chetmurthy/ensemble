@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* CONFIG_TRANS.ML *)
 (* Author: Mark Hayden, 10/96 *)
 (**************************************************************)
@@ -177,8 +167,8 @@ let f alarm ranking bot_nomsg ((ls,vs) as vf) up_hdlr =
     if vs.key = Security.NoKey then Unsigned.f () else Signed.f ()
   in
 
-  let (gossip_gossip,gossip_disable) =
-    if ls.am_coord then (
+  let (gossip_gossip,gossip_disable) = 
+(*    if ls.am_coord then ( *)
       let receive _ secure =
 	let handler _ mlobj _ _ =
 	  match unpack_gossip secure mlobj with
@@ -192,10 +182,10 @@ let f alarm ranking bot_nomsg ((ls,vs) as vf) up_hdlr =
       let gossip = Transport.gossip trans in
       let disable () = Transport.disable trans in
       (gossip,disable)
-    ) else (
+(*    ) else (
       let gossip _ _ _ _ _ = failwith "non-coord gossipping" ; () in
       (gossip,ident)
-    )
+    ) *)
   in
 
   let (primary_cast,primary_send,primary_disable) =

@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* PERF.ML: round-trip performance demo *)
 (* Author: Mark Hayden, 8/95 *)
 (**************************************************************)
@@ -308,9 +298,10 @@ let ring nmsgs size nrounds (ls,vs) =
   let got = ref 0 in
   let got_end = ref false in
   let gc = Gc.stat () in
+  let to_send = ref 0 in
 
   let msg = fast_iov size in
-  let msgs = Array.create nmsgs (Cast msg) in
+  let msgs = Array.create 1 (Cast msg) in
   let msg_ref () =
     for i = 1 to nmsgs do
       ignore (Iovecl.copy msg)
@@ -367,26 +358,33 @@ let ring nmsgs size nrounds (ls,vs) =
 	    got_end := true ;
 	    [||]
 	  )
-	) else ( msg_ref () ; msgs )
+	) else ( to_send := nmsgs; [||])
       ) else [||]
     ) else null
   and send _ = null
   and hbt _ _ =
-    if !quiet then
-      printf "RING:heartbeat (%d/%d of %d)\n" !got msgs_per_rnd !rnd ;
-    if !got_end then (
-      let now = Time.to_float (Time.gettimeofday ()) in
+   if !to_send > 0 then (
+      decr to_send; 
+      let msg = ignore (Iovecl.copy msg) in
+      msgs
+    ) else (
 
-      let dif = now -. !end_t in
-(* printf "RING heartbeat: %f elapsed since end\n" dif ;*)
-      if dif > !sleep then
-        [|Control Leave|]
-      else (
-(*        printf "RING: %f elapsed since end\n" dif ;*)
- 	[||]
-      )
-    )
-    else [||]
+     if !quiet then
+       printf "RING:heartbeat (%d/%d of %d)\n" !got msgs_per_rnd !rnd ;
+     if !got_end then (
+       let now = Time.to_float (Time.gettimeofday ()) in
+         
+       let dif = now -. !end_t in
+         (* printf "RING heartbeat: %f elapsed since end\n" dif ;*)
+         if dif > !sleep then
+           [|Control Leave|]
+         else (
+           (*        printf "RING: %f elapsed since end\n" dif ;*)
+ 	         [||]
+         )
+     )
+     else [||]
+   )
   and start = msg_ref () ; msgs 
   in Some{
     start = start ;
@@ -586,7 +584,8 @@ let rpc size rounds (ls,vs) =
   let request = [|Cast(msg)|] in
   let reply = [|Send1(0,msg)|] in
   let count = ref 0 in
-  let ctr,_ = meter "rpc" (*10000*)1000 (Some rounds) (fun () -> if ls.rank=0 then "coord" else "") in
+  let roundcount = ref 0 in
+  let ctr,_ = meter "rpc" (*10000*)1000 (*(Some rounds)*)None (fun () -> if ls.rank=0 then "coord" else "") in
   let start =
     if ls.rank = 0 then (
       count := pred ls.nmembers ;
@@ -597,8 +596,15 @@ let rpc size rounds (ls,vs) =
     if ls.rank <> 0 then (
       fun _ -> 
     	ctr () ;
-	msg_ref () ;
-	reply 
+	incr roundcount;
+	if !roundcount >= rounds then (
+	    Timestamp.print () ;
+	    Array.append reply [|Control Leave|]
+	)
+	else ( 
+	  msg_ref () ;
+	  reply 
+        )
     ) else null
   and send origin =
     if ls.rank = 0 then (
@@ -606,9 +612,16 @@ let rpc size rounds (ls,vs) =
 	decr count ;
 	if !count =| 0 then (
 	  ctr () ;
-	  count := pred ls.nmembers ;
-	  msg_ref () ;
-	  request
+  	  incr roundcount;
+	  if !roundcount >= rounds then (
+            Timestamp.print ();
+            [| Control Leave |]
+          )
+          else (
+	    count := pred ls.nmembers ;
+	    msg_ref () ;
+	    request
+          )
 	) else [||]
     ) else null
   and hbt _ _ = [||]
@@ -618,6 +631,7 @@ let rpc size rounds (ls,vs) =
     send = send ;
     hbt = hbt
   } 
+
 
 (**************************************************************)
 (**************************************************************)

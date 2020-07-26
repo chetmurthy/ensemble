@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* SUSPECT.ML *)
 (* Author: Mark Hayden, 11/96 *)
 (**************************************************************)
@@ -121,8 +111,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | ETimer ->
       let time = getTime ev in
       if Time.ge time s.next_sweep then (
-	s.next_sweep <- Time.add time s.sweep ;
-	dnnm (timerAlarm name s.next_sweep) ; (* request next sweep *)
+        s.next_sweep <- Time.add time s.sweep ;
+        dnnm (timerAlarm name s.next_sweep) ; (* request next sweep *)
       	logp (fun () -> sprintf "Pinging:%s" (Time.to_string time)) ;
 	let ev = castUnrel name in
 
@@ -148,7 +138,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  dnnm (suspectReason name suspicions name) ;
 	)
       ) ;
-      upnm ev
+        upnm ev
 
   | EDump -> dump vf s ; upnm ev
   | _ -> upnm ev

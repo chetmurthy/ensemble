@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* IQ.MLI *)
 (* Author: Mark Hayden, 4/95 *)
 (**************************************************************)
@@ -44,6 +34,12 @@ val set_hi     	: 'a t -> seqno -> unit
 val assign		: 'a t -> seqno -> Iovecl.t -> 'a -> bool
 val msg_update          : 'a t -> seqno ->'a -> bool
 val opt_insert_check_doread : 'a t -> seqno -> Iovecl.t -> 'a -> bool
+
+(* Clear an item. This was exposed by Roy Friedman for the Fuzzy
+ * related code. Now the mnak layer might with to delete some
+ * messages from the middle of the buffer.
+ *)
+val clear_item			: 'a t -> seqno -> unit
 
 (* Split the above into two pieces.
  *)

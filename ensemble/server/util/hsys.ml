@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* HSYS.ML *)
 (* Author: Mark Hayden, 5/95 *)
 (**************************************************************)
@@ -464,10 +454,10 @@ let bind_any debug sock host =
     
 (**************************************************************)
     
-let heap = Socket.heap
-let addr_of_obj = Socket.addr_of_obj
-let minor_words = Socket.minor_words
-let frames = Socket.frames
+(*let heap = Socket.heap
+let addr_of_obj = Socket.addr_of_obj*)
+let minor_words () = int_of_float((Gc.stat()).Gc.minor_words)
+(*let frames = Socket.frames*)
   
 (**************************************************************)
   

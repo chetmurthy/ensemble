@@ -1,14 +1,4 @@
 /**************************************************************/
-/*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
-/**************************************************************/
 /* ENS_THREADS.C */
 /* Author: Ohad Rodeh 10/2003 */
 /* Based on code from HOT, written by Robbert Van Renesse, Werner Vogels,
@@ -314,6 +304,86 @@ void EnsLockTake(ens_lock_t *l)
 	EnsPanic("EnsLockTake: pthread_mutex_lock") ;
 }
 
+
+void EnsLockRelease(ens_lock_t *l)
+{
+    assert(l) ;
+//    TRACE("ce_lck_Unlock");
+    if (pthread_mutex_unlock(&l->lck))
+	EnsPanic("EnsLockRelease: pthread_mutex_unlock") ;
+}
+#endif
+
+/**************************************************************/
+/* The Darwin (OS X) version
+ */
+#ifdef __APPLE__
+#include <pthread.h>
+#include <semaphore.h>
+
+struct ens_lock_t {
+    pthread_mutex_t lck;
+};
+
+static pthread_t td;
+
+typedef void*(*ens_thread_routine_t)(void*);
+
+/* Create a new thread
+ */
+void EnsThreadCreate(void (*routine)(void*), void *arg )
+{
+    pthread_attr_t attr;
+    
+    if (pthread_attr_init(&attr))
+	EnsPanic("EnsThreadCreate: pthread_attr_init");
+    
+/* Linux pthreads use an "enum" for this rather than #define, so we
+ * just check for Linux.  Which platforms don't support this?  
+ */
+#if defined(PTHREAD_CREATE_DETACHED)
+    /* This is done in order to release the thread resources when the
+     * thread dies.  
+     */
+    if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+	EnsPanic("EnsThreadCreate: pthread_attr_setdetachstate");
+#endif
+    
+    if (pthread_create(&td, &attr, (ens_thread_routine_t) routine, arg))
+	EnsPanic("EnsThreadCreate: pthread_create");
+    pthread_attr_destroy(&attr);
+}
+
+
+/* Create a Lock
+ */
+ens_lock_t *EnsLockCreate(void)
+{
+    ens_lock_t *l;
+    
+    l = (ens_lock_t*) EnsMalloc(sizeof(ens_lock_t)) ;
+
+    if (pthread_mutex_init(&l->lck,NULL))
+	EnsPanic("EnsLockCreate: pthread_mutex_init") ;
+    return l;
+}
+
+void EnsLockDestroy(ens_lock_t *l)
+{
+    assert(l) ;
+    
+   if (pthread_mutex_destroy(&l->lck))
+       EnsPanic("EnsLockDestroy: pthread_mutex_destroy");
+    free(l);
+}
+
+void EnsLockTake(ens_lock_t *l)
+{
+    assert(l) ;
+//    TRACE("ce_lck_Lock");
+    if (pthread_mutex_lock(&l->lck))
+	EnsPanic("EnsLockTake: pthread_mutex_lock") ;
+}
 
 void EnsLockRelease(ens_lock_t *l)
 {

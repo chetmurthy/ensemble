@@ -1,14 +1,4 @@
 /**************************************************************/
-/*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
-/**************************************************************/
 /* MM.C */
 /* Author: Ohad Rodeh, 9/2001 */
 /* The basic memory management functions. Used to manage user data */

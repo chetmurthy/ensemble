@@ -9,8 +9,9 @@ LICENSE
    Ensemble System, either verbatim or with modifications. Each
    licensee is addressed as "you" or "Licensee."
 
-2. Cornell University, the Hebrew University, and IBM Israel Science
-   and Technology hold copyrights in the Software. The copyright
+2. Cornell University, the Hebrew University, IBM Israel Science
+   and Technology, and Technion - Israel Institute of Technology 
+   hold copyrights in the Software. The copyright
    holder reserves all rights except those expressly granted to
    licensees, and U.S. Government license rights.
 
@@ -27,10 +28,12 @@ LICENSE
 5. You must cause the modified Software to carry prominent notices
    stating that you changed specified portions of the Software.
 
-6. LICENSEE AGREES THAT THE EXPORT OF GOODS AND/OR TECHNICAL DATA FROM
-   THE UNITED STATES MAY REQUIRE SOME FORM OF EXPORT CONTROL LICENSE
-   FROM THE U.S. GOVERNMENT AND THAT FAILURE TO OBTAIN SUCH EXPORT
-   CONTROL LICENSE MAY RESULT IN CRIMINAL LIABILITY UNDER U.S. LAWS.
+6. LICENSEE AGREES THAT THE EXPORT AND IMPORT OF GOODS AND/OR TECHNICAL DATA
+   BETWEEN COUNTRIES MAY REQUIRE SOME FORM OF EXPORT CONTROL LICENSE FROM
+   THE CORRESPONDING GOVERNMENT AGENCIES. IT IS THE RESPONSIBILITY OF THE
+   LICENSEE TO VERIFY WHETHER SUCH REQUIREMENTS EXIST AND, IF NEEDED, OBTAIN
+   THE APPROPRIATE LICENSES. IN SOME COUNTRIES, FAILURE TO DO SO MAY RESULT
+   IN CRIMINAL LIABILITY.
 
 7. Disclaimer of warranty: Licensor provides the software on an ``as
    is'' basis. Licensor does not warrant, guarantee, or make any

@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* MCREDIT.ML *)
 (* Author: Mark Hayden, Zhen Xiao, 3/97 *)
 (**************************************************************)
@@ -46,7 +36,8 @@ type t = {
     ack_que : int array ;
     mutable waitfor : rank ;
     failed : bool array ;
-    mutable all_failed : bool
+    fuzzy : bool array ;
+    mutable all_failed_or_fuzzy : bool
   } 
 
 (* Note: we require that initially send_credit satisfies
@@ -86,13 +77,14 @@ let create rank nmembers ack_thresh send_credit recv_credit =
     ack_que = Array.create nmembers 0 ;
     waitfor = waitfor ;
     failed = Array.create nmembers false ;
-    all_failed = (nmembers = 1)
+    fuzzy = Array.create nmembers false;
+    all_failed_or_fuzzy = (nmembers = 1)
   } 
 
 let wait_next m =
   let init = m.waitfor in
   m.waitfor <- (succ m.waitfor) mod m.nmembers ;
-  while m.rank =| m.waitfor || m.failed.(m.waitfor) do
+  while m.rank =| m.waitfor || m.failed.(m.waitfor) || m.fuzzy.(m.waitfor) do
     m.waitfor <- (succ m.waitfor) mod m.nmembers
   done
 
@@ -100,7 +92,7 @@ let wait_next m =
    the group have failed.
  *)
 let increase m =
-  if not m.all_failed then (
+  if not m.all_failed_or_fuzzy then (
 (*
     failwith "increase:but all members are failed" ;
 *)
@@ -155,19 +147,47 @@ let fail m rank =
 
   let alive = ref false in
   for i = 0 to pred m.nmembers do
-    if i <> m.rank && (not m.failed.(i)) then
+    if i <> m.rank && (not m.failed.(i)) && (not m.fuzzy.(i)) then
       alive := true
   done ;
-  m.all_failed <- not !alive ;
+  m.all_failed_or_fuzzy <- not !alive ;
 
-  if (not m.all_failed) && m.waitfor = rank then 
+  (* The code below ensures that unless everyone is dead or fuzzy, waitfor
+   * cannot be fuzzy or dead
+   *)
+  if (not m.all_failed_or_fuzzy) && m.waitfor = rank then 
     increase m
+
+let set_fuzzy m rank =
+  if rank = m.rank then
+    failwith "I'm fuzzy?" ;
+  m.fuzzy.(rank) <- true ;
+  let alive = ref false in
+  for i = 0 to pred m.nmembers do
+    if i <> m.rank && (not m.failed.(i)) && (not m.fuzzy.(i)) then
+      alive := true
+  done ;
+  m.all_failed_or_fuzzy <- not !alive ;
+  (* The code below ensures that unless everyone is dead or fuzzy, waitfor
+   * cannot be fuzzy or dead
+   *)
+ if (not m.all_failed_or_fuzzy) && m.waitfor = rank then 
+    increase m
+
+let reset_fuzzy m rank =
+  if m.fuzzy.(rank) then (
+    m.fuzzy.(rank) <- false;
+    if m.all_failed_or_fuzzy && rank <> m.rank then (
+      m.all_failed_or_fuzzy <- false;
+      increase m
+    )
+  )
 
 let check m =
 (*
   eprintf "fast: m.send_credit.(%d) = %d  msg_len = %d\n" m.waitfor m.send_credit.(m.waitfor) m.msg_len ;
 *)
-  m.all_failed || (m.send_credit.(m.waitfor) > m.msg_len)
+  m.all_failed_or_fuzzy || (m.send_credit.(m.waitfor) > m.msg_len)
 
 
 (* Ohad. How much credit do I have?
@@ -190,6 +210,9 @@ let take m credit =
 let clear m =
   let credit = int_min m.msg_len m.send_credit.(m.waitfor) in
   for rank = 0 to pred m.nmembers do
+    (* Note that here fuzzy member can get negative send_credit,
+     * but that's OK.
+     *)
     if not m.failed.(rank) then
       array_sub m.send_credit rank credit ;
   done ;
@@ -199,8 +222,8 @@ let clear m =
 let string_of_queue_len q = string_of_int (Queuee.length q)
 
 let to_string_list m = [
-  sprintf "rank=%d nmembers=%d msg_len=%d waitfor=%d all_failed=%b"
-    m.rank m.nmembers m.msg_len m.waitfor m.all_failed ;
+  sprintf "rank=%d nmembers=%d msg_len=%d waitfor=%d all_failed_or_fuzzy=%b"
+    m.rank m.nmembers m.msg_len m.waitfor m.all_failed_or_fuzzy ;
   sprintf "send_credit=%s" 
     (string_of_int_array m.send_credit) ;
   sprintf "ack_que=%s"
@@ -208,7 +231,10 @@ let to_string_list m = [
   sprintf "recv_credit=%s"
     (string_of_int_array m.recv_credit) ;
   sprintf "failed=%s"
-    (string_of_bool_array m.failed)
+    (string_of_bool_array m.failed) ;
+  sprintf "fuzzy=%s"
+    (string_of_bool_array m.fuzzy)
+
 ]  
 (*end*)
 

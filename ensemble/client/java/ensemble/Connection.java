@@ -137,7 +137,7 @@ public class Connection
     // scratch space for ntohl
     private byte[] scratch_ntohl= new byte[INT_SIZE];
     
-    private final int ENS_DESTS_MAX_SIZE=      10;
+    private final int ENS_DESTS_MAX_SIZE=      100;
     private final int ENS_GROUP_NAME_MAX_SIZE= 64;
     private final int ENS_PROPERTIES_MAX_SIZE= 128;
     private final int ENS_PROTOCOL_MAX_SIZE=   256;
@@ -198,6 +198,7 @@ public class Connection
      * 
      * Note: This version of C# does not support generics, so we need to
      * use casting.
+     * Note: Must synchronize on access to this hashtable!
      */
     private Hashtable memb_ctx_tbl = new Hashtable() ;
     
@@ -206,25 +207,31 @@ public class Connection
      */
     void ContextAdd(Member m)
     {
-	Object old = memb_ctx_tbl.put(new Integer(m.id), (Object) m);
-	if (old != null) {
-	    System.out.println("Such a context already exists");
-	    System.exit(1);
-	}
+      synchronized(memb_ctx_tbl) {
+        Object old = memb_ctx_tbl.put(new Integer(m.id), (Object) m);
+        if (old != null) {
+          System.out.println("Such a context already exists");
+          System.exit(1);
+        }
+      }
     }
     
     /* Release a context descriptor.
      */
     private void ContextRemove(Member m)
     {
-	memb_ctx_tbl.remove(new Integer(m.id));
+      synchronized(memb_ctx_tbl) {
+        memb_ctx_tbl.remove(new Integer(m.id));
+      }
     }
     
     /* Lookup a context descriptor.
      */
     private Member ContextLookup(int id)
     {
-	return (Member) this.memb_ctx_tbl.get(new Integer(id));
+      synchronized(memb_ctx_tbl) {
+        return (Member) this.memb_ctx_tbl.get(new Integer(id));
+      }
     }
     /**************************************************************/
     
@@ -437,9 +444,6 @@ public class Connection
      */
     private void WriteData(byte[] data) throws EnsembleException
     {
-        if (data.length > ENS_MSG_MAX_SIZE)
-	    throw new EnsembleException("User asked to send a message larger than" +
-                                        ENS_MSG_MAX_SIZE);
 	write_data = data;
     }
     
@@ -669,34 +673,35 @@ public class Connection
      */
     void Join(Member m, JoinOps ops) throws EnsembleException
     {
-	synchronized(send_mutex) 
+      synchronized(send_mutex) 
 	    {
 		
-		/* Check that this is a fresh Member, e.g., we haven't already
-		 * joined a group with it.
-		 */
-		if (m.current_status != Member.Pre) 
-		    throw new EnsembleException("Trying to Join more than once");
-		
-		// Update the state of the member to Joining
-		m.current_status = Member.Joining;
-		
-		// We must provide the member with an ID prior to any other operation
-		m.id = AllocMid();
-		
-		WriteBegin(); 
-		// Write the downcall.
-		WriteHdr(m,DN_JOIN);
-		WriteString(ops.group_name);
-		WriteString(ops.properties);
-		WriteString(ops.parameters);
-		WriteString(ops.princ);
-		WriteBool(ops.secure);
-		WriteEnd();
-		
-		// Add the member to the hashtable. This will allow
-		// finding it when messages arrive on the socket.
-		ContextAdd(m);
+        /* Check that this is a fresh Member, e.g., we haven't already
+         * joined a group with it.
+         */
+        if (m.current_status != Member.Pre) 
+          throw new EnsembleException("Trying to Join more than once");
+        
+        // Update the state of the member to Joining
+        m.current_status = Member.Joining;
+        
+        // We must provide the member with an ID prior to any other operation
+        m.id = AllocMid();
+        
+        // Add the member to the hashtable. This will allow
+        // finding it when messages arrive on the socket.
+        ContextAdd(m);
+
+        WriteBegin(); 
+        // Write the downcall.
+        WriteHdr(m,DN_JOIN);
+        WriteString(ops.group_name);
+        WriteString(ops.properties);
+        WriteString(ops.parameters);
+        WriteString(ops.princ);
+        WriteBool(ops.secure);
+        WriteEnd();
+        
 	    }
     }
     

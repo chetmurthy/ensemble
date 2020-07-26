@@ -6,7 +6,7 @@
 <body text="#000000" bgcolor="#FFFFFF">
 
 <center>
-<h1>Ensemble 2.00</h1></center>
+<h1>Ensemble 2.01</h1></center>
 
 <center><h2>
 Release Notes and Installation Instructions
@@ -14,11 +14,12 @@ Release Notes and Installation Instructions
 
 <center>Copyright &copy;1997 Cornell University, Ithaca, NY, USA,
 Hebrew University 2000, Jerusalem Israel, 
-IBM Israel Science and Technology 2002
+IBM Israel Science and Technology 2002,
+Technion - Israel Institute of Technology 2005
 <br>All rights reserved.</center>
 
 <br><i>Maintainer</i>:
-<a href="mailto:orodeh@il.ibm.com">Ohad Rodeh</a>,
+<a href="mailto:alon@cs.technion.ac.il">Alon Kama</a>,
 <hr><a NAME="intro"></a>
 <h2>Introduction</h2>
 <p>
@@ -44,7 +45,7 @@ only significant when Ensemble is used in high-performance settings.
 <a NAME="software"></a>
 <h2>Required Software</h2>
 <p>
-To compile Ensemble you need <b>Version 3.07</b> of the Objective
+To compile Ensemble you need <b>Version 3.08</b> of the Objective
 Caml (O'Caml) compiler. For unix systems, you also need the make
 version by GNU, also known as GNU-make. For windows, you'll need the
 Visual Studio compiler verion 6 and the nmake tool.
@@ -96,7 +97,7 @@ system you're using and where to find the OCaml libraries.
       for this if you type:
       <pre>
       &nbsp;&nbsp;&nbsp; % ocamlc -v
-      &nbsp;&nbsp;&nbsp; The Objective Caml compiler, version 3.07
+      &nbsp;&nbsp;&nbsp; The Objective Caml compiler, version 3.08
       &nbsp;&nbsp;&nbsp; Standard library directory: /usr/local/lib/ocaml
       </pre>
       The second line printed out by this is the location where O'Caml installed
@@ -107,7 +108,7 @@ system you're using and where to find the OCaml libraries.
       </pre>
       We recommend you add these to your '.tcshrc' or equivalent for your shell.
 
-      If you have some other version, then obtain version 3.07 and install
+      If you have some other version, then obtain version 3.08 and install
       it.  O'Caml is freely available from <a
       href="http://caml.inria.fr/ocaml">http://caml.inria.fr/ocaml</a>
       and is easy to install (precompiled binaries are available for
@@ -125,13 +126,13 @@ Makefile.nt' instead of 'make'.
 <a NAME="download"></a>
 <h2>How to download and extract the Ensemble software</h2>
 <p>
-Download Ensemble from <a href="http://www.cs.cornell.edu/Info/Projects/Ensemble/ftp.html">http://www.cs.cornell.edu/Info/Projects/Ensemble/ftp.html</a>.
+Download Ensemble from <a href="http://dsl.cs.technion.ac.il/projects/Ensemble/ftp.html">http://dsl.cs.technion.ac.il/projects/Ensemble//ftp.html</a>.
 Ensemble is no longer encrypted. Simply unzip and untar the distribution.
 It will put the sources in a directory called "ensemble". On Windows NT
 you can use the winzip program. On Unix platforms, do it this way:
 <pre>
 &nbsp;&nbsp;&nbsp; # uncompress and untar the distribution
-&nbsp;&nbsp;&nbsp; gunzip ensemble-2_00.tar.gz
+&nbsp;&nbsp;&nbsp; gunzip ensemble-2_01.tar.gz
 &nbsp;&nbsp;&nbsp; tar xvf ensemble.tar
 </pre>
 <p>
@@ -140,7 +141,7 @@ you can use the winzip program. On Unix platforms, do it this way:
 <h2>Building Ensemble</h2>
 Ensemble is supported on Unix (and Unix like systems), and win32
 platforms. It is tested mainly on Linux and WinXP, but also on
-sparc-solaris, HP-UX, NT4, WIN2000.
+sparc-solaris, HP-UX, NT4, WIN2000, and OS X
 
 <p>
 Configure the system. If this is a win32 platform, then there is nothing to do and you can skip this stage. Otherwise, do a
@@ -153,8 +154,8 @@ settings and write them into the mk/env.mk file. If the settings have
 not been computed correctly you can alter them by hand at this point
 by editting mk/env.mk. The PLATFORM variable is composed of a
 machine-type and the operating-system type. The machine-type should be
-one of: sparc, i386, rs6000, alpha. The os-type should be one of:
-solaris, aix, hpux, linux, osf1. For example, on a standard linux OS
+one of: sparc, i386, rs6000, alpha, powerpc, ppc64. The os-type should be one of:
+solaris, aix, hpux, linux, osf1, darwin. For example, on a standard linux OS
 with an intel CPU PALTFORM should be i386-linux.
 
 Compile the Ensemble system and demonstration programs as follows:

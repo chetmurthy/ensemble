@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* ENSEMBLED.ML *)
 (* Author:  Ohad Rodeh, 10/2003 *)
 (* Based on code by Mark Hayden and Alexey Vaysburd *)
@@ -419,7 +409,6 @@ let dncall_unmarsh create_new recv_action buf len iovl =
     | 4 ->				(* Send1*)
 	let dest = Buf.read_int32 buf len8 in
 	log (fun () -> sprintf "Send, dest=%d" dest);
-	if dest >| 5 then failwith "sanity, destination out of bounds";
 	recv_action id (Send1(dest,iovl))
     | 5 ->				(* Suspect *)
 	let size = Buf.read_int32 buf len8 in

@@ -1,14 +1,4 @@
 /**************************************************************/
-/*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
-/**************************************************************/
 /* C_PERF.C: Randomly multicast/send messages and fail */
 /* Author: Ohad Rodeh 12/2003 */
 /* Tests two scenarios: ping latency, and bandwith */

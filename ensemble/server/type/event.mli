@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* EVENT.MLI *)
 (* Author: Mark Hayden, 4/95 *)
 (* Based on Horus events by Robbert vanRenesse *)
@@ -79,6 +69,10 @@ type typ =
   | ERekeyCleanup
   | ERekeyCommit 
 
+(* Fuzzy related events *)
+  | EFuzzy				(* Report a change of fuzziness *)
+  | EFuzzyRequest		(* Request a change of fuzziness *)
+  | EFuzzyAuthorize	(* Authorize a change of fuzziness *)
 
 (**************************************************************)
 (* These are compact descriptions of types. Used for optimizing
@@ -146,6 +140,14 @@ type field =
   | SecChannelList of Trans.rank list  (* The channel list held by the SECCHAN layer *)
   | SecStat of int                      (* PERF figures for SECCHAN layer *)
   | RekeyFlag of bool                   (* Do a cleanup or not *)
+  | TTL of int                          (* Time-to-live *)
+(* Fuzzy related fields *)
+  | LocalFuzziness	of seqno Arrayf.t	(* local fuzziness vector *)
+  | GlobalFuzziness of seqno Arrayf.t	(* global fuzziness vector *)
+(* The following is part of the EStable event *)
+  | LocalFuzzyStability of seqno Arrayf.t (* stable messages wrt local fuzzy nodes *)
+  | GlobalFuzzyStability of seqno Arrayf.t (* stable messages wrt global fuzzy nodes *)
+  | OwnAcked of seqno Arrayf.t (* the acks I got from each node for my messages *)
 
 (**************************************************************)
 
@@ -254,6 +256,7 @@ val getAuthData         : t -> Addr.set * Auth.data
 val getSecChannelList   : t -> Trans.rank list
 val getSecStat          : t -> int 
 val getRekeyFlag        : t -> bool 
+val getTTL              : t-> int option
 
 val setSendIovFragment  : debug -> t -> Iovecl.t -> t
 val setCastIovFragment  : debug -> t -> Iovecl.t -> t
@@ -262,6 +265,11 @@ val getAgreedKey        : t -> Security.key
 val setPeer        	: debug -> t -> rank -> t
 val setSendUnrelPeer   	: debug -> t -> rank -> t
 
+val getLocalFuzziness	: t -> seqno Arrayf.t
+val getGlobalFuzziness	: t -> seqno Arrayf.t
+val getLocalFuzzyStability	: t -> seqno Arrayf.t
+val getGlobalFuzzyStability	: t -> seqno Arrayf.t
+val getOwnAcked	: t -> seqno Arrayf.t
 (**************************************************************)
 
 

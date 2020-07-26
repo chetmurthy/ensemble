@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* IQ.ML *)
 (* Author: Mark Hayden, 7/95 *)
 (**************************************************************)
@@ -448,7 +438,7 @@ let hole_help iq i =
   if first_set <=| iq.lo || i >=| iq.hi then
     None
   else 
-    Some (iq.lo,first_set)
+    Some (i,first_set)
 
 let hole iq = hole_help iq iq.lo
 let read_hole iq = 

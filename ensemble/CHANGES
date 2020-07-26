@@ -1,3 +1,17 @@
+Ensemble 2.01
+-------------
+* Buf fixes related to synchronization in the Java interface
+
+* Bug fix in MNAK related to calculating the size of a hole
+
+* Removed 32K limit on casts/sends through Ensembled
+
+* Removed artificial limit of 5 connections on Ensembled
+
+* Fixed case where, upon a new view, the OK message may become lost and the view would be stuck.
+
+
+
 Ensemble 1.42
 -------------
 * Migrated to using a configuration file (.ensemble.conf) instead of using environment

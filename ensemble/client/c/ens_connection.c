@@ -1,14 +1,4 @@
 /**************************************************************/
-/*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
-/**************************************************************/
 /* ENS_CONNECTION.C */
 /* Author: Ohad Rodeh 10/2003 */
 /**************************************************************/
@@ -54,7 +44,12 @@
 #include "ens_utils.h"
 #include <assert.h>
 #include <stdio.h>
+#ifndef __APPLE__
 #include <malloc.h>
+#else
+#include <stdlib.h>
+#endif
+
 /**************************************************************/
 #define NAME "CONNECTION"
 /**************************************************************/
@@ -906,7 +901,7 @@ ens_conn_t *ens_Init(int port)
     ens_sock_t sock;
     ens_conn_t *conn;
     
-    if (-1 == EnsTcpInit(port, &sock))
+    if (-1 == EnsTcpInit(port,&sock))
         EnsPanic("could not connect to the server, it is probably down.");
 
     // Initialize the connection structure

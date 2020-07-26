@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* LAYER.MLI *)
 (* Author: Mark Hayden, 4/95 *)
 (**************************************************************)
@@ -18,6 +8,15 @@ open Trans
 
 type 'a saved = 'a option ref
 
+type roaming_t = {
+  mutable location : location_t;  
+  mutable prev_loc : location_t;
+  mutable new_loc  : location_t;
+ (*  mutable speed    : location_t; *) (* TODO:  Allow for randomly chosen speeds *)
+  mutable time_to_dest : Time.t;
+  mutable duration_to_dest : float ;
+  mutable wait_at_dest : Time.t
+}
 (**************************************************************)
 
 type ('a,'b,'c) handlers_out = {
@@ -25,7 +24,7 @@ type ('a,'b,'c) handlers_out = {
   upnm_out	: Event.up -> unit ;
   dn_out 	: Event.dn -> 'c -> 'b -> unit ;
   dnlm_out	: Event.dn -> 'a -> unit ;
-  dnnm_out	: Event.dn -> unit
+  dnnm_out	: Event.dn -> unit 
 }
 
 type ('a,'b,'c) handlers_in = {
@@ -79,6 +78,8 @@ type state = {
   interface        : Appl_intf.New.t ;
   switch	   : Time.t saved ;
   exchange         : (Addr.set -> bool) option ;
+  roaming_r          : roaming_t ref ;
+  manet_disconnected : bool ref ;
   secchan          : (Endpt.id * Security.cipher) list ref ; (* State for SECCHAN *)
 
   dyn_tree         : Mrekey_dt.t ref ;   (* State for REKEY_DT *)
@@ -108,7 +109,7 @@ type ('bel,'abv) handlers_lout = {
 
 type ('bel,'abv) handlers_lin  = {
   up_lin 	: Event.up -> 'abv -> unit ;
-  dn_lin 	: Event.dn -> 'bel -> unit
+  dn_lin 	: Event.dn -> 'bel -> unit 
 }
 
 type ('bel,'abv,'state) basic =

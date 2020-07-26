@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* ARGE.ML *)
 (* Author: Mark Hayden, 4/96 *)
 (**************************************************************)
@@ -354,6 +344,9 @@ let add_total () =
 let set_fifo () =
   set_properties Property.fifo
 
+let add_manet () =
+  add_properties "Manet_neighbor:Manet_route:Manet_sim"
+
 (**************************************************************)
 
 let remove_properties p =
@@ -484,7 +477,8 @@ let args () =
     "-verbose",		Arg.Unit(fun () -> Util.verbose := true; verbose := true), 
                                            ": enable verbose messages" ;
     "-quiet",		Arg.Set Util.quiet, ": enable quiet operation" ;
-    "-gc_verb",         Arg.Unit gc_verb, ": enable Ocaml gc messages"
+    "-gc_verb",         Arg.Unit gc_verb, ": enable Ocaml gc messages" ;
+    "-manet",           Arg.Unit add_manet, ": set manet route+sim properties" 
   |] in
   let args = (Array.to_list addtl_args) @ param_args in
   let args = List.sort (fun (a,_,_) (b,_,_) -> compare a b) args in

@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* MFLOW.ML : MFLOW window-based flow control. *)
 (* Authors: Zhen Xiao, Mark Hayden, 2/97 *)
 (* Note that the window-cost of a message here is some
@@ -46,6 +36,7 @@ type 'abv state = {
   stagger    : bool ;
   window     : int ;
   ack_thresh : int ;
+  fuzzy_th   : int ;         (* fuzzy threahold for this layer *)
   overhead   : len ;
   send_buf   : (Event.dn * 'abv) Queuee.t ;
   credit     : Mcredit.t
@@ -117,6 +108,7 @@ let init _ (ls,vs) =
     stagger    = stagger ;
     ack_thresh = ack_thresh ;
     send_buf   = Queuee.create () ;
+    fuzzy_th   = Param.int vs.params "mflow_fuzzy_th" ;
     overhead   = Buf.len_of_int (Param.int vs.params "mflow_overhead") ;
     credit     = Mcredit.create ls.rank ls.nmembers ack_thresh send_credit recv_credit
   }
@@ -225,6 +217,17 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       check_msg s ;
       upnm ev
 
+  | EFuzzy ->
+      let local_fuzziness = getLocalFuzziness ev in
+      Arrayf.iteri (fun rank fuzziness ->
+        if fuzziness >= s.fuzzy_th then
+          Mcredit.set_fuzzy s.credit rank
+        else
+          Mcredit.reset_fuzzy s.credit rank
+      ) local_fuzziness ;
+      check_msg s ;
+      upnm ev
+
   | EExit -> 
       (* Release all events in the send queue.
        *)
@@ -284,6 +287,7 @@ let _ =
   Param.default "mflow_ack_thresh" (Param.Int 25000) ;
   Param.default "mflow_overhead" (Param.Int 100) ;
   Param.default "mflow_stagger" (Param.Bool true) ;
+  Param.default "mflow_fuzzy_th" (Param.Int 3) ;
   Layer.install name l
 
 (**************************************************************)

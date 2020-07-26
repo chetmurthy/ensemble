@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* TOP.ML *)
 (* Top-most layer.  Handles default group behavior *)
 (* Author: Mark Hayden, 7/95 *)
@@ -184,7 +174,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       s.suspects <- Arrayf.map2 (||) s.suspects s.failed ;
 
   | EMergeRequest ->
-      log (fun () -> "got EMergeRequest");
+      log (fun () -> sprintf "got EMergeRequest from %d" (getPeer ev));
       if s.state <> NextView then (
 	let mergers = getViewState ev in
 	let mview = Lset.inject mergers.view in
@@ -246,16 +236,18 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 		]) ;
 	      	s.state <- Merging
 	    | _ -> raise (Failure "escape out")
-	  with _ ->
+	  with _ -> (
+      log (fun () -> sprintf "Calling do_view");
 	    do_view ()
-        )
+    )
+  )
       )
 
   | ETimer ->
       let time = getTime ev in
       if Time.ge time s.next_sweep then (
-	s.next_sweep <- Time.add time s.sweep ;
-	dnnm (timerAlarm name s.next_sweep) ;
+        s.next_sweep <- Time.add time s.sweep ;
+        dnnm (timerAlarm name s.next_sweep) ;
 	if ls.am_coord && s.gossip then
 	  dnnm (create name EGossipExt []) ;
 	if s.account then
@@ -273,7 +265,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  dump vf s ;
 	  dnnm (create name EDump[])
 	)
-      )
+      );
+      free name ev
 
   | EProtocol ->			(*Just here for view change perf tests*)
       upnm (create name EPrompt[]) ;
@@ -344,7 +337,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | EStableReq
   | ESyncInfo
   | EPresent
-  | ERekey -> free name ev
+  | ERekey
+  | EFuzzy
+  | EFuzzyRequest
+  | EFuzzyAuthorize -> free name ev
   | _ -> eprintf "TOP:dropping:%s\n" (to_string ev )
   ) (*; free name ev: BUG VIEW *)
 

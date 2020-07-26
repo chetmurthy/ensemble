@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* WINDOW.ML : window based flow control *)
 (* Author: Takako M. Hickey, 12/95 *)
 (**************************************************************)
@@ -23,8 +13,11 @@ let name = Trace.filel "WINDOW"
 
 type 'a state = {
   window	: seqno ;		(* window size *)
+  fuzzy_th  : int ;         (* fuzzy threahold for this layer *)
   mutable acked	: seqno ;		(* seqno of last msg acked *)
   mutable seqno	: seqno ;		(* seqno of last msg sent *)
+  mutable local_fuzzy : bool array ; (* All nodes' fuzziness estimates *)
+  mutable failed : bool Arrayf.t ; (* What nodes have failed *)
   buffer	: ('a * Iovecl.t) Queuee.t (* msgs yet to be casted *)
 }
 
@@ -37,8 +30,11 @@ let dump vf s = Layer.layer_dump name (fun (ls,vs) s -> [|
 let init _ (ls,vs) = {
   (* Window related variables *)
   window      = Param.int vs.params "window_window" ;
+  fuzzy_th       = Param.int vs.params "window_fuzzy_th" ;
   seqno	      = 0 ;
   acked       = 0 ;
+  local_fuzzy = Array.create ls.nmembers false ;
+  failed      = ls.falses ;
   buffer      = Queuee.create ()
 }
 
@@ -51,12 +47,17 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   and uplm_hdlr ev hdr = failwith "got uplm event"
   and upnm_hdlr ev = match getType ev with
   | EStable ->
-      let mins = getStability ev in
       let len = Queuee.length s.buffer in
 
       (* Update ack information.
        *)
-      s.acked <- Arrayf.get mins ls.rank ;
+      let acks = getOwnAcked ev in
+      s.acked <- Arrayf.get acks ls.rank;
+      for i = 0 to pred ls.nmembers do
+        if (not s.local_fuzzy.(i)) & not (Arrayf.get s.failed i) &
+                                   s.acked > (Arrayf.get acks i) then
+          s.acked <- Arrayf.get acks i
+      done;
       let avail = s.window - (s.seqno - s.acked) in
       
       (* If window opens up again, send out buffered messages.
@@ -64,8 +65,19 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       for i = 1 to min len avail do
         let (abv,iov) = some_of name (Queuee.takeopt s.buffer) in
         s.seqno <- succ s.seqno ;
-	dn (castIov name iov) abv ()
+        dn (castIov name iov) abv ()
       done ;
+      upnm ev
+
+  | EFail ->
+      s.failed <- getFailures ev ;
+      upnm ev
+
+  | EFuzzy ->
+      (* Remember new local fuzzy information *)
+      s.local_fuzzy <- 
+        Array.map (fun fuzziness -> fuzziness > s.fuzzy_th)
+          (Arrayf.to_array (getLocalFuzziness ev)) ;
       upnm ev
 
   | EAccount ->
@@ -100,6 +112,7 @@ let l args vf = Layer.hdr init hdlrs None (FullNoHdr ()) args vf
 
 let _ = 
   Param.default "window_window" (Param.Int 100) ;
+  Param.default "window_fuzzy_th" (Param.Int 5) ;
   Layer.install name l
 
 (**************************************************************)

@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* PARTIAL_APPL.ML *)
 (* Author: Mark Hayden, 8/95 *)
 (* Modified: Xiaoming Liu with Robbert vanRenesse 2/98 *)
@@ -218,12 +208,12 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       && unblocked s then (
       	(* Schedule a new heartbeat.
       	 *)
-	s.next_sweep <- Time.add time s.interface.heartbeat_rate ;
-	dnnm (timerAlarm name s.next_sweep) ;
+      s.next_sweep <- Time.add time s.interface.heartbeat_rate ;
+      dnnm (timerAlarm name s.next_sweep) ;
 
       	(* Wake up the application.
 	 *)
-	handle_actions (s.handlers.heartbeat time)
+      handle_actions (s.handlers.heartbeat time)
       ) ;
 
       upnm ev

@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* HSYSSUPP.ML *)
 (* Author: Mark Hayden, 6/96 *)
 (* Rewritten by Ohad Rodeh 10/2001 *)
@@ -149,7 +139,7 @@ let tcp debug alarm sock deliver disable =
   (* Space for the maximum header size. 
    * We use just one such buffer, the assumption is that this is scratch space. 
    *)
-  let prealloc_hdr = Buf.create Buf.max_msg_len in
+  let prealloc_hdr = ref (Buf.create Buf.max_msg_len) in
 
   (* Deliver a packet, and cleanup.
    *)
@@ -163,7 +153,7 @@ let tcp debug alarm sock deliver disable =
     s.recv_cur_hdr_len <- len0 ;
     s.recv_cur_iov_len <- len0 ;	
     s.recv_s <- R_Init;
-    deliver prealloc_hdr hdr_len iovl
+    deliver !prealloc_hdr hdr_len iovl
   in
 
   (* Count how many times we tried to read data from the socket and got nothing. 
@@ -188,37 +178,34 @@ let tcp debug alarm sock deliver disable =
   let recv () =
     if s.connected then (
       let read_all_first_8_bytes () = 
-	let ml_len = len_of_int (Buf.read_int32 s.scribble len0) in
-	let iov_len = len_of_int (Buf.read_int32 s.scribble len4) in
-	log2 (fun () -> 
-	  sprintf "read_all_first_8_bytes (ml_len=%d, iov_len=%d)" 
-	  (int_of_len ml_len) (int_of_len iov_len));
-	if ml_len +|| iov_len >|| max_msg_len then 
-	  failwith (sprintf 
-	    "sanity: TCP Message too long (%d+%d)" 
-	    (int_of_len ml_len) (int_of_len iov_len)
+        let ml_len = len_of_int (Buf.read_int32 s.scribble len0) in
+        let iov_len = len_of_int (Buf.read_int32 s.scribble len4) in
+          log2 (fun () -> 
+                  sprintf "read_all_first_8_bytes (ml_len=%d, iov_len=%d)" 
+                    (int_of_len ml_len) (int_of_len iov_len));
+          if ml_len +|| iov_len >|| max_msg_len then 
+            prealloc_hdr := Buf.create (ml_len +|| iov_len)
+          else if ml_len <|| len4 then
+            failwith (sprintf 
+                        "Sanity: ML length is smaller than 4 (ml_len=%d iov_len=%d)"
+                        (int_of_len ml_len) (int_of_len iov_len)
+                     )
+	        else if ml_len >|| Buf.max_msg_len then 
+	          failwith "ML header too large";
+          
+          let iov = 
+            try Iovec.alloc send_pool iov_len
+            with Socket.Out_of_iovec_memory -> Iovec.empty 
+          in
+            if (Iovec.len iov =|| iov_len) then (
+              (* Try to receive a full packet at once. 
+	            *)
+	            let len =  Hsys.tcp_recv_packet sock !prealloc_hdr len0 ml_len iov in
+	              log2 (fun () -> sprintf "tcp_recv_packet len=%d" (int_of_len len));
+                if check_len0 len then (
+	                Iovec.free iov
 	  )
-	else if ml_len <|| len4 then
-          failwith (sprintf 
-            "Sanity: ML length is smaller than 4 (ml_len=%d iov_len=%d)"
-            (int_of_len ml_len) (int_of_len iov_len)
-          )
-	else if ml_len >|| Buf.max_msg_len then 
-	  failwith "ML header too large";
-
-        let iov = 
-          try Iovec.alloc send_pool iov_len
-          with Socket.Out_of_iovec_memory -> Iovec.empty 
-        in
-        if (Iovec.len iov =|| iov_len) then (
-          (* Try to receive a full packet at once. 
-	   *)
-	  let len =  Hsys.tcp_recv_packet sock prealloc_hdr len0 ml_len iov in
-	  log2 (fun () -> sprintf "tcp_recv_packet len=%d" (int_of_len len));
-          if check_len0 len then (
-	    Iovec.free iov
-	  )
-          else if len =|| ml_len +|| iov_len then (
+                else if len =|| ml_len +|| iov_len then (
 	    s.recv_total_hdr_len <- ml_len ;
 	    wrap_deliver iov
 	  ) 
@@ -297,7 +284,7 @@ let tcp debug alarm sock deliver disable =
 	| R_Hdr -> 
 	    log (fun () -> "R_Hdr");
 	    let remain = s.recv_total_hdr_len -|| s.recv_cur_hdr_len in
-	    let len = Hsys.tcp_recv sock prealloc_hdr s.recv_cur_hdr_len remain in
+	    let len = Hsys.tcp_recv sock !prealloc_hdr s.recv_cur_hdr_len remain in
 	    ignore (check_len0 len);
 	    if len =|| remain 
               && s.recv_total_iov_len =|| len0 then (

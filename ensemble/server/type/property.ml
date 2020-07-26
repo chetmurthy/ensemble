@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* PROPERTY.ML *)
 (* Author: Mark Hayden, 12/96 *)
 (**************************************************************)
@@ -50,7 +40,6 @@ type id =
   | Dbg                                 (* user controlled network partition *)
   | Dbgbatch                            (* batch mode network emulation *)
   | P_pt2ptwp                           (* Use experimental pt2pt flow-control protocol *)
-
   | Vsync                               (* The set of properties that are called 
 					   virtual-synchrony *)
 
@@ -138,7 +127,7 @@ type r = {
     mutable local : bool ;
     mutable slander : bool ;
     mutable asym : bool ;
-    mutable p_pt2ptwp : bool 
+    mutable p_pt2ptwp : bool ;
 } 
 
 (**************************************************************)
@@ -176,7 +165,7 @@ let flatten props =
     local = false ;
     slander = false ;
     asym = false ;
-    p_pt2ptwp = false 
+    p_pt2ptwp = false ;
   } in
   List.iter (function
   | Agree	-> r.agree <- true
@@ -284,7 +273,7 @@ let choose props =
 	(if p.slander then ["Slander"] else []) ::
 	(if not (p.sync) then [] else ["Sync"]) ::
 	(if not (p.suspect) then [] else 
-	  if p.scale then ["Pr_suspect"] else ["Suspect"]) ::
+	  if p.scale then ["Pr_suspect"] else ["Fz_suspect:Fz_decide:Fz_detect"] (*["Suspect"]*)) ::
 	(if p.scale then ["Pr_stable"] else ["Stable"]) ::
 	["Vsync"] ::
 	["Frag_Abv"] ::

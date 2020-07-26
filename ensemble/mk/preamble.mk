@@ -6,8 +6,8 @@
 # Author: Mark Hayden, 3/96
 #
 #*************************************************************#
-VERSION = 2_00
-VERSION_DIR = 2.00
+VERSION = 2_01
+VERSION_DIR = 2.01
 #*************************************************************#
 ENSLIB		= $(ENSROOT)/lib/$(PLATFORM)
 ENS		= $(ENSLIB)/libens$(CMA)	# main ENS library 

@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* MCREDIT.MLI *)
 (* Author: Mark Hayden, Zhen Xiao, 3/97 *)
 (**************************************************************)
@@ -46,6 +36,16 @@ val set_credit : t -> rank -> credit -> unit
  * member [rank]
  *)
 val fail : t -> rank -> unit
+
+(* [set_fuzzy t rank] is called when I am notified that a member
+ * [rank] became fuzzy
+ *)
+val set_fuzzy : t -> rank -> unit
+
+(* [reset_fuzzy t rank] is called when I am notified that a member
+ * [rank] stopped being fuzzy
+ *)
+val reset_fuzzy : t -> rank -> unit
 
 (* [check t] is called to check if I can send more stuff.
  *)

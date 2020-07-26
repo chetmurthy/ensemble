@@ -19,7 +19,7 @@
 # variables MACHTYPE and OSTYPE will be set correctly for
 # your platform and you can use the defaults.  On NT,
 # PLATFORM should be set to be 'nt'.
-!include $(ENSROOT)\mk\env.nmk
+#!include $(ENSROOT)\mk\env.nmk
 
 # !NOTE! make sure there are no trailing spaces on the next line
 
@@ -37,15 +37,15 @@ KIND = nt
 CC	= cl /nologo
 #*************************************************************#
 
-CRYPTO =0 
+#CRYPTO = 1
 
 !ifdef CRYPTO
 # with cryptographich support. We're using Xavier's CryptoKit library
 # written natively in OCaml.
-CRYPTO_LINK = nums$(CMAS) cryptokit$(CMAS) $(ENSLIB)/crypto$(CMAS)
+CRYPTO_LINK = nums$(CMAS) cryptokit$(CMAS) $(ENSLIB)\crypto$(CMAS)
 !else
 # no crypto by default
-CRYPTO_LINK = 	$(ENSLIB)/crypto_fake$(CMAS)
+CRYPTO_LINK = 	$(ENSLIB)\crypto_fake$(CMAS)
 !endif
 
 #*************************************************************#

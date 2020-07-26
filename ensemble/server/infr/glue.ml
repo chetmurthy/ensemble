@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* GLUE.ML *)
 (* Author: Mark Hayden, 10/96 *)
 (**************************************************************)
@@ -143,8 +133,8 @@ module Imperative : S = struct
     let wrapped ev msg =
       if !count = 0 then (
         incr count ;
-        handler ev msg ;
-        decr count
+          handler ev msg ;
+          decr count
       ) else (
         incr count ;			(* matched in enqueued *)
         Sched.enqueue_2arg sched name enqueued ev msg

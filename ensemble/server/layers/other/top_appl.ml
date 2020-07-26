@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* TOP_APPL.ML *)
 (* Author: Mark Hayden, 8/95 *)
 (**************************************************************)
@@ -63,7 +53,8 @@ type state = {
   mutable leaving	: bool ;
   mutable next_sweep	: Time.t ;
   mutable failed        : bool Arrayf.t ;
-  mutable blocking      : blocking
+  mutable blocking      : blocking ;
+	mutable create_eblockok : bool
 } 
 
 let unblocked s = s.blocking = Unblocked || s.blocking = DnBlocking
@@ -113,7 +104,8 @@ let init s (ls,vs) =
     next_sweep  = Time.zero ;	
     got_expect  = false ;
     failed      = ls.falses ;
-    blocking    = Unblocked
+    blocking    = Unblocked ;
+    create_eblockok = false
   }
 
 let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out=dnnm} =
@@ -314,8 +306,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       && unblocked s then (
       	(* Schedule a new heartbeat.
       	 *)
-	s.next_sweep <- Time.add time s.interface.heartbeat_rate ;
-	dnnm (timerAlarm name s.next_sweep) ;
+       s.next_sweep <- Time.add time s.interface.heartbeat_rate ;
+       dnnm (timerAlarm name s.next_sweep) ;
 
       	(* Wake up the application.
 	 *)
@@ -362,6 +354,11 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	if s.cast_recv.(i) > Arrayf.get s.cast_expect i then
 	  failwith sanity
       done ;
+
+      if s.create_eblockok then (
+				dnnm (create name EBlockOk[]);
+				s.create_eblockok <- false;
+			);
       check_block_ok () ;
       upnm ev
 
@@ -445,6 +442,22 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	s.blocking <- DnBlocked ;
 	dnnm (create name EBlock[])
       )
+
+			| EBlockOk ->
+					(* ALON: There is a race condition between receiving
+						 EBlockOK and ESyncInfo -- Top_appl relies on ESyncInfo
+						 having been received before EBlockOK.  Therefore if 
+					   s.got_expect is not yet set, kill the downward EBlockOK
+						 and set a flag.  Then ESyncInfo will create a downward
+						 EBlockOK.
+					*)
+					if not s.got_expect then (
+						s.create_eblockok <- true;
+						free name ev
+					)
+					else (
+						dnnm ev
+					)
 
   | _ -> dnnm ev
 

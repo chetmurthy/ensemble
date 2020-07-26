@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* MERGE.ML : reliable merge protocol *)
 (* Author: Mark Hayden, 4/95 *)
 (* Based on code by: Robbert vanRenesse *)
@@ -33,15 +23,15 @@ type header = NoHdr
 
 type ('abv) state = {
   policy                : (Addr.set -> bool) option ; (* Authorization policy *)
-  mutable merging	: bool ;
-  mutable next_sweep	: Time.t ;
-  mutable new_view	: bool ;
-  mutable seqno 	: int ;
-  mutable merge_dn 	: (Time.t * dn) list ;
-  merge_up 		: ((Addr.set * Endpt.id),(ltime * seqno)) Hashtbl.t ;
-  mutable buf		: dn list ;
-  sweep			: Time.t ;
-  timeout		: Time.t
+  mutable merging       : bool ;
+  mutable next_sweep    : Time.t ;
+  mutable new_view      : bool ;
+  mutable seqno         : int ;
+  mutable merge_dn      : (Time.t * dn) list ;
+  merge_up              : ((Addr.set * Endpt.id),(ltime * seqno)) Hashtbl.t ;
+  mutable buf           : dn list ;
+  sweep                 : Time.t ;
+  timeout               : Time.t
 }
 
 let check_policy s a =
@@ -51,100 +41,106 @@ let check_policy s a =
 
 let init s (ls,vs) = {
   policy        = s.exchange;
-  sweep	        = Param.time vs.params "merge_sweep" ;
-  timeout 	= Param.time vs.params "merge_timeout" ;
-  merging	= false ;		(* are we merging now? *)
-  new_view      = false ;	        (* set on EView *)
-  seqno      	= 0 ;			(* seqno for messages sent *)
-  merge_dn   	= [] ;			(* messages sent *)
-  merge_up   	= Hashtbl.create 10 ;   (* messages recd *)
-  buf        	= [] ;			(* temporary buffer *)
-  next_sweep 	= Time.zero
+  sweep         = Param.time vs.params "merge_sweep" ;
+  timeout       = Param.time vs.params "merge_timeout" ;
+  merging       = false ;               (* are we merging now? *)
+  new_view      = false ;               (* set on EView *)
+  seqno         = 0 ;                   (* seqno for messages sent *)
+  merge_dn      = [] ;                  (* messages sent *)
+  merge_up      = Hashtbl.create 10 ;   (* messages recd *)
+  buf           = [] ;                  (* temporary buffer *)
+  next_sweep    = Time.zero
 }
 let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out=dnnm} =
   let log = Trace.log2 name ls.name in
   let up_hdlr ev abv NoHdr = up ev abv
   and uplm_hdlr ev hdr = failwith unknown_local
-			   
+                           
   and upnm_hdlr ev = match getType ev with
+        | EInit -> upnm ev
   | EGossipExtDir -> failwith "sanity"
   | EGossipExt ->
       let merge = Event.getExtender
-	(function Event.MergeGos(a,b,c,d) -> (Some (Some (a,b,c,d))) | _ -> None)
-	None ev
+        (function Event.MergeGos(a,b,c,d) -> (Some (Some (a,b,c,d))) | _ -> None)
+        None ev
       in
       begin match merge with 
-      |	None -> ()
-      |	Some(contact,seqno,kind,merge_vs) ->
-	  if fst (fst contact) = ls.endpt 
-	  && merge_vs.proto_id = vs.proto_id
-	  then (
-	    log (fun () -> "got merge gossip") ;
-	    (*let (from,saddr),_=  contact in*)
-	    let (from,saddr) = View.coord_full merge_vs in
-	    if not (check_policy s saddr) then (
-	      free name ev
-	    ) else (
-	      let last_ltime,last_seqno =
-		try Hashtbl.find s.merge_up (saddr,from)
-		with Not_found -> -1,-1
-	      in
-	      if (last_ltime,last_seqno) < (merge_vs.ltime,seqno) then (
-		(* Remove old entry.
-		 *)
-		begin
-		  try Hashtbl.remove s.merge_up (saddr,from)
-		  with Not_found -> ()
-		end ;
+      | None -> ()
+      | Some(contact,seqno,kind,merge_vs) ->
+          if fst (fst contact) = ls.endpt 
+          && merge_vs.proto_id = vs.proto_id
+          then (
+            log (fun () -> "got merge gossip") ;
+            (*let (from,saddr),_=  contact in*)
+            let (from,saddr) = View.coord_full merge_vs in
+            if not (check_policy s saddr) then (
+              free name ev
+            ) else (
+              let last_ltime,last_seqno =
+                try Hashtbl.find s.merge_up (saddr,from)
+                with Not_found -> -1,-1
+              in
+              if (last_ltime,last_seqno) < (merge_vs.ltime,seqno) then (
+                (* Remove old entry.
+                 *)
+                begin
+                  try Hashtbl.remove s.merge_up (saddr,from)
+                  with Not_found -> ()
+                end ;
 
-		Hashtbl.add s.merge_up (saddr,from) (merge_vs.ltime,seqno) ;
-		upnm (create name kind [ViewState merge_vs])
-	      ) else (
-		free name ev
-	      )
-	    )
-	  )
+                Hashtbl.add s.merge_up (saddr,from) (merge_vs.ltime,seqno) ;
+    log (fun () -> sprintf "Unique request received: %s from %s:%s, ltime=%d,seqno=%d" (Event.string_of_type kind) (Addr.string_of_set saddr) (Endpt.string_of_id from) merge_vs.ltime seqno); 
+                upnm (create name kind [ViewState merge_vs])
+              ) else (
+                free name ev
+              )
+            )
+          )
       end ;
       upnm ev
   | EView ->
       s.new_view <- true ;
       upnm ev
-	
+        
   | ETimer ->
       let time = getTime ev in
-      if s.merging then (
-	(* Copy from temporary buffer into merge_dn.
-	 *)
-	List.iter (fun ev ->
-	  dnnm ev ;
-	  let ev = copy name ev in
-	  s.merge_dn <- (Time.add time s.timeout,ev) :: s.merge_dn
-	) s.buf ;
-	s.buf <- [] ;
+        if s.merging then (
+          if Time.ge time s.next_sweep then (
+            s.next_sweep <- Time.add time s.sweep ;
+            dnnm (timerAlarm name s.next_sweep);
 
-	if Time.ge time s.next_sweep then (
-	  s.next_sweep <- Time.add s.next_sweep s.sweep ;
-
-	  List.iter (fun (timeout,ev) ->
-	    let typ = getExtendFail (function MergeGos(a,b,c,d) -> Some c | _ -> None) "MergeGos" ev in
-	    if Time.gt timeout time then (
-	      let ev = copy name ev in
-	      dnnm ev
-	     ) else if typ = EMergeRequest
-		    && not s.new_view
-	     then (
-	       log (fun () -> sprintf "failed merge request") ;	
-	       upnm (create name EMergeFailed[])
-	    )
-	  ) s.merge_dn
-	)
-      ) ;
-
-      upnm ev
+            (* Copy from temporary buffer into merge_dn.
+             *)
+            List.iter (fun ev ->
+              dnnm ev ;
+              let ev = copy name ev in
+                s.merge_dn <- (Time.add time s.timeout,ev) :: s.merge_dn
+            ) s.buf ;
+            s.buf <- [] ;
+          
+            List.iter (fun (timeout,ev) ->
+              let typ = getExtendFail (function MergeGos(a,b,c,d) -> Some c | _ -> None) "MergeGos" ev in
+              if Time.gt time timeout then (
+                if typ = EMergeRequest &&
+                   not s.new_view then (
+                     log (fun () -> sprintf "failed merge request") ;     
+                     upnm (create name EMergeFailed[])
+                )
+                else (
+                  (* retransmit *)
+                  log (fun () -> sprintf "MERGE: Timeout expired, retransmitting\n");
+                  let ev = copy name ev in
+                    dnnm ev
+                )
+              )
+           ) s.merge_dn ;
+         )
+      );
+     upnm ev
 
   | EExit ->
       List.iter (fun (_,dn) ->
-      	free name dn
+        free name dn
       ) s.merge_dn ;
       s.merge_dn <- [] ;
       upnm ev
@@ -160,15 +156,15 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       let contact = getContact ev in
       log (fun () -> Event.to_string ev) ;
       s.merging <- true ;
-      s.seqno 	<- succ s.seqno ;
+      s.seqno   <- succ s.seqno ;
       let merge_ev = create name EGossipExtDir [
-	Address(snd(fst contact)) ;
-	MergeGos(contact,s.seqno,(getType ev),(getViewState ev))
+        Address(snd(fst contact)) ;
+        MergeGos(contact,s.seqno,(getType ev),(getViewState ev))
       ] in
-      s.buf 	<- merge_ev :: s.buf ;
+      s.buf     <- merge_ev :: s.buf ;
       dnnm merge_ev ;
       dnnm (timerAlarm name Time.zero)
-	
+
   | _ -> dnnm ev
 
 

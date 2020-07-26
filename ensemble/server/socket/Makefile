@@ -1,15 +1,5 @@
 #*************************************************************#
 #
-#   Ensemble, 2_00
-#   Copyright 2004 Cornell University, Hebrew University
-#           IBM Israel Science and Technology
-#   All rights reserved.
-#
-#   See ensemble/doc/license.txt for further information.
-#
-#*************************************************************#
-#*************************************************************#
-#
 # MAKEFILE: socket library 
 #
 # Author: Ohad Rodeh  10/2002
@@ -52,7 +42,6 @@ SOCKCOBJ = \
 	s/mm$(OBJ) \
 	s/skt_utils$(OBJ) \
 	s/md5c$(OBJ)	\
-	s/heapc$(OBJ)	\
 	s/$(KIND)/sendrecv$(OBJ)	\
 	s/$(KIND)/gettimeofday$(OBJ) 	\
 	s/$(KIND)/miscsupp$(OBJ)	\
@@ -72,6 +61,8 @@ all : \
 	$(ENSLIB)/ssocket$(CMA) \
 	$(ENSLIB)/libsock$(ARC) \
 	u/socket$(CMI) \
+	s/socket$(CMI) \
+	socket$(CMI) \
 	$(H_FILES)
 
 # Call ourselves with the optimizing compiler switch
@@ -96,16 +87,17 @@ u/socket.mli : socket.mli
 s/socket.mli : socket.mli
 	$(CP) socket.mli s/
 
-$(ENSLIB)/usocket$(CMA) : socksupp$(CMI) u/socket.mli u/socket$(CMI) $(USOCKOBJ) 
+$(ENSLIB)/usocket$(CMA) : socksupp$(CMI) u/socket.mli socket$(CMI) u/socket$(CMI) $(USOCKOBJ) 
 	$(MLLIBR) -o $(ENSLIB)/usocket$(CMA) -linkall $(USOCKOBJ)
 
-$(ENSLIB)/ssocket$(CMA) :  socksupp$(CMI) s/ciovec$(CMI) s/socket.mli s/socket$(CMI) $(SSOCKOBJ) 
+$(ENSLIB)/ssocket$(CMA) :  socksupp$(CMI) s/ciovec$(CMI) s/socket.mli socket$(CMI) s/socket$(CMI) $(SSOCKOBJ) 
 	$(MLLIBR) -o $(ENSLIB)/ssocket$(CMA) -linkall $(SSOCKOBJ)
 
 $(ENSLIB)/libsock$(ARC): $(SOCKCOBJ)
 	$(MKLIB) $(MKLIBO)$(ENSLIB)/libsock$(ARC) $(SOCKCOBJ)
+ifneq ("$(PLATFORM)" , "powerpc-darwin")
 	$(RANLIB) $(ENSLIB)/libsock$(ARC)
-
+endif
 
 #*************************************************************#
 # Dependencies

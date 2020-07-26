@@ -161,7 +161,6 @@ ENSCOREOBJ = \
 	groupd/coord$(CMO)	\
 	groupd/actual$(CMO)	\
 	groupd/manage$(CMO)	\
-	util/heap$(CMO)	\
 	appl/appl$(CMO)	\
 \
 	appl/reflect$(CMO)	\
@@ -184,6 +183,9 @@ ENSMINOBJ = \
 	layers/trans/mnak$(CMO)	\
 	layers/trans/pt2pt$(CMO)	\
 	layers/vsync/suspect$(CMO)	\
+	layers/vsync/fz_suspect$(CMO) \
+	layers/vsync/fz_detect$(CMO) \
+	layers/vsync/fz_decide$(CMO) \
 	layers/vsync/merge$(CMO)	\
 	layers/vsync/inter$(CMO)	\
 	layers/vsync/intra$(CMO)	\

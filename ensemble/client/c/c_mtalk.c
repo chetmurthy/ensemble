@@ -1,14 +1,4 @@
 /**************************************************************/
-/*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
-/**************************************************************/
 /* C_MTALK.C */
 /* Author: Ohad Rodeh 10/2003 */
 /* A simple program implementing a multi-person talk. */
@@ -19,7 +9,12 @@
 #include "ens_comm.h"
 
 #include <stdio.h>
+#ifndef __APPLE__
 #include <malloc.h>
+#else
+#include <stdlib.h>
+#endif
+
 /**************************************************************/
 #define NAME "C_MTALK"
 /**************************************************************/

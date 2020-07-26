@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* UTIL.MLI *)
 (* Author: Mark Hayden, 4/95 *)
 (**************************************************************)
@@ -206,6 +196,7 @@ val error : exn -> string
  *)
 val catch : ('a -> 'b) -> 'a -> 'b
 
+val count_true : bool array -> int
 
 (* Called to set a function for logging information about
  * this module.

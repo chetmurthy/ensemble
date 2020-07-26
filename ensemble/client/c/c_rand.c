@@ -1,14 +1,4 @@
 /**************************************************************/
-/*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
-/**************************************************************/
 /* CE_RAND.C: Randomly multicast/send messages and fail */
 /* Author: Ohad Rodeh 8/2001 */
 /* Based on demo/rand.ml */

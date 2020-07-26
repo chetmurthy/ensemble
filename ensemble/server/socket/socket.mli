@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* SOCKET.MLI *)
 (* Authors: Robbert vanRenesse and Mark Hayden, 4/95  *)
 (* Ohad Rodeh :                                       *)
@@ -275,13 +265,6 @@ val accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr
  * the time is returned in.
  *)
 val gettimeofday : timeval -> unit
-
-(**************************************************************)
-
-val heap : unit -> Obj.t array
-val addr_of_obj : Obj.t -> string
-val minor_words : unit -> int
-val frames : unit -> int array array
 
 (**************************************************************)
 (* Return the version of the OS.

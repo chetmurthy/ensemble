@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* SOCKET.ML *)
 (* Authors: Robbert vanRenesse and Mark Hayden, 4/95 *)
 (**************************************************************)
@@ -66,13 +56,6 @@ type mcast_send_recv = Socksupp.mcast_send_recv =
   | Send_only
   | Both
 
-(* Include common code for all platforms
- *)
-let heap = Common_impl.heap
-let addr_of_obj = Common_impl.addr_of_obj
-let minor_words = Common_impl.minor_words
-let frames = Common_impl.frames
-  
 (* MD5 hash functions. We need to have it work on Iovecs as
  * well as regular strings. 
  *)

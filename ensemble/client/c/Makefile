@@ -1,15 +1,5 @@
 #*************************************************************#
 #
-#   Ensemble, 2_00
-#   Copyright 2004 Cornell University, Hebrew University
-#           IBM Israel Science and Technology
-#   All rights reserved.
-#
-#   See ensemble/doc/license.txt for further information.
-#
-#*************************************************************#
-#*************************************************************#
-#
 # Main CE Makefile
 #
 # Author: Ohad Rodeh 11/2001
@@ -63,7 +53,9 @@ opt :
 #
 $(ENSLIB)/libens$(ARC): $(OBJECTS)
 	$(MKLIB) $(MKLIBO)$(ENSLIB)/libens$(ARC) $(OBJECTS)
+ifneq ("$(PLATFORM)" , "powerpc-darwin")
 	$(RANLIB) $(ENSLIB)/libens$(ARC)
+endif
 
 #*************************************************************#
 

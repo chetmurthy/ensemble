@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* DISP.ML *)
 (* Author: Mark Hayden, 6/95 *)
 (* Based on code by Werner Vogels *)
@@ -23,7 +13,7 @@ let name = Trace.file "DISP"
 
 let l _ (ls,vs) = ((),fun {up_lout=up;dn_lout=dn} ->
   let msg = sprintf "%s{%s}:" name (Endpt.string_of_id ls.endpt) in
-
+  
   let up_hdlr ev hdr =
     if getType ev <> ETimer then (
       eprintf "%sUp(%s)\n" msg (to_string ev) ;

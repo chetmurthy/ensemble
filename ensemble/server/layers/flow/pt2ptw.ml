@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* PT2PTW.ML : Point-to-point window-based flow control. *)
 (* Author: Mark Hayden, 3/96 *)
 (* Note that the window-cost of a message here is 1 more
@@ -24,7 +14,7 @@ open Trans
 let name = Trace.filel "PT2PTW"
 (**************************************************************)
 
-type header = NoHdr | Ack of int
+type header = NoHdr | NoFlow | Ack of int
 
 (**************************************************************)
 
@@ -120,6 +110,9 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       ) ;
       up ev abv
 
+  | ESend iovl, NoFlow ->
+      up ev abv
+
   | _, NoHdr -> up ev abv
   | _        -> failwith bad_header
 
@@ -187,17 +180,18 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | ESend iovl ->
       let dest = getPeer ev in
       if Arrayf.get s.failed dest then (
-	log (fun () -> sprintf "send to failed member") ;
-	Iovecl.free iovl
-      ) else if s.send_credit.(dest) > 0 then (
-	(* Normal case. I have enough credit.
-	 *)
-	array_sub s.send_credit dest (msg_len s iovl) ;
+        log (fun () -> sprintf "send to failed member") ;
+        Iovecl.free iovl
+      ) 
+      else if s.send_credit.(dest) > 0 then (
+        (* Normal case. I have enough credit. *)
+        array_sub s.send_credit dest (msg_len s iovl) ;
         dn ev abv NoHdr
-      ) else (
-	log (fun () -> sprintf "messages are buffered") ;
-	Queuee.add (ev,abv) s.send_buf.(dest) ;
-	check_wmark dest 
+      ) 
+      else (
+	      log (fun () -> sprintf "messages are buffered") ;
+        Queuee.add (ev,abv) s.send_buf.(dest) ;
+        check_wmark dest 
       )
 
   | _ -> dn ev abv NoHdr

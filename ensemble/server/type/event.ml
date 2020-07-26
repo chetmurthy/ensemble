@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* EVENT.ML *)
 (* Author: Mark Hayden, 4/95 *)
 (* Based on Horus events by Robbert vanRenesse *)
@@ -76,6 +66,10 @@ type typ =
   | ERekeyCleanup
   | ERekeyCommit 
 
+(* Fuzzy related events *)
+  | EFuzzy				(* Report a change of fuzziness *)
+  | EFuzzyRequest		(* Request a change of fuzziness *)
+  | EFuzzyAuthorize	(* Authorize a change of fuzziness *)
 (**************************************************************)
 
 type compact_typ = 
@@ -146,6 +140,14 @@ type field =
   | SecChannelList of Trans.rank list  (* The channel list held by the SECCHAN layer *)
   | SecStat of int                    (* PERF figures for SECCHAN layer *)
   | RekeyFlag of bool                 (* Do a cleanup or not *)
+  | TTL of int                        (* Time-to-live *)
+(* Fuzzy related fields *)
+  | LocalFuzziness	of seqno Arrayf.t	(* local fuzziness vector *)
+  | GlobalFuzziness of seqno Arrayf.t	(* global fuzziness vector *)
+(* The following is part of the EStable event *)
+  | LocalFuzzyStability of seqno Arrayf.t (* stable messages wrt local fuzzy nodes *)
+  | GlobalFuzzyStability of seqno Arrayf.t (* stable messages wrt global fuzzy nodes *)
+  | OwnAcked of seqno Arrayf.t (* the acks I got from each node for my messages *)
 
 (**************************************************************)
 
@@ -347,6 +349,19 @@ let getSecChannelList = getExtendFail (function (SecChannelList l) -> Some l | _
 let getSecStat = getExtendFail (function (SecStat i) -> Some i | _ -> None) "SecStat"
 let getAgreedKey = getExtendFail (function (AgreedKey a) -> Some a | _ -> None) "AgreedKey"
 let getRekeyFlag = getExtendFail  (function RekeyFlag flg -> Some flg | _ -> None) "RekeyFlag"
+let getTTL ev = 
+  let rec find = function
+    | [] -> None
+    | (TTL i) :: l -> Some i
+    | _ :: l -> find l 
+  in find ev.extend
+
+let getLocalFuzziness = getExtendFail (function LocalFuzziness i -> Some i | _ -> None) "LocalFuzziness"
+let getGlobalFuzziness = getExtendFail (function GlobalFuzziness i -> Some i | _ -> None) "GlobalFuzziness"
+let getLocalFuzzyStability = getExtendFail (function LocalFuzzyStability i -> Some i | _ -> None) "LocalFuzzyStability"
+let getGlobalFuzzyStability = getExtendFail (function GlobalFuzzyStability i -> Some i | _ -> None) "GlobalFuzzyStability"
+let getOwnAcked = getExtendFail (function OwnAcked i -> Some i | _ -> None) "OwnAcked"
+
 (**************************************************************)
 
 let free debug ev = 
@@ -408,6 +423,9 @@ let string_of_type = Trace.debug "" (function
   | ESecChannelList     -> "ESecChannelList"
   | ERekeyCleanup       -> "ERekeyCleanup"
   | ERekeyCommit        -> "ERekeyCommit"
+  | EFuzzy      -> "EFuzzy"
+  | EFuzzyRequest -> "EFuzzyRequest"
+  | EFuzzyAuthorize -> "EFuzzyAuthorize"
 )
 
 (**************************************************************)
@@ -456,6 +474,12 @@ let string_of_fields = Trace.debug "" (function
   | AuthData (a,data) -> "EPrivateEnc"
   | AgreedKey   _ -> "AgreedKey"
   | Address     _ -> "Address(_)"
+  | TTL e -> "TTL="^ string_of_int e
+  | LocalFuzziness     e -> ("LocalFuzziness="^(Arrayf.int_to_string e))
+  | GlobalFuzziness   e -> ("GlobalFuzziness="^(Arrayf.int_to_string e))
+  | LocalFuzzyStability       e -> ("LocalFuzzyStability="^(Arrayf.int_to_string e))
+  | GlobalFuzzyStability      e -> ("GlobalFuzzyStability="^(Arrayf.int_to_string e))
+  | OwnAcked  e -> ("OwnAcked="^(Arrayf.int_to_string e))
   | _ -> failwith "unknown field"
 )
 

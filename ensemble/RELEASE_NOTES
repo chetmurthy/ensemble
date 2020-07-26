@@ -1,7 +1,7 @@
-     RELEASE_NOTES for Ensemble version 2.00
+     RELEASE_NOTES for Ensemble version 2.01
 
 Author: Ohad Rodeh
-Last updated: 11/April/2004
+Last updated: 24/July/2005
 
 RELEASE_NOTES
 
@@ -40,12 +40,18 @@ RELEASE_NOTES
   limited functionality that is better tested.
 
 OCAML COMPILER VERSION
-  We are using version 3.07 for this version. 
+  We are using version 3.08 for this version. 
 
 PORTABILITY
   This version was tested on Linux (SUSE 8.2, i386 architecture) and
   windows XP. It -should- work on any Unix system, though this has not
   been tested.
+ 
+  For OS X, the OCaml compiler must be slightly modified in order to 
+  support IP multicast, and two files in the Ensemble distribution 
+  must be changed in order to set a socket option.  If you need to 
+  make these changes, contact Alon for instructions.
+
 
 
 

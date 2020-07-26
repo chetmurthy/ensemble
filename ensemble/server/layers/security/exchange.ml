@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* EXCHANGE.ML : key exchange protocol *)
 (* Authors: Ohad Rodeh 4/98 *)
 (* Based on code by Mark Hayden, with suggestions by Ron Minsky *)
@@ -287,13 +277,15 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	
   | EInit -> 
       s.next <- Time.add (Time.of_int 1) (getTime ev);
+      dnnm (timerAlarm name s.next);
       upnm ev
 	
   | ETimer ->
       let now = getTime ev in
       if Time.ge now s.next then (
-	s.nonce <- succ s.nonce;
-	s.next <- Time.add now  (Time.of_int 1);
+        s.nonce <- succ s.nonce;
+        s.next <- Time.add now  (Time.of_int 1);
+        dnnm (timerAlarm name s.next);
       );
       upnm ev
 	

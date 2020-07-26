@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* MNAK.ML : FIFO, reliable multicast protocol *)
 (* Author: Mark Hayden, 12/95 *)
 (* Based on code by: Robbert vanRenesse *)
@@ -65,15 +55,87 @@ let constructor = function
 
 (**************************************************************)
 
+(* selectively delete messages that all but fuzzy received
+ *)
+let selective_fuzzy local global mins myrank nmembers k buf =
+  (* We want to make sure we keep at least two copies of each message *)
+  let k = if nmembers >= 2*k then k else nmembers / 2 in
+  let k = if k < 1 then 1 else k in
+  let kth = nmembers / k in
+  for rank = 0 to pred nmembers do
+    if rank <> myrank then
+      let modrank = rank mod k in
+      let start = Arrayf.get mins rank in
+      let stop = pred (Arrayf.get local rank) in
+      for seqno = start to stop do
+        if (seqno mod kth) <> modrank then
+          Iq.clear_item (Arrayf.get buf rank) seqno
+      done
+  done
+  
+(* compress messages that all but fuzzy received
+ *)
+let compress_fuzzy local global mins myrank nmembers k buf =
+  failwith "compress_fuzzy not yet implemented"
+  
+(* stripe messages that all but fuzzy received using a (k,n) method
+ *)
+let shared_fuzzy local global mins myrank nmembers k buf =
+  failwith "shared_fuzzy not yet implemented"
+  
+(* In this policy, we keep all messages
+ *)
+let never_fuzzy _ _ _ _ _ _ _ =
+  ()
+  
+let default_handle_fuzzy = never_fuzzy
+
+let fuzzy_handlers =
+  [ ("Selective",selective_fuzzy);
+    ("Shared",shared_fuzzy);
+    ("Compress",compress_fuzzy);
+    ("Never",never_fuzzy)
+  ]
+
+(**************************************************************)
+
+let _ = Random.self_init ()
+
+let always () = true
+
+let sometimes n () =
+  (Random.int n) = 0
+
+let high_probability n recently_heard =
+  let range = int_min 4 ((n+1)/2) in
+  let range = if recently_heard then 2*range else range in
+  if range <=1 then always
+  else sometimes range
+
+let low_probability n recently_heard =
+  let range = (n+1)/2 in
+  let range = if recently_heard then 2*range else range in
+  if range <=1 then always
+  else sometimes range
+
+(**************************************************************)
 type 'abv state = {
-  mutable coord	 : rank ;
+  mutable coord : rank;
   mutable failed : bool Arrayf.t ;
   buf		 : 'abv Iq.t Arrayf.t ;
   naked		 : seqno array ;
 
   acked          : seqno array ;
   mutable acker  : rank ;
+  mutable recently_heard : (seqno*seqno) array;
 
+  fuzzy_th : int ;
+  fuzzy_k : int ;
+  local_fuzzy : bool array ;
+  handle_fuzzy : seqno Arrayf.t -> seqno Arrayf.t -> seqno Arrayf.t -> rank ->
+                                  int -> int -> 'abv Iq.t Arrayf.t -> unit ;
+  neighbor_nak : bool ; (* Whether to transmit Naks only to my neighbors *)
+  mutable timer_timeout : Time.t
 (*
   mutable acct_size  : int ;		(* # bytes buffered *)
   dbg_n		 : int array
@@ -86,7 +148,10 @@ let dump vf s = Layer.layer_dump name (fun (ls,vs) s -> [|
   sprintf "failed   =%s\n" (Arrayf.bool_to_string s.failed) ;
   sprintf "cast_lo  =%s\n" (Arrayf.int_to_string (Arrayf.map Iq.lo s.buf)) ;
   sprintf "cast_hi  =%s\n" (Arrayf.int_to_string (Arrayf.map Iq.hi s.buf)) ;
-  sprintf "cast_read=%s\n" (Arrayf.int_to_string (Arrayf.map Iq.read s.buf))
+  sprintf "cast_read=%s\n" (Arrayf.int_to_string (Arrayf.map Iq.read s.buf)) ;
+  sprintf "fuzzy_th=%d\n" s.fuzzy_th ;
+  sprintf "fuzzy_k=%d\n" s.fuzzy_k ;
+  sprintf "local_fuzzy=%s\n" (string_of_array string_of_bool s.local_fuzzy)
 (*
   ; sprintf "dbg_n  =%s\n" (string_of_int_array s.dbg_n)
   ; for i = 0 to pred ls.nmembers do
@@ -102,13 +167,25 @@ let init _ (ls,vs) =
   let iq_init = Param.int vs.params "mnak_iq_init" in
   if iq_init > 0 then
     Arrayf.iter (fun iq -> Iq.grow iq iq_init) buf ;
-  { coord      = 0 ;
+  { coord      = 0;
     buf        = buf ;
     failed     = ls.falses ;
     naked      = Array.create ls.nmembers 0 ;
+    recently_heard = Array.create ls.nmembers ((-1),(-1));
 
     acked      = Array.create ls.nmembers 0 ;
     acker      = (succ ls.rank) mod ls.nmembers ;
+    neighbor_nak = Param.bool vs.params "mnak_neighbor" ;
+    fuzzy_th   = Param.int vs.params "mnak_fuzzy_th" ;
+    fuzzy_k    = Param.int vs.params "mnak_fuzzy_k" ;
+    local_fuzzy = Array.create ls.nmembers false ;
+    timer_timeout = Time.zero;
+    handle_fuzzy =
+      try
+        List.assoc (Param.string vs.params "mnak_fuzzy_policy") fuzzy_handlers
+      with _ ->
+        default_handle_fuzzy
+    
 (*
     acct_size  = 0 ;
     dbg_n      = Array.create ls.nmembers 0
@@ -132,8 +209,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   (*
    * CHECK_NAK: checks if missing a message, and sends appropriate
    * Nak. If there is a hole then send a Nak to (in this order):
-   * 1. to original owner of message if he is not failed.
-   * 2. to coord if I'm not the coord
+   * 1. to original owner of message if he is not failed or fuzzy.
+   * 2. to coord if I'm not the coord and coord is not fuzzy
    * 3. to entire group
    *)
   let check_nak rank is_stable =
@@ -145,19 +222,27 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 *)
 	  (* Keep track of highest msg # we've naked.
 	   *)
-	  s.naked.(rank) <- int_max s.naked.(rank) hi ;
-	  logn (fun () -> sprintf "send:Nak(%d,%d..%d)" rank lo hi) ;
+	      s.naked.(rank) <- int_max s.naked.(rank) hi ;
+	  logn (fun () -> sprintf "send:Nak(%d,%d..%d).\n" rank lo hi) ;
 
-	  if not (Arrayf.get s.failed rank) then (
-	    dnlm (sendPeer name rank) (Nak(rank,lo,hi))
-	  ) else if s.coord <> ls.rank then (
-	    dnlm (sendPeer name s.coord) (Nak(rank,lo,hi))
-	  ) else (
-	    (* Don't forget to set the Unreliable option
-	     * for the STABLE layer (see note in stable.ml).
-	     *)
-	    dnlm (castUnrel name)  (Nak(rank,lo,hi))
-	  )
+    if s.neighbor_nak then (
+      let (know_lo,know_hi) = s.recently_heard.(rank) in
+        if lo < know_lo || hi > know_hi then (
+          let nak_ev = castUnrel name in
+          let nak_ev = set name nak_ev [TTL 1] in
+            dnlm nak_ev (Nak(rank,lo,hi))
+        )
+    ) else
+      if not (Arrayf.get s.failed rank) && not s.local_fuzzy.(rank) then (
+	      dnlm (sendPeer name rank) (Nak(rank,lo,hi))
+      ) else if s.coord <> ls.rank && not s.local_fuzzy.(s.coord) then (
+	      dnlm (sendPeer name s.coord) (Nak(rank,lo,hi))
+	    ) else (
+	      (* Don't forget to set the Unreliable option
+	       * for the STABLE layer (see note in stable.ml).
+	       *)
+	      dnlm (castUnrel name)  (Nak(rank,lo,hi))
+	    )
 (*
 	)
 *)
@@ -194,7 +279,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       log (fun () -> sprintf "recv_cast:%d:assign=%d" rank seqno) ;
       read_prefix rank
     ) else (
-      log (fun () -> sprintf "recv_cast:%d:dropping redundant msg:seqno=%d" rank seqno)
+(*      log (fun () -> sprintf "recv_cast:%d:dropping redundant msg:seqno=%d" rank seqno) *)
     )
   in
 
@@ -205,7 +290,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
      *)
   | ECast iovl, Data(seqno) ->
       let origin = getPeer ev in
-      assert (not (Arrayf.get s.failed origin)) ;
+(*      assert (not (Arrayf.get s.failed origin)) ; *)
       let buf = Arrayf.get s.buf origin in
 
       (* Check for fast-path.
@@ -224,7 +309,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	up ev abv
       ) else (
       	recv_cast origin seqno abv iovl ;
-        Iovecl.free iovl
+        free name ev
       )
 
     (* ESend:Ack: Got an ack.
@@ -263,7 +348,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
      *)
   | (ECast iov|ESend iov|ECastUnrel iov|ESendUnrel iov), Retrans(rank,seqno) ->
       if rank <> ls.rank then (
-      	log (fun () -> sprintf "retrans:%d->%d->me:seqno=%d" rank (getPeer ev) seqno) ;
+(*      	log (fun () -> sprintf "retrans:%d->%d->me:seqno=%d" rank (getPeer ev) seqno) ; *)
 (*
       	eprintf "MNAK:Cast:Retrans:seqno=%d\n" seqno ;
 	let buf = s.buf.(rank) in
@@ -275,7 +360,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 *)
         recv_cast rank seqno abv iov ;
       ) ;
-      Iovecl.free iov
+      free name ev
 
   | _, NoHdr -> up ev abv
   | _        -> failwith bad_header
@@ -291,8 +376,29 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       (* TODO: check if request is for message from failed member
        * and I'm coordinator and I don't have what is being asked for
        *)
+      let recently_heard = 
+        let (know_lo,know_hi) = s.recently_heard.(rank) in
+        let new_lo = min lo know_lo in
+        let new_hi = max hi know_hi in
+          if new_lo < lo || new_hi > hi then (
+            s.recently_heard.(rank) <- (new_lo,new_hi);
+            true
+          )
+          else
+            false
+      in
+        
+
+
       let origin = getPeer ev in
-      logn (fun () -> sprintf "recd:origin=%d:original=%d:Nak(%d..%d)" origin rank lo hi) ;
+      if s.neighbor_nak &&  origin = ls.rank then
+        logn (fun () -> sprintf "Received my own NAK cast.  Ignoring.\n")
+      else begin
+        let ttl = match getTTL ev with
+          Some(x) -> x
+        | None -> 0 
+        in
+      logn (fun () -> sprintf "recd:origin=%d:original=%d:Nak(%d..%d), ttl=%d\n" origin rank lo hi ttl) ;
       let buf = Arrayf.get s.buf rank in
 
       (* We do not retransmit messages that we have not been
@@ -300,21 +406,43 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
        * the Efail handler.  Note: this should probably be
        * [pred (Iq.read buf)], but then again there should
        * be no messages in that last slot.
+       *
+       * We retransmit according to the following rules:
+       * 1) If I am coordinator or original sender, I always reply
+       * 2) Else, if (not coord or originator and) coordinator is fuzzy,
+       *          reply with high probability (max{2/n,1/4})
+       * 3) Else, (not coord or originator and coordinator is not fuzzy)
+       *          reply with low probability (2/n)
        *)
       let hi = int_min hi (Iq.read buf) in
 
+      let reply_policy =
+        if rank = ls.rank or ls.rank = s.coord or
+                  s.handle_fuzzy == selective_fuzzy or
+                  s.handle_fuzzy == shared_fuzzy then
+          always
+        else if s.local_fuzzy.(s.coord) then
+          high_probability ls.nmembers recently_heard
+        else
+          low_probability ls.nmembers recently_heard
+      in
+      
       for seqno = lo to hi do
-	match Iq.get buf seqno with
-	| Iq.GData(iov,abv) ->
-	    let iov = Iovecl.copy iov in
-	    dn (sendUnrelPeerIov name origin iov) abv (Retrans(rank,seqno))
+        if reply_policy () then
+          match Iq.get buf seqno with
+          | Iq.GData(iov,abv) ->
+              let iov = Iovecl.copy iov in
+              dn (sendUnrelPeerIov name origin iov) abv (Retrans(rank,seqno))
 	| Iq.GReset | Iq.GUnset ->
 	    (* Do nothing...
 	     *)
 	    log (fun () -> sprintf "Nak from %d for message I think is Unset or Reset" origin) ;
       done ;
-	  
-      Iovecl.free iov
+
+      logn (fun () -> sprintf "SEND: Retransmitting some parts of %d..%d to %d\n" lo hi origin);
+      end;
+      free name ev
+
 
   | _ -> failwith unknown_local
 
@@ -344,6 +472,15 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  Iq.clear_unread buf
 	)
       done ;
+
+      upnm ev
+
+    (* Got new fuzzy information. Remember who is fuzzy
+     *)
+  | EFuzzy ->
+      Arrayf.iteri (fun i fuzziness ->
+        s.local_fuzzy.(i) <- (fuzziness > s.fuzzy_th)
+      ) (getLocalFuzziness ev) ;
 
       upnm ev
 
@@ -385,6 +522,14 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	)
       done ;
 
+      (* Handle messages that were acked by all except for fuzzy nodes
+       * Issue - a conflict between partial deletion of messages and
+       * probabilistic retransmission policy. So, either ones should be
+       * employed, but not both.
+       *)
+      s.handle_fuzzy (getLocalFuzzyStability ev) (getGlobalFuzzyStability ev)
+                          mins ls.rank ls.nmembers s.fuzzy_k s.buf;
+
       upnm ev
 
   | EExit ->
@@ -404,6 +549,17 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       upnm ev
 
   | EDump -> ( dump vf s ; upnm ev )
+  | EInit -> dnnm (timerAlarm name Time.zero); upnm ev
+  | ETimer -> 
+      if Time.ge (getTime ev) s.timer_timeout then (
+        for i = 0 to pred ls.nmembers do
+          s.recently_heard.(i) <- (-1,-1)
+        done;
+        s.timer_timeout <- Time.add (getTime ev) (Time.of_int 1);
+        dnnm (timerAlarm name s.timer_timeout);
+      );
+      upnm ev
+
   | _ -> upnm ev
 
   and dn_hdlr ev abv = match getType ev with
@@ -451,6 +607,10 @@ let l2 args vs = Layer.hdr_noopt init hdlrs args vs
 
 let _ = 
   Param.default "mnak_iq_init" (Param.Int 0) ;
+  Param.default "mnak_neighbor" (Param.Bool true) ;
+  Param.default "mnak_fuzzy_th" (Param.Int 10) ;
+  Param.default "mnak_fuzzy_k" (Param.Int 3) ;
+  Param.default "mnak_fuzzy_policy" (Param.String "Never") ;
   Layer.install name l
 
 (**************************************************************)

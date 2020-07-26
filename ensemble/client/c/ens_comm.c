@@ -1,14 +1,4 @@
 /**************************************************************/
-/*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
-/**************************************************************/
 /* CE_OUTBOARD_COMM.C */
 /* Author: Ohad Rodeh 3/2002 */
 /* Based on code by Mark Hayden and Alexey Vaysbrud. */
@@ -33,6 +23,13 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #endif
+
+#ifdef __APPLE__
+#include <stdlib.h>
+#include <sys/uio.h>
+#include <sys/time.h>
+#endif
+
 /**************************************************************/
 #define NAME "COMM"
 /**************************************************************/
@@ -128,7 +125,7 @@ int EnsTcpInit(int port, /*OUT*/ ens_sock_t *sock)
     hep = gethostbyname(my_host);
     inet_aton("127.0.0.1",&(sin.sin_addr));
     sin.sin_family = AF_INET;
-    sin.sin_port = ntohs(port);
+    sin.sin_port = ntohs(ENS_SERVER_TCP_PORT);
     sinlen = sizeof(sin);  
     
     printf("TCP connect to %s port %d\n",

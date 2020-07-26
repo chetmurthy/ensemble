@@ -61,9 +61,8 @@ LIBSYS	= # default for Unix is nothing
 
 
 #*************************************************************#
-# The default cryptographic library. We use OpenSSL
-# that compiles and runs on many different platforms. 
-CRYPTO = 0
+# The default cryptographic library. 
+#CRYPTO = 1
 
 ifdef CRYPTO
 # with cryptographich support. We're using Xavier's CryptoKit library
@@ -152,6 +151,7 @@ C_LINK =
 EXE	=
 OBJS	= .o
 ARCS	= .a
+DYLIB = .dylib
 OBJ	= $(OBJS)
 ARC	= $(ARCS)
 CP	= cp -f
@@ -159,8 +159,14 @@ MV	= mv
 LN	= ln
 RM	= rm -f
 RM_REC	= 
+ifeq ("$(PLATFORM)" , "powerpc-darwin")
+MAKE = make
+MKLIB = libtool -static -o    #comment forces spaces
+MKDYLIB = gcc -dynamiclib -fno-common -o 
+else
 MAKE	= gmake	
 MKLIB   = ar cr 		# comment forces spaces
+endif
 RANLIB  = ranlib
 MKLIBO  =
 
@@ -203,5 +209,6 @@ LIBSOCK		= $(LIBMLSOCK) -cclib $(LIBCSOCK)
 #
 CLEANDIR = \
     $(RM) .nfs* *.cm* .err a.out *.o* *.exe *.a *.lib *.asm *~ .*~ .\#*  core *.pdb core gmon.out camlprim* *.exp *.dll *.idb *.class
+
 
 #*************************************************************#

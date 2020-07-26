@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* HSYS.MLI *)
 (* Author: Mark Hayden, 5/95 *)
 (**************************************************************)
@@ -239,10 +229,10 @@ val stdin : unit -> socket
 
 (**************************************************************)
 
-val heap : unit -> Obj.t array
-val addr_of_obj : Obj.t -> string
+(*val heap : unit -> Obj.t array
+val addr_of_obj : Obj.t -> string*)
 val minor_words : unit -> int
-val frames : unit -> int array array
+(*val frames : unit -> int array array*)
 
 (**************************************************************)
 

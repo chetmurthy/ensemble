@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* SECCHAN: Creating secure channels between ensemble processes.*)
 (* Author: Ohad Rodeh  2/98 *)
 (**************************************************************)
@@ -314,7 +304,6 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  
 	    
     | EDump -> ( dump vf s ; upnm ev )
-	  
     | _ -> upnm ev
 	  
   and dn_hdlr ev abv = match getType ev with

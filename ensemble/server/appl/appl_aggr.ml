@@ -1,88 +1,36 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
+(* APPL_POWER.ML *)
+(* Author: Mark Hayden, 12/98 *)
 (**************************************************************)
-(**************************************************************)
-open Appl_intf open New
 open Util
 open View
+open Appl_intf
+(**************************************************************)
+let name = Trace.file "APPL_POWER"
+let failwith s = Trace.make_failwith name s
+let log = Trace.log name
 (**************************************************************)
 
+open New
 let f i =
-  eprintf "APPL_INTF:aggregate:preprocessing not done" ;
   let send_pool = Iovec.get_send_pool () in
   let ma,um = Iovecl.make_marsh send_pool true in
+  let ta = action_array_map ma ma in
 
-  let install (ls,vs) =
-    let actions,handlers = i.install (ls,vs) in
-
-    let pending = Queuee.create () in
-    let next_sweep = ref Time.zero in
-
-    let collect actions =
-      Queuee.add actions pending
-    in    
-
-    let casts = ref [] in
-    let sends = Array.create ls.nmembers [] in
-    let emit () =
-      let other = Queuee.create () in
-
-      Queuee.iter (fun al -> 
-	Array.iter (fun a -> match a with
-	| Cast(m) -> 
-	    casts := m :: !casts
-	| Send(dl,m) -> 
-	    Array.iter (fun d -> sends.(d) <- m :: sends.(d)) dl
-	| Send1(d,m) -> 
-	    sends.(d) <- m :: sends.(d)
-	| Control o ->
-	    Queuee.add (Control o) other
-	) al
-      ) pending ;
-      Queuee.clear pending ;
-
-      let emit = other in
-
-      for i = 0 to pred ls.nmembers do
-	let pending = sends.(i) in
-	if pending <> [] then (
-	  let pending = Array.of_list pending in
-	  let pending = ma pending in
-	  Queuee.add (Send([|i|], pending)) emit
-        )
-      done ;
-      if !casts <> [] then (
-	let pending = Array.of_list !casts in
-	let pending = ma pending in
-	Queuee.add (Cast(pending)) emit
-      ) ;
-      let emit = Queuee.to_list emit in
-      Array.of_list emit
+  let install vf =
+    let actions,handlers = i.install vf in
+    let actions = ta actions in
+    let receive o b cs =
+      let receive = handlers.receive o b cs in
+      fun m -> ta (receive (um m))
     in
-
-    let receive o b cs m =
-      Array.iter (fun m -> collect (handlers.receive o b cs m)) (um m) ; 
-      [||] 
-    in  
-
-    let heartbeat time =
-      collect (handlers.heartbeat time) ;
-      if time > !next_sweep then (
-	next_sweep := Time.add time i.heartbeat_rate ;
-	emit ()
-      ) else [||]
-    in
-
+    
     let block () =
-      collect (handlers.block ()) ;
-      emit ()
+      ta (handlers.block ())
+    in
+
+    let heartbeat t =
+      ta (handlers.heartbeat t)
     in
 
     let handlers = { 
@@ -93,12 +41,12 @@ let f i =
       disable = handlers.disable
     } in
     
-    collect actions ;
-    [||],handlers
-  in
-
+    actions,handlers
+  in 
+  
   { heartbeat_rate = i.heartbeat_rate ;
     install = install ;
     exit = i.exit }
 
 (**************************************************************)
+

@@ -1,4 +1,4 @@
-#/bin/sh -f 
+#!/bin/csh -f 
 
 set MACHTYPE=`uname -m`
 set OSTYPE=`uname -s`
@@ -6,7 +6,13 @@ set OSTYPE=`uname -s`
 set ENS_MACHTYPE=""
 set ENS_OSTYPE=""
 
-switch ($MACHTYPE)
+switch ("$MACHTYPE")
+       case "Power Macintosh":
+            set ENS_MACHTYPE="powerpc";
+            breaksw;
+       case ppc64:
+           set ENS_MACHTYPE="ppc64";
+           breaksw;
        case sun4m:
             set ENS_MACHTYPE="sparc";
             breaksw;
@@ -21,9 +27,16 @@ switch ($MACHTYPE)
        case i686:
             set ENS_MACHTYPE="i386";
             breaksw;
+       default:
+         echo Platform not found : $MACHTYPE
+         exit 0
+
 endsw
 
 switch ($OSTYPE)
+       case Darwin: 
+           set ENS_OSTYPE="darwin";
+           breaksw;
        case SunOS:
            set ENS_OSTYPE="solaris";
            breaksw;
@@ -36,6 +49,9 @@ switch ($OSTYPE)
        case AIX:
            set ENS_OSTYPE="aix";
            breaksw;
+       default:
+         echo OS not found : $OSTYPE
+         exit 0
 endsw
 
 echo "PLATFORM=$ENS_MACHTYPE-$ENS_OSTYPE" > mk/env.mk

@@ -1,14 +1,4 @@
 /**************************************************************/
-/*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
-/**************************************************************/
 /* SOCKOPT.C: socket operations not supported natively by Caml */
 /* Author: Ohad Rodeh  10/2002 */
 /* Based on code by Mark Hayden */

@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* APPL_INTF.ML: application interface *)
 (* Author: Mark Hayden, 8/95 *)
 (* See documentation for a description of this interface *)
@@ -137,6 +127,8 @@ module New = struct
 
   let full i =
     let send_pool = Iovec.get_send_pool () in
+    (* ma,um are functions to marshal and unmarshal objects,
+       returning iovec's (IO Vectors *)
     let ma,um = Iovecl.make_marsh send_pool true in
     let ta = action_array_map ma ma in
     

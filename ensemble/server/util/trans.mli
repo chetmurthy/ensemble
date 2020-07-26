@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* TRANS.MLI *)
 (* Author: Mark Hayden, 12/95 *)
 (**************************************************************)
@@ -30,6 +20,7 @@ type inet       = Unix.inet_addr
 type origin     = rank
 type primary    = bool
 type pid        = int
+type location_t = { xloc : float ; yloc : float }
 
 module type OrderedType =
   sig

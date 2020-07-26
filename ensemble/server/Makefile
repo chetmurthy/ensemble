@@ -1,15 +1,5 @@
 #*************************************************************#
 #
-#   Ensemble, 2_00
-#   Copyright 2004 Cornell University, Hebrew University
-#           IBM Israel Science and Technology
-#   All rights reserved.
-#
-#   See ensemble/doc/license.txt for further information.
-#
-#*************************************************************#
-#*************************************************************#
-#
 # MAKEFILE: root Ensemble Makefile
 #
 # Author: Ohad Rodeh  12/2001
@@ -142,7 +132,7 @@ $(ENSLIB)/ensemble$(CMI): $(ENSLIB)/ensemble.mli
 	$(ENSCOMP) -c $(ENSLIB)/ensemble.mli
 
 $(ENSLIB)/ensemble$(CMO): $(ENSLIB)/ensemble$(CMI) $(ENSLIB)/ensemble.ml $(ENSLIB)/ensemble.mli 
-	$(ENSCOMP) -c $(INCLUDE) $(ENSLIB)/ensemble.ml
+	$(ENSCOMP) -c $(INCLUDE) -I $(ENSLIB) $(ENSLIB)/ensemble.ml
 
 #*************************************************************#
 

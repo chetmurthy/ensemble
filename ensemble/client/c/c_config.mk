@@ -11,7 +11,7 @@
 
 #i386-linux
 ifeq ("$(PLATFORM)" , "i386-linux")
-LINK_FLAGS = -lm 
+LINK_FLAGS = -lm -ldl
 THREAD_LIB = -lpthread 
 CFLAGS = -DINLINE=inline -O2 -DNDEBUG -Wall -Wno-unused -Wstrict-prototypes -DENS_TRACE
 
@@ -20,7 +20,7 @@ endif
 
 #i386-redhat
 ifeq ("$(PLATFORM)" , "i386-redhat")
-LINK_FLAGS = -lm 
+LINK_FLAGS = -lm -ldl
 THREAD_LIB = -lpthread 
 CFLAGS = -DINLINE=inline -O2 -DNDEBUG -Wall -Wno-unused -Wstrict-prototypes 
 #-p/-pg  -g  -DCE_TRACE
@@ -29,7 +29,7 @@ endif
 
 # SPARC-SOLARIS
 ifeq ("$(PLATFORM)" , "sparc-solaris")
-LINK_FLAGS = -lposix4 -lsocket -lnsl -lm -lresolv
+LINK_FLAGS = -lposix4 -lsocket -lnsl -lm -lresolv -ldl
 THREAD_LIB = -lthread 
 CFLAGS = -DINLINE=inline \
 	-O2 -Wall -Wno-unused -Wstrict-prototypes \
@@ -49,12 +49,29 @@ endif
 
 #alpha-osf1
 ifeq ("$(PLATFORM)" , "alpha-osf1")
-CE_LINK_FLAGS = -lm
+CE_LINK_FLAGS = -lm -ldl
 CE_THREAD_LIB = -lpthread 
 CFLAGS = -DINLINE=inline -O2 -Wall -Wstrict-prototypes 
 #-g -p/-pg 
 #-DNDEBUG 
 endif
+
+#powerpc-darwin
+ifeq ("$(PLATFORM)" , "powerpc-darwin")
+LINK_FLAGS = -lm 
+THREAD_LIB = -lpthread 
+CFLAGS = -DINLINE=inline -O2 -DNDEBUG -Wall -Wno-unused -Wstrict-prototypes 
+#-p/-pg  -g  -DCE_TRACE
+endif
+
+#ppc64-linux
+ifeq ("$(PLATFORM)" , "ppc64-linux")
+LINK_FLAGS = -lm
+THREAD_LIB = -lpthread
+CFLAGS = -DINLINE=inline -O2 -DNDEBUG -Wall -Wno-unused -Wstrict-prototypes -DENS_TRACE 
+#-p/-pg  -g  -DCE_TRACE
+endif
+ 
 
 
 

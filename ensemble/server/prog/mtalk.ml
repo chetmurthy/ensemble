@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* MTALK.ML: multiperson talk program. *)
 (* Author: Mark Hayden, 8/95 *)
 (**************************************************************)
@@ -159,9 +149,13 @@ let intf my_name alarm =
      *)
     let check_id origin =
       if s.last_id <> origin then (
-	let name = s.names.(origin) in
-	printf "(mtalk:from %s)\n" name ;
-	s.last_id <- origin
+	let name names_array = 
+    if origin < Array.length names_array then
+      "???"
+    else
+      names_array.(origin) in
+	  printf "(mtalk:from %s)\n" (name s.names);
+	  s.last_id <- origin
       )
     in
     
@@ -173,20 +167,25 @@ let intf my_name alarm =
 	   *)
 	  Reg msg -> 
 	    if s.last_id <> origin then (
-	      let name = s.names.(origin) in
-	      printf "(mtalk:origin %s)\n" name ;
+	      let name names_array= 
+          if origin < Array.length names_array then
+            "???"
+          else
+            names_array.(origin) in
+	      printf "(mtalk:origin %s)\n" (name s.names) ;
 	      s.last_id <- origin
 	    ) ;
 	    printf "%s" msg ;
 	    check_buf ()
 	| Name rmt_name -> 
 	    assert (ls.rank = 0);
+      assert (origin < Array.length s.accu);
 	    s.accu.(origin) <- rmt_name;
 	    s.n_name <- succ s.n_name;
 	    if s.n_name = ls.nmembers then (
 	      let copy_accu = Array.of_list (Array.to_list s.accu) in
 	      final s.accu;
-	      [|Cast (NameArray copy_accu)|]
+	      if not s.blocked then [|Cast (NameArray copy_accu)|] else [||]
 	    ) else
 	      [||]
 	| NameArray accu -> 

@@ -1,13 +1,3 @@
-(**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
  (**************************************************************)
  (* APPL.ML *)
  (* Author: Mark Hayden, 4/95 *)
@@ -45,7 +35,11 @@
      if Arge.get Arge.short_names then
        (Hsys.inet_any (),0)
      else
-       (Hsys.gethost (),get_incarn ())
+       let host = match Arge.get Arge.host_ip with
+           Some host -> Hsys.inet_of_string host
+         | None -> Hsys.gethost ()
+       in
+         (host,get_incarn ())
    in
    Unique.create host incarn
      
@@ -402,11 +396,12 @@
        (*   Gc.full_major () ;  *)
        string_list_of_gc_stat (Gc.stat ())
      );
-     
+(*     
      log_heap (fun () -> 
        Heap.analyze () ;
        []
      );
+*)
 
      if roots then
        Trace.print_roots ();

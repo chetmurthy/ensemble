@@ -1,14 +1,4 @@
 /**************************************************************/
-/*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
-/**************************************************************/
 /* ENS_THREADS.H */
 /* Author: Ohad Rodeh 03/2003 */
 /* Based on code from HOT, written by Robbert Van Renesse, Werner Vogels,

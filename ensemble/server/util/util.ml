@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* UTIL.ML *)
 (* Author: Mark Hayden, 4/95 *)
 (**************************************************************)
@@ -666,6 +656,14 @@ let error e =
   | _ ->
       raise e
       (*!full_error e*)
+
+let count_true ar = 
+  let c = ref 0 in
+    Array.iter (fun i -> if i then c := !c + 1) ar;
+    let ret = !c in
+      c := 0;
+      ret
+
 
 let catch f a =
   try f a with e ->

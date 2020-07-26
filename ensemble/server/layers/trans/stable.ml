@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* STABLE.ML : stability detection protocol *)
 (* Author: Mark Hayden, 12/95 *)
 (* Based on code by: Robbert vanRenesse *)
@@ -38,6 +28,10 @@ type state = {
    *)
   spacing          : Time.t ;  
   acks             : seqno array array ;
+  local_fuzzy_th   : int ;
+  global_fuzzy_th  : int ;
+  local_fuzzy      : bool array ;
+  global_fuzzy     : bool array ;
   mutable failed   : bool Arrayf.t ;
   mutable next_gossip : Time.t ;
 
@@ -49,6 +43,8 @@ type state = {
 
 let dump = Layer.layer_dump name (fun (ls,vs) s -> Array.append [|
   sprintf "failed  =%s\n" (Arrayf.bool_to_string s.failed) ;
+  sprintf "local_fuzzy  =%s\n" (string_of_array string_of_bool s.local_fuzzy) ;
+  sprintf "global_fuzzy  =%s\n" (string_of_array string_of_bool s.global_fuzzy) ;
   sprintf "dbg_mins=%s\n" (Arrayf.to_string string_of_int s.dbg_mins) ;
   sprintf "dbg_maxs=%s\n" (Arrayf.to_string string_of_int s.dbg_maxs) ;
 |] (Array.mapi (fun i a ->
@@ -65,6 +61,14 @@ let space_out rank nmembers spacing =
   let time = mod_float rltv spacing in
   Time.of_float time
 
+(* Fix fuzziness info based on comparing reported fuzzy level
+ * with threshold
+ *)
+let fix_fuzziness fnumbers fuzzy threshold =
+  Arrayf.iteri (fun i fnumber ->
+    fuzzy.(i) <- (fnumber > threshold)
+  ) fnumbers 
+
 (**************************************************************)
 
 let init _ (ls,vs) = {
@@ -72,8 +76,11 @@ let init _ (ls,vs) = {
   spacing       = Param.time vs.params "stable_spacing" ;
 
   failed        = ls.falses ;
+  local_fuzzy_th = Param.int vs.params "stable_local_fuzzy_th" ;
+  global_fuzzy_th = Param.int vs.params "stable_global_fuzzy_th" ;
+  local_fuzzy   = Array.copy (Arrayf.to_array ls.falses);
+  global_fuzzy  = Array.copy (Arrayf.to_array ls.falses);
   acks          = Array.create_matrix ls.nmembers ls.nmembers 0 ; (* matrix (from,to) *)
-
   next_gossip = Time.invalid;
   dbg_mins	= ls.zeroes ;
   dbg_maxs  	= ls.zeroes
@@ -92,6 +99,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     log (fun () -> sprintf "doing stablity");
     let mins = Array.copy s.acks.(ls.rank) in
     let maxs = Array.create ls.nmembers 0 in
+    let min_local = Array.copy s.acks.(ls.rank) in
+    let min_global = Array.copy s.acks.(ls.rank) in
 
     (* For each member, update ack entry and find new stability.
      *)
@@ -101,7 +110,9 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
         for j = 0 to pred ls.nmembers do
 	  let seqno = row.(j) in
 	  if seqno >| maxs.(j) then maxs.(j) <- seqno ;
-	  if seqno <| mins.(j) then mins.(j) <- seqno
+	  if seqno <| mins.(j) then mins.(j) <- seqno ;
+          if s.local_fuzzy.(j) & seqno <| min_local.(j) then min_local.(j) <- seqno ;
+          if s.global_fuzzy.(j) & seqno <| min_global.(j) then min_global.(j) <- seqno 
 	done
       )
     done ;
@@ -115,7 +126,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
      *)
     dnnm (create name EStable[
       Stability mins ;
-      NumCasts maxs
+      NumCasts maxs ;
+      LocalFuzzyStability (Arrayf.of_array min_local) ;
+      GlobalFuzzyStability (Arrayf.of_array min_global) ;
+      OwnAcked (Arrayf.of_array (Array.map (fun row -> row.(ls.rank)) s.acks))
     ]) ;
   in
 
@@ -156,6 +170,15 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | EFail ->
       s.failed <- getFailures ev ;
       dnnm (create name EStableReq[]) ;
+      upnm ev
+
+    (* EFuzzy: mark fuzzy members as such
+     *)
+  | EFuzzy ->
+      let localFuzziness = getLocalFuzziness ev in
+      let globalFuzziness = getGlobalFuzziness ev in
+      fix_fuzziness localFuzziness s.local_fuzzy s.local_fuzzy_th;
+      fix_fuzziness globalFuzziness s.global_fuzzy s.global_fuzzy_th;
       upnm ev
 
     (* ETimer: every so often:
@@ -240,6 +263,8 @@ let _ =
   Param.default "stable_spacing" (Param.Time (Time.of_float 0.5));
   Param.default "stable_sweep" (Param.Time (Time.of_int 1)) ;
   Param.default "stable_explicit_ack" (Param.Bool false) ;
+  Param.default "stable_local_fuzzy_th" (Param.Int 100) ;
+  Param.default "stable_global_fuzzy_th" (Param.Int 100) ;
   Layer.install name l
 
 (**************************************************************)

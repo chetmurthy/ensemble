@@ -1,14 +1,4 @@
 /**************************************************************/
-/*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
-/**************************************************************/
 /* ENS_COMM.C */
 /* Author: Ohad Rodeh 10/2003 */
 /**************************************************************/
@@ -25,6 +15,9 @@
 #include <process.h>
 #include <winsock2.h>
 #else
+#ifdef __APPLE__
+#include <sys/types.h>
+#endif
 #include <sys/socket.h>
 #endif
 
@@ -53,6 +46,9 @@ typedef SOCKET ens_sock_t;
 #else
 typedef int ens_sock_t;
 #endif
+
+/* Need a well-known port for connect to server */
+#define ENS_SERVER_TCP_PORT 5002
 
 /* connect to an existing Ensemble server through TCP.
  * Return 0 on success, -1 on error.

@@ -1,14 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* HEAL.ML *)
 (* Author: Mark Hayden, 6/95 *)
 (* Based on code by Robbert vanRenesse & Dalia Malki *)
@@ -45,7 +35,8 @@ type state = {
   mutable merge_nmem : nmembers ;
   mutable merge_vid  : View.id ;
   mutable merge_con  : Endpt.full ;
-  mutable bcasted    : bool
+  mutable bcasted    : bool ;
+  mutable next_timeout : Time.t
 }
 
 (**************************************************************)
@@ -67,7 +58,8 @@ let init _ (ls,vs) = {
   merge_vid  = ls.view_id ;
   merge_nmem = ls.nmembers ;
   merge_con  = ((Arrayf.get vs.view 0) , (Arrayf.get vs.address 0)) ;(*BUG?*)
-  bcasted    = false
+  bcasted    = false;
+  next_timeout = Time.zero
 }
 
 let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out=dnnm} =
@@ -118,8 +110,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     && (my_servers = [] or bc_servers = [] or not (Lset.disjoint bc_servers my_servers))
     then (
       log (fun () -> sprintf "recd interesting bcast from %s (curr contact=%s)"
-	(Endpt.string_of_id bc_coord) 
-	(Endpt.string_of_id (fst s.merge_con))) ;
+	           (Endpt.string_of_id bc_coord) 
+	           (Endpt.string_of_id (fst s.merge_con))) ;
 
       (* First check to see if I want to merge with him.  This decision
        * is based on several criteria.  First, if I'm a primary partition,
@@ -129,46 +121,66 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       if not vs.primary
       && (bc_nmem, bc_view_id) > (s.merge_nmem, s.merge_vid)
       then (
-	log (fun () -> sprintf "suggesting merge with %s , con=%s" 
-	  (View.string_of_id bc_view_id)
-	  (Addr.string_of_set (snd bc_con))
-	) ;
-	s.merge_vid <- bc_view_id ;
-	s.merge_con <- bc_con ;
-	s.merge_nmem <- bc_nmem ;
-
-	(* If I'm not installing a view currently, start a
-	 * view change.
-	 *)
-	if not s.wait_view then (
-	  log (fun () -> "sending a Prompt down");
-	  s.wait_view <- true ;
-	  dnnm (create name EPrompt [])
-	)
-      ) ;
+	      log (fun () -> sprintf "suggesting merge with %s , con=%s" 
+	             (View.string_of_id bc_view_id)
+	             (Addr.string_of_set (snd bc_con))
+	          ) ;
+	      s.merge_vid <- bc_view_id ;
+	      s.merge_con <- bc_con ;
+	      s.merge_nmem <- bc_nmem ;
+        
+	      (* If I'm not installing a view currently, start a
+	       * view change.
+	       *)
+	      if not s.wait_view then (
+	        log (fun () -> "sending a Prompt down");
+	        s.wait_view <- true ;
+	        dnnm (create name EPrompt [])
+	      )
+        else
+          log (fun () -> "Not sending a prompt down -- s.wait_view=true")
+      ) else (
+        log (fun () -> sprintf "Not interesting because: case1=%b case2=%b(%d,%s)>(%d,%s)\n" 
+          (not vs.primary) ((bc_nmem, bc_view_id) > (s.merge_nmem, s.merge_vid))
+            bc_nmem (View.string_of_id bc_view_id) s.merge_nmem 
+            (View.string_of_id s.merge_vid));
+      );
 
       (* Otherwise, he might think my partition is interesting.
-       *)
+      *)
       if ls.view_id = s.merge_vid	(* I'm not planning to merge myself *)
-      && not s.wait_view		(* I'm not waiting for a view *)
-      && not s.bcasted			(* don't bcast all the time *)
-      && (bc_nmem, bc_view_id) < (ls.nmembers, ls.view_id)(* check that I am 'older' than this one *)
-      && (my_servers = [] or bc_servers = [] or not (Lset.disjoint bc_servers my_servers))
+        && not s.wait_view		(* I'm not waiting for a view *)
+        && not s.bcasted			(* don't bcast all the time *)
+        && (bc_nmem, bc_view_id) < (ls.nmembers, ls.view_id)(* check that I am 'older' than this one *)
+        && (my_servers = [] or bc_servers = [] or not (Lset.disjoint bc_servers my_servers))
       then (
-	s.bcasted <- true ;
-	log (fun () -> "bcasting(recv)") ;
-	dnnm (create name EGossipExtDir[Address(snd bc_con) ; gossip_send ()])
+	      s.bcasted <- true ;
+	      log (fun () -> "bcasting(from big view to small)") ;
+	      dnnm (create name EGossipExtDir[Address(snd bc_con) ; gossip_send ()])
       )
-    ) else (
+     else (
       log (fun () -> 
-	sprintf "gossip dropped from %s rule1=%b rule2=%b rule3=%b rule4=%b" 
-	(Endpt.string_of_id bc_coord)
-	(ls.view_id <> s.merge_vid)
-	(not s.wait_view)
-	(not s.bcasted)
-	((bc_nmem, bc_view_id) < (ls.nmembers, ls.view_id))
-      ) ;
+	           sprintf "gossip dropped from %s rule1=%b rule2=%b rule3=%b rule4=%b rule5=%b" 
+	             (Endpt.string_of_id bc_coord)
+	             (ls.view_id = s.merge_vid)
+	             (not s.wait_view)
+	             (not s.bcasted)
+	             ((bc_nmem, bc_view_id) < (ls.nmembers, ls.view_id)) (my_servers = [] || bc_servers = [] or not (Lset.disjoint bc_servers my_servers))
+          );
+     )
+    ) else (
+		  if (Lset.disjointa view bc_view) then
+
+         log (fun () -> sprintf "gossip dropped from %s rule1=%b rule2=%b rule3=%b rule4=%b rule5=%b rule6=%b" (Endpt.string_of_id bc_coord)
+					ls.am_coord       
+					(bc_proto_id = vs.proto_id) 
+					(all_present ())      
+					(not (Arrayf.mem bc_coord vs.view)) 
+					(Lset.disjointa view bc_view)     
+					(my_servers = [] or bc_servers = [] or not (Lset.disjoint bc_servers my_servers)))
     )
+			
+
   in
 
   let up_hdlr ev abv NoHdr = up ev abv
@@ -187,6 +199,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
   and upnm_hdlr ev = match getType ev with
   | EInit ->
+      dnnm (timerAlarm name Time.zero);
       if not ls.am_coord then
 	dnlm (sendPeer name vs.coord) NoHdr
       else (
@@ -215,20 +228,42 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       )
 
   | EDump -> ( dump vf s ; upnm ev )
+  | ETimer -> 
+      (* Make sure I get the all_present turned on -- otherwise
+         I can't do a view change *)
+			if (Time.ge (getTime ev) s.next_timeout) &&
+        ls.am_coord && not (Once.isset s.all_present) then (
+				let falses_left = ls.nmembers - (Util.count_true s.present) in
+					if falses_left > 0 then (
+						for rank = 0 to pred ls.nmembers do
+							if not s.present.(rank) && ls.rank <> rank then (
+								printf "Heal: Sending all_present reminder message\n";
+								dnlm 	(sendPeer name rank) NoHdr
+							)
+						done;
+            s.next_timeout <- Time.add (getTime ev) (Time.of_int 1);
+						dnnm (timerAlarm name s.next_timeout)
+					)
+			);
+      upnm ev
+
   | _ -> upnm ev
 
   and dn_hdlr ev abv = dn ev abv NoHdr
 
   and dnnm_hdlr ev = match getType ev with
-  | EGossipExt ->
+    | EGossipExt ->
+        log (fun () -> sprintf "Got EGossipExt from TOP, rule1=%b  rule2=%b rule3=%b rule4=%b\n" ls.am_coord (not s.wait_view) (ls.view_id = s.merge_vid) (all_present ()));
       s.bcasted <- false ;
       let ev =
 	if ls.am_coord			(* I'm elected *)
 	&& not s.wait_view		(* I'm not waiting for view *)
 	&& ls.view_id = s.merge_vid	(* I'm not planning to merge *)
 	&& all_present ()               (* everyone is present *)
-	then
+	then (
+    log (fun () -> sprintf "Sending gossip");
 	  set name ev [gossip_send ()]
+  )
 	else ev
       in
       dnnm ev

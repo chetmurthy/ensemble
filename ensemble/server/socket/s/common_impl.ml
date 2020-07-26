@@ -1,30 +1,9 @@
 (**************************************************************)
-(*
- *  Ensemble, 2_00
- *  Copyright 2004 Cornell University, Hebrew University
- *           IBM Israel Science and Technology
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* COMMON_IMPL.ML *)
 (* Author: Ohad Rodeh 10/2002 *)
 (* Common functions for win32 and Unix *)
 (**************************************************************)
 open Socksupp
-(**************************************************************)
-
-external heap : unit -> Obj.t array 
-  = "skt_heap"
-external addr_of_obj : Obj.t -> string 
-  = "skt_addr_of_obj"
-external minor_words : unit -> int 
-  = "skt_minor_words" "noalloc"
-external frames : unit -> int array array 
-  = "skt_frame_descriptors"
-
 (**************************************************************)
 
 (* MD5 hash functions. We need to have it work on Iovecs as
