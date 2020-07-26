@@ -1,0 +1,396 @@
+\section{\ensemble\ ML Application Interface}
+\label{section:applintf}
+\todo{add example handlers from mtalk}
+
+We present a simple interface for building single-group applications.  This
+interface is intended to make small applications easy to build, and to protect
+users from complications in the internals of the system.
+
+The interface is implemented as a set of callbacks the application
+provides to \ensemble.  The application is notified through these
+callbacks (in a similar fashion to callbacks with Motif widgets) of
+events that occur in the system, such as message receipts and
+membership changes.
+
+The interface for a member of a group is always in one of two states,
+\emph{blocked} or \emph{unblocked}.  While unblocked, only the
+\mlval{recv\_send}, \mlval{recv\_cast}, and \mlval{heartbeat}
+callbacks are enabled.  This is the normal state of the system. While
+block, the application \emph{should} refrain from sending messages. However,
+it can send messages, causing the system to fail with the notification
+``sending while blocked''.
+
+Messages are sent by returning from these callbacks lists of actions to
+take.  An action is usually a message send: either a \mlval{Cast} (group
+broadcast) or a \mlval{Send} (point-to-point message).  Thus, messages are
+delivered by callbacks from \ensemble\ and further messages are sent by
+returning values from these callbacks.
+
+\subsection{Compilation}
+Compiling ML applications is easy.  You can use \sourcedemo{Makefile} as a
+skeleton for your own applications.
+
+\subsection{Interface Definition and Initialization}
+Below is the full ML interface type definition for the application
+interface described here.  A group member is initialized by creating
+an interface record which defines a set of callback handlers for the
+application.  This is then passed to one of the \ensemble\ stack
+initialization functions exported by \sourcecode{appl/appl.mli}.
+
+\begin{codebox}
+(* Some type aliases.
+ *)
+type rank	= int
+type view 	= Endpt.id list
+type origin 	= rank
+type dests 	= rank array
+
+type control =
+  | Leave
+  | Prompt
+  | Suspect of rank list
+
+  | XferDone
+  | Rekey of bool 
+  | Protocol of Proto.id
+  | Migrate of Addr.set
+  | Timeout of Time.t            (* not supported *)
+
+  | Dump
+  | Block of bool                (* not for casual use *)
+  | No_op
+
+type ('cast_msg,'send_msg) action =
+  | Cast of 'cast_msg
+  | Send of dests * 'send_msg
+  | Send1 of rank * 'send_msg
+  | Control of control
+
+
+
+\end{codebox}
+\begin{codebox}
+(* APPL_INTF.New.full: The record interface for applications.  An
+ * application must define all the following callbacks and
+ * put them in a record.
+ *)
+
+  type cast_or_send = C | S
+  type blocked = U | B
+
+  type 'msg naction = ('msg,'msg) action
+
+  type 'msg handlers = {
+    flow_block : rank option * bool -> unit ;
+    block : unit -> 'msg naction array ;
+    heartbeat : Time.t -> 'msg naction array ;
+    receive : origin -> blocked -> cast_or_send -> 'msg -> 'msg naction array ;
+    disable : unit -> unit
+  } 
+
+  type 'msg full = {
+    heartbeat_rate : Time.t ;
+    install : View.full -> ('msg naction array) * ('msg handlers) ;
+    exit : unit -> unit
+  } 
+\}
+\end{codebox}
+
+\subsection{Actions}
+Some callbacks allow a (possibly empty) array of actions to be 
+returned.  There are 4 different kinds of actions:
+\begin{description}
+\item
+[Cast(msg)] : Causes \mlval{msg} to be broadcast to the group.
+\item
+[Send(dests,msg)] : Causes \mlval{msg} to be sent to a subset of the
+group specified in \mlval{dests}.  \mlval{dests} is an array of ranks.
+\item
+[Send1(dest,msg)] : Same as \mlval{Send}, but sends \mlval{msg} to a
+single destination. This is slightly more efficient for single destinations.
+\item
+[Control c] : This bundles together all control actions. There 
+are several of these:
+\begin{description}
+\item
+[Leave] : Causes the member to leave the group.  There should always
+be at most one \mlval{Leave} action returned in an action array.
+\item
+[Prompt] : Ask the system to perform a view-change immediately.
+\item
+[XferDone] : Signals that this member has completed its state
+transfer.  If a state transfer layer is in the protocol stack, this
+will trigger a new non-state transfer view after all members have
+taken an \mlval{XferDone} action.
+\item
+[Rekey opt] : Ask the system to rekey itself. This should be done in case
+the current key may have been compromised, for example, if a
+previously trusted member should be expelled. The \mlval{opt}
+parameter describes whether previously constructed pt-2-pt session
+keys can be used to optimize this operation, or whether this is
+disallowd. For the casual user, the optimized version (opt = false)
+should be used.
+\item
+[Protocol(protocol)] : Requests a protocol switch.  If the stack supports
+protocol switches, a new view will be triggered.
+\item
+[Dump] : Causes some debugging output to be printed by the stack in use.
+The output depends greatly on the protocol stack.
+\item
+The rest of the actions are not intended for the casual user, they
+are either not supported, badly supported, or used by system internals.
+\end{description}
+\end{description}
+
+
+\subsection{The install callback}
+Whenever a new view is installed, the application install callback is 
+called. This handler describes several callbacks:
+\begin{codebox}
+  type 'msg handlers = {
+    flow_block : rank option * bool -> unit ;
+    block : unit -> 'msg naction array ;
+    heartbeat : Time.t -> 'msg naction array ;
+    receive : origin -> blocked -> cast_or_send -> 'msg -> 'msg naction array ;
+    disable : unit -> unit
+  } 
+\end{codebox}
+
+\mlval{flow\_block source onoff} is called whenever there are flow control
+issues. The \mlval{onoff} value describes whether communication on the
+specific channel can resume, or should be held back momentarily until 
+communication problems are resolved. If the \mlval{source} is None,
+then the problematic channel is multicast, if it is
+\mlval{Some(rank)} then there are issues with the point-to-point
+connection between this endpoint, and endpoint \mlval{rank}.
+
+\mlval{block ()} is called to notify the application to stop sending
+messages, because a view change is pending. It is an error to send
+messages from now on, until a new view is installed, and
+\mlval{install} will be called again.
+
+\mlval{heartbeat current\_time} is regularly called by \ensemble\ when
+the application is unblocked.  The expected rate of heartbeats is
+specified through the \mlval{heartbeat\_rate} field of the interface
+record.  The return values for all of these callbacks is an action
+array.
+
+\mlval{receive origin bk cs msg} is called when a message
+has been received. The callback is made with the origin of the 
+message, the current block state (bk), if this is a Cast of Send
+message (cs) and the message itself.
+
+The install callback is called with the current view state, it returns
+a set of 5 handlers, and also a set of actions to be performed
+immediatly. It is wrapped up in a structure bundling the heartbeat
+rate, exit function (see below), and itself.
+
+\input{view_state}
+
+
+\subsection{Asynchronous operation}
+The application can only send messages when handling a callback.
+Under some circumstances (such as when receiving input from another
+source), it is necessary to send messages immediately rather than
+waiting for the next regularly scheduled heartbeat to occur.  Call the
+function \mlval{Appl.async} with the group and endpoint of the group.
+This returns a function that can be called whenever an immediate
+hearbeat is desired.  \note{This replaces the previous
+\mlval{heartbeat\_now} callback.}
+\begin{codebox}
+  let async = Appl.async (group,endpt) in
+  async ()
+\end{codebox}
+
+
+\subsection{Exit notice}
+Called when the member has left the group (through a previous \mlval{Leave}
+action).  This is the last callback the group member will receive.
+\begin{codebox}
+  exit                  : unit -> unit ;
+\end{codebox}
+
+\input{property}
+
+In order to set the properties used by an application, you would use the
+following code:
+\begin{codebox}
+  (* Choose default view state.
+   *)
+  let vs = Appl.default_info "my-appl" in
+
+  (* Select desired properties.
+   *)
+  let properties = [ (* list of properties *) ] in
+
+  (* Choose corresponding protocol stack.
+   *)
+  let proto_id = Property.choose properties in
+
+  (* Set proto_id of the view state record.
+   *)
+  let vs = View.set vs [Vs_proto_id proto_id] in
+
+  (* Configure the application
+   *)
+  Appl.config_new my_interface vs ;
+\end{codebox}
+
+As described in the reference manual, each of these protocols are derived by
+combining a set of protocol layers together to get a full protocol stack with
+application-level properties.  Anyway, here we describe the behavior of the
+\mlval{vsync} protocol stack.
+\begin{itemize}
+\item
+The first callback a protocol stack receives is an
+\mlval{install} with a singleton view.
+\item
+All members in the same partition of a group receive the same
+\mlval{View.state} records (excepting the \mlval{rank} field, of
+course).
+\item
+\mlval{Send} messages are delivered reliably and in FIFO order.  It is
+an error for a member to send a message to itself.
+\item
+\mlval{Cast} messages are delivered reliably and in FIFO order.  FIFO
+order for \mlval{Cast} messages means that members receive the
+messages in the order they were sent by the sender.  \mlval{Cast}
+messages are usually not delivered to the sender (the primary
+exceptions are stacks with total-ordering layers in them).
+\item
+There is no ordering relationship \emph{between} \mlval{Send} and
+\mlval{Cast} messages.
+\item
+Messages are delivered in the same view they were sent in (the
+protocol stack ``blocks'' so that the protocols can flush all the
+current messages out of the system before advancing to the next view).
+\item
+\mlval{Cast} messages are delivered atomically.  This means that
+either all members (excepting the sender) or none will receive a
+\mlval{Cast} message.  If the sender of a \mlval{Cast} message fails,
+other members who received the message will retransmit it for the
+failed member.  When there is more than one member in a group, a
+\mlval{Cast} message may be delivered to no members only if the sender
+fails.
+\item
+All members that receive the same consecutive views (they get the same
+\mlval{install upcalls} will have delivered the same set of
+\mlval{Cast} messages between the upcalls (but not necessarily in the
+same order).  Thus views can be considered as synchronization points
+where all members agree on what has been done so far.
+\end{itemize}
+
+\subsection{Initializing \ensemble\ Applications}
+
+This is a description of how simple applications are initialized with
+\ensemble.  The source code presented here is extracted from the
+\mlval{mtalk} demo, which is distributed with \ensemble.  The source
+can be found in \sourcedemo{mtalk.ml} which compiles and links with
+the \ensemble\ library to form the \sourcedemo{mtalk} executable.
+
+An application consists of two parts, initialization and an interface.
+The initialization involves setting up \ensemble\ and the
+communication framework.  An interface consists of a set of callback
+handlers that manage application events that \ensemble\ generates for
+messages and membership changes.  The initialization code tends to be
+similar across applications, and the handlers tend to contain most of
+the application-specific functionality.  We present a sample set of
+initialization code, which can easily be adapted for other simple
+applications.  We do not describe the callback handlers here; they are
+described in section~\ref{section:applintf}.  For specific examples,
+see \sourcedemo{mtalk.ml} and \sourcedemo{rand.ml}.
+
+\begin{codebox}
+let run () =
+  (*
+   * Parse command line arguments.
+   *)
+  Arge.parse [
+    (*
+     * Extra arguments can go here.
+     *)
+  ] (Arge.badarg name) "mtalk: multiperson talk program" ;
+
+  (*
+   * Get default transport and alarm info.
+   *)
+  let view_state = Appl.default_info "mtalk" in
+
+  let alarm = Alarm.get_hack () in
+\end{codebox}
+The initialization must do several things, all of which can be
+contained in a single function, as shown here with the function
+\mlval{run}.  First parse the command-line arguments as is done above.
+In addition to arguments provided by the applicatoin, this parses the
+standard \ensemble\ arguments.  Then, \mlval{default\_info} is called.
+This initializes a \mlval{View.state} record (which contains all the
+information other modules need to initialize your application).
+
+\begin{codebox}    
+  (*
+   * Choose a string name for this member.  Usually
+   * this is "userlogin@host".
+   *)
+  let name =
+    try
+      let host = gethostname () in
+
+      (* Get a prettier name if possible.
+       *)
+      let host = string_of_inet (inet_of_string host) in
+      sprintf "%s@%s" (getlogin ()) host
+    with _ -> view_state.name
+  in
+
+  (*
+   * Initialize the application interface.
+   *)
+  let interface = intf name alarm in
+\end{codebox}    
+Next we initialize the interface record that contains the
+application's handlers and which does the actual work of the
+application.  How the interface is initialized is application
+dependent.  For example, \mlval{interface} will usually require
+several arguments.  In the \mlval{mtalk} application, the interface
+takes the endpoint identifier of the application and a string name to
+use for this member of the talk group.  Other applications will use
+different arguments.
+
+\begin{codebox}    
+  (*
+   * Initialize the protocol stack, using the interface and
+   * view state chosen above.  
+   *)
+  Appl.config_new interface view_state ;
+\end{codebox}    
+The code above initializes the protocol stack.  In this case we use
+the \mlval{vsync} protocol properties, which provide FIFO,
+virtually-synchronous communication and an automatic merging facility
+for healing partitions.  There are several different sets of
+properties by the \sourceappl{property.mli} module, each of which
+provides different properties or performance characteristics (for
+more information about properties, see section~\ref{sec:properties}).
+
+\begin{codebox}    
+  (*
+   * Enter a main loop
+   *)
+  Appl.main_loop ()
+  (* end of run function *)
+
+
+(* Run the application, with exception handlers to catch any
+ * problems that might occur.
+ *)
+let _ = Appl.exec ["mtalk"] run
+\end{codebox}    
+The initialization is complete and we enter a main loop.  The main
+loop never returns.  The final code calls the \mlval{run} function
+with some standard exception handlers to catch any exceptions that
+should not, but may, occur.
+
+This is all that is required for initializing simple, single-group Ensemble
+applications.  
+%The main part of the work required for an application is in
+%building the handlers for sending and receiving messages, described in the
+%following section.

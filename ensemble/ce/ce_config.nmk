@@ -19,6 +19,7 @@ CE_LINK_FLAGS = \
     ADVAPI32.lib LIBCMT.lib OLDNAMES.lib KERNEL32.lib WS2_32.lib
 
 CFLAGS = \
-    -DINLINE=__inline \
-    /Ox /MT /W3 -DNDEBUG /I$(OCAML_LIB) 
+    -DINLINE=__inline -DNDEBUG \
+    /Ox /MT /W3 /I$(OCAML_LIB) 
+
 

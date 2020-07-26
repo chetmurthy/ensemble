@@ -1,0 +1,75 @@
+<!-- File: Maestro.htm -->
+<!-- Author: Alexey Vaysburd -->
+<!-- Contents: Maestro Open Toolkit -->
+<!-- Created: September 1995 -->
+<!-- Updated: January 1997  -->
+
+<html>
+
+<head>
+<title>Maestro Open Toolkit</title>
+<link rev="made" href="mailto:alexey@cs.cornell.edu (Alexey Vaysburd)">
+</head>
+
+<BODY TEXT="#000000" BGCOLOR="#FCD5AD" LINK="#0000FF" VLINK="#551A8B" ALINK="#FF0000">
+<TABLE WIDTH="800" >
+<TR>
+
+<TD ALIGN=LEFT VALIGN=TOP WIDTH="100"><IMG SRC="maestro-logo.jpg" VSPACE=20 HSPACE=20 HEIGHT=105 WIDTH=70 ALIGN=LEFT></TD>
+
+<TD WIDTH="500" BORDER="0">
+<H1>Maestro Open Toolkit</H1>
+</TD>
+</TR>
+</TABLE>
+
+This document is a part of online 
+<a href="http://www.cs.cornell.edu/Info/Projects/Ensemble/index.htm">
+Ensemble</a> documentation.
+<hr>
+
+<p>
+Maestro is a set of tools, interfaces, 
+and services that run on top of 
+<a href="http://www.cs.cornell.edu/Info/Projects/Ensemble/index.htm">
+Ensemble distributed communication system
+</a>.  
+(Also see <a href="groupd.htm">Ensemble Membership Service</a>).
+Maestro is an "open toolkit", which means we aim to provide a flexible 
+architecture that allows addition of new interfaces/tools/modules/services 
+appropriate for specific needs of user applications.
+<p>
+
+<a href="http://www.cs.cornell.edu/Info/Projects/Ensemble/Maestro/maestro-interop.ps">Maestro Interoperability Tools</a> provide a mechanism for
+connecting external client applications to Maesrtro group objects
+via the IIOP protocol and offer a framework for building object
+request brokers with Maestro/Ensemble.
+
+<p>
+The focus of this document is on Maestro Group Tools interface in C++.
+Note that there are several other interfaces available
+for Ensemble, in such languages as ML, C, and Java.  
+
+<hr>
+
+<p>
+<h2>Contents:</h2>
+
+<dir>
+<li><a href="Maestro_Overview.htm">Overview</a>
+<li><a href="Maestro_Types.htm">Maestro Types</a>
+<li><a href="Maestro_GroupMember.htm">Group Members</a>
+<li><a href="Maestro_ClSv.htm">Clients/Servers and State Transfer</a>
+<li><a href="Maestro_CSX.htm">High-level support for State Transfer</a>
+<li><a href="Maestro_Xfer.htm">State Transfer Protocol</a>
+</dir>
+
+<hr>
+
+<address>send mail to
+<a href="mailto:alexey@cs.cornell.edu">alexey@cs.cornell.edu</a>
+</address>
+
+</body>
+</html>
+

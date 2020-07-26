@@ -1313,8 +1313,6 @@ hot_err_t ens_spawn_tcp_init(void *env, char *argv[], /*OUT*/ int *fd) {
     char    my_host[64], portstring[64], *newargv[64];
     char    *outboard;
     
-    hot_err_t err;
-
     /* Call Windows socket initialization function */
 	if (WSAStartup(0x202,&wsaData) == SOCKET_ERROR) {
 		fprintf(stderr,"WSAStartup failed with error %d",WSAGetLastError());

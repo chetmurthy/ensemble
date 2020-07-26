@@ -18,6 +18,12 @@
 # For Ocaml2.01/2.02 on Irix use : -n32 -mips4
 CODEGEN = # -n32 -mips4  Default for non-Irix is nothing
 
+# The type of system we are running on
+
+# The type of system we are running on
+#
+KIND = unix
+
 # C compiler to use
 CC	= gcc
 
@@ -28,9 +34,10 @@ CFLAGS	=-DINLINE=inline \
 	-O2 -Wall -Wno-unused -Wstrict-prototypes -DNDEBUG \
         $(CODEGEN)                      \
 	-I $(OCAML_LIB)			\
-	$(PURIFY_CFLAGS)		\
 	$(OPENSSL_INC) 
 
+# -DNDEBUG -O2
+#
 #-g -p/-pg 
 #	-DOSTYPE=$(ENS_OSTYPE)		
 #	-DMACHTYPE=$(ENS_MACHTYPE)	
@@ -176,8 +183,8 @@ CP	= cp -f
 MV	= mv
 LN	= ln
 RM	= rm -f
-MAKE	= make	
-MAKE_BASE = make	
+MAKE	= gmake	
+MAKE_BASE = gmake	
 MKLIB   = ar cr 		# comment forces spaces
 RANLIB  = ranlib
 MKLIBO  =
@@ -198,7 +205,6 @@ STRIP   = strip
 MKDIR   = mkdir -p
 RMDIR   = rm -rf
 CHMODR  = chmod +r
-PWD = pwd
 #*************************************************************#
 # How to link various Ocaml libraries.  Should not require
 # modification.
@@ -229,27 +235,9 @@ LINK_THR	= # no threads
 #LINK_THR	= -thread $(LIBTHREADS)
 
 #*************************************************************#
-# Purify options
-
-PURIFY_HOME_sparc-solaris = /opts/pure/purify-4.0.1-solaris2
-PURIFY_HOME = $(PURIFY_HOME_$(PLATFORM))
-PURIFY_CFLAGS = $(PURIFY_CFLAGS_$(PLATFORM))
-
-PURIFY_sparc-solaris = 	$(PURIFY_HOME)/purify 			\
-			-cache-dir=/usr/u/alexey/tmp 		\
-			-threads=yes 				\
-			-chain-length=15			\
-			-windows=yes
-PURIFY_CFLAGS_sparc-solaris = -I $(PURIFY_HOME)
-
-PURIFY_LIB 	= $(PURIFY_HOME)/purify_stubs.a
-PURIFY 		= $(PURIFY_$(PLATFORM))
-
-#*************************************************************#
 # Clean this directory
 #
 CLEANDIR = \
     $(RM) .nfs* *.cm* .err a.out *.o* *.a *.lib *.asm *~ .*~ .\#*  core *.pdb core gmon.out camlprim*
 
-VERSION = 1_38
 #*************************************************************#

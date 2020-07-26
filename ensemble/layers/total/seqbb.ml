@@ -41,8 +41,8 @@ let log = Trace.log name
 (**************************************************************)
 
 type header = NoHdr
-  | Cast         (* an ordered BCast msg *)
-  | Acc of rank  (* accept from the sequencer *)
+  | Cast             (* an ordered BCast msg *)
+  | Acc of rank      (* accept from the sequencer *)
 
 type 'abv state = {
     (* the rank of the sequencer *)
@@ -120,15 +120,14 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
     (* This is an already ordered message from the leader.
      *)
-(*
-  | ECast iovl ,Acc(rank) -> 
+  | ECast iovl ,Acc rank -> 
       assert (rank = s.seq_rank && ls.rank <> rank) ;
       (* deliver the message from rank *)
       (*printf "got accept %d from %d... queueing\n" seqno rank;*)
       Queue.add (abv,ev) s.to_deliver.(rank);
       Queue.add rank s.accepts;
       deliver ();
-*)
+
 
     | _ -> up ev abv
 
@@ -156,12 +155,13 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	done;
 	Queue.clear s.to_deliver.(i)
       done;
+      Queue.clear s.accepts;
       upnm ev
 
   (* GC all buffers.
    *)
   | EExit ->
-      log (fun () -> "EExit(");
+      log (fun () -> sprintf "%s %d EExit(" (View.string_of_id ls.view_id) ls.rank);
       Array.iter (fun q -> 
 	Queue.iter (function (abv,ev) -> free name ev) q ;
 	Queue.clear q;
@@ -183,27 +183,29 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  if ls.nmembers = 1 then 
 	    up (Event.set name ev [Peer ls.rank]) abv
 	  else (
-	    log (fun () -> "multicasting");
 	    (* all members can cast the message immediately ! *)
 	    
 	    (* Increment the reference count: this message is being sent 
 	     * both locally, and to the network. *)
 	    ignore (Iovecl.copy iovl);
 	    let ev = Event.set name ev [Peer ls.rank] in
-    	    dn ev abv Cast;
 
 	    if( ls.rank = s.seq_rank ) then (
 	      
-	      (* if I'm the sequencer send the accept
+	      (* if I'm the sequencer send the message with the accept
                  - each message is uniqly indentified by
                  the senders rank and the sequence number *)
 	      (*printf "sequencer sending accept for %d\n" s.curr_seq_num;*)
-	      dnlm (castEv name) (Acc ls.rank);
+
+	      log (fun () -> sprintf " %s %d: seq multicasting" (View.string_of_id ls.view_id) ls.rank);
+	      dn ev abv (Acc ls.rank);
 	      
 	      (* the sequencer delivers the message immediately.
 	       *)
 	      up ev abv
 	    ) else (
+	      log (fun () -> sprintf "%s %d: multicasting" (View.string_of_id ls.view_id) ls.rank);
+    	      dn ev abv Cast;
 	      (* all others store their message and wait for
 	         the accept *)
 	      

@@ -8,6 +8,7 @@
  
 #include "hot_error.h"
 #include "hot_thread.h"
+#include "hot_sys.h"
 
 #define HOT_SEMA_MAGIC 0x29836abe
 #define HOT_LOCK_MAGIC 0x542bacdf
@@ -37,7 +38,7 @@ hot_err_t hot_thread_Create(
 	hot_thread_attr_t *attr
 ) {
     DWORD   dwThreadID, dwStackSize = 0;
-    HANDLE  hThread;
+//    HANDLE  hThread;
 
 //    LPTHREAD_START_ROUTINE func = (LPTHREAD_START_ROUTINE)routine;
 
@@ -71,7 +72,6 @@ hot_err_t hot_thread_Usleep(int usecs) {
  */
  hot_err_t hot_lck_Create(/*OUT*/hot_lock_t *lp) {
     struct hot_lock *lckp;
-    hot_err_t err;
 
     if ((lckp = (struct hot_lock*) malloc(sizeof(struct hot_lock))) == NULL)
 	hot_sys_Panic("hot_lck_Create: malloc returned NULL");
@@ -123,7 +123,6 @@ hot_err_t hot_thread_Usleep(int usecs) {
  */
  hot_err_t hot_sema_Create(int initial_value, /*OUT*/ hot_sema_t *semap) {
     struct hot_sema *sp;
-    hot_err_t err;
 
     if ((sp = (struct hot_sema*) malloc(sizeof(struct hot_sema))) == NULL)
 	hot_sys_Panic("hot_sema_Create:  malloc returned NULL");

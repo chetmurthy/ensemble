@@ -22,13 +22,13 @@ ENSROOT = ..\..
 
 #*************************************************************#
 
-OBJS = \
-        collector$(CMO)	\
-        lifetk$(CMO)	\
-	debug$(CMO)	\
-	rules$(CMO)	\
-	slave$(CMO)	\
-	master$(CMO)	\
+OBJS =\
+        collector$(CMO)\
+        lifetk$(CMO)\
+	debug$(CMO)\
+	rules$(CMO)\
+	slave$(CMO)\
+	master$(CMO)\
 	life$(CMO)
 
 #*************************************************************#
@@ -36,8 +36,8 @@ OBJS = \
 # find the Tk libraries. This is a CAML bug.
 #
 life: $(OBJS) $(ENSCONFDEP) $(ENSTK)
-	ocamlc -custom -o life$(EXE) \
-	-cclib -L\home\orodeh\ocaml\3.01\i386-linux\lib\labltk \
+	ocamlc -custom -o life$(EXE)\
+	-cclib -L\home\orodeh\ocaml\3.01\i386-linux\lib\labltk\
 	$(ENSCONF) $(LIBTK) $(ENSTK) $(OBJS)
 
 #*************************************************************#

@@ -11,6 +11,8 @@
 
 include mk/config.mk
 
+#include mk/preamble.mk
+
 SUBDIRS = \
 	appl		\
 	ce		\
@@ -44,29 +46,43 @@ SUBDIRS = \
 	socket		\
 	socket/u	\
 	socket/s	\
+	socket/s/unix	\
+	socket/s/nt	\
 	tar		\
 	tools		\
 	trans		\
 	type		\
 	util	
 
-
+# Make sure the target directories are in place
+#
+dirs : 
+	$(MKDIR) bin
+	$(MKDIR) lib
+	$(MKDIR) bin/$(PLATFORM)
+	$(MKDIR) lib/$(PLATFORM)
 
 # Make everything from scratch
 # 
-all: 
+all: dirs
+	cd socket ; $(MAKE) all ; $(MAKE) install
 	$(MAKE_BASE) -f Makefile.top all; $(MAKE_BASE) -f Makefile.top install
 	cd demo ; $(MAKE) ; $(MAKE) install
 	cd ce ; $(MAKE)	  ; $(MAKE) install
 	cd cejava ; $(MAKE) ; $(MAKE) install
 	cd hot ; $(MAKE)  ; $(MAKE) install
 
+
+sock : 
+	cd socket; $(MAKE) all ; $(MAKE) install
+
 just:
 	$(MAKE_BASE) -f Makefile.top all; $(MAKE_BASE) -f Makefile.top install
 	cd demo ; $(MAKE) just
 
 # Make the optimized versions
-opt: 
+opt: dirs
+	cd socket ; $(MAKE) opt ; $(MAKE) install
 	$(MAKE_BASE) -f Makefile.top opt; $(MAKE_BASE) -f Makefile.top install
 	cd demo ; 	$(MAKE) opt ;	$(MAKE) install
 	cd ce ; $(MAKE) opt ; $(MAKE) install
@@ -86,15 +102,34 @@ tk_opt :
 	$(MAKE_BASE) -f Makefile.top OPT=yes tk
 
 
+touch_depend : 
+	touch .depend .depend.nt
+	touch socket/.depend socket/.depend.nt
+	touch ce/.depend ce/.depend.nt
+	touch cejava/.depend ce/.depend.nt
+	touch hot/.depend hot/.depend.nt
+	touch demo/.depend demo/.depend.nt
+	touch demo/dbm/.depend demo/dbm/.depend.nt
+	touch demo/life/.depend demo/life/.depend.nt
+	touch demo/tk/.depend demo/tk/.depend.nt
+
+
+dos2unix : 
+	make touch_depend
+	dos2unix Makefile* */Makefile* */*/Makefile*
+	dos2unix */*.[ch] */*/*.[ch]
+	dos2unix */*.ml* */*/*.ml* 
+	dos2unix */*.mk 
+	tools/ntify.sh
+
 # build a tar file containing the source only.
 #
-src:
+src: dos2unix
 	make realclean
 	make depend
-	tools/ntify.sh
-	cd tar; tarcr $(VERSION)
+	cd tar; tarcr 1.39 /home/orodeh/e/1.39/ensemble #$(VERSION) #$(BASEDIR)
+	cd doc; make build
 
-#	cd doc; make build
 
 # build a tar file containing executables and libraries.
 #
@@ -106,6 +141,8 @@ dist :
 
 
 depend:
+	cd socket; $(MAKE) depend
+	cd socket; $(MAKE) depend
 	cd ce; $(MAKE) depend
 	cd cejava; $(MAKE) depend
 	cd hot; $(MAKE) depend
@@ -116,11 +153,11 @@ depend:
 # This gets around a difference between NMAKE and MAKE. 
 #
 ifeq ("$(PLATFORM)" , "nt")
+ENS_ABSROOT = $(MAKEDIR)
 CLEANALL = for %%d in ($(SUBDIRS)) do (cd %%d & $(MAKE) clean & cd $(ENS_ABSROOT))
 else
 CLEANALL = for d in $(SUBDIRS); do (cd $$d; $(MAKE) -k clean); done
 endif
-
 
 # MH: note 'make clean' should clean the def and opt
 # directories.  It only leaves libraries, executables, 
@@ -129,8 +166,8 @@ clean:
 	$(CLEANALL)
 	$(CLEANDIR)
 	$(RM) ensemble.ml ensemble.mli emrg* 
-	$(RM) socket/s/socket.mli socket/u/socket.mli
 	$(RM) .unknown
+
 
 # realclean clean
 #

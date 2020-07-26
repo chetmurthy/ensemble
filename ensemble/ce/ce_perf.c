@@ -202,7 +202,8 @@ void throu_recv_cast(void *env, int rank, int num, ce_iovec_array_t iovl) {
     throu_state_t *s = (throu_state_t*) env;
     int i;
     static int last_report = 0;
-    
+
+    TRACE("recv");
     /* Sum up the total received length
      */
     for(i=0; i< num; i++) 

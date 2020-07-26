@@ -195,6 +195,7 @@ val castUnrelIov	: debug	-> Iovecl.t -> t
 val castIov		: debug -> Iovecl.t -> t
 val castIovAppl		: debug -> Iovecl.t -> t
 val castPeerIov 	: debug -> rank -> Iovecl.t -> t
+val castPeerIovAppl 	: debug -> rank -> Iovecl.t -> t
 val sendPeer		: debug -> rank	-> t
 val sendPeerIov         : debug -> rank -> Iovecl.t -> t
 val sendPeerIovAppl	: debug -> rank -> Iovecl.t -> t

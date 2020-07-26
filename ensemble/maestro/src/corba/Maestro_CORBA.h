@@ -1,4 +1,4 @@
-// $Header: /cvsroot/ensemble/maestro/src/corba/Maestro_CORBA.h,v 1.3 2002/07/28 13:14:30 orodeh Exp $
+// $Header: /cvsroot/ensemble/maestro/src/corba/Maestro_CORBA.h,v 1.4 2002/10/13 10:06:40 orodeh Exp $
 // 
 // Definitions of CORBA 2.0 types + message marshaling.
 //

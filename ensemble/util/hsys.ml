@@ -4,6 +4,7 @@
 (**************************************************************)
 open Buf
 open Printf
+open Socket
 (**************************************************************)
 let name = "HSYS"
 let failwith s = failwith (name^":"^s)
@@ -441,10 +442,6 @@ let simple_string_of_inet inet = Unix.string_of_inet_addr inet
 let simple_inet_of_string inet = Unix.inet_addr_of_string inet 
 
 (**************************************************************)
-
-let fork = Unix.fork
-
-(**************************************************************)
 (* Bind to any port.  This causes the kernel to select an
  * arbitrary open port to bind to.  We then call getsockname
  * to find out which port it was.  
@@ -547,6 +544,7 @@ let background_process cmd env input =
 let set_udp_options sock sock_buf = 
   (* Set the socket to be nonblocking.
    *)
+
   begin try
     setsockopt sock (Nonblock true)
   with e ->

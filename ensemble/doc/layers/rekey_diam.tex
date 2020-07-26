@@ -1,0 +1,43 @@
+\begin{Layer}{REKEY\_DIAM}
+\label{layer:rekey_diam}
+
+This layer is closely related to REKEY\_DT. It employs the same concept 
+of a graph where the nodes are group members, and the edges are secure
+channels connecting them together. 
+
+REKEY\_DIAM attempts to improve the efficiency of a rekey after member
+leave. The point is to support ACL changes efficiently. If the
+application decides to change its ACL and remove a member, then the
+group-key must be switched as quickly as possible. As long as the
+previous group key is in place, the untrusted member can eavesdrop on
+group messaging. 
+
+The key to a low-latency rekey protocol, is the elimination of costly
+Diffie-Hellman exchanges on it's critical path. A simple possibility
+is to arrange the members in a circle. If a member is removed, the
+circle is still one-connected, and confidential information can still
+pass through it. After the initial rekey, a {\it reconstruction} phase
+is initiated. During that phase, a new circle, connecting all
+surviving members is constructed. The problem with the circle
+structure, is that is has $O(n)$ diameter. Since the diameter
+determines the latency of the protocol, we require a structure that
+has logarithmic diameter. We use a diamond graph, see examples in
+Figure~\ref{fig:diamond}.
+
+\begin{figure}[bht]
+\putfigfbox{0.40}{./fig/diamond/diamond} 
+\caption{Examples for diamonds}
+\label{fig:diamond}
+\end{figure}
+
+The protocol handles merges, partitions, and diamond-graph balancing. 
+It guarantees {\it very-low} latency for the case of member leave. 
+We clocked it at four milliseconds on 20 member groups. 
+
+\begin{Sources}
+\sourcesfile{rekey\_diam.ml}
+\end{Sources}
+
+\end{Layer}
+
+

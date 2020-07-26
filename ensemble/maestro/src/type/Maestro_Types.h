@@ -1,4 +1,4 @@
-// $Header: /cvsroot/ensemble/maestro/src/type/Maestro_Types.h,v 1.6 2002/07/28 13:14:31 orodeh Exp $
+// $Header: /cvsroot/ensemble/maestro/src/type/Maestro_Types.h,v 1.7 2002/10/13 10:06:41 orodeh Exp $
 
 #ifndef __MAESTRO_TYPES_H__
 #define __MAESTRO_TYPES_H__
@@ -48,7 +48,9 @@ extern "C" {
   int gettimeofday(struct timeval *tv, struct timezone *tz);
 #else
   long random();
+#ifndef HPUX
   int gethostname(char*, int);
+#endif
   int gettimeofday(struct timeval *tp, void * );
 #endif
 }
@@ -290,7 +292,7 @@ typedef enum {
 } Maestro_MsgReadDir;
 
 class Maestro_Message : virtual public Maestro_Base {
-friend Maestro_GroupMember;
+friend class Maestro_GroupMember;
 
 public:
 
@@ -383,7 +385,7 @@ struct Maestro_Buffer : virtual public Maestro_Base {
 /**************************** Maestro_EndpID *************************/
 
 class Maestro_EndpID : virtual public Maestro_Base {
-friend Maestro_GroupMember;
+friend class Maestro_GroupMember;
 
 public:
 

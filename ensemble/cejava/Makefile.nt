@@ -44,6 +44,7 @@ install :
 	$(CP) RandTest*.class PerfTest*.class  $(ENSBIN)\java_demo
 
 compileClasses: 
+	$(MKDIR) classes
 	javac -d classes View.java JoinOps.java Callbacks.java Group.java 
 	cd classes & jar cf ensemble.jar ensemble
 
@@ -54,6 +55,7 @@ compileJni:
 	$(CC) -c  -I . -I $(J2SDK)\include -I $(J2SDK)\include\$(J2SDK_PLATFORM) $(CEINCLUDE) ensemble_Ce.c
 
 buildLibrary:
+	$(MKDIR) lib
 	$(MKSHRLIB) $(MKSHRLIBO)libcejava$(SO) ensemble_Ce$(OBJS) $(ENSLIB)\libce_mt$(CELIB) $(CEJAVA_LINK_FLAGS)
 	$(MV) libcejava.* lib\
 

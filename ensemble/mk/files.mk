@@ -56,10 +56,10 @@ ENSEMBLEMLI = \
 	type/auth.mli	\
 	type/domain.mli	\
 	type/event.mli	\
-	type/property.mli	\
-	type/appl_intf.mli \
-	type/appl_handle.mli \
-	type/layer.mli	\
+	type/property.mli\
+	type/appl_intf.mli\
+	type/appl_handle.mli\
+	type/layer.mli \
 	infr/transport.mli	\
 	infr/glue.mli	\
 	infr/stacke.mli	\
@@ -278,29 +278,3 @@ ENSRESTOBJ = \
 #	$(OBJD)/side$(CMO)	\
 #	$(OBJD)/mngchan$(CMO)	\
 #*************************************************************#
-# Socket library
-
-USOCKOBJ = \
-	socket/socksupp$(CMO)	\
-	socket/u/socket$(CMO)
-
-SSOCKOBJ = \
-	socket/socksupp$(CMO)	\
-	socket/s/socket$(CMO)
-
-SOCKCOBJ = \
-	socket/s/gettimeofday$(OBJ) \
-	socket/s/mm_basic$(OBJ) \
-	socket/s/mm$(OBJ) \
-	socket/s/md5c$(OBJ)	\
-	socket/s/miscsupp$(OBJ)	\
-	socket/s/heapc$(OBJ)	\
-	socket/s/sendrecv$(OBJ)	\
-	socket/s/multicasts$(OBJ) \
-	socket/s/select$(OBJ)	\
-	socket/s/sockfd$(OBJ)	\
-	socket/s/sockopt$(OBJ)	\
-	socket/s/stdin$(OBJ)	
-
-#*************************************************************#
-

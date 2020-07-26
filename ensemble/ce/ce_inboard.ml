@@ -163,12 +163,68 @@ let c_async c_appl =
   f ()
 
 (**************************************************************)
+(* Modified from module Appl
+*)
+(*
+let ce_main_loop () =
+  let alarm = Appl.alarm name in
+  let sched = Alarm.sched alarm in
+  let check_msgs = Alarm.poll alarm Alarm.SocksPolls in
+  let check_timeouts = Alarm.check alarm in
+  let pollcount = max 0 (Arge.get Arge.pollcount) in
+  let count = Arge.get Arge.sched_step in
+  if count <= 0 then failwith "non-positive scheduler counter" ;
+  
+  (* Compact the ML heap if it gets too large. This needs to be
+   * further investigated.
+   *)
+  Arge.gc_compact 300;
+  
+  let counter = ref 0 in
+  
+  while true do
+    while !counter <= pollcount do
+      incr counter ;
+      
+      (* Schedule events in the layers.
+       *)
+      if Sched.step sched count then (
+        counter := 0 ;
+      ) ;
+      
+      (* Check for timeouts.
+       *)
+      if check_timeouts () then (
+        counter := 0 ;
+      ) ;
+      
+      (* Check for messages.
+       *)
+      if check_msgs () then (
+        counter := 0 ;
+      ) ;
+
+      (* The added customization done here. 
+       * Check for any pending C operations. 
+       *)
+      if check_c_pending () then (
+        counter := 0 ;
+      );
+    done ;
+    assert (Sched.empty sched) ;
+    counter := 0 ;
+    
+    (* If nothing to do then block.
+     *)
+    Alarm.block alarm ;
+  done
+*)  
+(**************************************************************)
+  
 let run () = 
 (*  let gc = Gc.get () in
   gc.Gc.verbose <- 2;
   Gc.set gc;*)
-
-  (*Arge.set Arge.refcount true;*)
 
   Arge.parse [
   ] (Arge.badarg name) "C-Ensemble interface";

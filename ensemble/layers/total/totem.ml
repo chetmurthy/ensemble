@@ -1,7 +1,9 @@
 (**************************************************************)
-(* TOTEM.ML *)
-(* Author: Roy Friedman, 3/96 *)
-(* Bug fixes & major changes: Mark Hayden, 10/96 *)
+(* TOTEM.ML                                                   *)
+(* Author: Roy Friedman, 3/96                                 *)
+(* Bug fixes & major changes: Mark Hayden, 10/96              *)
+(* Bug fixes : Ohad Rodeh, 9/02                               *)
+(**************************************************************)
 (* Original C code was done by Roy Friedman as a hack on the
  * C Total Later.  This is a hack on Mark Hayden's ML Total
  * Layer.basically, there is a token constantly rotating
@@ -10,12 +12,12 @@
  * receives the token, it sends everything it has to send,
  * and pass the tokan to the next member in the membership
  * list.  This protocol was originally developed as part of
- * the Totem project.  *)
-(**************************************************************)
-(* Notes
+ * the Totem project.  
+ * 
+ * 
  * MH: does not observe causality
-
- * RF: The token is an unbounded counter. To prevent it
+ * 
+ * BUG (RF): The token is an unbounded counter. To prevent it
  * from wrapping around, a view must be installed every so
  * often. If messages are sent at a rate of 1,000 per
  * second, then at least every 24 days.  If the rate is at
@@ -79,7 +81,7 @@ let dump vf s = Layer.layer_dump name (fun (ls,vs) s -> [|
   sprintf "order=%d..%d\n" (Iq.lo s.order) (Iq.hi s.order) ;
   let l = Iq.list_of_iq s.order in
   let l = string_of_list (fun (s,_,(r,_)) -> sprintf "(%d,%d)" r s) l in
-  sprintf "=%s\n" l
+  sprintf "order=%s\n" l
 |]) vf s
 
 (**************************************************************)
@@ -98,12 +100,11 @@ let init await_ack (ls,vs) = {
 (**************************************************************)
 
 let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out=dnnm} =
-(*let ack = make_acker name dnnm in*)
   let failwith m = dump vf s ; failwith m in
 
   (* Check for any requests.  If there are requests and we
    * have no messages buffered, then just send the token on.
-   * If we have messages, then them, with the last message
+   * If we have messages, then send them, with the last message
    * being sent as an OrderedTokenSend.  
    *)
   let check_token () =
@@ -119,8 +120,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  for i = 0 to pred len do
 	    let abv,iov = Queuee.take s.waiting in
 	    let pass = (i = pred len) in
-	    dn (castIov name iov) abv (Ordered(token + i,pass)) ;
-	    up (castPeerIov name ls.rank iov) abv ;
+	    dn (castIovAppl name (Iovecl.copy iov)) abv (Ordered(token + i,pass)) ;
+	    up (castPeerIovAppl name ls.rank iov) abv ;
 	    if not (Iq.opt_update_old s.order (token + i)) then
 	      failwith sanity
 	  done
@@ -149,7 +150,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	if not (Iq.assign s.order seqno iov (origin,abv)) then
 	  failwith "2nd seqno of same seqno" ;
 	Iq.get_prefix s.order (fun seqno iov (origin,abv) ->
-	  up (castPeerIov name origin iov) abv
+	  up (castPeerIovAppl name origin (Iovecl.copy iov)) abv
 	) ;
         Iovecl.free iov
       ) ;
@@ -190,13 +191,14 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
         Queuee.clean (fun (abv,iov) ->
 	  if !verbose then
 	    eprintf "TOTEM:unordered:%d->%d\n" i ls.rank ;
-          up (castPeerIov name i iov) abv
+          up (castPeerIovAppl name i iov) abv
         ) s.unord.(i)
       done ;
       upnm ev
 
   | EExit -> 
       Queuee.clean (function (_,iovl) -> Iovecl.free iovl ) s.waiting ;
+      Iq.free s.order;
       Array.iter (function q -> 
 	Queuee.clean (function (_,iovl) -> Iovecl.free iovl ) q
       ) s.unord ;
@@ -205,15 +207,14 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | _ -> upnm ev
 
   and dn_hdlr ev abv = match getType ev with
-  | ECast iovl ->
-      if getNoTotal ev then (
-      	dn ev abv NoHdr
-      ) else if ls.nmembers > 1 then (
-	if s.got_view then
-	  failwith "ECast after EView" ;
-	Queuee.add (abv,iovl) s.waiting ;
+  | ECast iovl when not (getNoTotal ev) && getApplMsg ev -> 
+      if s.blocking then (
+      	eprintf "TOTEM:warning dropping ECast after EBlockOk\n" ;
+	Iovecl.free iovl
+      ) else if ls.nmembers =| 1 then (
+	up (castPeerIovAppl name ls.rank iovl) abv
       ) else (
-	up (castPeerIov name ls.rank iovl) abv
+	Queuee.add (abv,iovl) s.waiting ;
       )
 
     (* Handle local delivery for sends.
@@ -232,12 +233,14 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | EBlock ->
       if s.blocking then 
       	failwith "blocking twice" ;
+      if s.got_view then 
+	failwith "EBlock, but already got EView";
       s.blocking <- true ;
       if !verbose then
 	eprintf "TOTEM:sending %d unordered\n" (Queuee.length s.waiting) ;
       Queuee.clean (fun (abv,iov) ->
       	Queuee.add (abv,iov) s.unord.(ls.rank) ;
-	dn (castIov name iov) abv Unordered
+	dn (castIovAppl name (Iovecl.copy iov)) abv Unordered
       ) s.waiting ;
       dnnm ev
 

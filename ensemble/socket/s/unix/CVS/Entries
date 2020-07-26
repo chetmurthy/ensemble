@@ -1,0 +1,14 @@
+/Makefile/1.1/Sat Oct 19 18:26:44 2002//
+/comm_impl.ml/1.1/Sat Oct 19 18:26:44 2002//
+/gettimeofday.c/1.1/Sat Oct 19 18:26:44 2002//
+/miscsupp.c/1.1/Sat Oct 19 18:26:44 2002//
+/multicasts.c/1.1/Sat Oct 19 18:26:44 2002//
+/socket.ml/1.1/Sat Oct 19 18:26:44 2002//
+/sockfd.c/1.1/Sat Oct 19 18:26:44 2002//
+/sockopt.c/1.1/Sat Oct 19 18:26:44 2002//
+/e_iovec.h/1.2/Tue Oct 22 16:07:48 2002//
+/sockfd.h/1.2/Tue Oct 22 16:07:24 2002//
+/platform.h/1.1/Tue Oct 22 19:55:16 2002//
+/select.c/1.1/Sun Oct 20 07:42:54 2002//
+/sendrecv.c/1.1/Sun Oct 20 07:43:06 2002//
+D

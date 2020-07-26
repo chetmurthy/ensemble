@@ -38,15 +38,15 @@ ENSROOT = ..
 #*************************************************************#
 # Crypto Stuff
 
-CRYPTOOBJ = \
-	isaac\isaac$(CMO)	\
-	OpenSSL\rc4$(CMO)	\
+CRYPTOOBJ =\
+	isaac\isaac$(CMO)\
+	OpenSSL\rc4$(CMO)\
 	OpenSSL\dha$(CMO)
 
-CRYPTOCOBJ = \
-	isaac\isaac_c$(OBJ)	\
-	isaac\randport$(OBJ)	\
-	OpenSSL\rc4_c$(OBJ)	\
+CRYPTOCOBJ =\
+	isaac\isaac_c$(OBJ)\
+	isaac\randport$(OBJ)\
+	OpenSSL\rc4_c$(OBJ)\
 	OpenSSL\dha_c$(OBJ)
 
 #*************************************************************#

@@ -1,6 +1,6 @@
 README: Ensemble Root directory
 Author: Mark Hayden
-Last updated: 7/29/2001, by Ohad Rodeh
+Last updated: 26/10/2002, by Ohad Rodeh
 
   The design of the Ensemble system is based to a large
   degree on the C implementation of Horus at the Cornell
@@ -52,6 +52,7 @@ DIRECTORIES
   demo/life	Game of Life demo (by Samuel Weber)
 
   ce            Revised C interface (Ohad Rodeh)
+  cejava        Native Java interface, built on CE (Ohad Rodeh)
   hot		C application interface (by Alexey Vaysburd)
   maestro	C++ application interface (by Alexey Vaysburd)
   ejava		Java application interface (contributed)
@@ -60,5 +61,5 @@ DIRECTORIES
   tools		conversion of makefiles between unix and NT
 	        packaging of ML modules.
 
+  bin           compiled demo programs
   lib		compiled libraries and interfaces
-

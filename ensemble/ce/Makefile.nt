@@ -29,7 +29,7 @@ ENSROOT = ..
 .ml.cmx:
 	ocamlopt $(MLFLAGS) -c -I $(ENSLIB) $< -o $@
 .c.o : 
-	$(CC) -c $(CFLAGS) -I $(ENSLIB) \
+	$(CC) -c $(CFLAGS) -I $(ENSLIB)\
 	$< -o $@
 .c.obj : 
 	$(CC) -c $(CFLAGS) -I $(ENSLIB) $< $(OBJRULE)$@
@@ -37,54 +37,54 @@ ENSROOT = ..
 #*************************************************************#
 # Single threaded version
 #
-COMMON = \
+COMMON =\
 	ce_trace$(OBJ)\
-	ce_misc$(OBJ) \
-	ce_flat$(OBJ) \
+	ce_misc$(OBJ)\
+	ce_flat$(OBJ)\
 	ce_actions$(OBJ)
 
-INBOARD_OBJ_I = \
-	$(COMMON) \
+INBOARD_OBJ_I =\
+	$(COMMON)\
 	ce_convert$(OBJ)\
-	ce_inboard_c$(OBJ) \
+	ce_inboard_c$(OBJ)\
 
-OUTBOARD_OBJ_I = \
-	$(COMMON) \
-	mm_basic$(OBJ) \
-	ce_sock_table$(OBJ) \
-	ce_context_table$(OBJ) \
-	ce_comm$(OBJ) \
+OUTBOARD_OBJ_I =\
+	$(COMMON)\
+	mm_basic$(OBJ)\
+	ce_sock_table$(OBJ)\
+	ce_context_table$(OBJ)\
+	ce_comm$(OBJ)\
 	ce_outboard_c$(OBJ)
 
-ST_OBJ = \
+ST_OBJ =\
 	ce_intf$(OBJ)
 
 
-INBOARD_OBJ = \
-	$(INBOARD_OBJ_I) \
+INBOARD_OBJ =\
+	$(INBOARD_OBJ_I)\
 	$(ST_OBJ)
 
-OUTBOARD_OBJ = \
-	$(OUTBOARD_OBJ_I) \
+OUTBOARD_OBJ =\
+	$(OUTBOARD_OBJ_I)\
 	$(ST_OBJ)
 
 #*************************************************************#
 # Multi-threaded version 
 #
-MT_OBJ = \
+MT_OBJ =\
 	ce_intf_mt$(OBJ)\
-	ce_threads$(OBJ) \
+	ce_threads$(OBJ)\
 	ce_actions_mt$(OBJ) 
 
-INBOARD_MT_OBJ = \
-	$(INBOARD_OBJ_I) \
-	$(MT_OBJ) \
-	ce_comm$(OBJ) \
+INBOARD_MT_OBJ =\
+	$(INBOARD_OBJ_I)\
+	$(MT_OBJ)\
+	ce_comm$(OBJ)\
 	ce_inboard_mt$(OBJ)
 
 OUTBOARD_MT_OBJ =\
-	$(OUTBOARD_OBJ_I) \
-	$(MT_OBJ) \
+	$(OUTBOARD_OBJ_I)\
+	$(MT_OBJ)\
 	ce_outboard_mt$(OBJ)
 
 MLOBJ =\
@@ -95,26 +95,26 @@ MLIOBJ =\
 	ce_util$(CMI)
 
 #*************************************************************#
-DEMOS_CLEAN = \
-	ce_perf ce_rand ce_fifo ce_mtalk \
-	ce_perfo ce_rando ce_fifoo ce_mtalko \
-	ce_perf_mt ce_mtalk_mt ce_rand_mt ce_rando_mt \
+DEMOS_CLEAN =\
+	ce_perf ce_rand ce_fifo ce_mtalk\
+	ce_perfo ce_rando ce_fifoo ce_mtalko\
+	ce_perf_mt ce_mtalk_mt ce_rand_mt ce_rando_mt\
 	*.exe ce_outboard
 
-DEMOS = \
-	ce_rand$(EXE) \
-	ce_perf$(EXE) \
-	ce_fifo$(EXE) \
-	ce_mtalk$(EXE) \
-	ce_rand_mt$(EXE) \
-	ce_perf_mt$(EXE) \
+DEMOS =\
+	ce_rand$(EXE)\
+	ce_perf$(EXE)\
+	ce_fifo$(EXE)\
+	ce_mtalk$(EXE)\
+	ce_rand_mt$(EXE)\
+	ce_perf_mt$(EXE)\
 	ce_mtalk_mt$(EXE) 
 
-DEMOSO = \
-	ce_mtalko$(EXE) \
-	ce_rando$(EXE) \
-	ce_perfo$(EXE) \
-	ce_fifoo$(EXE) \
+DEMOSO =\
+	ce_mtalko$(EXE)\
+	ce_rando$(EXE)\
+	ce_perfo$(EXE)\
+	ce_fifoo$(EXE)\
 	ce_rando_mt$(EXE) 
 
 #*************************************************************#
@@ -122,9 +122,9 @@ DEMOSO = \
 # bad behavior of the generated Ensemble DLL on that platform. 
 # For unix, we use shared libraries. 
 #
-all: \
-	libce$(CE_LIB) libceo$(CE_LIB) \
-	libce_mt$(CE_LIB) libceo_mt$(CE_LIB) \
+all:\
+	libce$(CE_LIB) libceo$(CE_LIB)\
+	libce_mt$(CE_LIB) libceo_mt$(CE_LIB)\
 	ce_outboard$(EXE) $(DEMOSO) $(DEMOS)
 
 opt : 
@@ -151,7 +151,7 @@ ce$(OBJ): $(MLIOBJ) $(MLOBJ) $(ENSLIBS)
 # Put all the libraries, ML code, and runtime into one library
 libce$(SO): $(INBOARD_OBJ) ce$(OBJ)
 	$(RM) ce.c
-	$(MKSHRLIB) $(MKSHRLIBO)libce$(SO) \
+	$(MKSHRLIB) $(MKSHRLIBO)libce$(SO)\
 	  ce$(OBJ)\
 	  $(INBOARD_OBJ)\
 	  ..\lib\$(PLATFORM)\libsock$(ARC)\
@@ -161,7 +161,7 @@ libce$(SO): $(INBOARD_OBJ) ce$(OBJ)
 
 # Put C outboard objects into one library
 libceo$(SO): $(OUTBOARD_OBJ)
-	$(MKSHRLIB) $(MKSHRLIBO)libceo$(SO) \
+	$(MKSHRLIB) $(MKSHRLIBO)libceo$(SO)\
 	  $(OUTBOARD_OBJ)\
 	  $(CE_LINK_FLAGS)
 
@@ -172,7 +172,7 @@ libceo$(SO): $(OUTBOARD_OBJ)
 # Put all the libraries, ML code, and runtime into one library
 libce_mt$(SO): $(INBOARD_MT_OBJ) ce$(OBJ)
 	$(RM) ce.c
-	$(MKSHRLIB) $(MKSHRLIBO)libce_mt$(SO) \
+	$(MKSHRLIB) $(MKSHRLIBO)libce_mt$(SO)\
 	  ce$(OBJ)\
 	  $(INBOARD_MT_OBJ)\
 	  ..\lib\$(PLATFORM)\libsock$(ARC)\
@@ -191,7 +191,7 @@ libceo_mt$(SO): $(OUTBOARD_MT_OBJ)
 #
 libce$(ARC): $(INBOARD_OBJ) ce$(OBJ)
 	$(RM) ce.c
-	$(PARTIALLD) $(PARTIALLDO)libce$(OBJ) \
+	$(PARTIALLD) $(PARTIALLDO)libce$(OBJ)\
 	  ce$(OBJ)\
 	  $(INBOARD_OBJ)\
 	  ..\lib\$(PLATFORM)\libsock$(ARC)\
@@ -201,14 +201,14 @@ libce$(ARC): $(INBOARD_OBJ) ce$(OBJ)
 	$(RANLIB) libce$(ARC)
 
 libceo$(ARC): $(OUTBOARD_OBJ)
-	$(PARTIALLD) $(PARTIALLDO)libceo$(OBJ) \
+	$(PARTIALLD) $(PARTIALLDO)libceo$(OBJ)\
 	  $(OUTBOARD_OBJ) 
 	$(MKLIB) $(MKLIBO)libceo$(ARC) libceo$(OBJ)
 	$(RANLIB) libceo$(ARC)
 
 libce_mt$(ARC): $(INBOARD_MT_OBJ) ce$(OBJ)
 	$(RM) ce.c
-	$(PARTIALLD) $(PARTIALLDO)libce_mt$(OBJ) \
+	$(PARTIALLD) $(PARTIALLDO)libce_mt$(OBJ)\
 	  ce$(OBJ)\
 	  $(INBOARD_MT_OBJ)\
 	  ..\lib\$(PLATFORM)\libsock$(ARC)\
@@ -218,7 +218,7 @@ libce_mt$(ARC): $(INBOARD_MT_OBJ) ce$(OBJ)
 	$(RANLIB) libce_mt$(ARC)
 
 libceo_mt$(ARC): $(OUTBOARD_MT_OBJ)
-	$(PARTIALLD) $(PARTIALLDO)libceo_mt$(OBJ) \
+	$(PARTIALLD) $(PARTIALLDO)libceo_mt$(OBJ)\
 	  $(OUTBOARD_MT_OBJ)
 	$(MKLIB) $(MKLIBO)libceo_mt$(ARC) libceo_mt$(OBJ)
 	$(RANLIB) libceo_mt$(ARC)
@@ -227,7 +227,7 @@ libceo_mt$(ARC): $(OUTBOARD_MT_OBJ)
 
 # Generate the outboard executable
 ce_outboard$(EXE): $(MLIOBJ) ce_util$(CMO) ce_outboard$(CMO) 
-	$(MLLINK) -o ce_outboard$(EXE) \
+	$(MLLINK) -o ce_outboard$(EXE)\
 	$(LIBSYS) $(ENSCONF) ce_util$(CMO) ce_outboard$(CMO) 
 
 
@@ -314,7 +314,7 @@ install :
 
 !else
 install : 
-	$(CP) libce*.so $(ENSLIB)
+	$(CP) libce*$(CE_LIB) $(ENSLIB)
 	$(CP) ce.h $(ENSLIB)
 	$(CP) ce_threads.h $(ENSLIB)
 	$(CP) ce_so.h $(ENSLIB)

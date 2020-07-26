@@ -26,10 +26,10 @@ ENSROOT = ..\..
 #
 wbml: wb$(CMO) $(ENSTK)
 	$(RM) wbml$(EXE)
-	ocamlc -custom -o wbml$(EXE) \
+	ocamlc -custom -o wbml$(EXE)\
 	$(ENSCONF) $(LIBTK) $(ENSTK) wb$(CMO)
 
-#	-cclib -L\home\orodeh\ocaml\3.01\i386-linux\lib\labltk \
+#	-cclib -L\home\orodeh\ocaml\3.01\i386-linux\lib\labltk\
 #	ocamlc -custom -o wbml$(EXE) $(LIBTK) $(ENSCONF) $(ENSTK) $(CRYPTO_LINK) $(OBJS)
 
 #*************************************************************#

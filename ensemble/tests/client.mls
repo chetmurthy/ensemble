@@ -1,0 +1,6 @@
+#load "unix.cma";;
+
+open Unix
+
+#load "aux.cmo"
+#load "client.cmo";;

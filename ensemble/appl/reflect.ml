@@ -21,6 +21,8 @@ let remove_timeout = Time.of_int 20
  *)
 let repeat_timeout = Time.of_string "0.1"
 
+let max_msg_len = Buf.int_of_len Buf.max_msg_len
+
 (* This function returns the interface record that defines
  * the callbacks for the application.
  *)
@@ -89,10 +91,24 @@ let intf alarm sock =
 	      (Hsys.string_of_inet inet) port ;
 	    ) ;
 	  let msg = Buf.sub buf Buf.len0 len in
+	  printf "REFLECT:sending msg_len=%d\n" (Buf.int_of_len len);
 	  reflect (inet,port) msg
-	with e -> 
-	  if !verbose then
-	    printf "REFLECT:warning:%s\n" (Util.error e)
+	with (Unix.Unix_error(err,s1,s2) as exn)-> 
+	  match err with 
+	    | Unix.ECONNREFUSED 
+	    | Unix.ECONNRESET 
+	    | Unix.EHOSTDOWN	
+	    | Unix.ENOENT	
+	    | Unix.ENETUNREACH
+	    | Unix.EHOSTUNREACH	
+	    | Unix.EPIPE 
+	    | Unix.EINTR	
+	    | Unix.EAGAIN 
+	    | Unix.EBADF -> 
+		if !verbose then
+		  printf "REFLECT:warning:%s\n" (Util.error exn)
+	    | _ -> 
+		raise exn
     in
     recv_gossip_r := recv_gossip ;
 
@@ -212,5 +228,4 @@ let init alarm (ls,vs) port force =
   ((ls,vs),interface)
 
 (**************************************************************)
-
 

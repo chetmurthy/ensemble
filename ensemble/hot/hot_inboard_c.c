@@ -35,6 +35,7 @@ extern mlsize_t string_length(value) ;
  * BUG: mm.h should be copied outside. 
  */
 #include "mm.h"
+#include "sockfd.h"
 
 #ifdef INLINE_PRAGMA
 #pragma inline begin_critical
@@ -413,10 +414,8 @@ static void ml_block(void) {
 	/* Prototype socket_val().  This probably won't work
 	 * as-is on NT.  This is taken from socket/skt.h.
          */
-	int /*ocaml_skt*/ socket_val(value v) ;
-
 	socket = Field(socks_arr,i) ;
-	blocking_read_fds[i] = socket_val(socket) ;
+	blocking_read_fds[i] = Socket_val(socket) ;
       }
     }    
 

@@ -88,7 +88,6 @@ let interface nopt2pt nocast =
 	      nsent := !nsent + pred ls.nmembers ;
 	      act := Cast(Tree (gen_tree ())) :: Cast(Spew) :: !act
 	    ) ;
-
 	    let next = random_member ls in
 	    let dest = next in
 

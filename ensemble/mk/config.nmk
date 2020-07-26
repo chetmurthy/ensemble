@@ -16,6 +16,7 @@
 # C compiler to use
 CC	= cl /nologo
 
+KIND = nt
 #*************************************************************#
 # The default cryptographic library. We use OpenSSL
 # that compiles and runs on many different platforms. 
@@ -47,6 +48,7 @@ MSDEV_INCLUDE	= /I"C:\Program Files\Microsoft Visual Studio\VC98\Include"
 CFLAGS	= -DINLINE=__inline /Ox /MT /W3 -DNDEBUG \
 	$(MSDEV_INCLUDE) /I$(OCAML_LIB) 
 
+# /MTd
 #	$(OPENSSL_INC)
 
 # SHELL to use for processing these makefiles must be /bin/sh
@@ -215,7 +217,6 @@ STRIP   = echo
 MKDIR   = -mkdir
 RMDIR   = -rmdir /S /Q
 CHMODR  = attrib +R
-PWD = pwd
 #*************************************************************#
 # How to link various Ocaml libraries.  Should not require
 # modification.
@@ -252,7 +253,6 @@ LINK_THR	= # no threads
 CLEANDIR = \
     $(RM) .nfs* *.cm* *.ppo .err a.out *.o *.obj *.a *.lib *.asm *~ .*~ core *.pdb core gmon.out camlprim*
 
-VERSION = 1_38
 #*************************************************************#
 
 

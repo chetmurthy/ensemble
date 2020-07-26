@@ -70,35 +70,4 @@ hot_err_t hot_sema_Inc(hot_sema_t sema);
 hot_err_t hot_sema_Dec(hot_sema_t sema);
 
 
-/******************* Typedefs for a thread-wrapper configuration ************/
-
-typedef hot_err_t (*hot_thread_Create_f)(void (*routine)(void*), 
-					 void *arg, hot_thread_attr_t *attr);
-typedef hot_err_t (*hot_thread_Yield_f)(void);
-typedef hot_err_t (*hot_thread_Usleep_f)(int usecs);
-typedef hot_err_t (*hot_lck_Create_f)(/*OUT*/hot_lock_t*);
-typedef hot_err_t (*hot_lck_Destroy_f)(hot_lock_t);
-typedef hot_err_t (*hot_lck_Lock_f)(hot_lock_t);
-typedef hot_err_t (*hot_lck_Unlock_f)(hot_lock_t);
-typedef hot_err_t (*hot_sema_Create_f)(int initial_value, 
-				     /*OUT*/ hot_sema_t *semap);
-typedef hot_err_t (*hot_sema_Destroy_f)(hot_sema_t sema);
-typedef hot_err_t (*hot_sema_Inc_f)(hot_sema_t sema);
-typedef hot_err_t (*hot_sema_Dec_f)(hot_sema_t sema);
-  
-typedef struct {
-  hot_thread_Create_f thread_create;
-  hot_thread_Yield_f thread_yield ;
-  hot_thread_Usleep_f thread_usleep ;
-  hot_lck_Create_f lck_create;
-  hot_lck_Destroy_f lck_destroy;
-  hot_lck_Lock_f lck_lock;
-  hot_lck_Unlock_f lck_unlock;
-  hot_sema_Create_f sema_create;
-  hot_sema_Destroy_f sema_destroy;
-  hot_sema_Inc_f sema_inc;
-  hot_sema_Dec_f sema_dec;
-} hot_thread_conf_t;
-  
-
 #endif /* __HOT_THREAD_H__ */

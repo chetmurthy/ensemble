@@ -48,7 +48,7 @@ all: basic $(DEMOS)
 opt : 
 	$(MAKE) OPT=YES all
 
-just : basic perf$(EXE)
+just : basic gossip$(EXE) 
 
 # Make stuff in subdirectories too
 everything: all
@@ -57,7 +57,7 @@ everything: all
 
 basic: $(OBJS) $(ENSCONFDEP)
 	$(RM) $(EXEC)
-	$(MLLINK) $(MLLINKFLAGS) -o $(EXEC) $(LIBSYS) $(ENSCONF) $(CRYPTO_LINK) $(OBJS)
+	$(MLLINK) $(MLLINKFLAGS) -o $(EXEC) $(LIBSYS) $(ENSCONF) $(CRYPTO_LINK) $(OBJS) 
 
 #*************************************************************#
 # Standard demos.  We link/copy the _exec program to the names

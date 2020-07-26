@@ -314,7 +314,7 @@ install :
 
 else
 install : 
-	$(CP) libce*.so $(ENSLIB)
+	$(CP) libce*$(CE_LIB) $(ENSLIB)
 	$(CP) ce.h $(ENSLIB)
 	$(CP) ce_threads.h $(ENSLIB)
 	$(CP) ce_so.h $(ENSLIB)

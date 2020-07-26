@@ -26,7 +26,7 @@ let string_of_action = function
   | ALeave -> "ALeave"
   | ANone -> "ANone"
 
-let policy nmembers thresh =
+let policy my_rank nmembers thresh =
   let next = Random.int 10000000 * nmembers in
   let p = Random.int 100 in
   let action =
@@ -40,7 +40,7 @@ let policy nmembers thresh =
   (*  if p < 10 then *)
   log (fun () -> string_of_action action);
   (action,(Time.of_ints 0 next))
-
+  
 (**************************************************************)
 
 type state = {
@@ -145,7 +145,7 @@ let interface alarm policy thresh on_exit time merge primary_views local_send =
       ) ;
   (**)
       if Time.ge time s.next_action then (
-	let (action,next) = policy ls.nmembers thresh in
+	let (action,next) = policy ls.rank ls.nmembers thresh in
 	s.next_action <- Time.add time next ;
 
 	match action with

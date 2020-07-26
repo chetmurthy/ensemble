@@ -1,33 +1,11 @@
 /**************************************************************/
-/* SKT.H */
-/* Authors: Mark Hayden, Robbert van Renesse, 8/97 */
+/* COMMON.H */
+/* Author: Ohad Rodeh  10/2002 */
+/* Based on code by Mark Hayden */
 /**************************************************************/
+#ifndef __SKT_H__
+#define __SKT_H__
 
-#include <errno.h>
-#ifdef _WIN32
-#include <winsock2.h>
-#include <io.h>
-#include <stdio.h>
-//#include <ws2tcpip.h>
-#else
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <sys/uio.h>
-#include <assert.h>
-#include <memory.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/un.h>
-#define h_errno errno
-#endif
-
-#include <assert.h>
-#include <string.h>
 #include "caml/config.h"
 #include "caml/mlvalues.h"
 #include "caml/misc.h"
@@ -51,12 +29,20 @@
 #include "sockfd.h"
 
 /**************************************************************/
+/* Include things specific to the machine (nt/unix)
+ */
+#include "platform.h"
+/**************************************************************/
+/* Debuggin macros. 
+ */
+
 //#define SKTTRACE(x) printf x; fflush(stdout)
 #define SKTTRACE(x) {}
 //#define SKTTRACE2(x) printf x; fflush(stdout)
 #define SKTTRACE2(x) {}
+//#define SKTTRACE3(x) printf x; fflush(stdout)
+#define SKTTRACE3(x) {}
 /**************************************************************/
-
 /* A set of errors to ignore on receiving a UDP or a TCP packet.
  */
 void skt_udp_recv_error(void);
@@ -64,55 +50,17 @@ int skt_tcp_recv_error(char *debug);
 
 /**************************************************************/
 
-#ifdef HAS_UNISTD
-#include <unistd.h>
-#endif
-
-#ifdef HAS_ARPA_INET
-#include <arpa/inet.h>
-#endif
-
-#ifdef _WIN32
-#  define INLINE __inline
-#else
-#  ifdef INLINE_PRAGMA
-#    define INLINE
-#  else
-#    define INLINE inline
-#  endif
-#endif
-#define Nothing ((value) 0)
-
-#include <stdio.h>
-
 extern void serror(char * cmdname);
-
-#ifdef HAS_SOCKETS
-#include <sys/types.h>
-
-#ifndef _WIN32
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <netinet/in.h>
-#endif
 
 #define GET_INET_ADDR(v) (*((uint32 *) (v)))
 
-void skt_recv_error(void) ;
-
 /* Defined inside CAML win32unix library
+ *
+ * BEGIN: Copied from ocaml/otherlibs/unix/{socketaddr.h,unixsupport.h}
  */
-/* BEGIN: Copied from ocaml/otherlibs/unix/socketaddr.[h].
- */
-union sock_addr_union {
-  struct sockaddr s_gen;
-#ifndef _WIN32
-  struct sockaddr_un s_unix;
-#endif
-  struct sockaddr_in s_inet;
-};
+#define Nothing ((value) 0)
 
-extern union sock_addr_union sock_addr;
+//extern union sock_addr_union sock_addr;
 
 #ifdef HAS_SOCKLEN_T
 typedef socklen_t socklen_param_type;
@@ -127,4 +75,8 @@ extern void get_sockaddr(value mladr,
 extern value alloc_sockaddr(union sock_addr_union * adr /*in*/,
 			    socklen_param_type adr_len);
 
-#endif /* HAS_SOCKETS */
+/* END
+ */
+#endif
+
+/**************************************************************/

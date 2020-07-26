@@ -6,6 +6,27 @@
 (*         Winsock2 support                   11/2001 *)
 (**************************************************************)
 
+type socket = Unix.file_descr
+type buf = string
+type ofs = int
+type len = int
+
+type timeval = {
+  mutable sec10 : int ;
+  mutable usec : int
+} 
+
+type win = 
+    Win_3_11
+  | Win_95_98
+  | Win_NT_3_5
+  | Win_NT_4
+  | Win_2000
+
+type os_t_v = 
+    OS_Unix
+  | OS_Win of win
+
 (* Set the verbosity level
 *)
 val set_verbose : bool -> unit
@@ -14,8 +35,6 @@ module Basic_iov : sig
   (* The type of a C memory-buffer. It is opaque.
    *)
   type t 
-  type ofs = int
-  type len = int
 
   (* The underling iovec representation. No ref-counting.
    * t_of_raw is only safe if raw is allocated on its own, 
@@ -76,20 +95,6 @@ module Basic_iov : sig
   val unmarshal : t -> 'a
 end
   
-(**************************************************************)
-
-type socket = Unix.file_descr
-
-type buf = string
-type ofs = int
-type len = int
-
-
-type timeval = {
-  mutable sec10 : int ;
-  mutable usec : int
-} 
-
 (**************************************************************)
 (* Open a file descriptor for reading from stdin.  This is
  * for compatibility with Windows NT.  See
@@ -213,7 +218,6 @@ val md5_final : md5_ctx -> Digest.t
 
 (* HACK!  It's useful to be able to print these out as ints.
  *)
-val int_of_file_descr : Unix.file_descr -> int
 val int_of_socket : socket -> int
 
 (* On WIN32 we need to use WINSOCK2's calls, instead of
@@ -247,18 +251,7 @@ val minor_words : unit -> int
 val frames : unit -> int array array
 
 (**************************************************************)
-type win = 
-    Win_3_11
-  | Win_95_98
-  | Win_NT_3_5
-  | Win_NT_4
-  | Win_2000
-
-type os_t_v = 
-    OS_Unix
-  | OS_Win of win
-
-(* Return the version of the windows OS.
+(* Return the version of the OS.
  *)
 val os_type_and_version : unit -> os_t_v
 val is_unix : bool

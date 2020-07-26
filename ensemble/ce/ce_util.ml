@@ -320,7 +320,7 @@ let c_view_full (ls,vs) =
   in    
   let c_prev_ids = Array.of_list (List.map c_view_id_of_ml vs.prev_ids) in
   let c_vs = { 
-    c_version = View.string_of_version_id vs.version ;
+    c_version = Version.string_of_id vs.version ;
     c_group = Group.string_of_id vs.View.group ;
     c_coord = vs.coord;
     c_ltime = vs.View.ltime ;

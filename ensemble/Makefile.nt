@@ -11,62 +11,78 @@
 
 !include mk\config.nmk
 
-SUBDIRS = \
-	appl		\
-	ce		\
-	cejava		\
-	crypto		\
-	demo		\
-	demo\tk		\
-	demo\life	\
-	demo\dbm	\
-	doc		\
-	ejava		\
-	groupd		\
-	hot		\
-	hot\include	\
-	infr		\
-	layers		\
-	layers\bypass	\
-	layers\debug	\
-	layers\flow	\
-	layers\total	\
-	layers\vsync	\
-	layers\other	\
-	layers\trans	\
-	layers\gossip	\
-	layers\scale	\
-	layers\security	\
-	maestro		\
-	mk		\
-	mm		\
-	route		\
-	socket		\
-	socket\u	\
-	socket\s	\
-	tar		\
-	tools		\
-	trans		\
-	type		\
+#include mk\preamble.mk
+
+SUBDIRS =\
+	appl\
+	ce\
+	cejava\
+	crypto\
+	demo\
+	demo\tk\
+	demo\life\
+	demo\dbm\
+	doc\
+	ejava\
+	groupd\
+	hot\
+	hot\include\
+	infr\
+	layers\
+	layers\bypass\
+	layers\debug\
+	layers\flow\
+	layers\total\
+	layers\vsync\
+	layers\other\
+	layers\trans\
+	layers\gossip\
+	layers\scale\
+	layers\security\
+	maestro\
+	mk\
+	mm\
+	route\
+	socket\
+	socket\u\
+	socket\s\
+	socket\s\unix\
+	socket\s\nt\
+	tar\
+	tools\
+	trans\
+	type\
 	util	
 
-
+# Make sure the target directories are in place
+#
+dirs : 
+	$(MKDIR) bin
+	$(MKDIR) lib
+	$(MKDIR) bin\$(PLATFORM)
+	$(MKDIR) lib\$(PLATFORM)
 
 # Make everything from scratch
 # 
-all: 
+all: dirs
+	cd socket & $(MAKE) all & $(MAKE) install
 	$(MAKE_BASE) -f Makefile.top.nt all& $(MAKE_BASE) -f Makefile.top.nt install
 	cd demo & $(MAKE) & $(MAKE) install
 	cd ce & $(MAKE)	  & $(MAKE) install
 	cd cejava & $(MAKE) & $(MAKE) install
 	cd hot & $(MAKE)  & $(MAKE) install
 
+
+sock : 
+	cd socket& $(MAKE) all & $(MAKE) install
+
 just:
 	$(MAKE_BASE) -f Makefile.top.nt all& $(MAKE_BASE) -f Makefile.top.nt install
 	cd demo & $(MAKE) just
 
 # Make the optimized versions
-opt: 
+opt: dirs
+	cd socket & $(MAKE) opt & $(MAKE) install
 	$(MAKE_BASE) -f Makefile.top.nt opt& $(MAKE_BASE) -f Makefile.top.nt install
 	cd demo & 	$(MAKE) opt &	$(MAKE) install
 	cd ce & $(MAKE) opt & $(MAKE) install
@@ -86,26 +102,47 @@ tk_opt :
 	$(MAKE_BASE) -f Makefile.top.nt OPT=yes tk
 
 
+touch_depend : 
+	touch .depend .depend.nt
+	touch socket\.depend socket\.depend.nt
+	touch ce\.depend ce\.depend.nt
+	touch cejava\.depend ce\.depend.nt
+	touch hot\.depend hot\.depend.nt
+	touch demo\.depend demo\.depend.nt
+	touch demo\dbm\.depend demo\dbm\.depend.nt
+	touch demo\life\.depend demo\life\.depend.nt
+	touch demo\tk\.depend demo\tk\.depend.nt
+
+
+dos2unix : 
+	nmake -f Makefile.nt touch_depend
+	dos2unix Makefile* *\Makefile* *\*\Makefile*
+	dos2unix *\*.[ch] *\*\*.[ch]
+	dos2unix *\*.ml* *\*\*.ml* 
+	dos2unix *\*.mk 
+	tools\ntify.sh
+
 # build a tar file containing the source only.
 #
-src:
+src: dos2unix
 	nmake -f Makefile.nt realclean
 	nmake -f Makefile.nt depend
-	tools\ntify.sh
-	cd tar& tarcr $(VERSION)
+	cd tar& tarcr 1.39 \home\orodeh\e\1.39\ensemble #$(VERSION) #$(BASEDIR)
+	cd doc& nmake -f Makefile.nt build
 
-#	cd doc& nmake -f Makefile.nt build
 
 # build a tar file containing executables and libraries.
 #
 dist : 
 	$(MKDIR) ..\build
-	cd bin& \
+	cd bin&\
 	for d in *& do ( mkdir -p ..\..\build\$$d& mkdir -p ..\..\build\$$d\bin& mkdir -p ..\..\build\$$d\lib& 	mv $$d\* ..\..\build\$$d\bin\& mv ..\lib\$$d\* ..\..\build\$$d\lib\)& done
 	cd ..\build& for d in *& do (tar -cf ensemble-$(VERSION)-$$d.tar $$d& gzip ensemble-$(VERSION)-$$d.tar& rm -rf $$d)& done
 
 
 depend:
+	cd socket& $(MAKE) depend
+	cd socket& $(MAKE) depend
 	cd ce& $(MAKE) depend
 	cd cejava& $(MAKE) depend
 	cd hot& $(MAKE) depend
@@ -116,11 +153,11 @@ depend:
 # This gets around a difference between NMAKE and MAKE. 
 #
 !if "$(PLATFORM)" == "nt"
+ENS_ABSROOT = $(MAKEDIR)
 CLEANALL = for %%d in ($(SUBDIRS)) do (cd %%d & $(MAKE) clean & cd $(ENS_ABSROOT))
 !else
 CLEANALL = for d in $(SUBDIRS)& do (cd $$d& $(MAKE) -k clean)& done
 !endif
-
 
 # MH: note 'nmake -f Makefile.nt clean' should clean the def and opt
 # directories.  It only leaves libraries, executables, 
@@ -129,8 +166,8 @@ clean:
 	$(CLEANALL)
 	$(CLEANDIR)
 	$(RM) ensemble.ml ensemble.mli emrg* 
-	$(RM) socket\s\socket.mli socket\u\socket.mli
 	$(RM) .unknown
+
 
 # realclean clean
 #

@@ -9,7 +9,9 @@ CCC		= g++
 
 SYSNAME_linux	= LINUX
 SYSNAME_solaris	= SOLARIS
-SYSNAME_sunos4	= SUN4
+SYSNAME_hpux	= HPUX
+SYSNAME_aix	= AIX
+SYSNAME_osf1	= OSF1
 SYSNAME		= $(SYSNAME_$(ENS_OSTYPE))
 
 #**********************************************************
@@ -41,10 +43,9 @@ CRYPTOLIB	=
 sparc-solaris_LIB 	= -lsocket -lposix4 -lthread -lpthread \
 			-lnsl -ltermcap -lm
 
-# SUNOS defaults to rvr_threads
-sparc-sunos4_LIB	= $(ENS)/contrib/rvr_threads/SUNOS/libthread.a -lm -ltermcap
-
 i386-linux_LIB		= -lpthread -ltermcap -lm -ldl
+
+hp9000-hpux_LIB		= -ldce -ltermcap -lm
 
 SYSLIB		= $($(PLATFORM)_LIB)
 

@@ -25,34 +25,19 @@
 #*************************************************************#
 ENSROOT = .
 
-INCLUDE = \
-	-I socket -I util -I mm -I type -I infr -I route -I appl \
+INCLUDE =\
+	-I socket -I util -I mm -I type -I infr -I route -I appl\
 	-I trans -I groupd -I layers\trans -I layers\other 
 
-#*************************************************************#
-
-.SUFFIXES: .cmo .cmx .cmi .ml .mli .c .o .obj
-.mli.cmi:
-	ocamlc $(INCLUDE) -c $<
-.ml.cmo:
-	ocamlc $(MLFLAGS) $(INCLUDE) -c $<
-.ml.cmx: 
-	ocamlopt $(MLFLAGS) $(INCLUDE) -c $<
-.c.o:
-	$(CC) -c $(CFLAGS) $< -o $@
-.c.obj:
-	$(CC) -c $(CFLAGS) $< $(OBJRULE)$@
+!include mk\rules.nmk
 #*************************************************************#
 
 
-LIBS = \
-	usocket$(CMA) \
-	ssocket$(CMA) \
-	libsock$(ARC) \
-	libenscore$(CMA) \
-	libensmin$(CMA) \
-	libensrest$(CMA) \
-	ensemble$(CMI) \
+LIBS =\
+	libenscore$(CMA)\
+	libensmin$(CMA)\
+	libensrest$(CMA)\
+	ensemble$(CMI)\
 	ensemble.mli 
 
 #*************************************************************#
@@ -65,21 +50,8 @@ all : $(LIBS)
 opt : 
 	$(MAKE_BASE) -f Makefile.top.nt OPT=yes all
 
-dirs : 
-	$(MKDIR) bin
-	$(MKDIR) lib
-	$(MKDIR) bin\$(PLATFORM)
-	$(MKDIR) lib\$(PLATFORM)
-
 # Install Ensemble stuff
-install: dirs
-	$(CP) usocket.*    	$(ENSLIB)
-	$(CP) ssocket.*    	$(ENSLIB)
-	$(CP) libsock$(ARC)  	$(ENSLIB)
-	$(CP) socket\s\sockfd.h $(ENSLIB)
-	$(CP) socket\s\e_iovec.h $(ENSLIB)
-	$(CP) socket\s\mm.h	$(ENSLIB)
-	$(CP) socket\s\mm_basic.h $(ENSLIB)
+install: 
 	$(CP) libenscore.* 	$(ENSLIB)
 	$(CP) libensmin.* 	$(ENSLIB)
 	$(CP) libensrest.*  	$(ENSLIB)
@@ -100,7 +72,6 @@ $(EMRG): tools\emrg.ml
 	ocamlc -c -I tools tools\emrg.ml 
 	ocamlc -o $(EMRG) tools\emrg.cmo
 
-
 #*************************************************************#
 # Make libraries and global interface files.
 
@@ -117,14 +88,6 @@ libhtk$(CMA): trans\htk.ml trans\htk.mli
 	$(ENSCOMP) -c -I $(ENSLIB) -I +labltk trans\htk.mli
 	$(ENSCOMP) -c -I $(ENSLIB) -I +labltk trans\htk.ml
 	$(MLLIBR) -o libhtk$(CMA) -linkall trans\htk$(CMO)
-
-#*************************************************************#
-# C libraries
-
-libsock$(ARC): $(SOCKCOBJ)
-	$(MKLIB) $(MKLIBO)libsock$(ARC) $(SOCKCOBJ)
-	$(RANLIB) libsock$(ARC)
-
 
 #*************************************************************#
 # The obj\ensemble.ml* files are generated from exported .mli
@@ -145,50 +108,32 @@ ensemble$(CMO): ensemble$(CMI) ensemble.ml ensemble.mli
 	$(ENSCOMP) -c $(INCLUDE) ensemble.ml
 
 #*************************************************************#
-# The socket stuff.
 
-socket\u\socket.mli : socket\socket.mli
-	$(CP) socket\socket.mli socket\u
-
-socket\s\socket.mli : socket\socket.mli
-	$(CP) socket\socket.mli socket\s
-
-usocket$(CMA) : socket\socket$(CMI) socket\u\socket.mli socket\u\socket$(CMI) $(USOCKOBJ) 
-	$(MLLIBR) -o usocket$(CMA) -linkall $(USOCKOBJ)
-
-ssocket$(CMA) : socket\socket$(CMI) socket\s\socket.mli socket\s\socket$(CMI) $(SSOCKOBJ) 
-	$(MLLIBR) -o ssocket$(CMA) -linkall $(SSOCKOBJ)
-
-#*************************************************************#
-
-
-DEPENDS = \
-	appl\*.ml	appl\*.mli		\
-	crypto\*.ml 	crypto\*.mli	\
-	groupd\*.ml 	groupd\*.mli	\
-	infr\*.ml 	infr\*.mli		\
-	layers\*.ml 	layers\*.mli	\
-	layers\bypass\*.ml	layers\bypass\*.mli	\
-	layers\debug\*.ml	layers\debug\*.mli		\
-	layers\flow\*.ml	layers\flow\*.mli		\
-	layers\total\*.ml	layers\total\*.mli		\
-	layers\vsync\*.ml	layers\vsync\*.mli		\
-	layers\other\*.ml	layers\other\*.mli		\
-	layers\trans\*.ml	layers\trans\*.mli		\
-	layers\gossip\*.ml	layers\gossip\*.mli	\
-	layers\scale\*.ml	layers\scale\*.mli		\
-	layers\security\*.ml	layers\security\*.mli	\
-	mm\*.ml	mm\*.mli			\
-	route\*.ml	route\*.mli	\
-	socket\*.ml	socket\*.mli	\
-	socket\u\*.ml	socket\u\*.mli		\
-	socket\s\*.ml	socket\s\*.mli		\
-	trans\*.ml	trans\*.mli		\
-	type\*.ml	type\*.mli			\
+DEPENDS =\
+	socket\socket.mli\
+	appl\*.ml	appl\*.mli\
+	crypto\*.ml 	crypto\*.mli\
+	groupd\*.ml 	groupd\*.mli\
+	infr\*.ml 	infr\*.mli\
+	layers\*.ml 	layers\*.mli\
+	layers\bypass\*.ml	layers\bypass\*.mli\
+	layers\debug\*.ml	layers\debug\*.mli\
+	layers\flow\*.ml	layers\flow\*.mli\
+	layers\total\*.ml	layers\total\*.mli\
+	layers\vsync\*.ml	layers\vsync\*.mli\
+	layers\other\*.ml	layers\other\*.mli\
+	layers\trans\*.ml	layers\trans\*.mli\
+	layers\gossip\*.ml	layers\gossip\*.mli\
+	layers\scale\*.ml	layers\scale\*.mli\
+	layers\security\*.ml	layers\security\*.mli\
+	mm\*.ml	mm\*.mli\
+	route\*.ml	route\*.mli\
+	trans\*.ml	trans\*.mli\
+	type\*.ml	type\*.mli\
 	util\*.ml	util\*.mli 
 
 depend:
-	ocamldep $(INCLUDE) -I crypto\OpenSSL -I crypto\isaac \
+	ocamldep $(INCLUDE) -I crypto\OpenSSL -I crypto\isaac\
 	$(DEPENDS) > $(DEPEND)
 
 !include $(DEPEND)

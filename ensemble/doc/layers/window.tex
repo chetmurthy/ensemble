@@ -1,0 +1,40 @@
+\begin{Layer}{WINDOW} 
+
+This layer implements window-based flow control based on stability information.
+Multicast messages from each sender are sent only if the number of
+unacknowledged messages from the sender is smaller than the window.
+
+\begin{Protocol}
+Whenever the number of unstable messages goes above the window, messages
+are buffered without being sent.  On receipt of a stability update, the
+number of unstable messages are recalculated and buffered messages are sent
+as allowed by the window.
+\end{Protocol}
+
+\begin{Parameters}
+\item window\_window : the window size in number of messages
+\end{Parameters}
+
+\begin{Properties}
+\item
+Requires stability information in the form of \Up{Stable} events.
+\end{Properties}
+
+\begin{Notes}
+\item 
+Future implementation should support dynamic window adjustment.
+\item 
+Performance with the WINDOW layer depends in part with the frequency of
+stability updates.  The WINDOW flow control works the best when the
+frequency is based on the number of unstable messages rather than on
+periodic timeouts.
+\item 
+Alternative flow control layers include RATE and CREDIT.
+\end{Notes}
+
+\begin{Sources}
+\sourcesfile{window.ml}
+\end{Sources}
+
+\emph{This layer and its documentation were written by Takako Hickey.}
+\end{Layer}

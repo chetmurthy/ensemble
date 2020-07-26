@@ -39,7 +39,7 @@ ifeq ("$(PLATFORM)" , "sparc-solaris")
 FLAG = ok
 HOT_CFLAGS = -DTHREADED_SELECT
 HOT_MLLINK = # empty
-HOT_LINK  = -lthread -lposix4 -ltermcap -lsocket -lnsl -lm -ldl
+HOT_LINK  = -lthread -lposix4 -ltermcap -lsocket -lnsl -lm -lresolv -ldl
 HOT_THREAD_OBJ = solaris_thread$(OBJ)
 endif
 
@@ -56,7 +56,7 @@ endif
 # The -D_RENTRANT is needed for the use of threads
 ifeq ("$(PLATFORM)" , "i386-linux")
 FLAG = ok
-HOT_CFLAGS	= -DTHREADED_SELECT -DUSE_PTHREAD_SEMAPHORE -DUSE_PTHREAD_LOCK -D_REENTRANT -DLINUX_THREADS -Wno-unused
+HOT_CFLAGS	= -DTHREADED_SELECT -D_REENTRANT -DLINUX_THREADS -Wno-unused
 HOT_MLLINK	= # empty
 HOT_LINK	= -lpthread -ltermcap -lm -ldl
 HOT_THREAD_OBJ = pthread_intf$(OBJ)
@@ -83,10 +83,10 @@ endif
 # HP9000-HPUX
 ifeq ("$(PLATFORM)" , "hp9000-hpux")
 FLAG = ok
-HOT_CFLAGS	= -DINLINE_PRAGMA
+HOT_CFLAGS	= -DHPUX_THREADS -DINLINE_PRAGMA
 HOT_MLLINK	= # empty
-HOT_LINK	=
-HOT_THREAD_OBJ = pthread_intf$(OBJ)
+HOT_LINK	= -ltermcap -lm -ldce
+HOT_THREAD_OBJ = hpux_thread$(OBJ)
 endif
 
 # MIPS-IRIX64

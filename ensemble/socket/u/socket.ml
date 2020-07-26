@@ -7,8 +7,33 @@ let name = "USOCKET"
 let failwith s = failwith (name^":"^s)
 (**************************************************************)
 open Printf
-open Socksupp
 (**************************************************************)
+type buf = string
+type ofs = int
+type len = int
+type socket = Unix.file_descr
+type timeval = Socksupp.timeval = {
+  mutable sec10 : int ;
+  mutable usec : int
+} 
+
+type win = Socksupp.win = 
+    Win_3_11
+  | Win_95_98
+  | Win_NT_3_5
+  | Win_NT_4
+  | Win_2000
+
+type os_t_v = Socksupp.os_t_v = 
+    OS_Unix
+  | OS_Win of win
+
+
+let max_msg_size = Socksupp.max_msg_size
+let is_unix = Socksupp.is_unix
+
+(**************************************************************)
+
 let verbose = ref false
 
 let set_verbose flag =
@@ -27,8 +52,6 @@ module Basic_iov = struct
    * Here, it is simply an ML string. A cheap hack indeed. 
    *)
   type t = string 
-  type ofs = int
-  type len = int
 
   type raw = string
   let t_of_raw x = x
@@ -103,8 +126,8 @@ let linux_warning =
   fun () ->
     if not !warned then (
       warned := true ;
-      print_line "USOCKET:warning:working around a Linux error" ;
-      print_line "USOCKET:see ensemble/BUGS for more information" ;
+      Socksupp.print_line "USOCKET:warning:working around a Linux error" ;
+      Socksupp.print_line "USOCKET:see ensemble/BUGS for more information" ;
     )
 
 (**************************************************************)
@@ -127,18 +150,13 @@ let unix_wrap debug f =
 (*	log (fun () -> "SOCKSUPP:warning:"^debug^":"^(Unix.error_message err)^":"^s1^":"^s2) ;*)
 	0
     | _ ->
-	print_line ("SOCKSUPP:"^debug^":"^(Unix.error_message err)) ;
+	Socksupp.print_line ("SOCKSUPP:"^debug^":"^(Unix.error_message err)) ;
 	raise exc
 
 
 (**************************************************************)
 
-type socket = Unix.file_descr
-type buf = string
-type ofs = int
-type len = int
-
-type sendto_info = Unix.file_descr * (Unix.sockaddr array)
+type sendto_info = Unix.file_descr * Unix.sockaddr array
 
 let string_of_info (_,sa) = 
   String.concat ":" (Array.to_list (Array.map (function
@@ -214,11 +232,6 @@ let md5_final ctx =
 
 (**************************************************************)
 
-type timeval = {
-  mutable sec10 : int ;
-  mutable usec : int
-} 
-
 let gettimeofday tv =
   let time = Unix.gettimeofday () in
   let usec,sec10 = modf (time /. 10.) in
@@ -265,14 +278,14 @@ let tcp_recv_packet sock hdr ofs len iov =
 let sendto (s,a) b o l = 
   for i = 0 to pred (Array.length a) do
     try
-      unit (Unix.sendto s b o l [] a.(i))
+      ignore (Unix.sendto s b o l [] a.(i))
     with e ->
       match e with 
       | Unix.Unix_error(Unix.ECONNREFUSED,_,_) ->
 	  linux_warning () ;
-	  unit (unix_wrap "sendto(2nd)" (fun () -> Unix.sendto s b o l [] a.(i)))
+	  ignore (unix_wrap "sendto(2nd)" (fun () -> Unix.sendto s b o l [] a.(i)))
       | _ -> 
-	  unit (unix_wrap "sendto(1st)" (fun () -> raise e))
+	  ignore (unix_wrap "sendto(1st)" (fun () -> raise e))
   done
 
 
@@ -339,9 +352,7 @@ let sends2v_p s buf1 buf2 ofs2 len2 iovl =
 *)
 type digest = string (* A 16-byte string *)
 
-let max_msg_len = 8192
-
-let s = String.create max_msg_len
+let s = String.create max_msg_size
 
 let recvfrom s b o l = Unix.recvfrom s b o l []
 
@@ -351,12 +362,12 @@ let udp_recv_packet sock =
      *)
     let len = 
       if is_unix then 
-	Unix.recv sock s 0 max_msg_len [] 
+	Unix.recv sock s 0 max_msg_size [] 
       else
-	let len,_ = Unix.recvfrom sock s 0 max_msg_len [] in 
+	let len,_ = Unix.recvfrom sock s 0 max_msg_size [] in 
 	len
     in
-    if len = max_msg_len then (
+    if len = max_msg_size then (
       eprintf "USOCKET:udp_recv_packet:warning:got packet that is maximum size (probably truncated), dropping (len=%d)\n" len ;
       flush stderr ;
       empty,empty
@@ -470,19 +481,6 @@ let minor_words () = (-1)
 
 
 (**************************************************************)
-type win = 
-    Win_3_11
-  | Win_95_98
-  | Win_NT_3_5
-  | Win_NT_4
-  | Win_2000
-
-type os_t_v = 
-    OS_Unix
-  | OS_Win of win
-
-let is_unix = is_unix
-
 let os_type_and_version () = 
   failwith "fcuntion os_type_and_version not supported (under usocket). You need the optimized socket library."
 (**************************************************************)

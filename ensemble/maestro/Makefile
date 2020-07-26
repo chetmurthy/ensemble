@@ -1,6 +1,6 @@
 # Makefile for Maestro
 
-MAKE            = make
+MAKE            = gmake
 ROOT            = .
 CONF		= conf
 PLATFORM        = $(ENS_MACHTYPE)-$(ENS_OSTYPE)

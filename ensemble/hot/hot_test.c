@@ -510,7 +510,7 @@ static void join(
   s->status = BOGUS;
   s->thresh = thresh;
   s->magic = HOT_TEST_MAGIC;
-  s->jops.heartbeat_rate = 3000.0;
+  s->jops.heartbeat_rate = (unsigned int) 3000.0;
   s->sweep = 3;
   s->jops.argv = argv;
   s->next_sweep = 0 ;

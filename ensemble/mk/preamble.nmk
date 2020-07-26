@@ -6,6 +6,8 @@
 # Author: Mark Hayden, 3\96
 #
 #*************************************************************#
+VERSION = 1_39
+#*************************************************************#
 ENSLIB		= $(ENSROOT)\lib\$(PLATFORM)
 ENS		= $(ENSLIB)\libens$(CMA)	# main ENS library 
 ENSMINLIB	= $(ENSLIB)\libensmin$(CMA)	# core of Ensemble library 

@@ -1,5 +1,5 @@
 (**************************************************************)
-(* COLLECT.ML *)
+(* Collect.ML *)
 (* Collect layer. Provide vsync infomation for the total ordering *)
 (* protocols. Used with Partial_appl layer.                       *)
 (* Author: Xiaoming Liu with Robbert vanRenesse 2/98 *)
@@ -174,7 +174,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       upnm ev
 
   | EBlockOk -> 
-      assert (s.blocking = DnBlocked) ;
+      (*assert (s.blocking = DnBlocked) ;*)
+      if not (s.blocking = DnBlocked) then failwith "(s.blocking = DnBlocked)";
       s.blocking <- UpBlocking ;
       check_block_ok ()
 
@@ -183,7 +184,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   and dn_hdlr ev abv = match getType ev with
   | ECast _ ->
       if getApplMsg ev then (
-	assert (s.blocking = Unblocked) ;
+	(*assert (s.blocking = Unblocked) ;*)
+	if not (s.blocking = Unblocked) then failwith "(s.blocking = Unblocked)";
 	s.cast_xmit <- succ s.cast_xmit ;
 	dn ev abv NoHdr
       ) else (

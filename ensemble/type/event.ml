@@ -197,6 +197,17 @@ let castIovAppl debug iov =
 			   
 (**************************************************************)
 
+let castPeerIovAppl debug rank iov =
+  let typ = ECast iov in {
+    typ     = typ ;
+    c_type  = compact_typ_of_typ typ ;
+    peer    = rank ;
+    applmsg = true ;
+    extend  = []
+  }
+
+(**************************************************************)
+
 let sendPeerIovAppl debug rank iov =
   let typ = ESend iov in {
     typ     = typ ;

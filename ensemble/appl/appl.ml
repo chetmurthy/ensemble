@@ -423,18 +423,18 @@
    let pollcount = max 0 (Arge.get Arge.pollcount) in
    let count = Arge.get Arge.sched_step in
    if count <= 0 then failwith "non-positive scheduler counter" ;
-
-   (* Compact the ML heap if it gets too large. This needs to be
-    * further investigated.
-    *)
+   
+  (* Compact the ML heap if it gets too large. This needs to be
+   * further investigated.
+   *)
    Arge.gc_compact 300;
-  start_monitor () ;
-
-  let counter = ref 0 in
-
-  while true do
-    while !counter <= pollcount do
-      incr counter ;
+   start_monitor () ;
+   
+   let counter = ref 0 in
+   
+   while true do
+     while !counter <= pollcount do
+     incr counter ;
 
       (* Schedule events in the layers.
        *)

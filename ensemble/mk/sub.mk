@@ -13,6 +13,9 @@
 all:
 	cd $(ENSROOT); $(MAKE) all 
 
+sock: 
+	cd $(ENSROOT); $(MAKE) sock
+
 just:
 	cd $(ENSROOT); $(MAKE) just
 

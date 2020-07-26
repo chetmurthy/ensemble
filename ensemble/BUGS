@@ -1,15 +1,19 @@
 -*- Mode: indented-text -*- 
 Known Ensemble Bugs
 BUGS Author: Mark Hayden
-Last updated: Ohad Rodeh  12/2001 
-
-* Multicast does not work on NT very well. 
-  - This is an NT problem. On win2000 this is ok.
+Last updated: Ohad Rodeh  10/2002
 
 * the groupd application is still not very stable
   - It does not support SVS
 
 * TCP mode on large messages does not work very well.
 
-* socktest does work on WIN32. This is due to a problem with
-  reading input from stdin. 
+* win32 problems: 
+  1) Multicast does not work on NT very well. 
+     This is an NT problem. On win2000 this is ok.
+
+  2) socktest does work on WIN32. This is due to a problem with
+     reading input from stdin. 
+
+  3) gossip server does not work well with UDP mode on win32. This
+     seems to be a problem with winsock2. 

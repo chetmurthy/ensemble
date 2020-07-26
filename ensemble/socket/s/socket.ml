@@ -8,15 +8,31 @@ let failwith s = failwith (name^":"^s)
 open Printf
 open Socksupp
 (**************************************************************)
+
 type buf = string
 type ofs = int
 type len = int
+type socket = Unix.file_descr
+type timeval = Socksupp.timeval = {
+  mutable sec10 : int ;
+  mutable usec : int
+} 
 
-let max_msg_size = 8 * 1024
+type win = Socksupp.win = 
+    Win_3_11
+  | Win_95_98
+  | Win_NT_3_5
+  | Win_NT_4
+  | Win_2000
 
+type os_t_v = Socksupp.os_t_v = 
+    OS_Unix
+  | OS_Win of win
+
+
+let max_msg_size = Socksupp.max_msg_size
+let is_unix = Socksupp.is_unix
 (**************************************************************)
-(* Memory management functions. 
-*)
 
 (* Debugging
 *)
@@ -29,768 +45,414 @@ let set_verbose flag =
 let log f = 
   if !verbose then (
     let s = f () in
+    print_string s; flush stdout;
+  ) else ()
+
+let log_nl f = 
+  if !verbose then (
+    let s = f () in
     print_string s; print_string "\n"; flush stdout;
   ) else ()
 
-module Basic_iov = struct
+let is_unix = Socksupp.is_unix
 
-  (* It is not clear whether this is really neccessary 
-   * with the newer versions of OCAML.
-   * 
-   * PERF
-   *)
-  external (=||) : int -> int -> bool = "%eq"
-  external (<>||) : int -> int -> bool = "%noteq"
-  external (>=||) : int -> int -> bool = "%geint"
-  external (<=||) : int -> int -> bool = "%leint"
-  external (>||) : int -> int -> bool = "%gtint"
-  external (<||) : int -> int -> bool = "%ltint"
-  external (+||) : int -> int -> int = "%addint"
-  external (-||) : int -> int -> int = "%subint"
-  external ( *||) : int -> int -> int = "%mulint"
-
-  (* The type of a C memory-buffer. It is opaque.
-   *)
-  type cbuf  
-  type ofs = int
-  type len = int
-   
-  type raw = {
-    len : int ;
-    cbuf : cbuf ;
-  }
-
-  type base = {
-    mutable count : int; (* A reference count *)
-    base_iov : raw   (* Free this cbuf when the refcount reaches zero *)
-  }
-
-  type t = { 
-    base : base ;  
-    iov : raw
-  }
-      
-  external copy_raw_into_string : raw -> string -> ofs -> unit
-    = "mm_copy_raw_into_string" "noalloc"
-
-  external copy_raw_into_raw : raw -> raw -> unit
-    = "mm_copy_raw_into_raw" "noalloc"
-      
-  external copy_string_into_raw : string -> ofs -> len -> raw -> unit
-    = "mm_copy_string_into_raw" "noalloc"
-      
-  external free_cbuf : cbuf -> unit 
-    = "mm_cbuf_free" "noalloc"
-
-  external mm_cbuf_sub : raw -> ofs -> cbuf
-    = "mm_cbuf_sub" 
-
-  let mm_sub iov ofs len = 
-    assert(iov.len >=|| ofs +|| len);
-    let cbuf = mm_cbuf_sub iov ofs in
-    {len=len; cbuf=cbuf}
-
-  (* Flatten an array of iovectors. The destination iovec is
-   * preallocated.
-   *)
-  external mm_flatten : raw array -> raw -> unit
-    = "mm_flatten" "noalloc"
-
-  (* Raw (C) allocation function. Can be user defined.
-   *)
-  external mm_alloc : int -> raw
-    = "mm_alloc"
-
-  (* Create an empty iovec. We do this on the C side, so
-   * that it will be usable by C functions that may return
-   * empty Iovec's.
-   *)
-  external mm_empty : unit -> raw
-    = "mm_empty"
-
-  (* These conversions are needed for CE, or in general, for
-   * outside C interfaces. 
-   *)
-  let t_of_raw iovec = {
-    base = {count=1; base_iov=iovec};
-    iov = iovec 
-  } 
-  let raw_of_t t = t.iov
-
-
-  let t_of_iovec base iovec = {base = base; iov = iovec} 
-
-  (* Decrement the refount, and free the cbuf if the count
-   * reaches zero. 
-   *)
-  let free t =
-    if t.base.base_iov.len >|| 0 then (
-      if t.base.count <=|| 0 then (
-	printf "Error, refcount already zero. len=%d\n" t.base.base_iov.len;
-	flush stdout;
-	raise (Invalid_argument "bad refcounting");
-      );
-      (*log (fun () -> sprintf "free: len=%d" t.iov.len);*)
-      t.base.count <- pred t.base.count;
-      if t.base.count =|| 0 then (
-	log (fun () -> sprintf "freeing a buffer (len=%d)" t.base.base_iov.len);
-	free_cbuf t.base.base_iov.cbuf;
-      )
-    )
-
-  (* Instead of using the raw malloc function, we take
-   * memory chunks of size CHUNK from the user. We then
-  * try to allocated from them any message that can fit. 
-   * 1. If the request length fits into what remains of the current 
-   *    chunk, it is allocated there.
-   * 2. If the message is larger than CHUNK, then we allocate 
-   *    directly using mm_alloc.
-   * 3. Otherwise, allocate a new chunk and allocated from it.
-   * 
-   * Note that we waste the very last portion of the iovec. 
-   * however, we assume that allocation is performed in slabs
-   * of no more than 8K (max_msg_size), and so waste is less
-   * than 10%.
-   *)
-
-  type alloc_state = {
-    chunk_size : int ;
-    mutable chunk : t ; (* The current chunk  *)
-    mutable pos : int ;
-  }
-
-  let size = 32 * max_msg_size   (* Current size is 256K *)
-
-  let s = 
-    let raw = mm_alloc size in
-    {
-      chunk_size = size;
-      chunk = {
-	base=  {count=1; base_iov = raw};
-	iov = raw
-      };
-      pos = 0 ;
-    }
-
-  let free_old_chunk () = 
-    s.chunk.base.count <- pred s.chunk.base.count ;
-    (*log (fun () -> sprintf "free_old_chunk, num_refs=%d" s.chunk.base.count);*)
-    if s.chunk.base.count =|| 0 then (
-      log (fun () -> "actually free old-chunk");
-      free_cbuf s.chunk.base.base_iov.cbuf;
-    )
-
-  let alloc len = 
-    if s.chunk_size -|| s.pos >=|| len then (
-      log (fun () -> sprintf "simple_alloc %d" len);
-      let iov = mm_sub s.chunk.base.base_iov s.pos len in
-      s.chunk.base.count <- succ s.chunk.base.count;
-      s.pos <- s.pos +|| len;
-      t_of_iovec s.chunk.base iov
-    ) else 
-      (* requested size too large, allocating a fresh (C) region.
-       *)
-      if len >=|| s.chunk_size then (
-	log (fun () -> sprintf "large_alloc %d\n" len);
-	let large_iov = mm_alloc len in
-	t_of_iovec {count=1;base_iov=large_iov} large_iov
-      ) else (
-	(* Here we waste the end of the cached iovec.
-	 * 
-	 * We do 
-	 * 1) Keep a refcount of 1 for the iovec we give out,
-	 * 2) Another 1 that we free only after we've used
-	 *    up the whole chunk size.
-	 * 3) Decrement the refcount of the old chunk.
-	 *)
-	free_old_chunk ();
-	let new_chunk = mm_alloc s.chunk_size in
-	let iov = mm_sub new_chunk 0 len in
-	s.chunk <- {base={count=2;base_iov=new_chunk}; iov=new_chunk};
-	s.pos <- len;
-	t_of_iovec s.chunk.base iov
-      )
-
-  (* check that there is enough space in the cached iovec before
-   * a receive operation. 
-   * 
-   * This has two effects:
-   * 1) we waste the end of the current 2.
-   * iovecg) we save an exception being thrown from inside the
-   *    the receive, because there will always be enough space.
-   * 
-   * Return a cbuf from which to start allocating.
-   *)
-  let check_pre_alloc () = 
-    if s.chunk_size -|| s.pos <|| max_msg_size then (
-      (* Here we waste the end of the cached iovec.
-       *)
-      free_old_chunk ();
-
-      let raw = mm_alloc s.chunk_size in
-      s.chunk <- {
-	base = {count=1; base_iov=raw};
-	iov = raw;
-      };
-      s.pos <- 0;
-      mm_cbuf_sub s.chunk.base.base_iov 0
-    ) else
-      mm_cbuf_sub s.chunk.base.base_iov s.pos
-
-  (* We have allocated [len] space from the cached iovec.
-   * Update our postion in it.
-   *)
-  let advance len = 
-    s.chunk.base.count <- succ s.chunk.base.count;
-    s.pos <- s.pos +|| len;
-    assert (s.pos <=|| s.chunk_size)
-	
-  let empty = 
-    let iov = mm_empty () in
-    t_of_iovec {count=1; base_iov=iov} iov
-
-  let len t = t.iov.len
-
-  let t_of_string s ofs len = 
-    let t = alloc len in
-    copy_string_into_raw s ofs len t.iov;
-    t
-
-  let string_of_t t = 
-    let s = String.create (len t) in
-    copy_raw_into_string t.iov s 0;
-    s
-
-  let string_of_t_full s ofs t = 
-    copy_raw_into_string t.iov s ofs
-     
-
-  (* Create an iovec that points to a sub-string in [iov].
-   *)
-  let sub t ofs len = 
-    if ofs +|| len >|| t.iov.len then 
-      raise (Invalid_argument 
-	(Printf.sprintf "out-of-bounds, in Iovec.sub ofs=%d len=%d act_len=%d"
-	  ofs len t.iov.len)
-      );
-    t.base.count <- succ t.base.count;
-    { 
-      base = t.base;
-      iov= mm_sub t.iov ofs len 
-    } 
-
-
-  (* Increment the refount, do not really copy. 
-   *)
-  let copy t = 
-    (*log (fun () -> "copy");*)
-    t.base.count <- succ t.base.count ;
-    t
-      
-  let really_copy t = 
-    if t.iov.len >|| 0 then (
-      let new_iov = alloc t.iov.len in
-      copy_raw_into_raw t.iov new_iov.iov;
-      new_iov
-    ) else
-      empty
-
-
-  (* Compute the total length of an iovec array.
-   *)
-  let iovl_len iovl = Array.fold_left (fun pos iov -> 
-    pos +|| len iov
-  ) 0 iovl
-
-  (* Flatten an iovec array into a single iovec.  Copying only
-   * occurs if the array has more than 1 non-empty iovec.
-   * 
-   * If there was not enough memory for the flatten operation,
-   * then an empty buffer is returned.
-   *)
-  let flatten iovl = 
-    match iovl with 
-	[||] -> raise (Invalid_argument "An empty iovecl to flatten")
-      | [|i|] -> copy i
-      | _ -> 
-	  let total_len = iovl_len iovl in
-	  let iovl = Array.map (fun x -> x.iov) iovl in
-	  let dst = alloc total_len in
-	  mm_flatten iovl dst.iov;
-	  dst
-
-  let flatten_w_copy iovl = 
-    match iovl with 
-	[||] -> raise (Invalid_argument "An empty iovecl to flatten")
-      | [|i|] -> really_copy i
-      | _ -> 
-	  let total_len = iovl_len iovl in
-	  let iovl = Array.map (fun x -> x.iov) iovl in
-	  let dst = alloc total_len in
-	  mm_flatten iovl dst.iov;
-	  dst
-      
-  (* For debugging
-   *)
-  let num_refs t = t.base.count
-
-
-  external mm_marshal : 'a -> raw -> Marshal.extern_flags list -> int
-    = "mm_output_val"
-
-  external mm_unmarshal : raw -> 'a
-    = "mm_input_val"
-
-  let mm_marshal obj t flags = mm_marshal obj t.iov flags
-
-  let marshal obj flags = 
-    let space_left = s.chunk_size -|| s.pos in
-    let tail = sub s.chunk s.pos space_left in
-    try 
-      let len = mm_marshal obj tail flags in
-      s.pos <- s.pos +|| len;
-      assert (s.pos <=|| s.chunk_size);
-      let res = sub tail 0 len in
-      free tail;
-      res
-    with Failure _ -> 
-      (* Not enough space.
-       * We waste the end of the cached iovec, and 
-       * allocate a new chunk.
-       *)
-      free tail ;
-      free_old_chunk ();
-      let raw = mm_alloc s.chunk_size in
-      s.chunk <- {
-	base = {count=1; base_iov=raw};
-	iov = raw
-      };
-      s.pos <- 0;
-      try 
-	let len = mm_marshal obj s.chunk flags in
-	s.pos <- s.pos +|| len;
-	assert (s.pos <=|| s.chunk_size);
-	sub s.chunk 0 len
-      with Failure _ -> 
-	(* The messgae is larger than a chunk size, hence too long.
-	 *)
-	failwith (sprintf "message is too longer (> %d)" s.chunk_size)
-
-  let unmarshal t =  mm_unmarshal t.iov 
-
-(*
-  let _ = 
-    printf "Running Socket iovec marshal/unmarshal sanity test\n"; flush stdout;
-    let iov = alloc 100 in
-    ignore (marshal (1,2,("A","B")) iov []);
-    let obj = unmarshal iov in
-    printf "xxx\n"; Pervasives.flush Pervasives.stdout;
-    begin match obj with 
-	x,y,(z,w) -> 
-	  printf "x=%d, y=%d z=%s w=%s\n" x y z w
-    end;
-    printf "Passed)\n"; flush stdout;
-    ()
-*)
-
-end
-
+(**************************************************************)
+(* Include the native iovector support code
+ *)
+module Basic_iov = Natiov_impl
 open Basic_iov
 
 (**************************************************************)
-
-let trace = 
-  try 
-    unit (Sys.getenv "SOCKET_TRACE") ;
-    true 
-  with Not_found -> 
-    false
-
-(**************************************************************)
-
-type timeval = {
-  mutable sec10 : int ;
-  mutable usec : int
-} 
-
-external gettimeofday : timeval -> unit 
-  = "skt_gettimeofday" "noalloc"
-
-(**************************************************************)
-
-type socket = Unix.file_descr
-
-(**************************************************************)
-
-external start_input : unit -> Unix.file_descr 
-  = "skt_start_input"
-
-(* See documentation in stdin.c.
- *)
-let stdin =
-  let stdin = ref None in
-  if is_unix then (
-    fun () -> Unix.stdin 
-  ) else (
-    fun () ->
-      (*failwith "stdin not supported --- just for debugging";*)
-      match !stdin with
-	| None ->
-	    let s = start_input () in
-	    stdin := Some s ;
-	    s
-	| Some s -> s
-  )
-
-(**************************************************************)
-
-external heap : unit -> Obj.t array 
-  = "skt_heap"
-external addr_of_obj : Obj.t -> string 
-  = "skt_addr_of_obj"
-external minor_words : unit -> int 
-  = "skt_minor_words" "noalloc"
-external frames : unit -> int array array 
-  = "skt_frame_descriptors"
-
-(**************************************************************)
-external skt_recvfrom : socket -> buf -> ofs -> len -> len * Unix.sockaddr
-  = "skt_recvfrom" 
-
-let recvfrom s b o l = 
-  if is_unix then Unix.recvfrom s b o l []
-  else skt_recvfrom s b o l 
-
-
-(* READ: Depending on the system, call either read or recv.
- * This is only used for stdin (where on Nt it is a socket).
- *)
-external skt_recvfrom2 : socket -> buf -> ofs -> len -> len 
-  = "skt_recvfrom2" 
-
-let read =
-  if is_unix then 
-    fun s b o l -> Unix.read s b o l
-  else
-    fun s b o l -> skt_recvfrom2 s b o l
-
-(**************************************************************)
-
-type sock_info = (socket array) * (bool array)
-type socket_info = (socket array) * (bool array)
-type select_info = socket_info * socket_info * socket_info * int
-
-external select : select_info -> timeval -> int 
-  = "skt_select" "noalloc"
-external poll : select_info -> int 
-  = "skt_poll" "noalloc"
-
-(**************************************************************)
-
-external substring_eq : string -> ofs -> string -> ofs -> len -> bool 
-  = "skt_substring_eq" "noalloc"
-
-(**************************************************************)
-
-(* HACK!  It's useful to be able to print these out as ints.
- *)
-external int_of_file_descr : Unix.file_descr -> int
-  = "skt_int_of_file_descr"
-
-let int_of_socket s =
-  int_of_file_descr s
-
-(**************************************************************)
-external skt_socket_mcast : 
-  Unix.socket_domain -> Unix.socket_type -> int -> Unix.file_descr
-    = "skt_socket_mcast"
-
-external skt_socket : 
-  Unix.socket_domain -> Unix.socket_type -> int -> Unix.file_descr
-  = "skt_socket"
-
-external skt_connect : Unix.file_descr -> Unix.sockaddr -> unit
-  = "skt_connect"
-
-external skt_bind : Unix.file_descr -> Unix.sockaddr -> unit
-  = "skt_bind"
-
-external skt_close : Unix.file_descr -> unit
-  = "skt_close"
-
-external skt_listen : Unix.file_descr -> int -> unit
-  = "skt_listen"
-
-external skt_accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr 
-  = "skt_accept"
-
-let socket dom typ proto = 
-  let s = 
-    if is_unix then Unix.socket dom typ proto 
-    else skt_socket dom typ proto 
-  in
-  log (fun () -> sprintf "sock=%d\n" (int_of_socket s));
-  s
-
-let socket_mcast = 
-  if is_unix then Unix.socket
-  else skt_socket_mcast
-
-let connect = 
-  if is_unix then Unix.connect
-  else skt_connect
-
-let bind = 
-  if is_unix then Unix.bind
-  else skt_bind
-
-(* will work only on sockets on WIN32.
-*)
-let close = 
-  if is_unix then Unix.close
-  else skt_close
-
-let listen = 
-  if is_unix then Unix.listen
-  else skt_listen
-
-let accept = 
-  if is_unix then Unix.accept
-  else skt_accept
-
-(**************************************************************)
+module Opt = struct
+  (* Include common code for all platforms
+   *)
+  let heap = Common_impl.heap
+  let addr_of_obj = Common_impl.addr_of_obj
+  let minor_words = Common_impl.minor_words
+  let frames = Common_impl.frames
+    
+  (* MD5 hash functions. We need to have it work on Iovecs as
+   * well as regular strings. 
+   *)
+  type md5_ctx = Common_impl.md5_ctx
+      
+  let md5_init = Common_impl.md5_init
+  let md5_init_full = Common_impl.md5_init_full
+  let md5_final = Common_impl.md5_final
+  let md5_update_iov = Common_impl.md5_update_iov
+  let md5_update = Common_impl.md5_update
     
     
-(* Optimized socket operations.
- * - unsafe
- * - no exceptions
- * - "noalloc" is enabled
- * - socket, flags, and address are preprocessed
- * - no interrupts accepted
- * - no retransmission attempts on interrupts
- *)
-
-
-(* Pre-processed information on a socket.
-*)
-type sendto_info
-
-(* A context structure.
-*)
-type ctx 
-
-type digest = string (* A 16-byte string *)
-
-external create_ctx : unit -> ctx 
-  = "skt_Val_create_ctx"
-
-external sendto_info : 
-  Unix.file_descr -> Unix.sockaddr array -> sendto_info
-    = "skt_Val_create_sendto_info"
-
-external sendto : sendto_info -> buf -> ofs -> len -> unit
-  = "skt_sendto" "noalloc"
-
-(* These two functions are used to send UDP packets. 
- * They add a header describing the size of the ML/Iovec size 
- * of the data. 
- * The format is: [ml_len] [usr_len]
- * 
- * Corresponding code exists in udp_recv_packet. 
-*)
-external sendtov : sendto_info -> Basic_iov.t array -> unit 
-  = "skt_sendtov" "noalloc"
-
-external sendtosv : sendto_info -> buf -> ofs -> len -> Basic_iov.t array -> unit
-  = "skt_sendtosv" "noalloc"
-
-external skt_udp_recv_packet : 
-  socket -> 
-  Basic_iov.cbuf -> (* pre-allocated user-space memory *)
-  string * Basic_iov.raw 
-    = "skt_udp_recv_packet"
-
-let udp_recv_packet sock = 
-  (* check that there is enough memory, and return a cbuf for 
-   * udp_recv.
+  (* Including platform dependent stuff
    *)
-  let cbuf = Basic_iov.check_pre_alloc () in
-  let buf,iov = skt_udp_recv_packet sock cbuf in
+  let gettimeofday = Comm_impl.gettimeofday
+    
+  let socket_mcast = Comm_impl.socket_mcast
+  let socket = Comm_impl.socket
+  let connect = Comm_impl.connect
+  let bind = Comm_impl.bind 
+  let close = Comm_impl.close 
+  let listen = Comm_impl.listen 
+  let accept = Comm_impl.accept 
+    
+  let stdin = Comm_impl.stdin
+  let read  = Comm_impl.read 
+    
+  let int_of_socket = Comm_impl.int_of_socket
+    
+  type sock_info = Comm_impl.sock_info
+  type select_info = Comm_impl.select_info
+      
+  let select_info = Comm_impl.select_info
+  let select  = Comm_impl.select 
+  let poll  = Comm_impl.poll 
+    
+  let substring_eq  = Comm_impl.substring_eq
+    
+  type sendto_info = Comm_impl.sendto_info
+  let sendto_info  = Comm_impl.sendto_info 
+    
+  let sendto  = Comm_impl.sendto 
+  let sendtov  = Comm_impl.sendtov 
+  let sendtosv  = Comm_impl.sendtosv 
+    
+  let recvfrom  = Comm_impl.recvfrom 
+  let udp_recv_packet  = Comm_impl.udp_recv_packet 
+    
+  let recv  = Comm_impl.recv 
+  let recv_iov  = Comm_impl.recv_iov 
+  let tcp_recv_packet  = Comm_impl.tcp_recv_packet 
+    
+  let send_p  = Comm_impl.send_p 
+  let sendv_p  = Comm_impl.sendv_p 
+  let sendsv_p  = Comm_impl.sendsv_p 
+  let sends2v_p  = Comm_impl.sends2v_p 
+    
+  let has_ip_multicast  = Comm_impl.has_ip_multicast 
+  let in_multicast  = Comm_impl.in_multicast 
+  let setsockopt_ttl = Comm_impl.setsockopt_ttl 
+  let setsockopt_loop = Comm_impl.setsockopt_loop 
+  let setsockopt_join = Comm_impl.setsockopt_join 
+  let setsockopt_leave = Comm_impl.setsockopt_leave 
+    
+  let setsockopt_sendbuf = Comm_impl.setsockopt_sendbuf 
+  let setsockopt_recvbuf = Comm_impl.setsockopt_recvbuf 
+  let setsockopt_nonblock = Comm_impl.setsockopt_nonblock 
+  let setsockopt_bsdcompat = Comm_impl.setsockopt_bsdcompat 
+  let setsockopt_reuse = Comm_impl.setsockopt_reuse 
+    
+  let os_type_and_version = Comm_impl.os_type_and_version
+end
 
-  (* Update our position in the cached memory chunk.
-   * On WIN32, since we don't have MSG_PEEK, we read everything into
-   * user buffers. Hence, we need to copy the ML header into a string, 
-   * and advance past 8byte pre-header + ML header + user-buffer.
+(**************************************************************)
+
+module Debug = struct
+  (* Include common code for all platforms
    *)
-  if iov.len >|| 0 then (
-    if is_unix then 
-      Basic_iov.advance iov.len
-    else
-      Basic_iov.advance (String.length buf + iov.len + 8);
-    buf, Basic_iov.t_of_iovec s.chunk.base iov
-  ) else
-    buf, empty
+  let heap = Common_impl.heap
+  let addr_of_obj = Common_impl.addr_of_obj
+  let minor_words = Common_impl.minor_words
+  let frames = Common_impl.frames
+    
+  (* MD5 hash functions. We need to have it work on Iovecs as
+   * well as regular strings. 
+   *)
+  type md5_ctx = Common_impl.md5_ctx
+      
+  let md5_init () = 
+    log (fun () -> "md5_init(");
+    let ctx = Common_impl.md5_init () in
+    log_nl (fun () -> "md5_init(");
+    ctx
+
+  let md5_init_full s = 
+    log (fun () -> "md5_init_full(");
+    let ctx = Common_impl.md5_init_full s in
+    log_nl (fun () -> ")");
+    ctx
+    
+  let md5_final = 
+    log (fun () -> "md5_final(");
+    let digest = Common_impl.md5_final in
+    log_nl (fun () -> ")");
+    digest
+
+  let md5_update_iov ctx iov = 
+    log (fun () -> "md5_update_iov(");
+    Common_impl.md5_update_iov ctx iov;
+    log_nl (fun () -> ")")
+
+  let md5_update ctx buf ofs len = 
+    log (fun () -> "md5_update(");
+    Common_impl.md5_update ctx buf ofs len;
+    log_nl (fun () -> ")")
+    
+  (* Including platform dependent stuff
+   *)
+  let gettimeofday tm = 
+    log (fun () -> "gettimeofday(");
+    Comm_impl.gettimeofday tm;
+    log_nl (fun () -> ")")
+    
+  let socket_mcast dom typ flags = 
+    log (fun () -> "socket_mcast(");
+    let fd = Comm_impl.socket_mcast dom typ flags in
+    log_nl (fun () -> ")");
+    fd
+
+  let socket dom typ flags = 
+    log (fun () -> "socket(");
+    let fd = Comm_impl.socket dom typ flags in
+    log_nl (fun () -> ")");
+    fd
+
+  let connect fd addr = 
+    log (fun () -> "conect(");
+    Comm_impl.connect fd addr;
+    log_nl (fun () -> ")")
+
+  let bind fd addr = 
+    log (fun () -> "bind(");
+    Comm_impl.bind fd addr;
+    log_nl (fun () -> ")")
+
+  let close fd = 
+    log (fun () -> "close(");
+    Comm_impl.close fd;
+    log (fun () -> ")")
+
+  let listen fd num = 
+    log (fun () -> "listen(");
+    Comm_impl.listen fd num;
+    log_nl (fun () -> ")")
+ 
+  let accept fd = 
+    log (fun () -> "accept(");
+    let rep = Comm_impl.accept fd in
+    log_nl (fun () -> ")");
+    rep
+
+  let stdin () = 
+    log (fun () -> "stdin(");
+    let fd = Comm_impl.stdin () in
+    log_nl (fun () -> ")");
+    fd
+
+  let read sock buf ofs len = 
+    log (fun () -> "read(");
+    let len = Comm_impl.read sock buf ofs len in
+    log_nl (fun () -> ")");
+    len
+
+    
+  let int_of_socket sock = 
+    log (fun () -> "int_of_sock(");
+    let i = Comm_impl.int_of_socket sock in
+    log (fun () -> ")");
+    i
+    
+  type sock_info = Comm_impl.sock_info
+  type select_info = Comm_impl.select_info
+      
+  let select_info info1 info2 info3 = 
+    log (fun () -> "select_info(");
+    let rep = Comm_impl.select_info info1 info2 info3 in
+    log_nl (fun () -> ")");
+    rep
+
+  let select info timeval = 
+    log (fun () -> "select(");
+    let i = Comm_impl.select info timeval in
+    log_nl (fun () -> ")");
+    i
+
+  let poll info = 
+    log (fun () -> "poll(");
+    let rep = Comm_impl.poll info in
+    log_nl (fun () -> ")");
+    rep
+    
+  let substring_eq s1 ofs1 s2 ofs2 len = 
+    log (fun () -> "substring_eq(");
+    let rep = Comm_impl.substring_eq s1 ofs1 s2 ofs2 len in
+    log_nl (fun () -> ")");
+    rep
+    
+  type sendto_info = Comm_impl.sendto_info
+  let sendto_info sock addr_a= 
+    log (fun () -> "sendto_info(");
+    let info = Comm_impl.sendto_info sock addr_a in
+    log_nl (fun () -> ")");
+    info
+    
+  let sendto info buf ofs len = 
+    log (fun () -> "sendto(");
+    Comm_impl.sendto info buf ofs len;
+    log_nl (fun () -> ")")
+
+  let sendtov info iov_a = 
+    log (fun () -> "sendtov(");
+    Comm_impl.sendtov info iov_a;
+    log_nl (fun () -> ")")
+
+  let sendtosv info buf ofs len iov_a = 
+    log (fun () -> "sendtosv(");
+    Comm_impl.sendtosv info buf ofs len iov_a ;
+    log_nl (fun () -> ")")
+    
+  let recvfrom sock buf ofs len = 
+    log (fun () -> "recvfrom(");
+    let rep = Comm_impl.recvfrom sock buf ofs len in
+    log_nl (fun () -> ")");
+    rep
+
+  let udp_recv_packet sock= 
+    log (fun () -> "udp_recv_packet(");
+    let rep = Comm_impl.udp_recv_packet sock in
+    log (fun () -> ")");
+    rep
+    
+  let recv sock buf ofs len = 
+    log (fun () -> "recv(");
+    let len = Comm_impl.recv sock buf ofs len in
+    log_nl (fun () -> ")");
+    len
+
+
+  let recv_iov sock iov ofs len = 
+    log (fun () -> "recv_iov(");
+    let len = Comm_impl.recv_iov sock iov ofs len in
+    log_nl (fun () -> ")");
+    len
+
+  let tcp_recv_packet sock str ofs len iov = 
+    log (fun () -> "tcp_recv_packet(");
+    let len = Comm_impl.tcp_recv_packet sock str ofs len iov in
+    log_nl (fun () -> ")");
+    len
+    
+  let send_p sock buf ofs len= 
+    log (fun () -> "send_p(");
+    let len = Comm_impl.send_p sock buf ofs len in
+    log_nl (fun () -> ")");
+    len
+
+  let sendv_p sock iov = 
+    log (fun () -> "sendv_p");
+    let len = Comm_impl.sendv_p sock iov in
+    log_nl (fun () -> ")");
+    len
+
+  let sendsv_p sock buf ofs len iov_a = 
+    log (fun () -> "sendsv_p");
+    let len = Comm_impl.sendsv_p sock buf ofs len iov_a in
+    log_nl (fun () -> ")");
+    len
+
+  let sends2v_p sock buf buf ofs len iov_a= 
+    log (fun () -> "sends2v_p(");
+    let len = Comm_impl.sends2v_p sock buf buf ofs len iov_a in
+    log_nl (fun () -> ")");
+    len
+    
+  let has_ip_multicast  = Comm_impl.has_ip_multicast 
+  let in_multicast  = Comm_impl.in_multicast 
+  let setsockopt_ttl = Comm_impl.setsockopt_ttl 
+  let setsockopt_loop = Comm_impl.setsockopt_loop 
+  let setsockopt_join = Comm_impl.setsockopt_join 
+  let setsockopt_leave = Comm_impl.setsockopt_leave 
+    
+  let setsockopt_sendbuf = Comm_impl.setsockopt_sendbuf 
+  let setsockopt_recvbuf = Comm_impl.setsockopt_recvbuf 
+  let setsockopt_nonblock = Comm_impl.setsockopt_nonblock 
+  let setsockopt_bsdcompat = Comm_impl.setsockopt_bsdcompat 
+  let setsockopt_reuse = Comm_impl.setsockopt_reuse 
+    
+  let os_type_and_version = Comm_impl.os_type_and_version
+end
+
+(**************************************************************)
+
+module Export = Opt
   
-    
-(**************************************************************)
-(* Receive messages into preallocated buffers. Exceptions are
- * thrown. 
+(* Include common code for all platforms
  *)
-
-external recv : socket -> buf -> ofs -> len -> len 
-  = "skt_recv" "noalloc"
-external recv_iov : socket -> Basic_iov.raw -> ofs -> len -> len 
-  = "skt_recv_iov" "noalloc"
-external tcp_recv_packet : socket -> string -> ofs -> len -> Basic_iov.raw -> len
-  = "skt_tcp_recv_packet"
-
-let recv_iov sock t ofs len = recv_iov sock t.Basic_iov.iov ofs len
-
-let tcp_recv_packet sock buf ofs len t = 
-  tcp_recv_packet sock buf  ofs len t.Basic_iov.iov
-
-(**************************************************************)
-(* Operations for sending messages point-to-point. 
- * 1) Exceptions are thrown
- * 2) nothing is allocated
- * 3) The length sent is returned
- * 4) The sendto parameter must contain a single destination. 
- *)
-    
-external send_p : socket -> buf -> ofs -> len -> len
-  = "skt_send_p" "noalloc"
-
-external sendv_p : socket -> Basic_iov.t array -> len
-  = "skt_sendv_p" "noalloc"
-
-external sendsv_p : socket -> buf -> ofs -> len -> Basic_iov.t array -> len
-  = "skt_sendsv_p" "noalloc"
-
-external sends2v_p : socket-> buf -> buf -> ofs -> len -> Basic_iov.t array -> len
-  = "skt_sends2v_p_bytecode" "skt_sends2v_p_native" "noalloc"
-
-(**************************************************************)
-
-external has_ip_multicast : unit -> bool 
-  = "skt_has_ip_multicast" 
-external in_multicast : Unix.inet_addr -> bool 
-  = "skt_in_multicast" 
-external setsockopt_ttl : socket -> int -> unit 
-  = "skt_setsockopt_ttl" 
-external setsockopt_loop : socket -> bool -> unit 
-  = "skt_setsockopt_loop" 
-external setsockopt_join : socket -> Unix.inet_addr -> unit 
-  = "skt_setsockopt_join" 
-external setsockopt_leave : socket -> Unix.inet_addr -> unit 
-  = "skt_setsockopt_leave" 
-external setsockopt_sendbuf : socket -> int -> unit
-  = "skt_setsockopt_sendbuf"
-external setsockopt_recvbuf : socket -> int -> unit
-  = "skt_setsockopt_recvbuf"
-external setsockopt_nonblock : socket -> bool -> unit
-  = "skt_setsockopt_nonblock"
-external setsockopt_bsdcompat : socket -> bool -> unit
-  = "skt_setsockopt_bsdcompat"
-external setsockopt_reuse : socket -> bool -> unit
-  = "skt_setsockopt_reuse"
-let setsockopt_reuse sock onoff = 
-  if is_unix then Unix.setsockopt sock Unix.SO_REUSEADDR onoff
-  else setsockopt_reuse sock onoff
-(**************************************************************)
+let heap = Export.heap
+let addr_of_obj = Export.addr_of_obj
+let minor_words = Export.minor_words
+let frames = Export.frames
+  
 (* MD5 hash functions. We need to have it work on Iovecs as
  * well as regular strings. 
-*)
-type md5_ctx = string
+ *)
+type md5_ctx = Export.md5_ctx
+    
+let md5_init = Export.md5_init
+let md5_init_full = Export.md5_init_full
+let md5_final = Export.md5_final
+let md5_update_iov = Export.md5_update_iov
+let md5_update = Export.md5_update
+  
+  
+(* Including platform dependent stuff
+ *)
+let gettimeofday = Export.gettimeofday
+  
+let socket_mcast = Export.socket_mcast
+let socket = Export.socket
+let connect = Export.connect
+let bind = Export.bind 
+let close = Export.close 
+let listen = Export.listen 
+let accept = Export.accept 
+  
+let stdin = Export.stdin
+let read  = Export.read 
+  
+let int_of_socket = Export.int_of_socket
+  
+type sock_info = Export.sock_info
+type select_info = Export.select_info
+    
+let select_info = Export.select_info
+let select  = Export.select 
+let poll  = Export.poll 
+  
+let substring_eq  = Export.substring_eq
+  
+type sendto_info = Export.sendto_info
+let sendto_info  = Export.sendto_info 
+  
+let sendto  = Export.sendto 
+let sendtov  = Export.sendtov 
+let sendtosv  = Export.sendtosv 
+  
+let recvfrom  = Export.recvfrom 
+let udp_recv_packet  = Export.udp_recv_packet 
+  
+let recv  = Export.recv 
+let recv_iov  = Export.recv_iov 
+let tcp_recv_packet  = Export.tcp_recv_packet 
+  
+let send_p  = Export.send_p 
+let sendv_p  = Export.sendv_p 
+let sendsv_p  = Export.sendsv_p 
+let sends2v_p  = Export.sends2v_p 
+  
+let has_ip_multicast  = Export.has_ip_multicast 
+let in_multicast  = Export.in_multicast 
+let setsockopt_ttl = Export.setsockopt_ttl 
+let setsockopt_loop = Export.setsockopt_loop 
+let setsockopt_join = Export.setsockopt_join 
+let setsockopt_leave = Export.setsockopt_leave 
+  
+let setsockopt_sendbuf = Export.setsockopt_sendbuf 
+let setsockopt_recvbuf = Export.setsockopt_recvbuf 
+let setsockopt_nonblock = Export.setsockopt_nonblock 
+let setsockopt_bsdcompat = Export.setsockopt_bsdcompat 
+let setsockopt_reuse = Export.setsockopt_reuse 
+  
+let os_type_and_version = Export.os_type_and_version
 
-external md5_ctx_length : unit -> int
-  = "skt_md5_context_length" "noalloc"
-external md5_init : md5_ctx -> unit
-  = "skt_md5_init" "noalloc"
-external md5_init_full : md5_ctx -> string -> unit
-  = "skt_md5_init_full" "noalloc"
-external md5_update : md5_ctx -> buf -> ofs -> len -> unit
-  = "skt_md5_update" "noalloc"
-external md5_update_iov : md5_ctx -> Basic_iov.raw -> unit
-  = "skt_md5_update_iov" "noalloc"
-external md5_final : md5_ctx -> Digest.t -> unit
-  = "skt_md5_final" "noalloc"
 
-let md5_init () =
-  let ret = String.create (md5_ctx_length ()) in
-  md5_init ret ;
-  ret
-
-let md5_init_full init_key =
-  if String.length init_key <> 16 then 
-    raise (Invalid_argument "md5_init_full: initial key value is not of length 16");
-  let ret = String.create (md5_ctx_length ()) in
-  md5_init_full ret init_key;
-  ret
-
-
-let md5_final ctx =
-  let dig = String.create 16 in
-  md5_final ctx dig ;
-  dig
-
-let md5_update_iov ctx iov_t = 
-  md5_update_iov ctx iov_t.Basic_iov.iov
-
-(**************************************************************)
-
-let sihelp (socks,ret) =
-  let max = ref 0 in
-  Array.iter (fun sock ->
-    let sock = int_of_socket sock in
-    if sock > !max then max := sock
-  ) socks ;
-  ((socks,ret),!max)
-
-let select_info a b c =
-  let (a,am) = sihelp a in
-  let (b,bm) = sihelp b in
-  let (c,cm) = sihelp c in
-  let max = succ (max am (max bm cm)) in
-  (a,b,c,max)
-
-(**************************************************************)
-type win = 
-    Win_3_11
-  | Win_95_98
-  | Win_NT_3_5
-  | Win_NT_4
-  | Win_2000
-
-type os_t_v = 
-    OS_Unix
-  | OS_Win of win
-
-external win_version : unit -> string = "win_version"
-
-let os_type_and_version () = 
-  let v = ref None in
-  match !v with 
-      Some x -> x
-    | None -> 
-	let ver = 
-	  if is_unix then OS_Unix
-	  else (
-	    let version = 
-	      match win_version () with
-		  "NT3.5" -> Win_NT_3_5
-		| "NT4.0" -> Win_NT_4
-		| "2000" -> Win_2000
-		| "95/98" -> Win_95_98
-		| "3.11" -> Win_3_11
-		| _ -> failwith "Sanity: win_version returned bad value"
-	    in
-	    OS_Win version
-	  ) in
-	v := Some ver;
-	ver
-
-(**************************************************************)
-let is_unix = is_unix
-
-(**************************************************************)
 

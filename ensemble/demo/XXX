@@ -1,0 +1,198 @@
+REFLECT:server starting on tp-orodeh
+REFLECT:server binding to port 6788
+REFLECT:server ready
+REFLECT:view:1:[{Endpt:127.0.0.1:6789:729:0}]
+REFLECT:#clients=0
+skt_socket: sock=476, domain=1 type=1 proto=0
+skt_socket: sock=484, domain=1 type=1 proto=0
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=217)
+REFLECT:recv_gossip: from (tp-orodeh,6789)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6789,addr=127.0.0.1)
+)
+<len=217>SENDRECV:udp_recv: ml_len=209 usr_len=0
+)
+REFLECT:#clients=1
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=217)
+REFLECT:recv_gossip: from (tp-orodeh,6789)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6789,addr=127.0.0.1)
+)
+<len=217>SENDRECV:udp_recv: ml_len=209 usr_len=0
+)
+REFLECT:#clients=1
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=217)
+REFLECT:recv_gossip: from (tp-orodeh,6789)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6789,addr=127.0.0.1)
+)
+<len=217>SENDRECV:udp_recv: ml_len=209 usr_len=0
+)
+REFLECT:#clients=1
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=217)
+REFLECT:recv_gossip: from (tp-orodeh,6789)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6789,addr=127.0.0.1)
+)
+<len=217>SENDRECV:udp_recv: ml_len=209 usr_len=0
+)
+REFLECT:#clients=1
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=217)
+REFLECT:recv_gossip: from (tp-orodeh,6789)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6789,addr=127.0.0.1)
+)
+<len=217>SENDRECV:udp_recv: ml_len=209 usr_len=0
+)
+REFLECT:#clients=1
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=217)
+REFLECT:recv_gossip: from (tp-orodeh,6789)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6789,addr=127.0.0.1)
+)
+<len=217>SENDRECV:udp_recv: ml_len=209 usr_len=0
+)
+REFLECT:#clients=1
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=217)
+REFLECT:recv_gossip: from (tp-orodeh,6789)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6789,addr=127.0.0.1)
+)
+<len=217>SENDRECV:udp_recv: ml_len=209 usr_len=0
+)
+REFLECT:#clients=1
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=217)
+REFLECT:recv_gossip: from (tp-orodeh,6789)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6789,addr=127.0.0.1)
+)
+<len=217>SENDRECV:udp_recv: ml_len=209 usr_len=0
+)
+REFLECT:#clients=1
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=217)
+REFLECT:recv_gossip: from (tp-orodeh,6789)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6789,addr=127.0.0.1)
+)
+<len=217>SENDRECV:udp_recv: ml_len=209 usr_len=0
+)
+REFLECT:#clients=1
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=215)
+REFLECT:recv_gossip: from (tp-orodeh,6790)
+REFLECT:send_gossip: to   (tp-orodeh,6790)
+skt_sendto(len=215 ofs=0
+skt_sendto, ret=215 (port=6790,addr=127.0.0.1)
+)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=215 ofs=0
+skt_sendto, ret=215 (port=6789,addr=127.0.0.1)
+)
+<len=215>SENDRECV:udp_recv: ml_len=207 usr_len=0
+)
+REFLECT:#clients=2
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=217)
+REFLECT:recv_gossip: from (tp-orodeh,6789)
+REFLECT:send_gossip: to   (tp-orodeh,6790)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6790,addr=127.0.0.1)
+)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6789,addr=127.0.0.1)
+)
+<len=217>SENDRECV:udp_recv: ml_len=209 usr_len=0
+)
+REFLECT:#clients=2
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=215)
+REFLECT:recv_gossip: from (tp-orodeh,6790)
+REFLECT:send_gossip: to   (tp-orodeh,6790)
+skt_sendto(len=215 ofs=0
+skt_sendto, ret=215 (port=6790,addr=127.0.0.1)
+)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=215 ofs=0
+skt_sendto, ret=215 (port=6789,addr=127.0.0.1)
+)
+<len=215>SENDRECV:udp_recv: ml_len=207 usr_len=0
+)
+REFLECT:#clients=2
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=217)
+REFLECT:recv_gossip: from (tp-orodeh,6789)
+REFLECT:send_gossip: to   (tp-orodeh,6790)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6790,addr=127.0.0.1)
+)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6789,addr=127.0.0.1)
+)
+<len=217>SENDRECV:udp_recv: ml_len=209 usr_len=0
+)
+REFLECT:#clients=2
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=215)
+REFLECT:recv_gossip: from (tp-orodeh,6790)
+REFLECT:send_gossip: to   (tp-orodeh,6790)
+skt_sendto(len=215 ofs=0
+skt_sendto, ret=215 (port=6790,addr=127.0.0.1)
+)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=215 ofs=0
+skt_sendto, ret=215 (port=6789,addr=127.0.0.1)
+)
+<len=215>SENDRECV:udp_recv: ml_len=207 usr_len=0
+)
+REFLECT:#clients=2
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=217)
+REFLECT:recv_gossip: from (tp-orodeh,6789)
+REFLECT:send_gossip: to   (tp-orodeh,6790)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6790,addr=127.0.0.1)
+)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6789,addr=127.0.0.1)
+)
+<len=217>SENDRECV:udp_recv: ml_len=209 usr_len=0
+)
+REFLECT:#clients=2
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=217)
+REFLECT:recv_gossip: from (tp-orodeh,6789)
+REFLECT:send_gossip: to   (tp-orodeh,6790)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6790,addr=127.0.0.1)
+)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6789,addr=127.0.0.1)
+)
+<len=217>SENDRECV:udp_recv: ml_len=209 usr_len=0
+)
+REFLECT:#clients=2
+skt_recvfrom(skt=484  ofs=0  len=8192  REFLECT: A socket error has occured (Invalid argument,recvfrom,)
+restarting gossip server
+REFLECT:#clients=2
+skt_socket: sock=484, domain=1 type=1 proto=0
+skt_recvfrom(skt=484  ofs=0  len=8192  recv_len=217)
+REFLECT:recv_gossip: from (tp-orodeh,6789)
+REFLECT:send_gossip: to   (tp-orodeh,6790)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6790,addr=127.0.0.1)
+)
+REFLECT:send_gossip: to   (tp-orodeh,6789)
+skt_sendto(len=217 ofs=0
+skt_sendto, ret=217 (port=6789,addr=127.0.0.1)
+)
+<len=217>SENDRECV:udp_recv: ml_len=209 usr_len=0
+)
+REFLECT:#clients=2
+skt_recvfrom(skt=484  ofs=0  len=8192  REFLECT: A socket error has occured (Invalid argument,recvfrom,)
+restarting gossip server

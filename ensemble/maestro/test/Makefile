@@ -10,7 +10,9 @@ CCC		= g++
 
 SYSNAME_linux	= LINUX
 SYSNAME_solaris	= SOLARIS
-SYSNAME_sunos4	= SUN4
+SYSNAME_hpux	= HPUX
+SYSNAME_aix	= AIX
+SYSNAME_osf1	= OSF1
 SYSNAME		= $(SYSNAME_$(ENS_OSTYPE))
 
 #**********************************************************
@@ -37,10 +39,9 @@ OBJDIR		= $(ROOT)/conf/$(PLATFORM)
 sparc-solaris_LIB 	= -lsocket -lposix4 -lthread -lpthread \
 			-lnsl -ltermcap -lm
 
-# Defaults to rvr_threads
-sparc-sunos4_LIB	= $(ENS)/contrib/rvr_threads/SUNOS/libthread.a -lm -ltermcap
+i386-linux_LIB		= -lpthread -ltermcap -lm -ldl
 
-i386-linux_LIB		= -lpthread -ltermcap -lm
+hp9000-hpux_LIB		= -ldce -ltermcap -lm
 
 # uncomment HOTLIB with crypto and CRYPTOLIB to build
 # Maestro with the security code included

@@ -1,3 +1,109 @@
+#*************************************************************#
+#
+# MAKEFILE: socket library 
+#
+# Author: Ohad Rodeh  10/2002
+#
+#*************************************************************#
 ENSROOT = ..
+
 include $(ENSROOT)/mk/config.mk
-include $(ENSROOT)/mk/sub.mk
+include $(ENSROOT)/mk/preamble.mk
+
+#*************************************************************#
+# Set the include paths, and include the make rules
+#
+INCLUDE = -I s -I s/$(KIND)
+C_ADD_FLAGS = -I s -I s/$(KIND)
+
+include $(ENSROOT)/mk/rules.mk
+#*************************************************************#
+# Choose whether to use the optimizing compiler or not.
+#
+ifdef OPT
+include $(ENSROOT)/mk/ocamlopt.mk
+else
+include $(ENSROOT)/mk/ocaml.mk
+endif
+#*************************************************************#
+
+USOCKOBJ = \
+	socksupp$(CMO)	\
+	u/socket$(CMO)
+
+SSOCKOBJ = \
+	socksupp$(CMO)	\
+	s/natiov_impl$(CMO)	\
+	s/common_impl$(CMO)	\
+	s/$(KIND)/comm_impl$(CMO)\
+	s/socket$(CMO)
+
+SOCKCOBJ = \
+	s/mm_basic$(OBJ) \
+	s/mm$(OBJ) \
+	s/md5c$(OBJ)	\
+	s/heapc$(OBJ)	\
+	s/$(KIND)/sendrecv$(OBJ)	\
+	s/$(KIND)/gettimeofday$(OBJ) 	\
+	s/$(KIND)/miscsupp$(OBJ)	\
+	s/$(KIND)/multicasts$(OBJ) 	\
+	s/$(KIND)/sockfd$(OBJ) 		\
+	s/$(KIND)/sockopt$(OBJ) 	\
+	s/$(KIND)/select$(OBJ) 
+
+
+#*************************************************************#
+LIBS = usocket$(CMA) ssocket$(CMA) libsock$(ARC)  
+
+all : $(LIBS)
+
+# Call ourselves with the optimizing compiler switch
+#
+opt : 
+	$(MAKE) OPT=yes all
+
+install : $(LIBS) 
+	$(CP) usocket.*    	$(ENSLIB)
+	$(CP) ssocket.*    	$(ENSLIB)
+	$(CP) libsock$(ARC)  	$(ENSLIB)
+	$(CP) s/$(KIND)/sockfd.h $(ENSLIB)
+	$(CP) s/$(KIND)/e_iovec.h $(ENSLIB)
+	$(CP) s/mm.h	$(ENSLIB)
+	$(CP) s/mm_basic.h $(ENSLIB)
+
+
+clean : 
+	$(RM) s/socket.mli u/socket.mli
+	$(CLEANDIR)
+
+#*************************************************************#
+# Actual rules for making the libraries
+#
+u/socket.mli : socket.mli
+	$(CP) socket.mli u/
+
+s/socket.mli : socket.mli
+	$(CP) socket.mli s/
+
+usocket$(CMA) : socksupp$(CMI) u/socket.mli u/socket$(CMI) $(USOCKOBJ) 
+	$(MLLIBR) -o usocket$(CMA) -linkall $(USOCKOBJ)
+
+ssocket$(CMA) :  socksupp$(CMI) s/socket.mli s/socket$(CMI) $(SSOCKOBJ) 
+	$(MLLIBR) -o ssocket$(CMA) -linkall $(SSOCKOBJ)
+
+libsock$(ARC): $(SOCKCOBJ)
+	$(MKLIB) $(MKLIBO)libsock$(ARC) $(SOCKCOBJ)
+	$(RANLIB) libsock$(ARC)
+
+
+#*************************************************************#
+# Dependencies
+#
+depend : 
+	ocamldep -I u -I s -I s/$(KIND) \
+	*.ml *.mli u/*.ml  u/*.mli s/*.ml s/*.mli \
+	s/$(KIND)/*.ml s/$(KIND)/*.mli	> $(DEPEND)
+
+include $(DEPEND)
+
+#*************************************************************#

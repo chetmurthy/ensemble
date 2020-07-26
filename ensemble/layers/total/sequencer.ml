@@ -2,13 +2,16 @@
 (* SEQUENCER.ML                                                 *)
 (* Author: Roy Friedman, 3/96                                   *)
 (* Bug fixes: Mark Hayden, 10/96				*)
+(* Bug fixes: Ohad Rodeh, 9/02        	  			*)
 (* Based on the C implementation of dynseq but without rotating	*)
 (* the sequencer.					        *)
-(*                                                              *)
-(* The coordinator of the group acts as a sequencer; in order   *)
-(* to send messages, processes must send the messages pt2pt to  *)
-(* the sequencer, who then broadcasts these messages to         *)
-(* the rest of the group.                                       *)
+(****************************************************************)
+(*                                                              
+ * The coordinator of the group acts as a sequencer; in order   
+ * to send messages, processes must send the messages pt2pt to  
+ * the sequencer, who then broadcasts these messages to         
+ * the rest of the group.                                       
+ *)
 (****************************************************************)
 open Layer
 open View
@@ -155,12 +158,12 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       if s.blocking then (
       	eprintf "SEQUENCER:warning dropping ECast after EBlockOk\n" ;
 	Iovecl.free iov
-      ) else if ls.rank = s.seq_rank then (
+      ) else if ls.rank =| s.seq_rank then (
 	(* If I'm the sequencer, send out immediately as an ordered message.
 	 * Otherwise, send pt2pt to sequencer and stash a copy of it in
 	 * case the sequencer fails and we need to resend it.
 	 *)
-	if ls.nmembers > 1 then (
+	if ls.nmembers >| 1 then (
 	  let iov = Iovecl.copy iov in
 	  dn ev abv (Ordered(ls.rank))
 	);

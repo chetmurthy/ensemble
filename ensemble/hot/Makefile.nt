@@ -39,7 +39,7 @@ HOT_LINK = $(C_LINK)
 FLAG = ok
 HOT_CFLAGS = -DTHREADED_SELECT
 HOT_MLLINK = # empty
-HOT_LINK  = -lthread -lposix4 -ltermcap -lsocket -lnsl -lm -ldl
+HOT_LINK  = -lthread -lposix4 -ltermcap -lsocket -lnsl -lm -lresolv -ldl
 HOT_THREAD_OBJ = solaris_thread$(OBJ)
 !endif
 
@@ -56,7 +56,7 @@ HOT_THREAD_OBJ = solaris_thread$(OBJ)
 # The -D_RENTRANT is needed for the use of threads
 !if "$(PLATFORM)" == "i386-linux"
 FLAG = ok
-HOT_CFLAGS	= -DTHREADED_SELECT -DUSE_PTHREAD_SEMAPHORE -DUSE_PTHREAD_LOCK -D_REENTRANT -DLINUX_THREADS -Wno-unused
+HOT_CFLAGS	= -DTHREADED_SELECT -D_REENTRANT -DLINUX_THREADS -Wno-unused
 HOT_MLLINK	= # empty
 HOT_LINK	= -lpthread -ltermcap -lm -ldl
 HOT_THREAD_OBJ = pthread_intf$(OBJ)
@@ -83,10 +83,10 @@ HOT_THREAD_OBJ = pthread_intf$(OBJ)
 # HP9000-HPUX
 !if "$(PLATFORM)" == "hp9000-hpux"
 FLAG = ok
-HOT_CFLAGS	= -DINLINE_PRAGMA
+HOT_CFLAGS	= -DHPUX_THREADS -DINLINE_PRAGMA
 HOT_MLLINK	= # empty
-HOT_LINK	=
-HOT_THREAD_OBJ = pthread_intf$(OBJ)
+HOT_LINK	= -ltermcap -lm -ldce
+HOT_THREAD_OBJ = hpux_thread$(OBJ)
 !endif
 
 # MIPS-IRIX64
@@ -114,42 +114,42 @@ all :
 .ml.cmx: 
 	ocamlopt $(MLFLAGS) -I $(ENSLIB) -c $<
 .c.o:
-	$(CC) -c $(CFLAGS) $(HOT_CFLAGS) \
-	-I $(ENSROOT)\hot\include -I $(ENSLIB) \
+	$(CC) -c $(CFLAGS) $(HOT_CFLAGS)\
+	-I $(ENSROOT)\hot\include -I $(ENSLIB)\
 	$< -o $@
 .c.obj:
-	$(CC) -c $(CFLAGS) $(HOT_CFLAGS) \
-	-I $(ENSROOT)\hot\include -I $(ENSLIB) \
+	$(CC) -c $(CFLAGS) $(HOT_CFLAGS)\
+	-I $(ENSROOT)\hot\include -I $(ENSLIB)\
 	$< -o $@
 
 #*************************************************************#
 # HOT files
 
-HOT_SHAREDOBJ = \
+HOT_SHAREDOBJ =\
 	hot_util$(CMO)
 
-HOT_INBOARDOBJ = \
-	$(HOT_SHAREDOBJ)	\
-	hot_appl$(CMO)		\
+HOT_INBOARDOBJ =\
+	$(HOT_SHAREDOBJ)\
+	hot_appl$(CMO)\
 	hot_inboard$(CMO)
 
-HOT_OUTBOARDOBJ = \
-	$(HOT_SHAREDOBJ)		\
+HOT_OUTBOARDOBJ =\
+	$(HOT_SHAREDOBJ)\
 	hot_outboard$(CMO)
 
-HOT_SHAREDCOBJ = \
-	hot_mem$(OBJ)	\
-	hot_error$(OBJ)	\
-	hot_sys$(OBJ)	\
-	hot_msg$(OBJ)	\
+HOT_SHAREDCOBJ =\
+	hot_mem$(OBJ)\
+	hot_error$(OBJ)\
+	hot_sys$(OBJ)\
+	hot_msg$(OBJ)\
 	$(HOT_THREAD_OBJ) # see config.mk
 
-HOT_INBOARDCOBJ = \
-	$(HOT_SHAREDCOBJ)		\
+HOT_INBOARDCOBJ =\
+	$(HOT_SHAREDCOBJ)\
 	hot_inboard_c$(OBJ)
 
-HOT_OUTBOARDCOBJ = \
-	$(HOT_SHAREDCOBJ)		\
+HOT_OUTBOARDCOBJ =\
+	$(HOT_SHAREDCOBJ)\
 	hot_outboard_c$(OBJ)
 
 #*************************************************************#
@@ -164,7 +164,7 @@ CRYPTO_CLIBS =
 
 # To compile with cryptographic support
 #
-#BASIC_ENSCONF_skt = $(CUSTOM) $(LIBUNIX) $(LIBMLSOCK) $(ENSLIBS) $(LINK_THR) \
+#BASIC_ENSCONF_skt = $(CUSTOM) $(LIBUNIX) $(LIBMLSOCK) $(ENSLIBS) $(LINK_THR)\
 #	$(CRYPTOLIB_ML)
 #CLIBS = $(CRYPTOLIB_C)
 #CRYPTO_CLIBS = $(CRYPTOLIB_JUST_C)
@@ -172,11 +172,11 @@ CRYPTO_CLIBS =
 
 HOT_LINK_FULL = $(CRYPTO_CLIBS) $(HOT_LINK)  
 
-all : \
-	libhot$(ARC)	\
-	libhoto$(ARC)	\
-	outboard$(EXE)	\
-	hot_testo$(EXE) \
+all :\
+	libhot$(ARC)\
+	libhoto$(ARC)\
+	outboard$(EXE)\
+	hot_testo$(EXE)\
 	hot_test$(EXE)
 
 opt : 
@@ -200,12 +200,12 @@ hot$(OBJ): $(HOT_INBOARDOBJ)
 
 # Put all the libraries, ML code, and runtime into one library
 libhot$(ARC): $(HOT_INBOARDCOBJ) hot$(OBJ) $(ENSLIB)\libsock$(ARC)
-	$(PARTIALLD) $(PARTIALLDO)libhot$(OBJ) \
-	  hot$(OBJ)	\
-	  $(HOT_INBOARDCOBJ)	\
-	  $(ENSLIB)\libsock$(ARC)	\
-	  $(OCAML_LIB)\libunix$(ARCS) \
-	  $(CLIBS) \
+	$(PARTIALLD) $(PARTIALLDO)libhot$(OBJ)\
+	  hot$(OBJ)\
+	  $(HOT_INBOARDCOBJ)\
+	  $(ENSLIB)\libsock$(ARC)\
+	  $(OCAML_LIB)\libunix$(ARCS)\
+	  $(CLIBS)\
 	  $(MLRUNTIME)
 	$(MKLIB) $(MKLIBO)libhot$(ARC) libhot$(OBJ)
 	$(RANLIB) libhot$(ARC)
@@ -222,68 +222,68 @@ outboard$(EXE): $(ENSCONFDEP) $(HOT_OUTBOARDOBJ)
 
 # Generate the hot_test executable
 hot_test$(EXE): libhot$(ARC) hot_test$(OBJ)
-	$(CC)  -o hot_test$(EXE) \
-	  hot_test$(OBJ) \
-	  libhot$(ARC) \
+	$(CC)  -o hot_test$(EXE)\
+	  hot_test$(OBJ)\
+	  libhot$(ARC)\
 	  $(HOT_LINK_FULL)
 
 # Generate the outboard test
 hot_testo$(EXE): libhoto$(ARC) hot_test$(OBJ)
-	$(CC)  -o hot_testo$(EXE) \
-	  hot_test$(OBJ) \
-	  libhoto$(ARC) \
+	$(CC)  -o hot_testo$(EXE)\
+	  hot_test$(OBJ)\
+	  libhoto$(ARC)\
 	  $(HOT_LINK_FULL)
 
 # Generate the performance test
 hot_perf$(EXE): libhoto$(ARC) hot_perf$(OBJ) 
-	$(CC)  -o hot_perf$(EXE) \
-	  hot_perf$(OBJ) \
-	  libhoto$(ARC) \
+	$(CC)  -o hot_perf$(EXE)\
+	  hot_perf$(OBJ)\
+	  libhoto$(ARC)\
 	  $(HOT_LINK_FULL)
 
 # Purified version of outboard test
 p_test$(EXE): libhoto$(ARC) hot_test$(OBJ) 
-	$(PURIFY) $(CC)  -o p_test$(EXE) \
-	  hot_test$(OBJ) \
-	  libhoto$(ARC) \
+	$(PURIFY) $(CC)  -o p_test$(EXE)\
+	  hot_test$(OBJ)\
+	  libhoto$(ARC)\
 	  $(HOT_LINK_FULL) $(PURIFY_LIB)
 
 # Generate the hot_test executable
 hot_test2$(EXE): libhot$(ARC) hot_test2$(OBJ)
-	$(CC)  -o hot_test2$(EXE) \
-	  hot_test2$(OBJ) \
-	  libhot$(ARC) \
+	$(CC)  -o hot_test2$(EXE)\
+	  hot_test2$(OBJ)\
+	  libhot$(ARC)\
 	  $(HOT_LINK_FULL)
 
 hot_test2o$(EXE): libhoto$(ARC) hot_test2$(OBJ)
-	$(CC)  -o hot_test2o$(EXE) \
-	  hot_test2$(OBJ) \
-	  libhoto$(ARC) \
+	$(CC)  -o hot_test2o$(EXE)\
+	  hot_test2$(OBJ)\
+	  libhoto$(ARC)\
 	  $(HOT_LINK_FULL)
 
 hot_test3$(EXE): libhot$(ARC) hot_test3$(OBJ)
-	$(CC)  -o hot_test3$(EXE) \
-	  hot_test3$(OBJ) \
-	  libhot$(ARC) \
+	$(CC)  -o hot_test3$(EXE)\
+	  hot_test3$(OBJ)\
+	  libhot$(ARC)\
 	  $(HOT_LINK_FULL)
 
 hot_ping$(EXE): libhot$(ARC) hot_ping$(OBJ)
-	$(CC)  -o hot_ping$(EXE) \
-	  hot_ping$(OBJ) \
-	  libhot$(ARC) \
+	$(CC)  -o hot_ping$(EXE)\
+	  hot_ping$(OBJ)\
+	  libhot$(ARC)\
 	  $(HOT_LINK_FULL)
 
 hot_pingo$(EXE): libhoto$(ARC) hot_ping$(OBJ) outboard$(EXE)
-	$(CC)  -o hot_pingo$(EXE) \
-	  hot_ping$(OBJ) \
-	  libhoto$(ARC) \
+	$(CC)  -o hot_pingo$(EXE)\
+	  hot_ping$(OBJ)\
+	  libhoto$(ARC)\
 	  $(HOT_LINK_FULL)
 
 # Purified version of hot_test
 phot_test: libhot$(ARC) hot_test$(OBJ)
-	purify $(CC)  -o hot_test$(EXE) \
-	  hot_test$(OBJ) \
-	  libhot$(ARC) \
+	purify $(CC)  -o hot_test$(EXE)\
+	  hot_test$(OBJ)\
+	  libhot$(ARC)\
 	  $(HOT_LINK_FULL)
 
 

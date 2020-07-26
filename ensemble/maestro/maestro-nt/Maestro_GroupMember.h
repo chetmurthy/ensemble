@@ -1,4 +1,4 @@
-// $Header: /cvsroot/ensemble/maestro/maestro-nt/Maestro_GroupMember.h,v 1.5 2002/07/28 13:14:30 orodeh Exp $
+// $Header: /cvsroot/ensemble/maestro/maestro-nt/Maestro_GroupMember.h,v 1.6 2002/10/13 10:06:40 orodeh Exp $
 
 #ifndef __MAESTRO_GROUP_MEMBER_H__
 #define __MAESTRO_GROUP_MEMBER_H__

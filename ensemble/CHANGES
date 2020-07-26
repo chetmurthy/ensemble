@@ -1,3 +1,8 @@
+Ensemble 1.39
+-------------
+1. Port to Solaris and HPUX, donated by Bernd Harries (bha@gmx.de).
+2. Removed the need for ENS_ABSROOT.
+
 Ensemble 1.38
 -------------
 1. First formal release of the JNI for CE.

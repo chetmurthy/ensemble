@@ -84,11 +84,6 @@ val string_of_state : state -> string
 
 val id_of_state : state -> id
 
-(* To overcome a strange typing problem. This function
- * simply redirects to Version.string_of_id.
-*)
-val string_of_version_id : Version.id -> string
-
 (**************************************************************)
 
 (* VIEW.LOCAL: information about a view that is particular to 

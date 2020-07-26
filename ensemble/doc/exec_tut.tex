@@ -1,0 +1,166 @@
+\section{Partitionable Execution Service: dsh and PEX}
+
+\mlval{dsh} is a remote execution shell similar to Unix
+\mlval{rsh} but
+allows programs (distributed or not) to be started on multiple
+machines\footnote{This description was written by Takako M. Hickey}.
+A user can also specify kinds of machines he or she wants
+programs to run.
+ 
+\mlval{dsh} is actually an example client program for partitionable
+execution service (PEX).  PEX allows clients to manage
+multiple related long running processes via sessions.
+PEX replicates sessions for high-availability
+and ensures consistency of replica, so that processes will not be
+lost due to machine failures or network partitions.
+PEX consists of session servers (\mlval{sessvr}), which manage sessions,
+and process servers (\mlval{procsvr}), which handle execution of
+processes on individual machines.
+ 
+To use \mlval{dsh}, PEX must also be setup.
+One set of PEX can be shared by multiple users if they start
+\mlval{dsh} with the same set of environment variables (described
+shortly) as PEX.
+Currently commands submitted to PEX via \mlval{dsh}
+are run under the same environment as that of PEX.
+ 
+PEX is an on-going project.  A separate research paper is available.
+
+
+\subsection{Starting PEX}
+
+All programs related to PEX (\mlval{groupd, sessvr, procsvr, pexmgr,
+dsh}) must be started with environmental variables
+\mlval{ENS\_ID, ENS\_MODES, ENS\_PORT, ENS\_GROUPD\_HOSTS,
+ENS\_GROUPD\_PORT, ENS\_GOSSIP\_HOSTS, ENS\_GOSSIP\_PORT,
+ENS\_EXECSVR\_HOSTS, ENS\_EXECSVR\_PORT, ENS\_DBDEFAULT}
+set the same.
+\mlval{ENS\_EXECSVR\_HOSTS} and \mlval{ENS\_EXECSVR\_PORT}
+specify where to find \mlval{sessvr}.
+\mlval{ENS\_DBDEFAULT} is an optional machine database file described
+later.  e.g.,
+
+\begin{verbatim}
+%setenv ENS_ID              shared
+%setenv ENS_MODES           UDP
+%setenv ENS_PORT            9100
+%setenv ENS_GROUPD_HOSTS    eclair0:eclair1
+%setenv ENS_GROUPD_PORT     9200
+%setenv ENS_GOSSIP_HOSTS    eclair0:eclair1
+%setenv ENS_GOSSIP_PORT     9300
+%setenv ENS_EXECSVR_HOSTS   eclair0:eclair1
+%setenv ENS_EXECSVR_PORT    9400
+%setenv ENS_DBDEFAULT       ~/ensemble/execsvr/dbinput
+\end{verbatim}
+ 
+To start PEX, start group membership service
+\mlval{groupd} on any machine just like for any Ensemble application,
+then start \mlval{sessvr} on any machines (the minimum of one, but
+more than one will provide fault-tolerance of machine that runs
+the server) and \mlval{procsvr} on each of the machines that
+processes may run.
+
+\begin{verbatim}
+eclair0% groupd
+eclair0% sessvr -groupd
+eclair1% sessvr -groupd
+eclair0% procsvr -groupd
+eclair1% procsvr -groupd
+eclair2% procsvr -groupd
+\end{verbatim}
+
+Once PEX is started, \mlval{dsh} can be used to run
+programs.  For example to run two programs producer and consumer on
+two ``least loaded'' machines (as defined by machine database at
+\mlval{sessvr}) do:
+\begin{verbatim}
+% dsh -c "producer,consumer" -leastload 2
+\end{verbatim}
+
+
+\subsection{Using dsh}
+The syntax of \mlval{dsh} is as follows:
+\begin{verbatim}
+dsh -c commands [machspec] [-p procspec]
+\end{verbatim}
+
+Use a comma to separate multiple commands to be executed in
+parallel, and use a colon to separate multiple commands to
+be executed sequentially.
+
+machspec is 0 or more of:
+\begin{center}
+\begin{tabular}{|l|l|}					   \hline
+option			& description			\\ \hline
+-m machine\_list	& specific list of machines	\\
+-name machine\_name		& specific machine	\\
+-arch machine\_architecture	& machine architecture	\\
+-os os\_type			& operating system type	\\
+-data dataname			& has specific data	\\
+-leastload n			& n least loaded	\\
+-loadbount load			& bounded load	\\
+-random n			& random n	\\ \hline
+\end{tabular}
+\end{center}
+
+
+Some machines may have restrictions on types of programs it
+allows to run.  To use machines with restrictions process must provide
+specification of its properties as a list of attribute-value pairs
+separated by semicolons.  e.g.,
+\begin{verbatim}
+-p "project=ensemble;owner=takako"
+\end{verbatim}
+
+
+\subsection{Editing machine database}
+\mlval{sessvr} maintains a database of machines in the cluster
+it serves.  Minimally, each entry contains information about
+machine name, address, and load.  More information can be added either
+at the startup of \mlval{sessvr} via database initialization file
+or at runtime via a database editor \mlval{dbedit}.
+
+The database initialization file contains a series of attribute-value
+pairs.  Entries are separated by specification of the key attribute
+``name''.  For example, the following groups the first three lines
+into one entry.
+\begin{verbatim}
+name=eclair0
+machtype=sparc
+ostype=sunos4
+name=eclair1
+\end{verbatim}
+The default initialization file is \mlval{execsvr/dbinput}.
+A different file can be specified via environmental variable
+\mlval{ENS\_DBDEFAULT}.
+
+
+\mlval{dbedit} allows inspection and editing of the machine database
+while \mlval{sessvr} is running.
+
+Supported operations are:
+\begin{center}
+\begin{tabular}{|l|l|}				   \hline
+command					& description	\\ \hline \hline
+g key=val				& get entry \\
+d key=val				& delete entry \\
+c key=val;attr1=val1;attr2=val2;...	& change entry \\
+h					& help \\ \hline
+\end{tabular}
+\end{center}
+
+Currently all attributes are assumed to be of type string,
+and no mechanism is provided to add in machine restrictions.
+
+\subsection{Managing PEX}
+To find out status of machines running PEX, execute
+\mlval{pexmgr}.
+\begin{verbatim}
+% pexmgr
+\end{verbatim}
+
+To shutdown PEX, start \mlval{pexmgr}
+with \mlval{-shutdown} option.
+\begin{verbatim}
+% pexmgr -shutdown
+\end{verbatim}

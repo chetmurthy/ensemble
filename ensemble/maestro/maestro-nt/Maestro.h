@@ -1,4 +1,4 @@
-/* $Header: /cvsroot/ensemble/maestro/maestro-nt/Maestro.h,v 1.4 2002/07/28 13:14:30 orodeh Exp $
+/* $Header: /cvsroot/ensemble/maestro/maestro-nt/Maestro.h,v 1.5 2002/10/13 10:06:40 orodeh Exp $
  *
  * Contents: Standard header file for Maestro/Ensemble applications.
  *

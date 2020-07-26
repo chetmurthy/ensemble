@@ -1,35 +1,54 @@
-     RELEASE_NOTES for Ensemble version 1.38
+     RELEASE_NOTES for Ensemble version 1.39
 
 Author: Ohad Rodeh
-Last updated: 25/08/2002
+Last updated: 26/10/2002
 
 RELEASE_NOTES
 
-  This distribution includes a first release of a Java Native
-Interface (JNI) for Ensemble. It is based on the native C-interface
-(CE), and provides safe access from Java to the raw performance of the
-Ensemble messaging system. Preliminary tests show good performance in
-terms of both latency and througput. Currently, the interface works
-only on Linux, though it *should* work on other Unix like systems as
-well.  If there is interest, it can be ported to windows. An
-overview of the interface was added to the system tutorial, and
-javadoc style documentation is also included.
+  This distribution includes ports to HPUX and Solaris donated by
+Bernd Harries (bha@gmx.de). The socket library has been reworked,
+generic code was split away from platform specific code. The five
+supported total ordering protocols have been brought up to date. A
+document describing the Ensemble lower-level transport and io-vector
+system has been added to the tutorial. 
 
-A major bug effecting applications using flow-control with CE was
-fixed. Other than that: 
-1. Minor bugs were fixed
-2. Some cleanups 
-3. C++ compatibility headers were added to the CE .h files. This
-   allows C++ applications to use CE.
-4. The new version of the OCaml compiler, 3.06,  was used.
+  A bug affecting use of gossip on win32 systems has been reported,
+and has not been fixed in this distibution. The next distribution will
+include a fix for it.
 
-	Ohad.
+   IBM research in Israel has been added to the list of copyright
+ holders along with Cornell and the Hebrew University. This does not
+ change the terms of the licence, the system remains free of charge
+ in the spirit of its BSD licence. 
+
+A more specific list of changes:
+1. Port to Solaris and HPUX, donated by Bernd Harries (bha@gmx.de).
+3. Improved SEQBB performance. 
+4. Fixed ref-count and correctness bugs in SEQUENCER, TOTEM, TOTAL.
+5. Reworked the socket library
+   - Use the new ocaml-3.06 Unix setsock calls 
+   - split between the Unix stuff and win32 stuff, this gets read of the
+     all the #ifdefs. 
+   - Rewritten the makefiles
+   - Improved the exported .H files
+   - cleanup
+6. Improved safety of reference counted buffers. 
+7. Added a first version of a document describing the Ensemble lower-level 
+   transport and io-vector system. It can be found in the tutorial.
+8. Removed the need for the ENS_ABSROOT environment variable. This was
+   previously needed on win32 systems for 'make clean' purposes.
+9. Bug effecting gossip on win32 systems. When an application using a
+   gossip server dies, the gossip server goes into an infinite loop
+   due to an endless sequence of socket errors. We are working on
+   fixing this behaviour.
+
 
 OCAML COMPILER VERSION
   We are using version 3.06 for this version. 
 
 PORTABILITY
-  This version was tested on Linux, and WIN2000. 
+  This version was tested on Linux, and WIN2000. It was also used on Solaris 
+(with a gcc system) and HPUX.
 
 
 

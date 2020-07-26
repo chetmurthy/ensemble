@@ -1,0 +1,62 @@
+\begin{Layer}{SYNC}
+
+This layer implements a protocol for blocking a group during view changes.  One
+member initiates the SYNC protocol by delivering a \Dn{Block} event from above.
+Other members will receive an \Up{Block} event.  After replying with a
+\Dn{BlockOk}, the layers above the SYNC layer should not broadcast any further
+messages.  Eventually, after all members have responded to the \Up{Block} and
+all broadcast messages are stable, the member that delivered the \Dn{Block}
+event will recieve an \Up{BlockOk} event.
+
+\begin{Protocol}
+This protocol is very inefficient and needs to be reimplemented at some
+point.  The Block request is broadcast by the coordinator.  All members
+respond with another broadcast.  When the coordinator gets all replies, it
+delivers up an \Up{BlockOk}
+\end{Protocol}
+
+\begin{Parameters}
+\item None
+\end{Parameters}
+
+\begin{Properties}
+\item
+Requires FIFO, reliable broadcasts with stability detection.
+\item
+Expects at most one \Dn{Block} from above.
+\item
+Always delivers at most one \Up{BlockOk} event.  Only delivers an
+\Up{BlockOk} if a \Dn{Block} was recieved from above.
+\item
+When at least one member recieves a \Dn{Block} event, all live members will
+eventually deliver an \Up{Block} event.
+\item
+Expects at most one \Dn{BlockOk} event from above.  Expects a \Dn{BlockOk} from
+above only if an \Up{Block} event was previously delivered by this layer.
+\item
+Expects a \Dn{Block} to the layers below will be replied with an \Up{Block} from
+below.
+\item
+When all members have delivered a \Dn{BlockOk} event from above and all
+broadcast messages have been acknowledged (by non-failed members),
+eventually all members who delivered a \Dn{Block} event will receive an
+\Up{BlockOk} event from this layer.
+\end{Properties}
+
+\begin{Sources}
+\sourcesfile{sync.ml}
+\end{Sources}
+
+\begin{GenEvent}
+\genevent{\Up{BlockOk}}
+\genevent{\Dn{Block}}
+\genevent{\Dn{Cast}}
+\end{GenEvent}
+
+\begin{Testing}
+\item
+The CHK\_SYNC protocol layer checks for SYNC safety conditions.
+\item 
+see also the VSYNC stack
+\end{Testing}
+\end{Layer}

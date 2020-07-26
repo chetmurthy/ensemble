@@ -1,46 +1,71 @@
 --------------------------------------------------------
-BUGS: 
-
-rand
-
-rand -add_prop total -s 13000
-
-TODO for 1.38
--------------
-0. Convert the java demos to jar format, should be easy. 
-1. Fix the rest of the total-ordering protocols: (Totem, Total, Sequencer?).
-2. Add -fPIC to the CFLAGS.
-3. Allow CE to work with ENSCONF_unix, not just ENSCONF_skt.
-
-4. Debug groupd : 
-   - bug 1: uncaught exception
-5. Complete the transport-mode document
-6. Check what happens when we move sockets to OVERLAPPED on win32
-7. Performance: 
+Future
+------
+1. Performance: 
   - 'ce_perf -rpc' spends A LOT of time converting ML sockets to C sockets.
   - Check other cases
   - perhaps write a paper on performance improvements and software experience
     between 1.00v and 1.36v.
-6. The 32bit counter in ce_outboard, that counts stack ids, can overflow.
-7. Fix the DLL version
-8. Split out security and groupd
-9. port the security-infrastructure to win32 (Xavier's library)
-10. write a configure script (in ML)
-11. Use the new Unix setsock calls for Unix part of socket/s
-13. Convert from C directly to ML actions, instead of going through an intermidiate representation. 
+2. The 32bit counter in ce_outboard, that counts stack ids, can overflow.
+3. Convert from C directly to ML actions, instead of going through an intermidiate representation. 
+4. Split out security and groupd
+5. write a configure script (in ML)
+6. Add -fPIC to the CFLAGS.
+7. Debug groupd : 
+   - bug 1: uncaught exception
+10. Prompt for a view change if the current sequence number is close 
+    to wrapping around. 
 
 --------------------------------------------------------
-Probably never:
 
-3. Port to solaris.
+TODO for 1.40
+-------------
+0. Fixed a bug affecting gossip on win32 systems. Previously, when an
+   application using a gossip server died, the gossip server could go
+   into an infinite loop due to an endless sequence of socket errors. To
+   solve this, we now close down the gossip-server socket, and open a new
+   one in these cases.
+1. Makefiles 
+   - Cleanup the makefiles, who is using preamble? 
+   - Use an object directory, and send all created objects there. 
+   - Stop copying executables
+1. Convert the java demos to jar format, should be easy. 
+2. Allow CE to work with ENSCONF_unix, not just ENSCONF_skt.
+4. Check what happens when we move sockets to OVERLAPPED on win32
+5. Create DLLs for win32
+6. port the security-infrastructure to win32 (Xavier library)
+7. Use a simple mechanism for passing actions to the Ensemble thread, 
+   instead of using sockets.
+
 --------------------------------------------------------
 
-done:
------
-1. Finished work on a JNI port for CE.
-2. Fixed reference counting bugs in total-ordering and Local protocols.
-3. Port to ocaml-3.05 (use the direct marshaling C<->ML)
+done: 1.39
+----------
+1. Port to Solaris and HPUX, donated by Bernd Harries (bha@gmx.de).
+2. Removed the need for ENS_ABSROOT.
+3. Improved SEQBB performance. 
+4. Fixed ref-count and correctness bugs in SEQUENCER, TOTEM, TOTAL.
+5. Reworked the socket library
+   - Use the new Unix setsock calls 
+   - split between the Unix stuff and win32 stuff, this gets read of the
+     #ifdefs. 
+   - Rewritten the makefiles
+   - cleanup
+6. Fixed the : "rand -add_prop total -s 13000" bug
+7. Added a first version of a document describing the Ensemble lower-level 
+   transport and io-vector system.
 
+todo:
+1. run long tests on SEQBB, SEQUENCER, TOTEM , TOTAL.
+2. Set the total layer to SEQBB by default in the end. 
++ 3. Return the situation with Socksupp back to where it was
++ 4. Fix the dependency issues: we need to create .depend files in all the 
+     right places. 
+5. Fix the Hsys.recvfrom bugs on win32. This occurs with both usocket.cma 
+   and ssocket.cma. Simply run a gossip server, an mtalk program and kill mtalk. 
+6. Test :
+   - interoperatbility between Unix and win32
+   - UDP,TCP,DEERING 
 --------------------------------------------------------
 
 Check
@@ -64,54 +89,3 @@ ML suggestions:
     Array.map ident alpah_arr === alpha_arr.
 5. Simple escape-analysis.
 
---------------------------------------------------------
-
-Version 1.33
-------------
-1. Rewritten all the makefiles.
-2. Update the INSTALL.htm file, to describe how the new makefiles work.
-4. Add the copyright to the files.
-5. Copyright violations have been fixed, the code is now clean, containing
-   no CAML code. 
-6. Work is underway to add IBM to the copyright holders. 
-7. Use iovectors on WIN2000: (Check), does not really work. 
-
------------------------------------------------------------
-1.34
-----
-DONE
-1. Added (almost) zero-copy to WIN32, and complete scatter-gather support.
-2. Port CE to WIN32.
-4. Port to ocaml-3.04.
-5. Move java documentation to doc/
-
-1.35
-----
-0. Re-Added zero-copy marhaling for ML applications. (!)
-1. Check that ocamldep works (win32). +
-2. Check that zero-copy marshaling is bug free.
-4. complete porting of socktest to win32. reading from stdin does not
-   work.
-
---------------------------------------------------------
-TESTING: 
-
---------------------------------------------------------
-1.36
-----
-4. More serious testing.
-2. Shared libraries (Unix), Dlls (on windows).
-
-
-Version 1.5
------
-2. Set log_iov inside Appl.monitor, instead of inside the stable 
-   layer.
-9. Add documentation for the way reference counting is performed, as well as descriptions of the Router/Transport/Alarm interfaces.
-7. Check why we block in TCP recv.
-6. Reduce header length from 8 to 4 bytes (ml_len,iovec_len).
-0. Complete debugging the wbml application. 
-1. groupd : support for SVS.
-2. Throw out most of HOT by writing an outboard mode for CE.
-
---------------------------------------------------------

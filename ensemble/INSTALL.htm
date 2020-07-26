@@ -265,10 +265,8 @@ the libraries. In sh, you set the CAMLLIB variable like this:
 We recommend you add these to your '.tcshrc' or equivalent for your shell.
 </ul>
 
-Another important variable is ENS_ABSROOT. This denotes the absolute
-path to the root of the distribution. There are several other
-environment variables that are useful when using the system. A
-glossary appears <a href="#env_glossary">here</a>.
+There are several other environment variables that are useful when
+using the system. A glossary appears <a href="#env_glossary">here</a>.
 
 <a NAME="socket"></a>
 <h3>Building the Socket library</h3>
@@ -674,7 +672,7 @@ tutorial.
 
 <pre>
 # The set of communication transports.
-setenv ENS_MODES "UDP" #"TCP:DEERING"
+setenv ENS_MODES "DEERING" #"UDP:TCP"
 
 # The user-id
 setenv ENS_ID    $USER
@@ -706,8 +704,6 @@ setenv ENS_PGP_VERSION "2.6"
 #where the outboard executable resides
 setenv ENS_OUTBOARD "/home/orodeh/e/1.20a/ensemble/demo/outboard"
 
-#The source of the distribution
-setenv ENS_ABSROOT "/home/orodeh/e/1.20a"
 </pre>
 
 <br>
@@ -716,6 +712,6 @@ setenv ENS_ABSROOT "/home/orodeh/e/1.20a"
 <br>
 </body>
 <!-- hhmts start -->
-Last modified: Thu Apr  4 11:50:22 IDT 2002
+Last modified: Thu Sep 26 10:56:07 Pacific Daylight Time 2002
 <!-- hhmts end -->
 </html>
