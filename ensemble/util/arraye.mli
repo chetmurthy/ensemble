@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* ARRAYE.MLI : Non-floating point arrays *)
 (* Author: Mark Hayden, 4/95 *)
 (**************************************************************)
@@ -70,5 +61,4 @@ val sendv : Hsys.send_info -> Hsys.buf Hsys.refcnt Hsys.iovec t -> int
 val sendtov : Hsys.sendto_info -> Hsys.buf Hsys.refcnt Hsys.iovec t -> unit
 val sendtosv : Hsys.sendto_info -> Hsys.buf -> Hsys.buf Hsys.refcnt Hsys.iovec t -> unit
 val sendtovs : Hsys.sendto_info -> Hsys.buf Hsys.refcnt Hsys.iovec t -> Hsys.buf -> unit
-val eth_sendtovs : Hsys.eth_sendto_info -> Hsys.buf Hsys.refcnt Hsys.iovec t -> Hsys.buf -> unit
 (**************************************************************)

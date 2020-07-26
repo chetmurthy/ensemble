@@ -1,12 +1,3 @@
-(**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
 (* This module contains the slave endpoint code *)
 (* Version 0, by Sam Weber *)
 

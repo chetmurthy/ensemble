@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* MFLOW.ML : MFLOW window-based flow control. *)
 (* Authors: Zhen Xiao, Mark Hayden, 2/97 *)
 (* Note that the window-cost of a message here is some

@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* IOVEC.ML *)
 (* Author: Mark Hayden, 5/96 *)
 (**************************************************************)
@@ -187,7 +178,6 @@ let sendv = Refcnt.sendv
 let sendtov = Refcnt.sendtov
 let sendtosv = Refcnt.sendtosv
 let sendtovs = Refcnt.sendtovs
-let eth_sendtovs = Refcnt.eth_sendtovs
 let iovecl_copy = Refcnt.iovecl_copy
 let iovecl_take = Refcnt.iovecl_take
 (**************************************************************)

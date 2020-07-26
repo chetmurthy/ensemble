@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* ARRAYF.ML : functional arrays *)
 (* Author: Mark Hayden, 4/95 *)
 (**************************************************************)
@@ -151,5 +142,4 @@ let sendv = Arraye.sendv
 let sendtov = Arraye.sendtov
 let sendtosv = Arraye.sendtosv
 let sendtovs = Arraye.sendtovs
-let eth_sendtovs = Arraye.eth_sendtovs
 (**************************************************************)

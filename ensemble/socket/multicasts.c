@@ -1,13 +1,4 @@
 /**************************************************************/
-/*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
-/**************************************************************/
 /* MULTICAST.C: support for IPMC operations. */
 /* Author: Ohad Rodeh 7/2001 */
 /* Based on code by Mark Hayden */

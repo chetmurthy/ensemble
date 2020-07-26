@@ -6,6 +6,7 @@
 # compilation parameters.  For NT.
 #
 # Authors: Mark Hayden, Robbert vanRenesse, 4/96
+# Changes: Ohad Rodeh, 8/2001
 #
 #*************************************************************#
 # C Compilation macros.  Used for compiling Socket library
@@ -15,11 +16,34 @@
 # C compiler to use
 CC	= cl /nologo
 
+#*************************************************************#
+# The default cryptographic library. We use OpenSSL
+# that compiles and runs on many different platforms. 
+
+CRYPTO_LINK = # no crypto by default
+
+# Where to find the OpenSSL cryptographic library. 
+#OPENSSL_LIB = C:\cygwin\usr\lib\libcrypto.a
+#OPENSSL_INC = -I C:\cygwin\usr\include\openssl -I C:\cygwin\usr\include
+
+#CRYPTOLIB_ML = \
+#	$(ENSLIB)/crypto$(CMA)	
+
+#CRYPTOLIB_C = \
+#	$(ENSLIB)/libcryptoc$(ARC) \
+#	$(OPENSSL_LIB)
+
+#CRYPTO_LINK = \
+#	-cclib $(ENSLIB)/libcryptoc$(ARC) \
+#	-cclib 	$(OPENSSL_LIB) \
+#	$(CRYPTOLIB_ML) 
+
+#*************************************************************#
+
 # MSDEV: points to the MSDEV directory
 MSDEV	= c:MSDEV\bin
 
 # CFLAGS: used for compilation of C files
-#/D_WIN32_WINNT=0x0400 \
 CFLAGS	= /Ox /MT /W3 /DWIN32 \
 	/I$(ENSROOT)\socket\include	\
 	/I$(ENSROOT)\hot\include	\
@@ -29,8 +53,12 @@ CFLAGS	= /Ox /MT /W3 /DWIN32 \
 	$(ETH_CFLAGS)			\
 	/DOSTYPE=nt	  		\
 	/DMACHTYPE=i386			\
-	/DHAS_IP_MULTICAST
+	/DHAS_IP_MULTICAST		
 
+#	$(OPENSSL_INC)
+
+
+#*************************************************************#
 
 # Fix problem with libc.lib, pass "-link /NODEFAULTLIB" option
 # This is a hack.
@@ -203,8 +231,8 @@ ETH_CFLAGS	=# -DRAW_ETH
 EXE	= .exe
 OBJS	= .obj
 ARCS    = .lib
-OBJ	= -$(PLATFORM)$(OBJS)
-ARC	= -$(PLATFORM)$(ARCS)
+OBJ	= $(OBJS)
+ARC	= $(ARCS)
 CP	= copy
 MV	= move
 LN	= copy			# use copy instead
@@ -221,9 +249,10 @@ ECHO	= echo
 STRIP   = echo
 MKDIR   = mkdir
 RMDIR   = -rmdir /S /Q
+CHMODR  = attrib +R
 #*************************************************************#
 NTRULE	=
-UNIXRULE = -nt
+UNIXRULE = #-nt
 #*************************************************************#
 # How to link various Ocaml libraries.  Should not require
 # modification.
@@ -276,22 +305,14 @@ ENSROOT_ABS	= C:\nt1314\profiles\rvr\desktop\ens
 INCMPI		= -I/localhome/hayden/mpich/include
 
 #*************************************************************#
-# Where to find the Crypto stuff
-
-CRYPTO_LINK =
-#	$(ENSROOT)/lib/$(PLATFORM)/crypto$(CMA)		\
-#	-cclib $(ENSROOT)/lib/$(PLATFORM)/libcryptoc$(ARC)
-
-#*************************************************************#
 
 HOT_THREAD_OBJ	= ntthread$(OBJ)
-HOT_CFLAGS_nt	= -DTHREADED_SELECT
-HOT_MLLINK_nt	= #?
-HOT_LINK_nt	= #?
-HOT_LINK_nt	= #?
+HOT_CFLAGS	= -DTHREADED_SELECT
+HOT_MLLINK	= #?
+HOT_LINK	= $(LIBSYSCL)
 
 #*************************************************************#
-# cleanall
+
 
 
 

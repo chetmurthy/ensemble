@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* LINKER.MLI *)
 (* Author: Mark Hayden, 12/98 *)
 (**************************************************************)
@@ -118,7 +109,6 @@ val protos_server :
  *)
 val udp_domain : (Alarm.t -> Domain.t) t
 val tcp_domain : (Alarm.t -> Domain.t) t
-val eth_domain : (Alarm.t -> Domain.t) t
 val netsim_domain : (Alarm.t -> Domain.t) t
 val netsim_alarm : (Alarm.gorp -> Alarm.t) t
 val real_alarm : (Alarm.gorp -> Alarm.t) t

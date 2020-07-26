@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* APPL.ML *)
 (* Author: Mark Hayden, 4/95 *)
 (**************************************************************)
@@ -110,15 +101,6 @@ let full_info name endpt groupd protos protocol modes key =
     then modes else (
       eprintf "APPL:warning:DEERING mode unavailable (removing from modes)\n" ;
       except Addr.Deering modes
-    )
-  in
-
-  let modes = 
-    if not (List.mem Addr.Eth modes) 
-    || Hsys.eth_supported ()
-    then modes else (
-      eprintf "APPL:warning:ETH mode unavailable (removing from modes)\n" ;
-      except Addr.Eth modes
     )
   in
 

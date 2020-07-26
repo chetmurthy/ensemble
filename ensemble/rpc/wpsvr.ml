@@ -1,12 +1,3 @@
-(**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
 (* This is the White Pages service.  It is a small (replicated), non-
  * persistent data base of locations of services.  This service itself
  * lives at a more or less static locations.  The locations in the pages

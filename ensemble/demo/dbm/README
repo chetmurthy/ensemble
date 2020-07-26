@@ -1,11 +1,2 @@
-#*************************************************************#
-#
-#   Ensemble, 1.10
-#   Copyright 2001 Cornell University, Hebrew University
-#   All rights reserved.
-#
-#   See ensemble/doc/license.txt for further information.
-#
-#*************************************************************#
 Note: this demo does not work with Objective CAML 1.05.
 It will work with the next release of Ocaml.

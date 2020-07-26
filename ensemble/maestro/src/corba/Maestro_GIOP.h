@@ -1,12 +1,3 @@
-/**************************************************************/
-/*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
 // $Header: /cvsroot/ensemble/maestro/src/corba/Maestro_GIOP.h,v 1.2 1998/03/02 19:07:11 tclark Exp $
 // 
 // Definitions of IOP + GIOP + IIOP types.

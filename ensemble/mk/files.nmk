@@ -283,7 +283,6 @@ ENSRESTOBJ =\
 	$(OBJD)\reflect$(CMO)\
 	$(OBJD)\heap$(CMO)\
 	$(OBJD)\partition$(CMO)\
-	$(OBJD)\eth$(CMO)\
 \
 	$(OBJD)\protos$(CMO)\
 \
@@ -384,7 +383,6 @@ SOCKCOBJ =\
 	$(OBJD)\sendopt$(OBJ)\
 	$(OBJD)\sockfd$(OBJ)\
 	$(OBJD)\sockopt$(OBJ)\
-	$(OBJD)\ethc$(OBJ)\
 	$(OBJD)\stdin$(OBJ)
 
 #*************************************************************#

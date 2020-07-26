@@ -1,13 +1,4 @@
 #*************************************************************#
-#
-#   Ensemble, 1.10
-#   Copyright 2001 Cornell University, Hebrew University
-#   All rights reserved.
-#
-#   See ensemble/doc/license.txt for further information.
-#
-#*************************************************************#
-#*************************************************************#
 ENSROOT = ..
 include $(ENSROOT)/mk/config.mk
 #*************************************************************#
@@ -20,7 +11,6 @@ include $(ENSROOT)/mk/files.mk
 include $(ENSROOT)/mk/main.mk
 include $(ENSROOT)/mk/tools.mk
 include $(ENSROOT)/mk/install.mk
-include $(ENSROOT)/mk/cross.mk
 include $(ENSROOT)/mk/dynlink.mk
 include $(DEPEND)
 #*************************************************************#

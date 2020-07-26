@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* MBUF.ML *)
 (* Author: Mark Hayden, 3/95 *)
 (**************************************************************)
@@ -208,30 +199,6 @@ let alloc_udp_recv debug m handlers sock hdlr =
       let new_rbuf = Refcnt.copy debug rbuf in
       advance m len ;
       hdlr handlers new_rbuf ofs len
-    )
-  in aur_check
-
-(**************************************************************)
-
-let alloc_eth_recv debug m handlers sock hdlr =
-  let recv_info = Hsys.recv_info sock in
-  let max_len = m.max_len in
-  
-  let hdlr = arity3 hdlr in
-
-  (* Critical path.
-   *)
-  let aur_check () =
-    (* Call the receive function.
-     *)
-    let ofs  = m.ofs in
-    let rbuf = m.rbuf in
-    let len  = Buf.eth_recv recv_info (Refcnt.read debug rbuf) ofs max_len in
-
-    if len >|| len16 then (
-      let new_rbuf = Refcnt.copy debug rbuf in
-      advance m len ;
-      hdlr handlers new_rbuf (ofs +|| len16) (len -|| len16)
     )
   in aur_check
 

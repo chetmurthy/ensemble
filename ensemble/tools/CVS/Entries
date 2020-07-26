@@ -1,0 +1,25 @@
+/.cvsignore/1.3/Wed Aug  1 11:22:24 2001//
+/00-INDEX/1.1/Wed Aug  1 11:22:24 2001//
+/Makefile/1.10/Wed Aug  1 11:22:24 2001//
+/build.sh/1.7/Wed Aug  1 11:22:24 2001//
+/dist.ml/1.3/Wed Aug  1 11:22:24 2001//
+/ecamlc.ml/1.23/Wed Aug  1 11:22:24 2001//
+/ecamldep.mll/1.3/Wed Aug  1 11:22:24 2001//
+/echeck.ml/1.6/Wed Aug  1 11:22:24 2001//
+/ecp.ml/1.7/Wed Aug  1 11:22:24 2001//
+/ecrcs.ml/1.2/Wed Aug  1 11:22:24 2001//
+/elong.ml/1.2/Wed Aug  1 11:22:24 2001//
+/emake.ml/1.2/Wed Aug  1 11:22:24 2001//
+/emrg.ml/1.6/Wed Aug  1 11:22:24 2001//
+/emv.ml/1.3/Wed Aug  1 11:22:24 2001//
+/etouch.ml/1.3/Wed Aug  1 11:22:24 2001//
+/install.sh/1.6/Wed Aug  1 11:22:24 2001//
+/misc.ml/1.4/Wed Aug  1 11:22:24 2001//
+/mkutil.ml/1.17/Wed Aug  1 11:22:24 2001//
+/ntify.bat/1.2/Wed Aug  1 11:22:24 2001//
+/ntify.sed/1.3/Wed Aug  1 11:22:24 2001//
+/pagecat/1.1/Wed Aug  1 11:22:24 2001//
+/rpm.sh/1.4/Wed Aug  1 11:22:24 2001//
+/rpm.spec/1.9/Wed Aug  1 11:22:24 2001//
+/ntify.sh/1.5/Thu Sep 13 12:38:44 2001//
+D

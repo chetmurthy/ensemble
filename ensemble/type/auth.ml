@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* AUTH.ML *)
 (* Authors: Mark Hayden, Ohad Rodeh, 8/96 *)
 (**************************************************************)
@@ -101,19 +92,24 @@ let common_mode src dst =
   | _ -> Some (List.hd m)
 
 
-let ticket src dst clear = 
-  let id = common_mode src dst in
-  match id with 
-  | None -> 
-      failwith (sprintf "No authenticated means of contacting src=%s dst=%s" 
-	(Addr.string_of_set src) (Addr.string_of_set dst))
-  | Some id -> 
-      let t = lookup id in
-      let info = seal t id src dst clear in
-      match info with
-      | None -> None
-      | Some tck -> Some tck
-
+let ticket sim src dst clear = 
+  if sim then (
+    log (fun () -> "simulation");
+    Some (hex_of_string clear)
+  ) else (
+    let id = common_mode src dst in
+    match id with 
+      | None -> 
+	  failwith (sprintf "No authenticated means of contacting src=%s dst=%s" 
+	    (Addr.string_of_set src) (Addr.string_of_set dst))
+      | Some id -> 
+	  let t = lookup id in
+	  let info = seal t id src dst clear in
+	  match info with
+	    | None -> None
+	    | Some tck -> Some tck
+  )
+		
 let bckgr_ticket sim src dst clear alarm rep_fun =
   (* Simulation
    *)
@@ -134,19 +130,24 @@ let bckgr_ticket sim src dst clear alarm rep_fun =
 	)
   )
 
-let check dst src cipher = 
-  let id = common_mode src dst in
-  match id with 
-  | None -> None
-  | Some id -> 
-      let t = lookup id in
-      match unseal t id src dst cipher with
+let check sim dst src cipher = 
+  if sim then (
+    log (fun () -> "simulation");
+    Some (hex_to_string cipher)
+  ) else (
+    let id = common_mode src dst in
+    match id with 
       | None -> None
-      | Some clear -> Some clear
-		
+      | Some id -> 
+	  let t = lookup id in
+	  match unseal t id src dst cipher with
+	    | None -> None
+	    | Some clear -> Some clear
+  )
+    
 let bckgr_check sim dst src cipher alarm rep_fun =
   (* Simulation
-     *)
+   *)
   if sim then (
     log (fun () -> "simulation");
     rep_fun (Some (hex_to_string cipher))

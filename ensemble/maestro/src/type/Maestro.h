@@ -1,12 +1,3 @@
-/**************************************************************/
-/*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
 /* $Header: /cvsroot/ensemble/maestro/src/type/Maestro.h,v 1.1 1998/02/16 19:11:27 tclark Exp $
  *
  * Contents: Standard header file for Maestro/Ensemble applications.

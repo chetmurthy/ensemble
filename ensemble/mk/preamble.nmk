@@ -16,7 +16,7 @@ RPC		= $(ENSLIB)\librpc$(CMA)	# RvR's RPC library
 ENSTK		= $(ENSLIB)\libhtk$(CMA)	# ENS TK support
 LIBUSOCK	= $(ENSLIB)\usocket$(CMA)	# socket library for Unix
 #*************************************************************#
-LIBUNIX		= $(LIBMLUNIX) -cclib $(LIBCUNIX)
+LIBUNIX		= $(LIBMLUNIX) 
 LIBSOCK		= $(LIBMLSOCK) -cclib $(LIBCSOCK)
 LIBSTR		= $(LIBMLSTR) -cclib $(LIBCSTR)
 LIBSTRBC	= $(LIBMLSTRBC) -cclib $(LIBCSTR)

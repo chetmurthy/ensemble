@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* HSYS.ML *)
 (* Author: Mark Hayden, 5/95 *)
 (**************************************************************)
@@ -42,8 +33,6 @@ type sendto_info = Socket.sendto_info
 type sock_info = ((socket array) * (bool array)) option
 type select_info = Socket.select_info
 type recv_info = Socket.recv_info
-type eth = Socket.eth
-type eth_sendto_info = Socket.eth_sendto_info
 
 type timeval = Socket.timeval = {
   mutable sec10 : int ;
@@ -135,13 +124,6 @@ let rec unix_wrap_again debug f =
 let bind sock inet port = Unix.bind sock (Unix.ADDR_INET(inet,port))
 let close sock		= Unix.close sock
 let connect sock inet port = Unix.connect sock (Unix.ADDR_INET(inet,port))
-let eth_init            = Socket.eth_init
-let eth_recv            = Socket.eth_recv
-let eth_sendto_info     = Socket.eth_sendto_info
-let eth_sendtovs        = Socket.eth_sendtovs
-let eth_to_bin_string   = Socket.eth_to_bin_string
-let eth_of_bin_string   = Socket.eth_of_bin_string
-let eth_supported       = Socket.eth_supported
 let getlogin 		= Unix.getlogin
 let getpid              = Unix.getpid
 let gettimeofdaya 	= Socket.gettimeofday

@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* NULLDYNLINK.ML : no-op dynlink library for ocamlopt *)
 (* Author: Mark Hayden, 12/98 *)
 (**************************************************************)
@@ -27,6 +18,8 @@ type linking_error =
     Undefined_global of string
   | Unavailable_primitive of string
   | Uninitialized_global of string
+
+(* For version 3.02 
 type error =
     Not_a_bytecode_file of string
   | Inconsistent_import of string
@@ -35,6 +28,18 @@ type error =
   | Linking_error of string * linking_error
   | Corrupted_interface of string
   | File_not_found of string
+*)
+
+(* Works for version 3.01
+*)
+type error =
+    Not_a_bytecode_file of string
+  | Inconsistent_import of string
+  | Unavailable_unit of string
+  | Unsafe_file
+  | Linking_error of string * linking_error
+  | Corrupted_interface of string
+
 
 exception Error of error
   

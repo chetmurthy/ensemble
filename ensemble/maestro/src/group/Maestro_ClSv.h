@@ -1,12 +1,3 @@
-/**************************************************************/
-/*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
 // $Header: /cvsroot/ensemble/maestro/src/group/Maestro_ClSv.h,v 1.4 1999/01/10 21:12:51 hayden Exp $
 
 #ifndef __MAESTRO_CLT_SVR_H__

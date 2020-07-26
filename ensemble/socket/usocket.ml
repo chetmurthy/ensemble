@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* USOCKET *)
 (* Author: Mark Hayden, 4/97 *)
 (**************************************************************)
@@ -164,20 +155,6 @@ let udp_recv s b o l =
       flush stderr ;
       0
     ) else ret
-  )
-
-let eth_recv s b o l = 
-  unix_wrap "eth_recv" (fun () ->
-    let ret = Unix.recv s b (o+2) l [] in
-    if ret >= l then (
-      eprintf "USOCKET:udp_recv:warning:got packet that is maximum size (probably truncated), dropping (len=%d)\n" ret ;
-      flush stderr ;
-      0
-    ) else if ret + 2 <> ceil_word ret then (
-      eprintf "USOCKET:udp_recv:warning:got packet that is not 4-byte aligned, dropping (len=%d)\n" ret ;
-      flush stderr ;
-      0
-    ) else ret + 2
   )
 
 (**************************************************************)
@@ -359,16 +336,7 @@ type os_t_v =
   | OS_Win of win
 
 let os_type_and_version () = 
-  failwith "fcuntion os_type_and_version not supported (under usocket). You need the optimzed socket library."
-(**************************************************************)
-
-type eth
-type eth_sendto_info
-let eth_supported () = false
-let eth_init _ = failwith "eth_init"
-let eth_sendto_info _ _ _ = failwith "eth_sendto_info"
-let eth_sendtovs _ = failwith "eth_sendtovs"
-let eth_to_bin_string _ = failwith "eth_to_bin_string"
+  failwith "fcuntion os_type_and_version not supported (under usocket). You need the optimzed socket library."let eth_to_bin_string _ = failwith "eth_to_bin_string"
 let eth_of_bin_string _ = failwith "eth_of_bin_string"
-
 (**************************************************************)
+

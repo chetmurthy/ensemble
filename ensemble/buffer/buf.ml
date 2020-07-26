@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* BUF.MLI *)
 (* Author: Mark Hayden, 8/98 *)
 (**************************************************************)
@@ -75,7 +66,6 @@ let copy = String.copy
 let subeq = Hsys.substring_eq
 let to_string = String.copy
 let empty () = ""
-let eth_recv = Hsys.eth_recv
 let udp_recv = Hsys.udp_recv
 let digest_sub = Digest.substring
 let digest_substring = Digest.substring
@@ -85,7 +75,6 @@ let sendv = Arrayf.sendv
 let sendtov = Arrayf.sendtov
 let sendtosv = Arrayf.sendtosv
 let sendtovs = Arrayf.sendtovs
-let eth_sendtovs = Arrayf.eth_sendtovs
 let concat bl = String.concat "" bl
 let append b0 b1 = b0 ^ b1
 let to_hex = Util.hex_of_string

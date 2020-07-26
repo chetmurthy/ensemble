@@ -1,12 +1,3 @@
-/**************************************************************/
-/*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
 // $Header: /cvsroot/ensemble/maestro/maestro-nt/Maestro_Group.h,v 1.1 1999/04/01 17:06:03 tclark Exp $
 // 
 // Author:  Alexey Vaysburd, March 1999.

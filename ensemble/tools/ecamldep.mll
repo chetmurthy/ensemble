@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* ECAMLDEP.ML: modified from ocamldep.ml in Objective Caml *)
 (* Author: Mark Hayden, 12/96 *)
 (**************************************************************)

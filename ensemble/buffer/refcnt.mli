@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* REFCNT.MLI : manage our own pools of objects *)
 (* Author: Mark Hayden, 3/95 *)
 (**************************************************************)
@@ -68,5 +59,4 @@ val sendv : Hsys.send_info -> iovec Arrayf.t -> int
 val sendtov : Hsys.sendto_info -> iovec Arrayf.t -> unit
 val sendtosv : Hsys.sendto_info -> Buf.t -> iovec Arrayf.t -> unit
 val sendtovs : Hsys.sendto_info -> iovec Arrayf.t -> Buf.t -> unit
-val eth_sendtovs : Hsys.eth_sendto_info -> iovec Arrayf.t -> Buf.t -> unit
 (**************************************************************)

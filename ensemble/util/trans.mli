@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* TRANS.MLI *)
 (* Author: Mark Hayden, 12/95 *)
 (**************************************************************)
@@ -26,7 +17,6 @@ type fanout     = int
 type name       = string
 type debug      = string
 type inet       = Hsys.inet
-type eth        = Hsys.eth
 type origin     = rank
 type primary    = bool
 type pid        = int

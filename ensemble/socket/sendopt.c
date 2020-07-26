@@ -1,13 +1,4 @@
 /**************************************************************/
-/*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
-/**************************************************************/
 /* SENDOPT.C: optimized send/sendto/sendmsg stubs. */
 /* Author: Mark Hayden, 10/97 */
 /**************************************************************/

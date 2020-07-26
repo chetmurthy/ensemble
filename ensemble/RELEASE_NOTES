@@ -1,60 +1,44 @@
 
-     RELEASE_NOTES for Ensemble version 1.10
+     RELEASE_NOTES for Ensemble version 1.20
 
 Author: Ohad Rodeh
-Last updated: 31/07/2001
+Last updated: 13/09/2001
 
 CHANGES
 
-1. The socket library was rewritten so as to be compatible with 
-   the OCaml Unix library. This allows ML programs to freely
-   intermix code and data structures from the Ensemble Socket library
-   with code written for the Unix library. 
+1. A new C-interface, under sub-directory ce. It works under all supported 
+   platforms. 
+ 
+  The README from the CE subdirectory:
 
-2. Final touches for the security code. The diamond rekey protocol, and 
-   the key-tree rekey protocol are complete. All known security holes have
-   been plugged. The system should now be completly secure, please send us
-   any possible attack scenarios. 
+    The CE directory defines a C thin C-interface overlaid on 
+    the ML interface. To use the interface one should read the interface file
+    (ce.h) and link with the library --- libce.a on Unix platforms, and 
+    libce.lib on windows platforms. The documentation can be found in the
+    doc subdirectory.
 
-3. Port to WIN2000 is complete. In fact, the code works better on WIN2000 
-   than on NT. 
+    In the future, CE will form the major C-interface to the system, 
+    where HOT and Maestro are overlaid on top of it.
 
-4. Revised all the makefiles. 
+    The overhead, as measured on Linux, is very low, on the order on 10\%
+    above the cost of direct ML calls. This should be lowered even
+    further in the future. Currently messages are copied between C and ML,
+    we intend to fix this, allowing for zero-copy.
 
-5. Various bug fixes:
-   - Thread race conditions in maestro were fixed.
-   - 15 second delays while merging. 
-   - etc.
+  Caveats: 
+    Due to a bug in the current ocaml distribution, the library is a bit
+    flaky on WIN32 platforms. 
 
-KNOWN PROBLEMS/BUGS
+2. Removed 4-byte alignment restriction on io-vectors. 
 
-LINUX:
+3. Various small bug fixes, and documentation patches.
+  - Added documentation to the State-Transfer layer (Xfer). 
+  - Stopped supporting the Ethernet mode. 
+  - Cleanup of the makefiles.
+  - Other small changes. 
 
-* There may be a performance irregularity on Linux when using the "C" 
-  or C++ interface.  This version of Ensemble uses the sched_yield()
-  call to yield the processor.  However, we have seen the performance
-  to be quite variable, which we believe is due to thread scheduling
-  in the Linux pthreads implementation.
-
-NT:
-
-* On NT, DNS problems can cause processes to hang or perform poorly. 
-  This will affect the gossip server and any other processes which 
-  do DNS lookups.  It should be noted, however, that this is a 
-  CONFIGURATION problem, not an Ensemble bug.  If the gossip server
-  or your process appears to hang, first check your DNS server.
-  
-* There is a known performance bug in the NT "C"/C++ interface which
-  will effect ping-pong style communication (e.g. rapid RPCs from 
-  one process to another, as in the hot_test2 demo).  On NT, when 
-  Ensemble has nothing to do, it blocks for 1/10 second.  In certain 
-  scenarios, this can reduce throughput to 10 msgs per second.  A fix 
-  is to set a smaller heartbeat value in your application (in millisecs).
-  This will limit how long Ensemble will block.  An internal fix will 
-  be available in the near future.  If this is a problem for your 
-  application, and you would like more information, please contact 
-  Tim Clark at (tclark@cs.cornell.edu).
-
-
+4. The current distribution was compiled under ocaml-3.01, due to
+   bugs in the Unix library in ocaml-3.02. 
+    
 
 

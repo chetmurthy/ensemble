@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* SOCKET.ML *)
 (* Authors: Robbert vanRenesse and Mark Hayden, 4/95 *)
 (**************************************************************)
@@ -323,30 +314,6 @@ let os_type_and_version () =
 	  ) in
 	v := Some ver;
 	ver
-
-(**************************************************************)
-type eth = string
-
-type eth_sendto_info
-
-external eth_supported : unit -> bool
-  = "ens_eth_supported"
-external eth_init : string(*interface*) -> string(*address*) -> socket
-  = "ens_eth_init"
-external eth_sendto_info : socket -> string(*interface*) -> int(*flags*) -> eth(*src*) -> eth array(*dests*) -> eth_sendto_info
-  = "ens_eth_sendto_info"
-external eth_sendtovs : eth_sendto_info -> string refcnt iovec array -> string -> unit 
-  = "ens_eth_sendtovs"
-external eth_recv : socket -> buf -> ofs -> len -> len 
-  = "ens_eth_recv"
-
-let eth_to_bin_string = String.copy
-let eth_of_bin_string = String.copy
-
-let eth_init interface =
-  let addr = String.create 6 in
-  let sock = eth_init interface addr in
-  (addr, sock)
 
 (**************************************************************)
 

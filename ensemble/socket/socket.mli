@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* SOCKET.MLI *)
 (* Authors: Robbert vanRenesse and Mark Hayden, 4/95 *)
 (**************************************************************)
@@ -193,11 +184,6 @@ val recv_info : socket -> recv_info
  *)
 val udp_recv : recv_info -> buf -> ofs -> len -> len
 
-(* Similar to above but hacked a bit to deal with the 14 byte
- * ethernet header.
- *)
-val eth_recv : recv_info -> buf -> ofs -> len -> len
-
 (**************************************************************)
 
 val heap : unit -> Obj.t array
@@ -222,27 +208,3 @@ type os_t_v =
 val os_type_and_version : unit -> os_t_v
 (**************************************************************)
 
-(* Ethernet addresses.
- *)
-type eth
-
-type eth_sendto_info
-
-(* Is ethernet supported?  Currently, only works on Linux.
- *)
-val eth_supported : unit -> bool
-
-val eth_init : string -> eth * socket
-
-val eth_sendto_info :
-    socket -> string(*interface*) -> int(*flags*) -> eth(*src*) -> eth array(*dests*) -> eth_sendto_info
-
-val eth_sendtovs : eth_sendto_info -> string refcnt iovec array -> string -> unit
-
-(* Convert back and forth between ethernet addresses and
- * binary strings.
- *)
-val eth_to_bin_string : eth -> string
-val eth_of_bin_string : string -> eth
-
-(**************************************************************)

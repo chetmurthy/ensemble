@@ -1,0 +1,19 @@
+D/atm////
+D/mpi////
+/.cvsignore/1.1/Wed Aug  1 11:22:26 2001//
+/Makefile/1.2/Wed Aug  1 11:22:26 2001//
+/README/1.1/Wed Aug  1 11:22:26 2001//
+/htk.ml/1.21/Wed Aug  1 11:22:26 2001//
+/htk.mli/1.2/Wed Aug  1 11:22:26 2001//
+/ipmc.mli/1.2/Wed Aug  1 11:22:26 2001//
+/netsim.mli/1.2/Wed Aug  1 11:22:26 2001//
+/real.ml/1.39/Wed Aug  1 11:22:26 2001//
+/real.mli/1.7/Wed Aug  1 11:22:26 2001//
+/tcp.ml/1.28/Wed Aug  1 11:22:26 2001//
+/tcp.mli/1.1/Wed Aug  1 11:22:26 2001//
+/threaded.ml/1.6/Wed Aug  1 11:22:26 2001//
+/threaded.mli/1.1/Wed Aug  1 11:22:26 2001//
+/udp.mli/1.2/Wed Aug  1 11:22:26 2001//
+/udp.ml/1.42/Tue Aug 28 09:49:36 2001//
+/ipmc.ml/1.13/Wed Sep 12 09:51:30 2001//
+/netsim.ml/1.27/Wed Sep 12 09:52:16 2001//

@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* ARMADILLO.ML: Ensemble Security properties test *)
 (* Author: Ohad Rodeh, 7/98 *)
 (**************************************************************)
@@ -621,11 +612,11 @@ let pgp () =
 	  )
     ) 
   and check_foreground () = 
-    let cipher = Auth.ticket addr addr original in
+    let cipher = Auth.ticket false addr addr original in
     begin match cipher with 
       | None -> failwith "could not encrypt"
       | Some cipher -> 
-	  let clear  = Auth.check addr addr cipher in
+	  let clear  = Auth.check false addr addr cipher in
 	  begin match clear with  
 	    | None -> failwith "could not decrypt"
 	    | Some clear -> 

@@ -1,13 +1,4 @@
 /**************************************************************/
-/*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
-/**************************************************************/
 /* SENDRECV.C */
 /* Author: Mark Hayden, 5/96 */
 /**************************************************************/
@@ -126,24 +117,14 @@ value skt_udp_recv(		/* ML */
 #endif
 
   /* First, check if everything is OK and quickly return if so.
-   * Note that ((ret&3)==0) implies (ret!=(-1)).
    */
-  if ((ret < len) && ((ret & 3) == 0)) {
-    assert(ret != -1) ;
+  if ((ret < len) && (ret != -1))
     return Val_int(ret) ;
-  }
 
   /* Check for truncated messages.
    */
   if (ret == len) {
     fprintf(stderr,"SOCKET:udp_recv:warning:got packet that is maximum size (probably truncated), dropping (len=%d)\n",ret) ;
-    return Val_int(0) ;
-  }
-
-  /* Check for non-4byte-word aligned messages.
-   */
-  if (ret != -1 && (ret & 3)) {
-    fprintf(stderr,"SOCKET:udp_recv:warning:got packet that is not 4-byte aligned, dropping (len=%d)\n",ret) ;
     return Val_int(0) ;
   }
 

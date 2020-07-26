@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* ADDR.ML *)
 (* Author: Mark Hayden, 12/95 *)
 (**************************************************************)
@@ -30,7 +21,6 @@ type id =
   | Pgp
   | Fortezza
   | Mpi
-  | Eth
 
 (*let all = [|Atm;Deering;Netsim;Tcp;Udp;Sp2;Krb5;Pgp;Fortezza;Mpi|]*)
 
@@ -45,7 +35,6 @@ type t =
   | PgpA of string
   | FortezzaA of string
   | MpiA of rank
-  | EthA of eth * pid
 
 type set = t Lset.t
 
@@ -60,7 +49,6 @@ let id_of_addr = function
   | PgpA     _ -> Pgp
   | FortezzaA _ -> Fortezza
   | MpiA     _ -> Mpi
-  | EthA     _ -> Eth
 
 let ids_of_set s = Arrayf.map id_of_addr (Lset.project s)
 
@@ -75,7 +63,6 @@ let mapping = [|
   "FORTEZZA", Fortezza ;
   "KRB5", Krb5 ;
   "MPI", Mpi ;
-  "ETH", Eth
 |] 
 
 let id_of_string s = Util.id_of_string name mapping s
@@ -103,7 +90,6 @@ let string_of_addr = function
   | Krb5A        _ -> sprintf "Krb5(_)"
   | FortezzaA    _ -> sprintf "Fortezza(_)"
   | MpiA      rank -> sprintf "Mpi(%d)" rank
-  | EthA     (a,p) -> sprintf "Eth(%s,%d)" (string_of_eth a) p
 
 let string_of_set a = Arrayf.to_string string_of_addr (Lset.project a)
 
@@ -111,7 +97,6 @@ let has_mcast = function
   | Udp
   | Deering 
   | Mpi					(*BUG*)
-  | Eth
   | Netsim -> true
   | _ -> false
 
@@ -122,7 +107,6 @@ let has_pt2pt = function
   | Atm
   | Netsim 
   | Mpi
-  | Eth
   | Sp2 -> true
   | _ -> false
 
@@ -135,7 +119,6 @@ let has_auth = function
 let all_trans = Arrayf.of_array [|Atm;Deering;Sp2;Udp;Tcp;Netsim;Mpi|]
 
 let default_ranking = function
-  | Eth -> 7
   | Atm -> 6
   | Deering -> 5
   | Mpi -> 4
@@ -189,31 +172,6 @@ let same_process a b =
     Arrayf.exists check i
   )
 
-let project_eth addrs =
-  let addrs = Lset.project addrs in
-  let rec loop i =
-    if i >= Arrayf.length addrs then
-      None
-    else (
-      match Arrayf.get addrs i with
-      | EthA(eth,pid) -> Some eth
-      |	_ -> loop (succ i)
-    )
-  in loop 0
-
-(* Same as same_process, but equal Eth addresses
- * will also match even if the pid's are different.
- *)
-let same_dest a b =
-  if same_process a b then true else (
-    match project_eth a with
-    | None -> false
-    | Some a ->
-	match project_eth b with
-	| None -> false
-	| Some b -> a = b
-  )
-
 let compress me addrs =
   let local,addrs = 
     Arrayf.fold_left (fun (local,remote) hd ->
@@ -223,7 +181,7 @@ let compress me addrs =
        *)
       if same_process hd me then
 	(true,remote)
-      else if List.exists (fun a -> same_dest hd a) remote then
+      else if List.exists (fun a -> same_process hd a) remote then
 	(local,remote)
       else
 	(local, (hd :: remote))
@@ -332,7 +290,6 @@ module SafeMarshal = struct
     | Krb5A        a -> sprintf "Krb5(%s)" a
     | FortezzaA    a -> sprintf "Fortezza(%s)" a
     | MpiA      rank -> sprintf "Mpi(%d)" rank
-    | EthA     (a,p) -> sprintf "Eth(%s,%d)" (string_of_eth a) p
 	
   let addr_of_string s = 
     let l = string_split "(,)" s in
@@ -363,7 +320,6 @@ module SafeMarshal = struct
 	  let rank = try int_of_string rank with _ -> 
 	    raise (Bad_format "Mpi, int_of_string") in
 	  MpiA(rank)
-      | ["Eth";a;p] -> raise (Bad_format "Eth addresses not supported")
       | _ -> 
 	  log (fun () -> sprintf "l=%s" (string_of_list (fun x -> " <" ^ x ^ "> " )l));
 	  raise (Bad_format "addr_of_string")

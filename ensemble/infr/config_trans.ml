@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* CONFIG_TRANS.ML *)
 (* Author: Mark Hayden, 10/96 *)
 (**************************************************************)
@@ -255,19 +246,31 @@ let f alarm ranking bot_nomsg ((ls,vs) as vf) up_hdlr =
       match op with 
 	| Auth.Clear None -> failwith "Can't sign None clear_text"
 	| Auth.Clear (Some clear_text) -> 
-	    Auth.bckgr_ticket (Lazy.force sec_sim) ls.addr dst_addr clear_text alarm 
-  	      (function cipher_text -> 
-		up_hdlr (Event.create name Event.EAuth [
-		  Event.AuthData (dst_addr, Auth.Ticket cipher_text)]
-		) msg)
+	    if Sys.os_type = "Unix" then 
+	      Auth.bckgr_ticket (Lazy.force sec_sim) ls.addr dst_addr clear_text alarm 
+  		(function cipher_text -> 
+		  up_hdlr (Event.create name Event.EAuth [
+		    Event.AuthData (dst_addr, Auth.Ticket cipher_text)]
+		  ) msg)
+	    else
+	      let cipher_text = Auth.ticket (Lazy.force sec_sim) ls.addr dst_addr clear_text  in
+	      up_hdlr (Event.create name Event.EAuth [
+		    Event.AuthData (dst_addr, Auth.Ticket cipher_text)]
+	      ) msg
 	      
 	| Auth.Ticket None -> failwith "Can't sign a None ticket"
 	| Auth.Ticket (Some cipher_text) -> 
-	    Auth.bckgr_check (Lazy.force sec_sim) ls.addr dst_addr cipher_text alarm
-	      (function clear_text -> 
-		up_hdlr (Event.create name Event.EAuth [
-		  Event.AuthData (dst_addr, Auth.Clear clear_text)
-		]) msg) 
+	    if Sys.os_type = "Unix" then 
+	      Auth.bckgr_check (Lazy.force sec_sim) ls.addr dst_addr cipher_text alarm
+		(function clear_text -> 
+		  up_hdlr (Event.create name Event.EAuth [
+		    Event.AuthData (dst_addr, Auth.Clear clear_text)
+		  ]) msg) 
+	    else
+	      let clear_text = Auth.check (Lazy.force sec_sim) ls.addr dst_addr cipher_text in
+	      up_hdlr (Event.create name Event.EAuth [
+		Event.AuthData (dst_addr, Auth.Clear clear_text)
+	      ]) msg 
     )	      
 
   | _ -> failwith "sanity:bad dn"

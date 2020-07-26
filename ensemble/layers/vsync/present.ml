@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* PRESENT.ML *)
 (* Author: Mark Hayden, Zhen Xiao, 9/97 *)
 (* Note: this layer generates an EPresent event (which contains

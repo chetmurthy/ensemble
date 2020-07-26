@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* PARTIAL_APPL.ML *)
 (* Author: Mark Hayden, 8/95 *)
 (* Modified: Xiaoming Liu with Robbert vanRenesse 2/98 *)

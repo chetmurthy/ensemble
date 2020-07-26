@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* IOVEC.MLI *)
 (* Author: Mark Hayden, 3/95 *)
 (* Unless otherwise mentioned, these functions do not free
@@ -142,7 +133,6 @@ val sendv : Hsys.send_info -> t Arrayf.t -> int
 val sendtov : Hsys.sendto_info -> t Arrayf.t -> unit
 val sendtosv : Hsys.sendto_info -> Buf.t -> t Arrayf.t -> unit
 val sendtovs : Hsys.sendto_info -> t Arrayf.t -> Buf.t -> unit
-val eth_sendtovs : Hsys.eth_sendto_info -> t Arrayf.t -> Buf.t -> unit
 val iovecl_copy : debug -> t Arrayf.t -> t Arrayf.t
 val iovecl_take : debug -> t Arrayf.t -> t Arrayf.t
 (**************************************************************)

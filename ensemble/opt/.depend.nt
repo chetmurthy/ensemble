@@ -995,6 +995,9 @@ $(OBJD)\version$(CMO) : ..\type\version.ml obj\nt\ecamlc.exe \
     obj\nt\util$(CMO) obj\nt\version$(CMI) 
 	obj\nt\ecamlc.exe -Io obj\nt -opt  -unsafe -noassert -compact  ..\type\version.ml
 
+$(OBJD)\version$(CMI) : ..\type\version.mli obj\nt\ecamlc.exe 
+	obj\nt\ecamlc.exe -Io obj\nt -opt  -unsafe -noassert -compact  ..\type\version.mli
+
 $(OBJD)\view$(CMO) : ..\type\view.ml obj\nt\ecamlc.exe obj\nt\addr$(CMO) \
     obj\nt\arrayf$(CMO) obj\nt\endpt$(CMO) obj\nt\group$(CMO) \
     obj\nt\param$(CMO) obj\nt\proto$(CMO) obj\nt\security$(CMO) \
@@ -1002,21 +1005,11 @@ $(OBJD)\view$(CMO) : ..\type\view.ml obj\nt\ecamlc.exe obj\nt\addr$(CMO) \
     obj\nt\version$(CMO) obj\nt\view$(CMI) 
 	obj\nt\ecamlc.exe -Io obj\nt -opt  -unsafe -noassert -compact  ..\type\view.ml
 
-$(OBJD)\version$(CMI) : ..\type\version.mli obj\nt\ecamlc.exe 
-	obj\nt\ecamlc.exe -Io obj\nt -opt  -unsafe -noassert -compact  ..\type\version.mli
-
 $(OBJD)\view$(CMI) : ..\type\view.mli obj\nt\ecamlc.exe obj\nt\addr$(CMO) \
     obj\nt\arrayf$(CMO) obj\nt\endpt$(CMO) obj\nt\group$(CMO) \
     obj\nt\param$(CMO) obj\nt\proto$(CMO) obj\nt\security$(CMO) \
     obj\nt\time$(CMO) obj\nt\trans$(CMO) obj\nt\version$(CMO) 
 	obj\nt\ecamlc.exe -Io obj\nt -opt  -unsafe -noassert -compact  ..\type\view.mli
-
-$(OBJD)\eth$(CMO) : ..\trans\eth.ml obj\nt\ecamlc.exe obj\nt\addr$(CMO) \
-    obj\nt\alarm$(CMO) obj\nt\arge$(CMO) obj\nt\arrayf$(CMO) obj\nt\buf$(CMO) \
-    obj\nt\domain$(CMO) obj\nt\elink$(CMO) obj\nt\hsys$(CMO) \
-    obj\nt\iovecl$(CMO) obj\nt\mbuf$(CMO) obj\nt\route$(CMO) \
-    obj\nt\trace$(CMO) obj\nt\trans$(CMO) obj\nt\util$(CMO) 
-	obj\nt\ecamlc.exe -Io obj\nt -opt  -unsafe -noassert -compact  ..\trans\eth.ml
 
 $(OBJD)\htk$(CMO) : ..\trans\htk.ml obj\nt\ecamlc.exe obj\nt\alarm$(CMO) \
     obj\nt\elink$(CMO) obj\nt\hsys$(CMO) obj\nt\mbuf$(CMO) \
@@ -1352,11 +1345,6 @@ $(OBJD)\arge$(CMO) : ..\appl\arge.ml obj\nt\ecamlc.exe obj\nt\addr$(CMO) \
     obj\nt\version$(CMO) obj\nt\arge$(CMI) 
 	obj\nt\ecamlc.exe -Io obj\nt -opt  -unsafe -noassert -compact  ..\appl\arge.ml
 
-$(OBJD)\pgp$(CMO) : ..\appl\pgp.ml obj\nt\ecamlc.exe obj\nt\addr$(CMO) \
-    obj\nt\alarm$(CMO) obj\nt\arge$(CMO) obj\nt\auth$(CMO) obj\nt\hsys$(CMO) \
-    obj\nt\trace$(CMO) obj\nt\util$(CMO) obj\nt\pgp$(CMI) 
-	obj\nt\ecamlc.exe -Io obj\nt -opt  -unsafe -noassert -compact  ..\appl\pgp.ml
-
 $(OBJD)\arge$(CMI) : ..\appl\arge.mli obj\nt\ecamlc.exe obj\nt\addr$(CMO) \
     obj\nt\glue$(CMO) obj\nt\hsys$(CMO) obj\nt\property$(CMO) \
     obj\nt\trans$(CMO) 
@@ -1409,6 +1397,11 @@ $(OBJD)\partition$(CMO) : ..\appl\partition.ml obj\nt\ecamlc.exe \
 $(OBJD)\partition$(CMI) : ..\appl\partition.mli obj\nt\ecamlc.exe \
     obj\nt\endpt$(CMO) 
 	obj\nt\ecamlc.exe -Io obj\nt -opt  -unsafe -noassert -compact  ..\appl\partition.mli
+
+$(OBJD)\pgp$(CMO) : ..\appl\pgp.ml obj\nt\ecamlc.exe obj\nt\addr$(CMO) \
+    obj\nt\alarm$(CMO) obj\nt\arge$(CMO) obj\nt\auth$(CMO) obj\nt\hsys$(CMO) \
+    obj\nt\trace$(CMO) obj\nt\util$(CMO) obj\nt\pgp$(CMI) 
+	obj\nt\ecamlc.exe -Io obj\nt -opt  -unsafe -noassert -compact  ..\appl\pgp.ml
 
 $(OBJD)\pgp$(CMI) : ..\appl\pgp.mli obj\nt\ecamlc.exe obj\nt\alarm$(CMO) 
 	obj\nt\ecamlc.exe -Io obj\nt -opt  -unsafe -noassert -compact  ..\appl\pgp.mli
@@ -1742,9 +1735,6 @@ obj\nt\rvr_intf$(OBJ): ..\hot\rvr_intf.c ../socket/skt.h
 
 obj\nt\solaris_thread$(OBJ): ..\hot\solaris_thread.c ../socket/skt.h
 	$(CC) /Foobj\nt\solaris_thread$(OBJ) $(CFLAGS) -c ..\hot\solaris_thread.c
-
-obj\nt\ethc$(OBJ): ..\socket\ethc.c ../socket/skt.h
-	$(CC) /Foobj\nt\ethc$(OBJ) $(CFLAGS) -c ..\socket\ethc.c
 
 obj\nt\gettimeofday$(OBJ): ..\socket\gettimeofday.c ../socket/skt.h
 	$(CC) /Foobj\nt\gettimeofday$(OBJ) $(CFLAGS) -c ..\socket\gettimeofday.c

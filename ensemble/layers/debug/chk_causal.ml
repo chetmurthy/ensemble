@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* CHK_CAUSAL.ML : Checking causal ordering properties *)
 (* Author: Ohad Rodeh, 12/96 *)
 (* Last update: 7/97 *)

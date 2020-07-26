@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* UTIL.ML *)
 (* Author: Mark Hayden, 4/95 *)
 (**************************************************************)
@@ -573,11 +564,6 @@ let strtok s c =
   if !str_verb then
     eprintf "strtok:out:%s:%s\n" (fst res) (snd res) ;
   res
-
-(**************************************************************)
-
-let string_of_eth eth =
-  hex_of_string (Hsys.eth_to_bin_string eth)
 
 (**************************************************************)
 

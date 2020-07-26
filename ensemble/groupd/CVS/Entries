@@ -1,0 +1,16 @@
+/.cvsignore/1.1/Wed Aug  1 11:22:16 2001//
+/Makefile/1.2/Wed Aug  1 11:22:16 2001//
+/README/1.1/Wed Aug  1 11:22:16 2001//
+/actual.ml/1.8/Wed Aug  1 11:22:16 2001//
+/actual.mli/1.2/Wed Aug  1 11:22:16 2001//
+/coord.ml/1.3/Wed Aug  1 11:22:16 2001//
+/coord.mli/1.1/Wed Aug  1 11:22:16 2001//
+/manage.ml/1.9/Wed Aug  1 11:22:16 2001//
+/manage.mli/1.4/Wed Aug  1 11:22:16 2001//
+/member.ml/1.3/Wed Aug  1 11:22:16 2001//
+/member.mli/1.1/Wed Aug  1 11:22:16 2001//
+/mutil.ml/1.5/Wed Aug  1 11:22:16 2001//
+/mutil.mli/1.2/Wed Aug  1 11:22:16 2001//
+/proxy.ml/1.13/Wed Aug  1 11:22:16 2001//
+/proxy.mli/1.2/Wed Aug  1 11:22:16 2001//
+D

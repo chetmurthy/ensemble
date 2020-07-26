@@ -1,12 +1,3 @@
-(**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
 
 (* Note: this file is taken unmodified from the Objective Caml 
  * distribution.  Does the above copyright apply?

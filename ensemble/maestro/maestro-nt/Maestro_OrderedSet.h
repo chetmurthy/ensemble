@@ -1,12 +1,3 @@
-/**************************************************************/
-/*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
 // $Header: /cvsroot/ensemble/maestro/maestro-nt/Maestro_OrderedSet.h,v 1.3 1999/04/01 17:04:26 tclark Exp $
 
 #ifndef __MAESTRO_ORDERED_SET_H__

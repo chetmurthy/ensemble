@@ -1,12 +1,3 @@
-/**************************************************************/
-/*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
 // $Header: /cvsroot/ensemble/maestro/src/corba/Maestro_IIOPBridge.h,v 1.3 1999/07/19 01:02:01 hayden Exp $
 // 
 // Implementation of IIOP Bridge:  Client and Server sides.

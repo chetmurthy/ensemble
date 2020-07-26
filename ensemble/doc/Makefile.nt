@@ -1,26 +1,14 @@
 #*************************************************************#
-#
-#   Ensemble, 1.10
-#   Copyright 2001 Cornell University, Hebrew University
-#   All rights reserved.
-#
-#   See ensemble\doc\license.txt for further information.
-#
+ENSROOT = ..
+!include ..\mk\config.nmk
 #*************************************************************#
-.SUFFIXES: .ps .dvi .tex
-.dvi.ps:
-	dvips $< -o $@
+
+.SUFFIXES: .dvi .tex 
 .tex.dvi:
 	latex $< 
+#*************************************************************#
 
-all: ref.ps tut.ps hot.ps #ref.ps projects.ps
-
-force:
-	rm -f *.dvi *.ps
-	nmake -f Makefile.nt
-
-fix:
-	fixpoint ref.ps tut.ps projects.ps
+all: ref.ps tut.ps hot.ps #projects.ps
 
 tut.dvi:\
 	tut.tex\
@@ -36,7 +24,8 @@ tut.dvi:\
 	pgp.tex\
 	view_state.tex
 
-ref.dvi:\
+
+ref.dvi: layers\*.tex\
 	ref.tex\
 	id.tex\
 	def.tex\
@@ -54,20 +43,33 @@ ref.dvi:\
 	security.tex\
 	unsafe.tex
 
+ref.ps : ref.dvi
+	latex ref
+	latex ref
+	dvips ref.dvi -o ref.ps 
+
+hot.ps : hot.dvi
+	latex hot
+	latex hot
+	dvips hot.dvi -o hot.ps 
+
+tut.ps : tut.dvi
+	latex tut
+	latex tut
+	dvips tut.dvi -o tut.ps 
+
 projects.dvi: projects.tex
-
-
-ref2.ps: ref.ps
-	2up <ref.ps -o ref2.ps
-
-tut2.ps: tut.ps
-	2up <tut.ps >tut2.ps
+	latex projects
+	latex projects
+	dvips projects.dvi -o projects.ps 
 
 clean:
-	rm -f *.dvi *~ *.log *.aux *.toc *.lof *.lot TAGS
+	$(RM) *.dvi *~ *.log *.aux *.toc *.lof *.lot TAGS layers\*.aux
 
 realclean: clean
-	rm -f *.ps*
+	$(RM) *.ps 
+
+force: clean all
 
 tags:
 	etags *.tex ..\layers\*\*.tex

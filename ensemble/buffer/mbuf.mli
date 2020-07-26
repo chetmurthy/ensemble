@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* MBUF.MLI *)
 (* Author: Mark Hayden, 3/95 *)
 (**************************************************************)
@@ -65,11 +56,6 @@ val alloc_recv :
  * allocating an iovec.  Also, calls udp_recv directly.
  *)
 val alloc_udp_recv : 
-  debug -> t -> 'a -> Hsys.socket ->
-  ('a -> Iovec.rbuf -> ofs -> len -> unit) -> (* alloced: buffer has been alloced *)
-  (unit -> unit)			(* check for message *)
-
-val alloc_eth_recv : 
   debug -> t -> 'a -> Hsys.socket ->
   ('a -> Iovec.rbuf -> ofs -> len -> unit) -> (* alloced: buffer has been alloced *)
   (unit -> unit)			(* check for message *)

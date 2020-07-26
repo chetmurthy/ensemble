@@ -16,7 +16,8 @@ Ensemble 1.10</h1></center>
 Release Notes and Installation Instructions
 </h2></center>
 
-<center>Copyright &copy; 1997 Cornell University, Ithaca, NY, USA
+<center>Copyright &copy;1997 Cornell University, Ithaca, NY, USA,
+Hebrew University 2001, Jerusalem Israel.
 <br>All rights reserved.</center>
 
 <p><i>Last Revised</i>: Thurs March 23, 15:33:48 EDT 2000
@@ -49,16 +50,16 @@ and many users find the performance of bytecode satisfactory.
 <h2>Required Software</h2>
 <p>
 <b>
-To compile Ensemble you need <b>Version 3.01</b> of the Objective
+To compile Ensemble you need <b>Version 3.02</b> of the Objective
 Caml (O'Caml) compiler.</b>
 <p>
 O'Caml is freely available via the World Wide Web at <b><a
-href="#ocaml">http://pauillac.inria.fr/ocaml/</a></b>.  Please ensure
+href="#ocaml">http://caml.inria.fr/ocaml/</a></b>.  Please ensure
 you have the correct version. See the instructions below on how to
 obtain it. This is a different compiler version than required by
 previous versions of Ensemble! Version 0.40 of Ensemble used
 ocaml-1.05; Version 0.50 of Ensemble used ocaml-1.07; version 0.60
-used ocaml-2.01; and we are now up to ocaml-3.01.
+used ocaml-2.01; and we are now up to ocaml-3.02.
 <p>
 On Unix platforms, to compile the HOT C interface, you need a POSIX
 compliant threads package. (On Solaris, you can use the native
@@ -102,11 +103,12 @@ information on the changes in this release, please read the file
 <a NAME="licensing"></a>
 <h2>Licensing</h2>
 <p>
-Ensemble code is copyrighted by Cornell University. To use Ensemble you
-must agree to the terms of the license. Ensemble is freely available software,
-but you must agree to the terms of the license before you can install it.
-We ask that you read the licensing agreement before installing Ensemble.
-It can be found in <b>ensemble/LICENSE</b>.
+Ensemble code is copyrighted by Cornell University, and the Hebrew
+University. To use Ensemble you must agree to the terms of the
+license. Ensemble is freely available software, but you must agree to
+the terms of the license before you can install it.  We ask that you
+read the licensing agreement before installing Ensemble.  It can be
+found in <b>ensemble/LICENSE</b>.
 <p>
 <hr>
 <a NAME="installation"></a>
@@ -117,7 +119,7 @@ get the O'Caml compiler, extract the Ensemble software, and then compile
 the portions you wish to use.
 <ul>
 <li>
-Make sure you have <a href="#ocaml">Objective Caml version 2.04</a>
+Make sure you have <a href="#ocaml">Objective Caml version 3.02</a>
 installed.
 <li>
 Set the <b>CAMLLIB</b> environment variable, and put the path to the
@@ -137,9 +139,9 @@ platforms</a>.
 <p>
 <hr>
 <a NAME="ocaml"></a>
-<h2>How to obtain Objective Caml 3.01</h2>
+<h2>How to obtain Objective Caml 3.02</h2>
 <p>
-To compile Ensemble you need Objective Caml version 3.01. <b>Other
+To compile Ensemble you need Objective Caml version 3.02. <b>Other
 versions of the compiler may NOT work.</b> This is because the O'Caml
 bytecode format and libraries are not guaranteed to be compatible
 across versions.
@@ -151,11 +153,11 @@ If you already have O'Caml you can check which version you have by typing:
 This gives you the version of the compiler in your path (if there is
 one).  The first line of the output should be:
 <pre>
-&nbsp;&nbsp;&nbsp; The Objective Caml compiler, version ocaml 3.01
+&nbsp;&nbsp;&nbsp; The Objective Caml compiler, version ocaml 3.02
 </pre>
-If you have some other version, then obtain version 3.01 and install
+If you have some other version, then obtain version 3.02 and install
 it.  O'Caml is freely available from <a
-href="http://pauillac.inria.fr/ocaml">http://pauillac.inria.fr/ocaml</a>
+href="http://caml.inria.fr/ocaml">http://caml.inria.fr/ocaml</a>
 and is easy to install (precompiled binaries are available for
 Windows NT). You do not need the native code compiler, although you
 can compile Ensemble with it.
@@ -168,7 +170,7 @@ library is entirely optional. You can install Ensemble without it and
 install it later if you change your mind. The library can be obtained
 from the O'Caml Web site, under the distrib directory:
 <p>
-<a href="http://pauillac.inria.fr/ocaml/distrib.html">http://pauillac.inria.fr/ocaml/distrib</a>
+<a href="http://caml.inria.fr/ocaml/distrib.html">http://caml.inria.fr/ocaml/distrib</a>
 <p>
 In order to build the whiteboard demo (wbml) in the demo/tk
 directory, you will have to make sure that the camltk41 libraries are
@@ -227,6 +229,7 @@ on Windows NT, you need to use <b>nmake</b> and the
 <pre>
 &nbsp;&nbsp;&nbsp; # build bytecode ensemble
 &nbsp;&nbsp;&nbsp; # directory: ensemble\def
+&nbsp;&nbsp;&nbsp; nmake -f Makefile.nt depend
 &nbsp;&nbsp;&nbsp; nmake -f Makefile.nt
 </pre>
 <ul>
@@ -263,15 +266,17 @@ In order to compile the HOT tools, you would do the following:
 <pre>
 &nbsp;&nbsp;&nbsp; # build native code libraries in opt directory
 &nbsp;&nbsp;&nbsp; # directory: ensemble\opt
+&nbsp;&nbsp;&nbsp; nmake -f Makefile.nt depend
 &nbsp;&nbsp;&nbsp; nmake -f Makefile.nt
 &nbsp;&nbsp;&nbsp;
 &nbsp;&nbsp;&nbsp; # change directory to demo and build native code demo programs
 &nbsp;&nbsp;&nbsp; # directory: ensemble\demo
+&nbsp;&nbsp;&nbsp; nmake -f Makefile.nt depend
 &nbsp;&nbsp;&nbsp; nmake -f Makefile.nt socketopt
 &nbsp;&nbsp;&nbsp;
 &nbsp;&nbsp;&nbsp; # change back to opt and build the HOT tools
 &nbsp;&nbsp;&nbsp; # directory: ensemble\opt
-&nbsp;&nbsp;&nbsp; nmake -f Makefile.nt libhot
+&nbsp;&nbsp;&nbsp; nmake -f Makefile.nt hot
 </pre>
 Once you have built the HOT tools, there will be 3 executable files
 placed in the ensemble\demo directory: <b>hot_test.exe,
@@ -463,7 +468,7 @@ needs to be done.
 <li>
 If you are running on a system where the environment variables <b>ENS_MACHTYPE
 </b>and
-<b>ENSOSTYPE</b>
+<b>ENS_OSTYPE</b>
 are not automatically defined then you should set these to appropriate
 values for your platform. These environment variables are only used in
 naming files and do not affect compilation. To be compatible with naming
@@ -489,7 +494,7 @@ installed the O'Caml libraries. O'Caml will give you the correct value
 for this if you type:
 <pre>
 &nbsp;&nbsp;&nbsp; % ocamlc -v
-&nbsp;&nbsp;&nbsp; The Objective Caml compiler, version 2.04
+&nbsp;&nbsp;&nbsp; The Objective Caml compiler, version 3.02
 &nbsp;&nbsp;&nbsp; Standard library directory: /usr/local/lib/ocaml
 </pre>
 The second line printed out by this is the location where O'Caml installed
@@ -498,7 +503,7 @@ the libraries. In sh, you set the CAMLLIB variable like this:
 &nbsp;&nbsp;&nbsp; CAMLLIB=/usr/local/lib/ocaml
 &nbsp;&nbsp;&nbsp; export CAMLLIB
 </pre>
-We recommend you add these to your '.profile' or equivalent for your shell.
+We recommend you add these to your '.tcshrc' or equivalent for your shell.
 </ul>
 <a NAME="unix-socket"></a>
 <h3>Building the Socket library</h3>
@@ -513,10 +518,8 @@ system compiles the Socket library by default.
 <pre>
 &nbsp;&nbsp;&nbsp; # In ensemble/mk/config.mk, edit the macro definition for HSYS_TYPE to be "skt".
 &nbsp;&nbsp;&nbsp; # directory: ensemble/def
-&nbsp;&nbsp;&nbsp; make socket
-&nbsp;&nbsp;&nbsp;
-&nbsp;&nbsp;&nbsp; # directory: ensemble/def
-&nbsp;&nbsp;&nbsp; make clean; make
+&nbsp;&nbsp;&nbsp; make depend
+&nbsp;&nbsp;&nbsp; make 
 </pre>
 When you compile other parts of Ensemble in the future, the Socket library
 will be used in place of the Unix library.
@@ -533,17 +536,15 @@ This step generates the file <b>ensemble/lib/PLATFORM/libhot.a</b>
 (where PLATFORM is the name of your platform) and installs the HOT library
 files into 'ensemble/lib/PLATFORM'.
 <p>
-<b>**NOTE**</b>For users on SunOS, lacking Solaris threads, please
-contact us for a thread package to use (the rvr_threads package).
-Alternatively, please see the section below on POSIX threads. You
+<b>**NOTE**</b>For users on SunOS, lacking Solaris threads, 
+see the section below on POSIX threads. You
 will have to obtain this threads package, install it, and modify the
 <b>ensemble/mk/config.mk</b> file to reference the corresponding
-threads interface file (either <b>ensemble/hot/rvr_intf.c</b> or
-<b>pthread_intf.c</b>).
+threads interface file (perhaps or <b>pthread_intf.c</b>).
 <pre>
 &nbsp;&nbsp;&nbsp; # build the HOT tools
 &nbsp;&nbsp;&nbsp; # directory: ensemble/def (or ensemble/opt)
-&nbsp;&nbsp;&nbsp; make libhot
+&nbsp;&nbsp;&nbsp; make hot
 </pre>
 There is also an auxilliary HOT test program, called hot_test2.c, which
 can be compiled as follows:
@@ -623,11 +624,12 @@ the demos) and will take awhile.
 <pre>
 &nbsp;&nbsp;&nbsp; # build native code libraries
 &nbsp;&nbsp;&nbsp; # directory: ensemble/opt
+&nbsp;&nbsp;&nbsp; make depend
 &nbsp;&nbsp;&nbsp; make
 &nbsp;&nbsp;&nbsp;
 &nbsp;&nbsp;&nbsp; # build the HOT tools for native code
 &nbsp;&nbsp;&nbsp; # directory: ensemble/opt
-&nbsp;&nbsp;&nbsp; make libhot
+&nbsp;&nbsp;&nbsp; make hot
 &nbsp;&nbsp;&nbsp;
 &nbsp;&nbsp;&nbsp; # build the Maestro and IIOP libraries and utilities
 &nbsp;&nbsp;&nbsp; # directory: ensemble/opt
@@ -674,12 +676,12 @@ This concludes the instructions for building Ensemble on Unix systems.
 <hr>
 <h2>"Contrib" Code Removed, Packaged Separately</h2>
 <p>
-With Ensemble version 0.70, we only include the Ensemble core
+With Ensemble version 1.10, we only include the Ensemble core
 toolkit. All other contributed work will be available separately by
 request. Separate tar (or zip) files will be generated for the add-on
 work, including the <b>Dynamic Virtual Private Network (DVPN)</b>
-code, the <b>rvr_threads</b> package, and a related project
-<b>JavaGroups</b>.  These add-ons will be available upon request.
+code, the <b>rvr_threads</b> package, and the <b>exec-server</b>. 
+These add-ons will be available upon request.
 <br>
 <p>
 <h2>Java Interface Updated</h2>
@@ -693,7 +695,7 @@ inter-operate with HOT "C"/Maestro applications. See the
 <p>
 <b>NOTE:</b>This Java interface was developed using <b>Sun
 Microsystem's JDK 1.2.</b> Other versions of Java or earlier versions
-of the JDK may not work properly.
+of the JDK may not work properly. It also works with the newer version 1.3.
 <p>
 <hr>
 <a NAME="multiple-platforms"></a>
@@ -773,13 +775,15 @@ message encryption, authentication, and group member
 authorization. Ensemble requires the user to install <a href =
 "http://web.mit.edu/network/pgp.html">PGP6.5</a>  and
 <a href ="http://www.openssl.org/">OpenSSL0.9.5a</a>.
+Previous version of PGP (2.6.3, 5.0) also work, however, we have
+had correctness probelms with them. 
 In order to make ensemble with cryptographic support, <b>FIRST, you
 must edit mk/config.mk.</b> You will see the CRYPTO_LINK define commented
 out by default. Comment out the top (empty) CRYPTO_LINK line and
 uncomment the rest of the CRYPTO related lines. On NT, simply uncomment the
 lines following the CRYPTO_LINK line. This will now link in the crypto
 libraries when you build executables. Now perform the following steps:
-<p>
+
 
 Unix:
 <pre>
@@ -812,9 +816,8 @@ and things should compile smoothly.
 
 <h2> NT not fully supported </h2>
 Currently, cryptographic support is not perfect for NT, though we plan
-to fully support it in the future. The system will compile and run,
-though it will not be able to communication with PGP, hence, group
-members will not be authenticated..
+to fully support it in the future. PGP works on both NT and unix,
+however, Openssl does not work with Microsoft Visual Studio. 
 
 <h2> Testing CRYPTO </h2> In order to check that your system can
 use the various cryptographic libraries and interfaces, use the the
@@ -829,7 +832,7 @@ This will generate a public/private key pair for a principal of your
 choice. The key-pairs are stored in your home directory under the
 subdirectory <i>.pgp</i>. Armadillo requires that the principals
 <i>o1,o2</i> are installed. To see the set of principals you currently
-have use:
+use:
 <pre>
 &nbsp;&nbsp;&nbsp;pgp -kv
 &nbsp;&nbsp;&nbsp;pub   512/2F045569 1998/06/15 o2
@@ -839,7 +842,7 @@ have use:
 
 use:
 <pre>
-&nbsp;&nbsp;&nbsp; armadillo -prog pgp -real_pgp
+&nbsp;&nbsp;&nbsp; armadillo -prog pgp 
 </pre>
 To test the PGP interface. You should see something like:
 <pre>
@@ -849,9 +852,12 @@ To test the PGP interface. You should see something like:
 &nbsp;&nbsp;&nbsp;background PGP works
 </pre>
 
+On NT, PGP only works in the foreground, in the background due to
+socket select issues. 
+
 If something is broken, trace the PGP execution using:
 <pre>
-&nbsp;&nbsp;&nbsp; armadillo -prog pgp -real_pgp -trace PGP 
+&nbsp;&nbsp;&nbsp; armadillo -prog pgp -trace PGP 
 </pre>
 If more information is required use the flags:
 <pre>
@@ -868,7 +874,7 @@ Note that it will keep running until reaching the timeout. The timeout
 is set by default to 20 seconds. 
 To invoke the test do:
 <pre>
-&nbsp;&nbsp;&nbsp; armadillo -prog exchange -n 2 -real_pgp
+&nbsp;&nbsp;&nbsp; armadillo -prog exchange -n 2 
 </pre>
 To use more endpoints, increase the <i>-n</i> command line argument,
 and add more principals to your PGP database.
@@ -882,16 +888,16 @@ To test security with two separate processes do the following:
 &nbsp;&nbsp;&nbsp;#setup and run gossip
 &nbsp;&nbsp;&nbsp;gossip &
 &nbsp;&nbsp;&nbsp;#On one machine run:
-&nbsp;&nbsp;&nbsp; mtalk -key 1111222233334444 -add_prop Auth -pgp o1
+&nbsp;&nbsp;&nbsp; mtalk -key 11112222333344441111222233334444 -add_prop Auth -pgp o1
 &nbsp;&nbsp;&nbsp;#On a second machine run:
-&nbsp;&nbsp;&nbsp; mtalk -key 0123456701234567 -add_prop Auth -pgp o2
+&nbsp;&nbsp;&nbsp; mtalk -key 01234567012345670123456701234567 -add_prop Auth -pgp o2
 </pre>
 The two mtalk processes should authenticate each other and merge.
 
 The three command line arguments specify:
 <ul>
-  <li> -key 111122223333444 : The initial security key of the
-      system. Should be a 16 byte string.
+  <li> -key 111122223333444111122223333444 : The initial security key of the
+      system. Should be a 32 byte string.
   <li> -add_prop Auth: Add the authentication protocol.
       Otherwise, stacks with different keys will not be able to
       merge. 

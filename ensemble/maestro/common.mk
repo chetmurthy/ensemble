@@ -122,6 +122,8 @@ clean:
 	$(RM) *.o libmae.a newkey read_ior
 	cd ../../test; $(MAKE) clean
 
+realclean : clean
+
 depend:
 	$(CCC) $(CFLAGS) -MM 	\
 	$(ROOT)/src/type/*.C 	\

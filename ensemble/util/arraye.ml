@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* ARRAYE.ML : Non-floating point arrays *)
 (* Author: Mark Hayden, 4/95 *)
 (**************************************************************)
@@ -397,5 +388,4 @@ let sendv = Hsys.sendv
 let sendtov = Hsys.sendtov
 let sendtosv = Hsys.sendtosv
 let sendtovs = Hsys.sendtovs
-let eth_sendtovs = Hsys.eth_sendtovs
 (**************************************************************)

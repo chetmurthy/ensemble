@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* AUTH.MLI *)
 (* Authors: Mark Hayden, Ohad Rodeh, 8/96 *)
 (**************************************************************)
@@ -34,12 +25,12 @@ type ticket
 val string_of_ticket : ticket -> string
 val ticket_of_string : string -> ticket
 
-val ticket : Addr.set(*me*) -> Addr.set(*him*) -> clear -> ticket option
+val ticket : bool (*simulation?*)-> Addr.set(*me*) -> Addr.set(*him*) -> clear -> ticket option
 
 val bckgr_ticket : bool (*simulation?*)-> Addr.set(*me*) -> Addr.set(*him*) ->
  	clear -> Alarm.t -> (ticket option -> unit) -> unit
 
-val check : Addr.set(*me*) -> Addr.set (* him *) -> ticket -> clear option
+val check : bool (*simulation?*)-> Addr.set(*me*) -> Addr.set (* him *) -> ticket -> clear option
 
 val bckgr_check : bool (*simulation?*)-> Addr.set(*me*) -> Addr.set (*him*) -> 
 	ticket -> Alarm.t -> (clear option -> unit) -> unit

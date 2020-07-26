@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* REFCNT.ML *)
 (* Author: Mark Hayden, 3/95 *)
 (**************************************************************)
@@ -48,7 +39,6 @@ let sendv = Buf.sendv
 let sendtov = Buf.sendtov
 let sendtosv = Buf.sendtosv
 let sendtovs = Buf.sendtovs
-let eth_sendtovs = Buf.eth_sendtovs
 
 type iovec = Buf.t t Buf.iovec
 let iovec_alloc_noref debug rbuf ofs len =

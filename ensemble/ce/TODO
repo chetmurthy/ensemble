@@ -1,0 +1,17 @@
+TODO for release 1.0
+
++- 1. Figure out the alignment problem. Is this really neccessary?
++2. malloc can return 0.
++4. performance measurements.
+?6. Find where the memory bug is.
+
+That's all folks!
+
+
+For release 1.3:
+1. Fix the iovec system
+2. Fix makefile system.
+3. See if the constructors (Send, Send1, Cast, ..) can be created directly
+   from C.
+4. optimize allocation of actions.
+9. Makefiles: dynamic linking. 

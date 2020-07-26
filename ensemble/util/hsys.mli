@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* HSYS.MLI *)
 (* Author: Mark Hayden, 5/95 *)
 (**************************************************************)
@@ -17,7 +8,7 @@ type buf = string
 type ofs = int
 type len = int
 type port = int
-type inet
+type inet = Unix.inet_addr
 type socket = Socket.socket
 
 type timeval = {
@@ -281,40 +272,12 @@ val udp_recv :  recv_info -> buf -> ofs -> len -> int
 
 (**************************************************************)
 
-type eth
-
-type eth_sendto_info
-
-val eth_supported : unit -> bool
-
-val eth_init : string -> eth * socket
-
-(* Similar to udp_recv above, but hacked for ethernet headers.
- *)
-val eth_recv :  recv_info -> buf -> ofs -> len -> int
-
-val eth_sendto_info :
-    socket -> string(*interface*) -> int(*flags*) -> eth(*src*) -> eth array(*dests*) -> eth_sendto_info
-
-val eth_sendtovs : eth_sendto_info -> string refcnt iovec array -> string -> unit
-
-val eth_to_bin_string : eth -> string
-val eth_of_bin_string : string -> eth
-
-(**************************************************************)
-
 val heap : unit -> Obj.t array
 val addr_of_obj : Obj.t -> string
 val minor_words : unit -> int
 val frames : unit -> int array array
 
 (**************************************************************)
-
-(* Ohad.
- *)
-val inet_of_unix_inet_addr : Unix.inet_addr -> inet
-val unix_inet_addr_of_inet : inet -> Unix.inet_addr 
-
 
 (* These simply returns the text readable value the
  * inet (XXX.YYY.ZZZ.TTT). Used for safe marshaling routines.

@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* TOTEM.ML *)
 (* Author: Roy Friedman, 3/96 *)
 (* Bug fixes & major changes: Mark Hayden, 10/96 *)

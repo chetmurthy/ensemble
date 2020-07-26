@@ -339,30 +339,30 @@ outboard-crypto: $(ENSCONFDEP_skt) $(HOT_OUTBOARDOBJ)
 $(OBJD)\libhotml-crypto$(CMA): $(ENSCONFDEP) $(HOT_SHAREDOBJ)
 	$(MLLIBR) -o $(OBJD)\libhotml-crypto$(CMA) $(HOT_SHAREDOBJ)
 
-hot_test-crypto$(UNIXRULE): $(OBJD)\libhot-crypto$(ARC) $(OBJD)\hot_test$(OBJ)
-	$(CC) -g -o $(ENSROOT)\demo\hot_test-crypto$(EXE)\
+hot_test-crypto$(EXE): $(OBJD)\libhot-crypto$(ARC) $(OBJD)\hot_test$(OBJ)
+	$(CC)  -o $(ENSROOT)\demo\hot_test-crypto$(EXE)\
 	  $(OBJD)\hot_test$(OBJ)\
 	  $(OBJD)\libhot-crypto$(ARC)\
 	  $(HOT_LINK)\
 	  $(CRYPTOLIB_C)
 
-hot_testo-crypto$(UNIXRULE): $(OBJD)\libhoto-crypto$(ARC) $(OBJD)\hot_test$(OBJ)
-	$(CC) -g -o $(ENSROOT)\demo\hot_testo-crypto$(EXE)\
+hot_testo-crypto$(EXE): $(OBJD)\libhoto-crypto$(ARC) $(OBJD)\hot_test$(OBJ)
+	$(CC)  -o $(ENSROOT)\demo\hot_testo-crypto$(EXE)\
 	  $(OBJD)\hot_test$(OBJ)\
 	  $(OBJD)\libhoto-crypto$(ARC)\
 	  $(HOT_LINK)\
 	  $(CRYPTOLIB_C)
 
 
-hot_sec_test$(UNIXRULE): $(OBJD)\libhot-crypto$(ARC) $(OBJD)\hot_sec_test$(OBJ)
-	$(CC) -g -o $(ENSROOT)\demo\hot_sec_test$(EXE)\
+hot_sec_test$(EXE): $(OBJD)\libhot-crypto$(ARC) $(OBJD)\hot_sec_test$(OBJ)
+	$(CC)  -o $(ENSROOT)\demo\hot_sec_test$(EXE)\
 	  $(OBJD)\hot_sec_test$(OBJ)\
 	  $(OBJD)\libhot-crypto$(ARC)\
 	  $(HOT_LINK)\
 	  $(CRYPTOLIB_C)
 
-hot_sec_testo$(UNIXRULE): $(OBJD)\libhoto-crypto$(ARC) $(OBJD)\hot_sec_test$(OBJ)
-	$(CC) -g -o $(ENSROOT)\demo\hot_sec_testo$(EXE)\
+hot_sec_testo$(EXE): $(OBJD)\libhoto-crypto$(ARC) $(OBJD)\hot_sec_test$(OBJ)
+	$(CC)  -o $(ENSROOT)\demo\hot_sec_testo$(EXE)\
 	  $(OBJD)\hot_sec_test$(OBJ)\
 	  $(OBJD)\libhoto-crypto$(ARC)\
 	  $(HOT_LINK)\
@@ -370,125 +370,70 @@ hot_sec_testo$(UNIXRULE): $(OBJD)\libhoto-crypto$(ARC) $(OBJD)\hot_sec_test$(OBJ
 #*************************************************************#
 
 # Generate the hot_test executable
-hot_test$(UNIXRULE): $(OBJD)\libhot$(ARC) $(OBJD)\hot_test$(OBJ)
-	$(CC) -g -o $(ENSROOT)\demo\hot_test$(EXE)\
+hot_test$(EXE): $(OBJD)\libhot$(ARC) $(OBJD)\hot_test$(OBJ)
+	$(CC)  -o $(ENSROOT)\demo\hot_test$(EXE)\
 	  $(OBJD)\hot_test$(OBJ)\
 	  $(OBJD)\libhot$(ARC)\
 	  $(HOT_LINK)
 
 # Generate the outboard test
-hot_testo$(UNIXRULE): $(OBJD)\libhoto$(ARC) $(OBJD)\hot_test$(OBJ)
-	$(CC) -g -o $(ENSROOT)\demo\hot_testo$(EXE)\
+hot_testo$(EXE): $(OBJD)\libhoto$(ARC) $(OBJD)\hot_test$(OBJ)
+	$(CC)  -o $(ENSROOT)\demo\hot_testo$(EXE)\
 	  $(OBJD)\hot_test$(OBJ)\
 	  $(OBJD)\libhoto$(ARC)\
 	  $(HOT_LINK)
 
 # Generate the performance test
-hot_perf$(UNIXRULE): $(OBJD)\libhoto$(ARC) $(OBJD)\hot_perf$(OBJ) 
-	$(CC) -g -o $(ENSROOT)\demo\hot_perf$(EXE)\
+hot_perf$(EXE): $(OBJD)\libhoto$(ARC) $(OBJD)\hot_perf$(OBJ) 
+	$(CC)  -o $(ENSROOT)\demo\hot_perf$(EXE)\
 	  $(OBJD)\hot_perf$(OBJ)\
 	  $(OBJD)\libhoto$(ARC)\
 	  $(HOT_LINK)
 
 # Purified version of outboard test
-p_test$(UNIXRULE): $(OBJD)\libhoto$(ARC) $(OBJD)\hot_test$(OBJ) 
-	$(PURIFY) $(CC) -g -o $(ENSROOT)\demo\p_test$(EXE)\
+p_test$(EXE): $(OBJD)\libhoto$(ARC) $(OBJD)\hot_test$(OBJ) 
+	$(PURIFY) $(CC)  -o $(ENSROOT)\demo\p_test$(EXE)\
 	  $(OBJD)\hot_test$(OBJ)\
 	  $(OBJD)\libhoto$(ARC)\
 	  $(HOT_LINK) $(PURIFY_LIB)
 
 # Generate the hot_test executable
-hot_test2$(UNIXRULE): $(OBJD)\libhot$(ARC) $(OBJD)\hot_test2$(OBJ)
-	$(CC) -g -o $(ENSROOT)\demo\hot_test2$(EXE)\
+hot_test2$(EXE): $(OBJD)\libhot$(ARC) $(OBJD)\hot_test2$(OBJ)
+	$(CC)  -o $(ENSROOT)\demo\hot_test2$(EXE)\
 	  $(OBJD)\hot_test2$(OBJ)\
 	  $(OBJD)\libhot$(ARC)\
 	  $(HOT_LINK)
 
-hot_test2o$(UNIXRULE): $(OBJD)\libhoto$(ARC) $(OBJD)\hot_test2$(OBJ)
-	$(CC) -g -o $(ENSROOT)\demo\hot_test2o$(EXE)\
+hot_test2o$(EXE): $(OBJD)\libhoto$(ARC) $(OBJD)\hot_test2$(OBJ)
+	$(CC)  -o $(ENSROOT)\demo\hot_test2o$(EXE)\
 	  $(OBJD)\hot_test2$(OBJ)\
 	  $(OBJD)\libhoto$(ARC)\
 	  $(HOT_LINK)
 
-hot_test3$(UNIXRULE): $(OBJD)\libhot$(ARC) $(OBJD)\hot_test3$(OBJ)
-	$(CC) -g -o $(ENSROOT)\demo\hot_test3$(EXE)\
+hot_test3$(EXE): $(OBJD)\libhot$(ARC) $(OBJD)\hot_test3$(OBJ)
+	$(CC)  -o $(ENSROOT)\demo\hot_test3$(EXE)\
 	  $(OBJD)\hot_test3$(OBJ)\
 	  $(OBJD)\libhot$(ARC)\
 	  $(HOT_LINK)
 
-hot_ping$(UNIXRULE): $(OBJD)\libhot$(ARC) $(OBJD)\hot_ping$(OBJ)
-	$(CC) -g -o $(ENSROOT)\demo\hot_ping$(EXE)\
+hot_ping$(EXE): $(OBJD)\libhot$(ARC) $(OBJD)\hot_ping$(OBJ)
+	$(CC)  -o $(ENSROOT)\demo\hot_ping$(EXE)\
 	  $(OBJD)\hot_ping$(OBJ)\
 	  $(OBJD)\libhot$(ARC)\
 	  $(HOT_LINK)
 
-hot_pingo$(UNIXRULE): $(OBJD)\libhoto$(ARC) $(OBJD)\hot_ping$(OBJ) outboard
-	$(CC) -g -o $(ENSROOT)\demo\hot_pingo$(EXE)\
+hot_pingo$(EXE): $(OBJD)\libhoto$(ARC) $(OBJD)\hot_ping$(OBJ) outboard
+	$(CC)  -o $(ENSROOT)\demo\hot_pingo$(EXE)\
 	  $(OBJD)\hot_ping$(OBJ)\
 	  $(OBJD)\libhoto$(ARC)\
 	  $(HOT_LINK)
 
 # Purified version of hot_test
 phot_test: $(OBJD)\libhot$(ARC) $(OBJD)\hot_test$(OBJ)
-	purify $(CC) -g -o $(ENSROOT)\demo\hot_test$(EXE)\
+	purify $(CC)  -o $(ENSROOT)\demo\hot_test$(EXE)\
 	  $(OBJD)\hot_test$(OBJ)\
 	  $(OBJD)\libhot$(ARC)\
 	  $(HOT_LINK)
-
-#*************************************************************#
-# NT version of the hot_test
-
-hot_test$(NTRULE): $(OBJD)\libhot$(ARC) $(OBJD)\hot_test$(OBJ) $(OBJD)\libsock$(ARC)
-	cl\
-	  $(OBJD)\hot_test$(OBJ)\
-	  $(OBJD)\libhot$(ARC)\
-	  $(MLRUNTIME)\
-	  $(OCAML_LIB)\libunix$(ARCS)\
-	  $(OBJD)\libsock$(ARC)\
-	  $(LIBSYSCL)
-	$(RM) $(ENSROOT)\demo\hot_test$(EXE)
-	$(MV) hot_test-nt$(EXE) $(ENSROOT)\demo\hot_test$(EXE)
-
-hot_testo$(NTRULE): $(OBJD)\libhoto$(ARC) $(OBJD)\hot_test$(OBJ) $(OBJD)\libsock$(ARC)
-	cl\
-	-o hot_testo-nt$(EXE)\
-	  $(OBJD)\hot_test$(OBJ)\
-	  $(OBJD)\libhoto$(ARC)\
-	  $(LIBSYSCL)
-	$(RM) $(ENSROOT)\demo\hot_testo$(EXE)
-	$(MV) hot_testo-nt$(EXE) $(ENSROOT)\demo\hot_testo$(EXE)
-
-hot_test2$(NTRULE): $(OBJD)\libhot$(ARC) $(OBJD)\hot_test2$(OBJ) $(OBJD)\libsock$(ARC)
-	cl\
-	  $(OBJD)\hot_test2$(OBJ)\
-	  $(OBJD)\libhot$(ARC)\
-	  $(MLRUNTIME)\
-	  $(OCAML_LIB)\libunix$(ARCS)\
-	  $(OBJD)\libsock$(ARC)\
-	  $(LIBSYSCL)
-	$(RM) $(ENSROOT)\demo\hot_test2$(EXE)
-	$(MV) hot_test2-nt$(EXE) $(ENSROOT)\demo\hot_test2$(EXE)
-
-hot_test-crypto$(NTRULE): $(OBJD)\libhot-crypto$(ARC) $(OBJD)\hot_test$(OBJ) $(OBJD)\libsock$(ARC)
-	cl\
-	-o hot_test-crypto-nt$(EXE)\
-	  $(OBJD)\hot_test$(OBJ)\
-	  $(OBJD)\libhot-crypto$(ARC)\
-	  $(MLRUNTIME)\
-	  $(OCAML_LIB)\libunix$(ARCS)\
-	  $(OBJD)\libsock$(ARC)\
-	  $(LIBSYSCL)
-	$(RM) $(ENSROOT)\demo\hot_test-crypto$(EXE)
-	$(MV) hot_test-crypto-nt$(EXE) $(ENSROOT)\demo\hot_test-crypto$(EXE)
-
-hot_testo-crypto$(NTRULE): $(OBJD)\libhoto-crypto$(ARC) $(OBJD)\hot_test$(OBJ) $(OBJD)\libsock$(ARC)
-	cl\
-	-o hot_testo-crypto-nt$(EXE)\
-	  $(OBJD)\hot_test$(OBJ)\
-	  $(OBJD)\libhoto-crypto$(ARC)\
-	  $(LIBSYSCL)
-	$(RM) $(ENSROOT)\demo\hot_testo-crypto$(EXE)
-	$(MV) hot_testo-crypto-nt$(EXE) $(ENSROOT)\demo\hot_testo-crypto$(EXE)
 
 #*************************************************************#
 # The ATM transport C file requires special header files
@@ -514,17 +459,12 @@ maestro_test: maestro
 #*************************************************************#
 
 clean:
-	$(RM) *~ .*~ *.[oa] core .err gmon.out mon.out *.obj
-	$(RMDIR) $(OBJD)
-	$(MKDIR) $(OBJD)
-#	(cd ..\lib& $(MAKE) clean)
-#	(cd ..\demo& $(MAKE) clean)
-#	(cd ..\maestro& $(MAKE) clean)
-
-realclean: clean
+	$(RM) *~ .*~ *.[oa] *cm* core .err gmon.out mon.out *.obj
 	$(RMDIR) obj
 	$(MKDIR) obj
 
+
+realclean: clean
 
 #	(cd ..\lib& $(MAKE) realclean)
 #	(cd ..\demo& $(MAKE) realclean)

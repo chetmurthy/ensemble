@@ -1,12 +1,3 @@
-/**************************************************************/
-/*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
 /*
 ------------------------------------------------------------------------------
 Standard definitions and types, Bob Jenkins
@@ -23,12 +14,12 @@ Standard definitions and types, Bob Jenkins
 #  define STDDEF
 # endif
 
-#ifndef WIN32
+#ifndef _WIN32
 typedef  unsigned long long  ub8;
 #define UB8MAXVAL 0xffffffffffffffffLL
 typedef    signed long long  sb8;
 #define SB8MAXVAL 0x7fffffffffffffffLL
-#else   /* WIN32 */
+#else   /* _WIN32 */
 typedef  unsigned long ub8;
 #define UB8MAXVAL 0xffffffffffffffffLL
 typedef    signed long sb8;

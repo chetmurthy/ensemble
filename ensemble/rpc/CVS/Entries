@@ -1,0 +1,13 @@
+/.cvsignore/1.1/Wed Aug  1 11:22:24 2001//
+/Makefile/1.2/Wed Aug  1 11:22:24 2001//
+/eval.ml/1.2/Wed Aug  1 11:22:24 2001//
+/eval.mli/1.2/Wed Aug  1 11:22:24 2001//
+/rpc.ml/1.1/Wed Aug  1 11:22:24 2001//
+/scanf.ml/1.2/Wed Aug  1 11:22:24 2001//
+/scanf.mli/1.2/Wed Aug  1 11:22:24 2001//
+/sockio.ml/1.9/Wed Aug  1 11:22:24 2001//
+/sockio.mli/1.3/Wed Aug  1 11:22:24 2001//
+/wpsvr.ml/1.1/Wed Aug  1 11:22:24 2001//
+/xlist.ml/1.1/Wed Aug  1 11:22:24 2001//
+/xlist.mli/1.1/Wed Aug  1 11:22:24 2001//
+D

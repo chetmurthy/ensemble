@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* IOVECL.ML: operations on arrays of Iovec's. *)
 (* Author: Mark Hayden, 5/96 *)
 (**************************************************************)
@@ -460,6 +451,5 @@ let sendv = Iovec.sendv
 let sendtov = Iovec.sendtov
 let sendtosv = Iovec.sendtosv
 let sendtovs = Iovec.sendtovs
-let eth_sendtovs = Iovec.eth_sendtovs
 
 (**************************************************************)

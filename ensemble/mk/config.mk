@@ -6,6 +6,7 @@
 # parameters.  For Unix.
 #
 # Author: Mark Hayden, Robbert vanRenesse, 4/96
+# Changes: Ohad Rodeh, 8/2001
 #
 #*************************************************************#
 # C Compilation macros.  Used for compiling Socket library
@@ -243,8 +244,9 @@ ECHO	= echo
 STRIP   = strip
 MKDIR   = mkdir -p
 RMDIR   = rm -rf
+CHMODR  = chmod +r
 #*************************************************************#
-NTRULE	= -unix
+NTRULE	= #-unix
 UNIXRULE =
 #*************************************************************#
 # How to link various Ocaml libraries.  Should not require
@@ -314,17 +316,6 @@ HOT_MLLINK_i386-solaris = # empty
 HOT_LINK_i386-solaris = -lthread -lposix4 -ltermcap -lsocket -lnsl -lm -ldl
 HOT_THREAD_OBJ_i386-solaris = $(HOT_THREAD_OBJ_sparc-solaris)
 
-# SPARC-SUNOS4
-#GTHREADS_sparc-sunos4	= /usr/local/lib
-HOT_CFLAGS_sparc-sunos4 = -I $(GTHREADS)
-HOT_MLLINK_sparc-sunos4 = -ccopt -cclib ../contrib/rvr_threads/SUNOS/libthread.a
-HOT_LINK_sparc-sunos4	= ../contrib/rvr_threads/SUNOS/libthread.a -ltermcap -lm
-# ** NOTE ** For SPARC-SUNOS4 compilation:
-# This configuration uses rvr_threads - make sure HOT_THREAD_OBJ 
-# is COMMENTED OUT in ensemble/mk/files.mk (and remove the "\"
-# continuation character on the preceding line)
-HOT_THREAD_OBJ_sparc-sunos4 = rvr_intf$(OBJ)
-
 # I386-LINUX
 # The -D_RENTRANT is needed for the use of threads
 HOT_CFLAGS_i386-linux	= -DTHREADED_SELECT -DUSE_PTHREAD_SEMAPHORE -DUSE_PTHREAD_LOCK -D_REENTRANT -DLINUX_THREADS
@@ -356,12 +347,6 @@ HOT_MLLINK_hp9000-hpux	= # empty
 HOT_LINK_hp9000-hpux	=
 HOT_THREAD_OBJ_hp9000-hpux = pthread_intf$(OBJ)
 
-# BSDI
-HOT_CFLAGS_i386-bsdi	= -I $(GTHREADS)
-HOT_MLLINK_i386-bsdi	= -ccopt -cclib ../contrib/rvr_threads/SUNOS/libthread.a
-HOT_LINK_i386-bsdi	= ../contrib/rvr_threads/BSDI/libthread.a 
-HOT_THREAD_OBJ_i386-bsdi = rvr_intf$(OBJ)
-
 # MIPS-IRIX64
 HOT_CFLAGS_mips-irix64 = -DINLINE_PRAGMA -DTHREADED_SELECT
 HOT_MLLINK_mips-irix64 = # empty
@@ -392,50 +377,3 @@ PURIFY_LIB 	= $(PURIFY_HOME)/purify_stubs.a
 PURIFY 		= $(PURIFY_$(PLATFORM))
 
 #*************************************************************#
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

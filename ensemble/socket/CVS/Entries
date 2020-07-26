@@ -1,0 +1,22 @@
+/.cvsignore/1.1/Sun Sep  9 11:51:04 2001//
+/Makefile/1.2/Sun Sep  9 11:51:04 2001//
+/README/1.2/Sun Sep  9 11:51:04 2001//
+/gettimeofday.c/1.13/Sun Sep  9 11:51:04 2001//
+/heapc.c/1.14/Sun Sep  9 11:51:04 2001//
+/md5c.c/1.2/Sun Sep  9 11:51:04 2001//
+/miscsupp.c/1.1/Sun Sep  9 11:51:04 2001//
+/multicasts.c/1.17/Sun Sep  9 11:51:04 2001//
+/select.c/1.20/Sun Sep  9 11:51:04 2001//
+/sendopt.c/1.25/Sun Sep  9 11:51:04 2001//
+/skt.h/1.29/Sun Sep  9 11:51:06 2001//
+/sockfd.c/1.15/Sun Sep  9 11:51:06 2001//
+/sockopt.c/1.11/Sun Sep  9 11:51:06 2001//
+/socksupp.ml/1.7/Sun Sep  9 11:51:06 2001//
+/socksupp.mli/1.5/Sun Sep  9 11:51:06 2001//
+/static_string.c/1.12/Sun Sep  9 11:51:06 2001//
+/stdin.c/1.9/Sun Sep  9 11:51:06 2001//
+/sendrecv.c/1.22/Mon Sep 10 12:55:46 2001//
+/socket.mli/1.37/Thu Sep 13 07:12:32 2001//
+/ssocket.ml/1.12/Thu Sep 13 07:12:44 2001//
+/usocket.ml/1.15/Thu Sep 13 07:13:56 2001//
+D

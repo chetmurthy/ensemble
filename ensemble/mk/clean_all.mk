@@ -10,5 +10,6 @@
 #
 #  You need to have the SUBDIRS and MAKE variable defined.
 
-clean_all : 
-	for d in $(SUBDIRS) ; do (cd $$d; $(MAKE) -k clean); done
+CLEANALL =  for d in $(SUBDIRS); do (cd $$d; $(MAKE) -k clean); done
+
+

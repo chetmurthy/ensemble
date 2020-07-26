@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* VIEW.MLI *)
 (* Author: Mark Hayden, 3/96 *)
 (**************************************************************)
@@ -92,6 +83,11 @@ val set : state -> fields list -> state
 val string_of_state : state -> string
 
 val id_of_state : state -> id
+
+(* To overcome a strange typing problem. This function
+ * simply redirects to Version.string_of_id.
+*)
+val string_of_version_id : Version.id -> string
 
 (**************************************************************)
 

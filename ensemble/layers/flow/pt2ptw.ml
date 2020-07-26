@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* PT2PTW.ML : Point-to-point window-based flow control. *)
 (* Author: Mark Hayden, 3/96 *)
 (* Note that the window-cost of a message here is 1 more

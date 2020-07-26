@@ -1,0 +1,95 @@
+#*************************************************************#
+ENSROOT = ..
+!include $(ENSROOT)\mk\preamble.nmk
+!include $(ENSROOT)\mk\config.nmk
+!include $(ENSROOT)\mk\ocamlopt.nmk
+!include $(ENSROOT)\ce\ce_config.nmk
+
+#*************************************************************#
+.SUFFIXES: .ml .cmo .cmx .mli .cmi .c .o .obj .cmx
+.mli.cmi:
+	$(MLCOMP) -c $(MLFLAGS) -I $(ENSLIB) $< -o $@
+.ml.cmo:
+	$(MLCOMP) -c $(MLFLAGS) -I $(ENSLIB) $< -o $@
+.ml.cmx:
+	$(MLCOMP) -c $(MLFLAGS) -I $(ENSLIB) $< -o $@
+.c.o : 
+	$(CC) -c -I$(CAMLLIB) $(CFLAGS) $< -o $@
+.c.obj : 
+	$(CC) -c -I$(CAMLLIB) $(CFLAGS) $< -o $@
+
+
+#*************************************************************#
+
+COBJ =\
+	ce_trace$(OBJ)\
+	ce_convert$(OBJ)\
+	ce_misc$(OBJ)\
+	ce_actions$(OBJ)\
+	ce_inboard_c$(OBJ) 
+
+MLOBJ =\
+	ce_util$(CMO)\
+	ce_inboard$(CMO) 
+
+MLIOBJ =\
+	ce_util.cmi
+
+DEMOS = ce_perf$(EXE) ce_rand$(EXE) ce_fifo$(EXE) ce_mtalk$(EXE) 
+
+all: $(DEMOS) 
+
+
+BASIC_ENSCONF_skt = $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS) 
+
+
+
+ce$(OBJ): $(MLIOBJ) $(MLOBJ) $(ENSLIBS) 
+	$(MLCOMP) -output-obj $(MLFLAGS) -o ce$(OBJ) $(BASIC_ENSCONF_skt) $(MLOBJ) $(HOT_MLLINK)
+
+# Put all the libraries, ML code, and runtime into one library
+libce$(ARC): $(COBJ) ce$(OBJ)
+	$(RM) ce.c
+	$(PARTIALLD) $(PARTIALLDO)libce$(OBJ)\
+	  ce$(OBJ)\
+	  $(COBJ)\
+	  ..\lib\$(PLATFORM)\libsock$(ARC)\
+	  $(OCAML_LIB)\libunix$(ARCS)\
+	  $(MLRUNTIME)
+	$(MKLIB) $(MKLIBO)libce$(ARC) libce$(OBJ)
+	$(RANLIB) libce$(ARC)
+
+ce_mtalk$(EXE): $(COBJ) ce_mtalk$(OBJ) libce$(ARC)
+	$(CC) $(CFLAGS) -o ce_mtalk$(EXE)\
+	  ce_mtalk$(OBJ)\
+	  libce$(ARC)\
+	$(CE_LINK_FLAGS)
+
+ce_fifo$(EXE): $(COBJ) ce_fifo$(OBJ) libce$(ARC)
+	$(CC) $(CFLAGS) -o ce_fifo$(EXE)\
+	  ce_fifo$(OBJ)\
+	  libce$(ARC)\
+	$(CE_LINK_FLAGS)
+
+ce_rand$(EXE): $(COBJ) ce_rand$(OBJ) libce$(ARC)
+	$(CC) -o ce_rand$(EXE)\
+	  ce_rand$(OBJ)\
+	  libce$(ARC)\
+	$(CE_LINK_FLAGS)
+
+ce_perf$(EXE): $(COBJ) ce_perf$(OBJ) libce$(ARC)
+	$(CC) $(CFLAGS) -o ce_perf$(EXE)\
+	  ce_perf$(OBJ)\
+	  libce$(ARC)\
+	$(CE_LINK_FLAGS)
+
+clean:
+	$(RM) *.obj *.o *.cm* *.pdb core  gmon.out .#* 
+
+realclean: clean 
+	$(RM) *.a *.lib *.dll $(DEMOS) 
+
+force: clean all
+
+#*************************************************************#
+

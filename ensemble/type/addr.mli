@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* ADDR.MLI *)
 (* Author: Mark Hayden, 12/95 *)
 (**************************************************************)
@@ -26,7 +17,6 @@ type id =
   | Pgp
   | Fortezza
   | Mpi
-  | Eth
 
 (* Addresses.
  *)
@@ -41,7 +31,6 @@ type t =
   | PgpA of string
   | FortezzaA of string
   | MpiA of rank
-  | EthA of eth * pid
 
 (* Processes actually use collections of addresses.
  *)

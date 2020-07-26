@@ -1,14 +1,5 @@
 #*************************************************************#
 #
-#   Ensemble, 1.10
-#   Copyright 2001 Cornell University, Hebrew University
-#   All rights reserved.
-#
-#   See ensemble\doc\license.txt for further information.
-#
-#*************************************************************#
-#*************************************************************#
-#
 # TK: makefile for Tk demos
 #
 # Author: Mark Hayden, 8\96
@@ -47,8 +38,8 @@ clean:
 	$(RM) wbml
 
 depend:
-	ocamldep -I $(ENSLIB) *.ml* > .depend
+	ocamldep -I $(ENSLIB) *.ml* > $(DEPEND)
 
-include .depend
+!include $(DEPEND)
 
 #*************************************************************#

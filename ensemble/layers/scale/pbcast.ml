@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* PBCAST.ML : stability detection protocol *)
 (* Author: Mark Hayden, 11/96 *)
 (* Major Bug fixs:  Zhen Xiao,  3/98

@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* EXCHANGE.ML : key exchange protocol *)
 (* Authors: Ohad Rodeh 4/98 *)
 (* Based on code by Mark Hayden, with suggestions by Ron Minsky *)

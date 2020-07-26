@@ -1264,6 +1264,9 @@ $(OBJD)/version$(CMO) : ../type/version.ml obj/sparc-solaris/ecamlc \
     obj/sparc-solaris/util$(CMO) obj/sparc-solaris/version$(CMI) 
 	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../type/version.ml
 
+$(OBJD)/version$(CMI) : ../type/version.mli obj/sparc-solaris/ecamlc 
+	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../type/version.mli
+
 $(OBJD)/view$(CMO) : ../type/view.ml obj/sparc-solaris/ecamlc \
     obj/sparc-solaris/addr$(CMO) obj/sparc-solaris/arrayf$(CMO) \
     obj/sparc-solaris/endpt$(CMO) obj/sparc-solaris/group$(CMO) \
@@ -1274,9 +1277,6 @@ $(OBJD)/view$(CMO) : ../type/view.ml obj/sparc-solaris/ecamlc \
     obj/sparc-solaris/view$(CMI) 
 	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../type/view.ml
 
-$(OBJD)/version$(CMI) : ../type/version.mli obj/sparc-solaris/ecamlc 
-	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../type/version.mli
-
 $(OBJD)/view$(CMI) : ../type/view.mli obj/sparc-solaris/ecamlc \
     obj/sparc-solaris/addr$(CMO) obj/sparc-solaris/arrayf$(CMO) \
     obj/sparc-solaris/endpt$(CMO) obj/sparc-solaris/group$(CMO) \
@@ -1284,16 +1284,6 @@ $(OBJD)/view$(CMI) : ../type/view.mli obj/sparc-solaris/ecamlc \
     obj/sparc-solaris/security$(CMO) obj/sparc-solaris/time$(CMO) \
     obj/sparc-solaris/trans$(CMO) obj/sparc-solaris/version$(CMO) 
 	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../type/view.mli
-
-$(OBJD)/eth$(CMO) : ../trans/eth.ml obj/sparc-solaris/ecamlc \
-    obj/sparc-solaris/addr$(CMO) obj/sparc-solaris/alarm$(CMO) \
-    obj/sparc-solaris/arge$(CMO) obj/sparc-solaris/arrayf$(CMO) \
-    obj/sparc-solaris/buf$(CMO) obj/sparc-solaris/domain$(CMO) \
-    obj/sparc-solaris/elink$(CMO) obj/sparc-solaris/hsys$(CMO) \
-    obj/sparc-solaris/iovecl$(CMO) obj/sparc-solaris/mbuf$(CMO) \
-    obj/sparc-solaris/route$(CMO) obj/sparc-solaris/trace$(CMO) \
-    obj/sparc-solaris/trans$(CMO) obj/sparc-solaris/util$(CMO) 
-	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../trans/eth.ml
 
 $(OBJD)/htk$(CMO) : ../trans/htk.ml obj/sparc-solaris/ecamlc \
     obj/sparc-solaris/alarm$(CMO) obj/sparc-solaris/elink$(CMO) \
@@ -1387,6 +1377,16 @@ $(OBJD)/udp$(CMO) : ../trans/udp.ml obj/sparc-solaris/ecamlc \
 
 $(OBJD)/udp$(CMI) : ../trans/udp.mli obj/sparc-solaris/ecamlc 
 	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../trans/udp.mli
+
+$(OBJD)/eth$(CMO) : ../trans/eth.ml obj/sparc-solaris/ecamlc \
+    obj/sparc-solaris/addr$(CMO) obj/sparc-solaris/alarm$(CMO) \
+    obj/sparc-solaris/arge$(CMO) obj/sparc-solaris/arrayf$(CMO) \
+    obj/sparc-solaris/buf$(CMO) obj/sparc-solaris/domain$(CMO) \
+    obj/sparc-solaris/elink$(CMO) obj/sparc-solaris/hsys$(CMO) \
+    obj/sparc-solaris/iovecl$(CMO) obj/sparc-solaris/mbuf$(CMO) \
+    obj/sparc-solaris/route$(CMO) obj/sparc-solaris/trace$(CMO) \
+    obj/sparc-solaris/trans$(CMO) obj/sparc-solaris/util$(CMO) 
+	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../trans/eth.ml
 
 $(OBJD)/async$(CMO) : ../infr/async.ml obj/sparc-solaris/ecamlc \
     obj/sparc-solaris/endpt$(CMO) obj/sparc-solaris/group$(CMO) \
@@ -1718,13 +1718,6 @@ $(OBJD)/arge$(CMO) : ../appl/arge.ml obj/sparc-solaris/ecamlc \
     obj/sparc-solaris/version$(CMO) obj/sparc-solaris/arge$(CMI) 
 	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../appl/arge.ml
 
-$(OBJD)/pgp$(CMO) : ../appl/pgp.ml obj/sparc-solaris/ecamlc \
-    obj/sparc-solaris/addr$(CMO) obj/sparc-solaris/alarm$(CMO) \
-    obj/sparc-solaris/arge$(CMO) obj/sparc-solaris/auth$(CMO) \
-    obj/sparc-solaris/hsys$(CMO) obj/sparc-solaris/trace$(CMO) \
-    obj/sparc-solaris/util$(CMO) obj/sparc-solaris/pgp$(CMI) 
-	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../appl/pgp.ml
-
 $(OBJD)/arge$(CMI) : ../appl/arge.mli obj/sparc-solaris/ecamlc \
     obj/sparc-solaris/addr$(CMO) obj/sparc-solaris/glue$(CMO) \
     obj/sparc-solaris/hsys$(CMO) obj/sparc-solaris/property$(CMO) \
@@ -1741,6 +1734,13 @@ $(OBJD)/debug$(CMO) : ../appl/debug.ml obj/sparc-solaris/ecamlc \
 $(OBJD)/debug$(CMI) : ../appl/debug.mli obj/sparc-solaris/ecamlc \
     obj/sparc-solaris/alarm$(CMO) obj/sparc-solaris/trans$(CMO) 
 	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../appl/debug.mli
+
+$(OBJD)/pgp$(CMO) : ../appl/pgp.ml obj/sparc-solaris/ecamlc \
+    obj/sparc-solaris/addr$(CMO) obj/sparc-solaris/alarm$(CMO) \
+    obj/sparc-solaris/arge$(CMO) obj/sparc-solaris/auth$(CMO) \
+    obj/sparc-solaris/hsys$(CMO) obj/sparc-solaris/trace$(CMO) \
+    obj/sparc-solaris/util$(CMO) obj/sparc-solaris/pgp$(CMI) 
+	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../appl/pgp.ml
 
 $(OBJD)/elink$(CMO) : ../appl/elink.ml obj/sparc-solaris/ecamlc \
     obj/sparc-solaris/addr$(CMO) obj/sparc-solaris/alarm$(CMO) \
@@ -1936,6 +1936,10 @@ $(OBJD)/lset$(CMO) : ../util/lset.ml obj/sparc-solaris/ecamlc \
     obj/sparc-solaris/util$(CMO) obj/sparc-solaris/lset$(CMI) 
 	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../util/lset.ml
 
+$(OBJD)/once$(CMO) : ../util/once.ml obj/sparc-solaris/ecamlc \
+    obj/sparc-solaris/util$(CMO) obj/sparc-solaris/once$(CMI) 
+	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../util/once.ml
+
 $(OBJD)/lset$(CMI) : ../util/lset.mli obj/sparc-solaris/ecamlc \
     obj/sparc-solaris/arrayf$(CMO) 
 	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../util/lset.mli
@@ -1994,10 +1998,6 @@ $(OBJD)/mrekey_dt$(CMI) : ../util/mrekey_dt.mli obj/sparc-solaris/ecamlc \
 
 $(OBJD)/nulldynlink$(CMO) : ../util/nulldynlink.ml obj/sparc-solaris/ecamlc 
 	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../util/nulldynlink.ml
-
-$(OBJD)/once$(CMO) : ../util/once.ml obj/sparc-solaris/ecamlc \
-    obj/sparc-solaris/util$(CMO) obj/sparc-solaris/once$(CMI) 
-	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../util/once.ml
 
 $(OBJD)/once$(CMI) : ../util/once.mli obj/sparc-solaris/ecamlc 
 	obj/sparc-solaris/ecamlc -Io obj/sparc-solaris -opt  -unsafe -noassert -compact  ../util/once.mli
@@ -2160,9 +2160,6 @@ obj/sparc-solaris/rvr_intf$(OBJ): ../hot/rvr_intf.c ../socket/skt.h
 obj/sparc-solaris/solaris_thread$(OBJ): ../hot/solaris_thread.c ../socket/skt.h
 	$(CC) -o obj/sparc-solaris/solaris_thread$(OBJ) $(CFLAGS) -c ../hot/solaris_thread.c
 
-obj/sparc-solaris/ethc$(OBJ): ../socket/ethc.c ../socket/skt.h
-	$(CC) -o obj/sparc-solaris/ethc$(OBJ) $(CFLAGS) -c ../socket/ethc.c
-
 obj/sparc-solaris/gettimeofday$(OBJ): ../socket/gettimeofday.c ../socket/skt.h
 	$(CC) -o obj/sparc-solaris/gettimeofday$(OBJ) $(CFLAGS) -c ../socket/gettimeofday.c
 
@@ -2198,3 +2195,6 @@ obj/sparc-solaris/static_string$(OBJ): ../socket/static_string.c ../socket/skt.h
 
 obj/sparc-solaris/stdin$(OBJ): ../socket/stdin.c ../socket/skt.h
 	$(CC) -o obj/sparc-solaris/stdin$(OBJ) $(CFLAGS) -c ../socket/stdin.c
+
+obj/sparc-solaris/ethc$(OBJ): ../socket/ethc.c ../socket/skt.h
+	$(CC) -o obj/sparc-solaris/ethc$(OBJ) $(CFLAGS) -c ../socket/ethc.c

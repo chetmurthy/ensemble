@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* ELINK.ML *)
 (* Author: Mark Hayden, 12/98 *)
 (**************************************************************)
@@ -414,7 +405,6 @@ let real_alarm = create_simple "Real" alarm
 let udp = package "Udp" ["ipmc";"udp"] []
 let udp_domain = create domain udp
 let tcp_domain = create_simple "Tcp" domain
-let eth_domain = create_simple "Eth" domain
 let mpi_domain = create_simple "Mpi" domain
 let atm_domain = create_simple "Atm" domain
 let netsim = package_simple "Netsim"
@@ -429,7 +419,6 @@ let _ =
   alarm_install "NETSIM" (fun s -> (get name netsim_alarm s)) ;
   domain_install Addr.Udp (fun a -> (get name udp_domain) a) ;
   domain_install Addr.Tcp (fun a -> (get name tcp_domain) a) ;
-  domain_install Addr.Eth (fun a -> (get name eth_domain) a) ;
   domain_install Addr.Netsim (fun a -> (get name netsim_domain) a)
 
 (* Routers.

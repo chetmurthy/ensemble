@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* VIEW.ML *)
 (* Author: Mark Hayden, 3/96 *)
 (**************************************************************)
@@ -100,6 +91,8 @@ let id_of_state vs =
   if Arrayf.is_empty vs.view then
     failwith "empty view" ;
   (vs.ltime,(Arrayf.get vs.view 0))
+
+let string_of_version_id = Version.string_of_id
   
 (**************************************************************)
 

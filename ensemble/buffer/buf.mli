@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* BUF.ML *)
 (* Author: Mark Hayden, 8/98 *)
 (**************************************************************)
@@ -80,7 +71,6 @@ val create : len -> t
 val digest_sub : t -> ofs -> len -> t
 val digest_substring : string -> int(*ofs*) -> int(*len*) -> t
 val empty : unit -> t
-val eth_recv :  Hsys.recv_info -> t -> ofs -> len -> len
 val int_of_substring : t -> ofs -> int
 val int16_of_substring : t -> ofs -> int
 val length : t -> len
@@ -97,7 +87,6 @@ val sendto : Hsys.sendto_info -> t -> ofs -> len -> unit
 val sendtosv : Hsys.sendto_info -> t -> t Hsys.refcnt iovec Arrayf.t -> unit
 val sendtovs : Hsys.sendto_info -> t Hsys.refcnt iovec Arrayf.t -> t -> unit
 val sendtov : Hsys.sendto_info -> t Hsys.refcnt iovec Arrayf.t -> unit
-val eth_sendtovs : Hsys.eth_sendto_info -> t Hsys.refcnt iovec Arrayf.t -> t -> unit
 val sendv : Hsys.send_info -> t Hsys.refcnt iovec Arrayf.t -> int
 val static : len -> t
 val sub : debug -> t -> ofs -> len -> t

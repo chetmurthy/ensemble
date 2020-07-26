@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* CHK_TOTAL.ML *)
 (* Author: Mark Hayden, 10/96 *)
 (* Tests that all members see broadcasts in total ordering.

@@ -1,12 +1,3 @@
-/**************************************************************/
-/*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- */
-/**************************************************************/
 // $Header: /cvsroot/ensemble/maestro/src/type/Maestro_Types.h,v 1.4 1999/03/24 16:41:51 tclark Exp $
 
 #ifndef __MAESTRO_TYPES_H__

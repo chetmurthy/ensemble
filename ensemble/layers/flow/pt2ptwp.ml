@@ -1,13 +1,4 @@
 (**************************************************************)
-(*
- *  Ensemble, 1.10
- *  Copyright 2001 Cornell University, Hebrew University
- *  All rights reserved.
- *
- *  See ensemble/doc/license.txt for further information.
- *)
-(**************************************************************)
-(**************************************************************)
 (* PT2PTWP.ML : Point-to-point window-based flow control with 
  * shared receiver's window. *)
 (* Author: Mark Rabotnikov, 8/99 *)
