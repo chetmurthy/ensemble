@@ -37,18 +37,17 @@ val rmv_poll 	: t -> string -> unit	(* remove polling function *)
 val block 	: t -> unit		(* block until next timer/socket input *)
 val poll 	: t -> poll_type -> unit -> bool (* poll for socket data *)
 val handlers    : t -> Route.handlers
-val mbuf        : t -> Mbuf.t
 val sched       : t -> Sched.t
 val async       : t -> Async.t
 val unique      : t -> Unique.t
-val local_xmits : t -> Route.xmits
+val local_xmits : t -> Route.xmitf
 
 (**************************************************************)
 (**************************************************************)
 (* For use only by alarms.
  *)
 
-type gorp = Unique.t * Sched.t * Async.t * Route.handlers * Mbuf.t
+type gorp = Unique.t * Sched.t * Async.t * Route.handlers
 
 val create :
   string ->				(* name *)
@@ -72,4 +71,26 @@ val alm_rmv_poll	: string -> ((bool -> bool) option)
 
 val wrap : ((Time.t -> unit) -> Time.t -> unit) -> t -> t
 val c_alarm : (unit -> unit) -> (Time.t -> unit) -> alarm
+
+(**************************************************************)
+
+(* Installation and management of alarms.
+ * 
+ * [OR]: This has been moved back here, away from the elink 
+ * module. I think dynamic linking should be done by the caml
+ * folk, not us. 
+*)
+
+type id = string
+val install  : id -> (gorp -> t) -> unit
+val choose   : id -> gorp -> t
+val get_hack : unit -> t
+
+(**************************************************************)
+
+(* Install a unique port number. 
+ * OR: moved here from Appl.
+*)
+val install_port : Trans.port -> unit
+
 (**************************************************************)

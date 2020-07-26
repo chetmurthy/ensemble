@@ -15,65 +15,61 @@ let info = Trace.log "ROUTEI"
 
 (**************************************************************)
 
-type message =
-  | Signed of (bool -> Obj.t option -> int -> Iovecl.t -> unit)
-  | Unsigned of (Obj.t option -> int -> Iovecl.t -> unit)
-  | Bypass of (int -> Iovecl.t -> unit)
-  | Raw of (Iovecl.t -> unit)
-  | Scale of (rank -> Obj.t option -> int -> Iovecl.t -> unit)
+type pre_processor =
+  | Unsigned of (rank -> Obj.t option -> seqno -> Iovecl.t -> unit)
+  | Signed of (bool -> rank -> Obj.t option -> seqno -> Iovecl.t -> unit)
 
 (**************************************************************)
 
 type id =
-  | SignedId
   | UnsignedId
-  | BypassId
-  | RawId
-  | ScaleId
+  | SignedId
 
 (**************************************************************)
-
+(* [merge] is the type of a combined receive function that is
+ * called once on behalf of a set of stacks that all need to
+ * receive a packet. 
+ * 
+ * [data] is the actual array of stack receive functions.
+ * 
+ * [key] contains an extra integer to improve the hash function.
+*)
 type key = Conn.id * Conn.key * int
-type merge = Iovec.rbuf -> ofs -> len -> unit
-type data = Conn.id * Buf.t * Security.key * message *
-     ((Conn.id * Buf.t * Security.key * message) Arrayf.t ->
-      (Iovec.rbuf -> Buf.ofs -> Buf.len -> unit) Arrayf.t)
+type merge = Buf.t -> Buf.ofs -> Buf.len -> Iovecl.t -> unit
+type data = Conn.id * Buf.t * Security.key * pre_processor *
+     ((Conn.id * Buf.t * Security.key * pre_processor) Arrayf.t ->
+       merge Arrayf.t)
 
 type handlers = (key,data,merge) Handler.t
 
-type xmits =
-  ((Buf.t -> ofs -> len -> unit) * 
-   (Iovecl.t -> unit) *
-   (Iovecl.t -> Buf.t -> unit))
+(* The type of a packet sending function. It so happens that
+ * the type of sending and receiving functions is nearly same. 
+*)
+type xmitf = Buf.t -> Buf.ofs -> Buf.len -> Iovecl.t -> unit
 
 (* Type of routers.
  *)
-type 'msg t = {
+type 'xf t = {
   debug		: debug ;
   secure	: bool ;
-  scaled	: bool ;
-  proc_hdlr     : ((bool -> 'msg) -> message) ;
+  proc_hdlr     : ((bool -> 'xf) -> pre_processor) ;
   pack_of_conn  : (Conn.id -> Buf.t) ;
-  merge         : ((Conn.id * Buf.t(*digest*) * Security.key * message) Arrayf.t -> 
-                   (Iovec.rbuf -> ofs -> len -> unit) Arrayf.t) ;
-  blast         : (xmits -> Security.key -> Buf.t(*digest*) -> Conn.id -> 'msg)
+  merge         : ((Conn.id * digest * Security.key * pre_processor) Arrayf.t -> 
+                   merge Arrayf.t) ;
+  blast         : (xmitf -> Security.key -> digest -> Conn.id -> 'xf)
 } 
 
 (**************************************************************)
 
-let id_of_message = function 
-  | Signed _ -> SignedId 
-  | Unsigned _ -> UnsignedId
-  | Bypass _ -> BypassId
-  | Raw _ -> RawId
-  | Scale _ -> ScaleId
+let id_of_pre_processor = function 
+  | Unsigned _  -> UnsignedId
+  | Signed _ -> SignedId
 
 (**************************************************************)
 
-let create debug secure scaled proc_hdlr pack_of_conn merge blast = {
+let create debug secure proc_hdlr pack_of_conn merge blast = {
   debug = debug ;
   secure = secure ;
-  scaled = scaled ;
   proc_hdlr = proc_hdlr ;
   pack_of_conn = pack_of_conn ;
   merge = merge ;
@@ -82,15 +78,16 @@ let create debug secure scaled proc_hdlr pack_of_conn merge blast = {
 
 let debug r = r.debug
 let secure r = r.secure
-let scaled r = r.scaled
 
 let hash_help p =
   Hashtbl.hash_param 100 1000 p
 
 let install r handlers ck all_recv key handler =
-  Arrayf.iter (fun (conn,kind,rank) ->
+  List.iter (fun (conn,kind) ->
     let pack = r.pack_of_conn conn in
     let pack0 = Buf.int16_of_substring pack (Buf.length pack -|| len4) in
+    info (fun () -> sprintf "Install: pack0=%d conn=%s" 
+      pack0 (Conn.string_of_id conn)) ;
 
     (* We put in an extra integer to make the hashing less
      * likely to result in collisions.  Note that this
@@ -98,13 +95,13 @@ let install r handlers ck all_recv key handler =
      * (see ocaml/byterun/hash.c).  Yuck.  
      *)
     let hash_help = hash_help (conn,ck) in
-    let hdlr = r.proc_hdlr (handler kind rank) in
+    let hdlr = r.proc_hdlr (handler kind) in
     Handler.add handlers pack0 (conn,ck,hash_help) (conn,pack,key,hdlr,r.merge)
   ) all_recv
 (*; eprintf "ltimes=%s\n" (string_of_int_list (Sort.list (>=) ((List.map (fun ((c,_,_),_) -> Conn.ltime c) (Handler.to_list handlers)))))*)
 
 let remove r handlers ck all_recv =
-  Arrayf.iter (fun (conn,_,_) ->
+  List.iter (fun (conn,_) ->
     let pack = r.pack_of_conn conn in
     let pack0 = Buf.int16_of_substring pack (Buf.length pack -|| len4) in
     let hash_help = hash_help (conn,ck) in
@@ -112,8 +109,10 @@ let remove r handlers ck all_recv =
   ) all_recv
 
 let blast r xmits key conn =
-  info (fun () -> sprintf "conn=%s" (Conn.string_of_id conn)) ;
   let pack = r.pack_of_conn conn in
+(*  info (fun () -> sprintf "blast pack=%s conn=%s" 
+    (Util.hex_of_string (Buf.string_of pack))
+    (Conn.string_of_id conn)) ;*)
   r.blast xmits key pack conn
 
 (**************************************************************)
@@ -277,11 +276,18 @@ let _ = Trace.test_declare "group" (fun () ->
 )
 
 (**************************************************************)
-
 let no_handler () = "no upcalls for message"
 let empty1 _ _ = drop no_handler
 let empty2 _ _ = drop no_handler
 let empty3 _ _ _ = drop no_handler
+let empty4 _ _ _ _ = drop no_handler
+
+(**************************************************************)
+(* The new support stuff.
+ *
+ * The point is to increment the ref-count for each xmit call 
+ * on an iovec.
+ *)
 
 let merge1 a = ident (fun a1 -> Arrayf.iter (fun f -> f a1) a)
 
@@ -317,19 +323,19 @@ let merge4 a = ident (fun a1 a2 a3 a4 -> Arrayf.iter (fun f -> f a1 a2 a3 a4) a)
 
 (**************************************************************)
 
-let empty3rc r o l = drop no_handler ; Refcnt.free name r
+let empty3rc r o l = drop no_handler ; Iovecl.free r
 let merge3rc a = 
   match Arrayf.to_array a with
   | [||] -> empty3rc
   | [|f1|] -> f1
   | [|f1;f2|] ->
       fun r o l -> 
-	f1 (Refcnt.copy name r) o l ; f2 r o l
+	f1 (Iovecl.copy r) o l ; f2 r o l
   | _ ->
       let n = pred (Arrayf.length a) in
       fun r o l ->
 	for i = 1 to n do
-	  (Arrayf.get a i) (Refcnt.copy name r) o l
+	  (Arrayf.get a i) (Iovecl.copy r) o l
 	done ;
 	(Arrayf.get a 0) r o l
 
@@ -343,93 +349,94 @@ let merge3rc a =
  * zeroed on us.
  *)
 
-let empty1iov argv = drop no_handler ; Iovecl.free name argv
+let empty1iov argv = drop no_handler ; Iovecl.free argv
 let merge1iov a = 
   match Arrayf.to_array a with
   | [||] -> empty1iov
   | [|f1|] -> f1
   | [|f1;f2|] ->
       fun argv -> 
-	f1 (Iovecl.copy name argv) ; f2 argv
+	f1 (Iovecl.copy argv) ; f2 argv
   | _ ->
       let pred_len = pred (Arrayf.length a) in
       fun argv ->
 	for i = 1 to pred_len do
-	  (Arrayf.get a i) (Iovecl.copy name argv)
+	  (Arrayf.get a i) (Iovecl.copy argv)
 	done ;
 	(Arrayf.get a 0) argv
 
-let empty2iov arg1 argv = drop no_handler ; Iovecl.free name argv
+let empty2iov arg1 argv = drop no_handler ; Iovecl.free argv
 let merge2iov a = 
   match Arrayf.to_array a with
   | [||] -> empty2iov
   | [|f1|] -> f1
   | [|f1;f2|] ->
       fun arg1 argv -> 
-	f1 arg1 (Iovecl.copy name argv) ; f2 arg1 argv
+	f1 arg1 (Iovecl.copy argv) ; f2 arg1 argv
   | _ ->
       let pred_len = pred (Arrayf.length a) in
       fun arg1 argv ->
 	for i = 1 to pred_len do
-	  (Arrayf.get a i) arg1 (Iovecl.copy name argv)
+	  (Arrayf.get a i) arg1 (Iovecl.copy argv)
 	done ;
 	(Arrayf.get a 0) arg1 argv
 
-let empty2iovr argv arg2 = drop no_handler ; Iovecl.free name argv
+let empty2iovr argv arg2 = drop no_handler ; Iovecl.free argv
 let merge2iovr a = 
   match Arrayf.to_array a with
   | [||] -> empty2iovr
   | [|f1|] -> f1
   | [|f1;f2|] ->
       fun argv arg2 -> 
-	f1 (Iovecl.copy name argv) arg2 ; f2 argv arg2
+	f1 (Iovecl.copy argv) arg2 ; f2 argv arg2
   | _ ->
       let pred_len = pred (Arrayf.length a) in
       fun argv arg2 ->
 	for i = 1 to pred_len do
-	  (Arrayf.get a i) (Iovecl.copy name argv) arg2
+	  (Arrayf.get a i) (Iovecl.copy argv) arg2
 	done ;
 	(Arrayf.get a 0) argv arg2
 
-let empty3iov arg1 arg2 argv = drop no_handler ; Iovecl.free name argv
+let empty3iov arg1 arg2 argv = drop no_handler ; Iovecl.free argv
 let merge3iov a = 
   match Arrayf.to_array a with
   | [||] -> empty3iov
   | [|f1|] -> f1
   | [|f1;f2|] ->
       fun arg1 arg2 argv ->
-	f1 arg1 arg2 (Iovecl.copy name argv) ; f2 arg1 arg2 argv
+	f1 arg1 arg2 (Iovecl.copy argv) ; f2 arg1 arg2 argv
   | _ ->
       let pred_len = pred (Arrayf.length a) in
       fun arg1 arg2 argv ->
 	for i = 1 to pred_len do
-	  (Arrayf.get a i) arg1 arg2 (Iovecl.copy name argv)
+	  (Arrayf.get a i) arg1 arg2 (Iovecl.copy argv)
 	done ;
 	(Arrayf.get a 0) arg1 arg2 argv
 
-let empty4iov arg1 arg2 arg3 argv = drop no_handler ; Iovecl.free name argv
+let empty4iov arg1 arg2 arg3 argv = drop no_handler ; Iovecl.free argv
 let merge4iov a = 
   match Arrayf.to_array a with
   | [||] -> empty4iov
   | [|f1|] -> f1
   | [|f1;f2|] -> fun arg1 arg2 arg3 argv ->
-      f1 arg1 arg2 arg3 (Iovecl.copy name argv) ; f2 arg1 arg2 arg3 argv
+      f1 arg1 arg2 arg3 (Iovecl.copy argv) ; f2 arg1 arg2 arg3 argv
   | _ ->
       let pred_len = pred (Arrayf.length a) in
       fun arg1 arg2 arg3 argv ->
 	for i = 1 to pred_len do
-	  (Arrayf.get a i) arg1 arg2 arg3 (Iovecl.copy name argv)
+	  (Arrayf.get a i) arg1 arg2 arg3 (Iovecl.copy argv)
 	done ;
 	(Arrayf.get a 0) arg1 arg2 arg3 argv
 
 let pack_of_conn = Conn.hash_of_id
 
 (**************************************************************)
-
-(*type merge = (Conn.id * Security.key * Conn.kind * rank * message) array -> (Iovec.t -> unit)*)
+(*type merge = (Conn.id * Security.key * Conn.kind * rank * message) array 
+  -> (Iovec.t -> unit)*)
 
 let merge info =
-  let info = Arrayf.map (fun (c,p,k,h,m) -> ((id_of_message h),(m,(c,p,k,h)))) info in
+  let info = Arrayf.map (fun (c,p,k,h,m) -> 
+    ((id_of_pre_processor h),(m,(c,p,k,h)))) info in
   let info = group info in
   let info = 
     Arrayf.map (fun (_,i) -> 
@@ -438,11 +445,11 @@ let merge info =
     ) info 
   in
   let info = Arrayf.flatten info in
-  merge3rc info
+  merge4iov info
 
 let delay f =
-  let delayed a b c =
-    (f ()) a b c
+  let delayed a b c d =
+    (f ()) a b c d
   in
   delayed
 
@@ -457,20 +464,19 @@ let handlers () =
 *)
   table
 
-let deliver handlers rbuf ofs len = 
-  let pos = ofs +|| len -|| len4 in
-(*
-  eprintf "ROUTE:deliver:hash word=%04X\n" (Buf.int16_of_substring (Refcnt.read name rbuf) pos) ;
-*)
-  let handler = Handler.find handlers (Buf.int16_of_substring (Refcnt.read name rbuf) pos) in
-  handler rbuf ofs len
+let deliver handlers buf ofs len iovl = 
+  (* Buf.int16_of_substring pack (Buf.length pack -|| len4) in*)
+  (*raise (Invalid_argument "deliver");*)
 
-let deliver_iov handlers iov =
-  let iov = Iovec.really_break iov in
-  deliver handlers iov.Iovec.rbuf iov.Iovec.ofs iov.Iovec.len
+  let pack0 = int16_of_substring buf (ofs +|| md5len -|| len4) in
+  if Iovecl.len iovl >|| len0 then 
+    info (fun () -> sprintf "deliver pack0=%d pack=%s (mo=%d iovl=%d)"
+      pack0
+      (Util.hex_of_string (Buf.string_of (Buf.sub buf ofs len16)))
+      (int_of_len len) (int_of_len (Iovecl.len iovl))
+    );
 
-let deliver_iovl handlers mbuf iovl =
-  let iov = Mbuf.flatten name mbuf iovl in
-  deliver_iov handlers iov
+  let handler = Handler.find handlers pack0 in
+  handler buf ofs len iovl
 
 (**************************************************************)

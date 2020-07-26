@@ -2,8 +2,6 @@
 (* UTIL.ML *)
 (* Author: Mark Hayden, 4/95 *)
 (**************************************************************)
-open Trans
-(**************************************************************)
 let failwith m = failwith ("UTIL:"^m)
 (**************************************************************)
 
@@ -491,28 +489,6 @@ let disable_sigpipe =
   )
 
 (**************************************************************)
-(*
-let gc_profile name f =
-  let profiled a1 =
-    let s1 = Hsys.minor_words () in
-    let res = f a1 in
-    let s2 = Hsys.minor_words () in
-    let words = s2 - s1 in
-    printf "GC_PROFILE:%s:%d words\n" name words ;
-    res
-  in profiled
-
-let gc_profile3 name f = 
-  let profiled a1 a2 a3 =
-    let s1 = Hsys.minor_words () in
-    let res = f a1 a2 a3 in
-    let s2 = Hsys.minor_words () in
-    let words = s2 - s1 in
-    printf "GC_PROFILE:%s:%d words\n" name words ;
-    res
-  in profiled
-*)
-(**************************************************************)
 
 let chars_of_string s =
   let l = ref [] in
@@ -594,8 +570,8 @@ let addinfo s t =
 (**************************************************************)
 
 let string_list_of_gc_stat s =
-  [sprintf "live_words=%d"  s.Gc.live_words; 
-   sprintf "total_words=%d" s.Gc.heap_words; 
+  [sprintf "live_words=%dK"  (s.Gc.live_words/1024)  ; 
+   sprintf "total_words=%dK" (s.Gc.heap_words/1024); 
    sprintf "collections: minor=%d, major=%d, compact=%d"
       s.Gc.minor_collections s.Gc.major_collections s.Gc.compactions]
 
@@ -641,56 +617,51 @@ let sample n a =
   )
 
 (**************************************************************)
+(* Stuff moved from Hsys. 
+*)
+
+(* Handler defaults to nothing.
+ *)
+let error_log = ref (fun _ -> ())
+
+let log f = !error_log f
+
+
+let full_error = ref (fun _ -> "Unknown Exception")
+
+let install_error f = full_error := f
+
+let error e =
+  match e with
+  | Out_of_memory  -> "Out_of_memory";
+  | Stack_overflow -> "Stack_overflow";
+  | Not_found      -> "Not_found"
+  | Failure s      -> sprintf "Failure(%s)" s
+  | Sys_error s    -> sprintf "Sys_error(%s)" s
+  | Unix.Unix_error(Unix.EUNKNOWNERR i, s1, s2) -> 
+      sprintf "Unix(%d,%s,%s)" i s1 s2 
+  | Unix.Unix_error(err,s1,s2) ->
+      let msg = 
+	try Unix.error_message err 
+      	with _ -> "Unix(unknown error)"
+      in
+      let s1 = if s1 = "" then "" else ","^s1 in
+      let s2 = if s2 = "" then "" else ","^s2 in
+      sprintf "Unix(%s%s%s)" msg s1 s2
+  | Invalid_argument s -> 
+      raise e
+  | Assert_failure _ ->
+      raise e
+  | _ ->
+      raise e
+      (*!full_error e*)
+
+let catch f a =
+  try f a with e ->
+    eprintf "gorp\n\n" ;
+    eprintf "Uncaught exception: %s\n" (error e) ;
+    exit 2
+
+let set_error_log f     = error_log := f ; ()
 (**************************************************************)
 
-let _ =
-  (* This code was taken from Ocaml.
-   *)
-  Hsys.install_error (fun exn ->
-    let locfmt =
-      match Sys.os_type with
-      | "MacOS" -> ("File \"%s\"; line %d; characters %d to %d ### %s"
-		    : ('a, 'b, 'c) format)
-      | _ -> ("File \"%s\", line %d, characters %d-%d: %s" : ('a, 'b, 'c) format)
-    in
-
-    let field x i =
-      let f = Obj.field x i in
-      if not (Obj.is_block f) then
-	sprintf "%d" (Obj.magic f : int)           (* can also be a char *)
-      else if Obj.tag f = Obj.string_tag then
-	sprintf "\"%s\"" (String.escaped (Obj.magic f : string))
-      else if Obj.tag f = Obj.double_tag then
-	string_of_float (Obj.magic f : float)
-      else
-	"_"
-    in
-
-    let rec other_fields x i =
-      if i >= Obj.size x then ""
-      else sprintf ", %s%s" (field x i) (other_fields x (i+1))
-    in
-
-    let fields x =
-      match Obj.size x with
-      | 0 -> ""
-      | 1 -> ""
-      | 2 -> sprintf "(%s)" (field x 1)
-      | n -> sprintf "(%s%s)" (field x 1) (other_fields x 2)
-    in
-
-    match exn with
-    | Out_of_memory -> "Out of memory";
-    | Stack_overflow -> "Stack overflow";
-    | Match_failure(file, first_char, last_char) ->
-	sprintf locfmt file 0 first_char last_char "Pattern matching failed";
-    | Assert_failure(file, first_char, last_char) ->
-	sprintf locfmt file 0 first_char last_char "Assertion failed";
-    | x ->
-	let x = Obj.repr x in
-	let constructor = (Obj.magic(Obj.field (Obj.field x 0) 0) : string) in
-	constructor ^ (fields x)
-  )
-
-(**************************************************************)
-(**************************************************************)

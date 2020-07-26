@@ -1,8 +1,15 @@
 -*- Mode: indented-text -*- 
 Known Ensemble Bugs
-BUGS Author: Ohad Rodeh
-Last updated: 7/2001
+BUGS Author: Mark Hayden
+Last updated: Ohad Rodeh  12/2001 
 
 * Multicast does not work on NT very well. 
+  - This is an NT problem. On win2000 this is ok.
 
 * the groupd application is still not very stable
+  - It does not support SVS
+
+* CE has not been fully ported to WIN32
+
+* TCP mode on large messages does not work very well.
+

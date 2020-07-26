@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#ifdef WIN32
+#ifdef _WIN32
 void Perror(char *s);
 #include <winsock2.h>
 #else
@@ -29,6 +29,12 @@ extern mlsize_t string_length(value) ;
 #include "hot_msg.h"
 #include "hot_mem.h"
 #include "hot_ens.h"
+
+/* Include the memory-management file from directory socket.
+ * 
+ * BUG: mm.h should be copied outside. 
+ */
+#include "mm.h"
 
 #ifdef INLINE_PRAGMA
 #pragma inline begin_critical
@@ -823,34 +829,25 @@ static value Val_of_joinOps(hot_ens_JoinOps_t *ops) {
 #endif 
 MSG_INLINE
 static hot_msg_t hot_ens_Msg_of_substring(
-        value buf_v,
-	value ofs_v,
-	value len_v
+					  value iovec_v
 ) {
   hot_msg_t msg ;
-  unsigned ofs = Int_val(ofs_v) ;
-  unsigned len = Int_val(len_v) ;
-  uint32 actual_len ;
-#ifndef HOT_ZERO_COPY
-  hot_err_t err ;
-#endif
-  
-  actual_len = ntohl(*(uint32*)&Byte(buf_v, ofs)) ;  
-  assert(((actual_len + sizeof(uint32) + HOT_MSG_PADDING - 1) & ~(HOT_MSG_PADDING - 1)) == len) ;
+  int len = Int_val(Field(iovec_v,0));
+  char *buf = mm_Cbuf_val(Field(iovec_v,1));
+  hot_err_t err;
 
-#ifdef HOT_ZERO_COPY
-  msg = hot_msg_CreateDontCopy(&Byte(buf_v, ofs + sizeof(uint32)), actual_len, NULL, NULL);
-#else
   msg = hot_msg_Create() ;
-  err = hot_msg_Write(msg, &Byte(buf_v, ofs + sizeof(uint32)), actual_len) ;
+  err = hot_msg_Write(msg, buf, len) ;
   if (err != HOT_OK)
     hot_sys_Panic(hot_err_ErrString(err));
-#endif
 
   return msg;
 }
 
 /* Return a msg value corresponding to the given HOT message.
+ *
+ * We simply copy the message here, though it should be possible
+ * to use zero-coping in this case. 
  */
 #ifdef INLINE_PRAGMA
 #pragma inline Val_msg
@@ -859,6 +856,7 @@ MSG_INLINE
 static value Val_msg(hot_msg_t msg) {
   value msg_v;
   void *data;
+  char *send_data;
   unsigned size;
   hot_err_t err;
     
@@ -868,19 +866,14 @@ static value Val_msg(hot_msg_t msg) {
   err = hot_msg_Look(msg, size, &data);
   if (err != HOT_OK)
     hot_sys_Panic(hot_err_ErrString(err));
-  
-#ifdef HOT_MSG_PADDING
-  {
-      unsigned full_size ;
-      full_size = (size + sizeof(hot_uint32) + HOT_MSG_PADDING - 1) & ~(HOT_MSG_PADDING - 1) ;
-      msg_v = alloc_string(full_size) ;
-      *((hot_uint32*)String_val(msg_v)) = htonl(size) ;
-      memcpy(String_val(msg_v) + sizeof(hot_uint32), data, size);
+
+  send_data = malloc(size);
+  if (send_data == NULL) {
+    printf ("HOT_INBOARD: out of memory\n");
+    exit(0);
   }
-#else
-  msg_v = alloc_string(size);
-  memcpy(String_val(msg_v), data, size);
-#endif
+  memcpy(send_data, (char*)data, size);
+  msg_v = mm_Raw_of_len_buf(size,send_data);
 
   return msg_v;
 }
@@ -1517,11 +1510,9 @@ hot_err_t hot_ens_Rekey(
 /* Got a multicast message. 
  */
 value hot_ens_ReceiveCast_cbd(
-        value gctx_v, 
-	value origin_v, 
-	value buf_v,
-	value ofs_v,
-	value len_v
+    value gctx_v,
+    value origin_v, 
+    value iovec_v
 ) {
   hot_endpt_t origin;
   hot_msg_t msg;
@@ -1538,7 +1529,7 @@ value hot_ens_ReceiveCast_cbd(
   end_critical();
   
   Endpt_val(origin_v, &origin);
-  msg = hot_ens_Msg_of_substring(buf_v,ofs_v,len_v) ;
+  msg = hot_ens_Msg_of_substring(iovec_v) ;
   
   if (receive_cast != NULL) {
     (*receive_cast)(gctx, env, &origin, msg);
@@ -1556,9 +1547,7 @@ value hot_ens_ReceiveCast_cbd(
 value hot_ens_ReceiveSend_cbd(
         value gctx_v,
 	value origin_v, 
-	value buf_v,
-	value ofs_v,
-	value len_v
+	value iovec_v
 ) {
   hot_endpt_t origin;
   hot_msg_t msg;
@@ -1574,7 +1563,7 @@ value hot_ens_ReceiveSend_cbd(
   end_critical();
   
   Endpt_val(origin_v, &origin);
-  msg = hot_ens_Msg_of_substring(buf_v,ofs_v,len_v);
+  msg = hot_ens_Msg_of_substring(iovec_v);
   
   if (receive_send != NULL) {
     (*receive_send)(gctx, env, &origin, msg);

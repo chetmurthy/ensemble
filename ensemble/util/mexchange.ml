@@ -43,9 +43,9 @@ type t = {
 let init max_diff view_id_str = 
   let nonce_init = Prng.create_buf (Buf.len_of_int 16) in 
   let idea_key = Prng.create_cipher () in
-  let shared = Cipher.lookup "OpenSSL/IDEA" in
+  let shared = Cipher.lookup "OpenSSL/RC4" in
   let encrypt = Cipher.single_use shared idea_key true in
-  let view_id_buf = Buf.pad_string view_id_str in
+  let view_id_buf = Buf.of_string view_id_str in
   {
     max_diff    = max_diff ;    
     encrypt     = encrypt ;
@@ -65,10 +65,10 @@ let create_nonce t ct =
     else loop (s^s) 
   in
   let s1 = loop s1 in
-  let s1 = Buf.append t.nonce_init (Buf.of_string name s1) in
+  let s1 = Buf.append t.nonce_init (Buf.of_string s1) in
   let s1 = Buf.append t.view_id_buf s1 in
   let res = Buf.digest_sub s1 Buf.len0 (Buf.length s1) in
-  (ct, hex_of_string (Buf.to_string (t.encrypt res)))
+  (ct, hex_of_string (Buf.string_of (t.encrypt res)))
   
 (* Check if a received nonce is from me. 
  *)
@@ -131,7 +131,7 @@ let string_of_msg msg =
 	      d_endpt ; 
 	      (Addr.safe_string_of_set d_addr) ; 
 	      bignum ; 
-	      (hex_of_string (Buf.to_string key)) ; 
+	      (hex_of_string (Buf.string_of key)) ; 
 	      (Auth.string_of_ticket ticket) ] 
       ) in
   String.concat sep (f msg)
@@ -161,7 +161,7 @@ let msg_of_string s =
 	and d_endpt = d_endpt 
 	and d_addr = Addr.safe_set_of_string d_addr 
 	and bignum = bignum 
-	and key = Buf.of_string name (hex_to_string key)
+	and key = Buf.of_string (hex_to_string key)
 	and ticket = Auth.ticket_of_string ticket in
 	Compx (Reply (s_endpt, s_addr, d_nonce, d_endpt, d_addr, bignum, key), ticket)
     | _ -> 

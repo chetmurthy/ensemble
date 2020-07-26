@@ -13,9 +13,13 @@
 
 #ifndef _WIN32
 #include <sys/types.h>
-#include <sys/time.h>
-#include <sys/types.h>
 #include <unistd.h>
+
+#ifdef LINUX
+#include <time.h>  
+#else
+#include <sys/time.h>
+#endif
 #endif
 /*#include "purify.h"*/
 

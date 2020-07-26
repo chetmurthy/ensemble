@@ -2,6 +2,7 @@
 (* HOT_UTIL.MLI *)
 (* Authors: Alexey Vaysburd, Mark Hayden 11/96 *)
 (**************************************************************)
+open Ensemble
 open Trans
 open Buf
 (**************************************************************)

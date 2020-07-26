@@ -3,6 +3,7 @@
 # TK: makefile for Tk demos
 #
 # Author: Mark Hayden, 8\96
+# Changes: Ohad Rodeh 11\2001
 #
 #*************************************************************#
 ENSROOT = ..\..
@@ -10,20 +11,25 @@ ENSROOT = ..\..
 !include $(ENSROOT)\mk\config.nmk
 !include $(ENSROOT)\mk\ocaml.nmk
 #*************************************************************#
-OBJS = wb$(CMO) wbexec$(CMO)
-#*************************************************************#
 
-.SUFFIXES: .ml .cmo .mli .cmi
+.SUFFIXES: .ml .cmo .mli .cmi .cmx
 .ml.cmo:
-	ocamlc -c -I $(ENSLIB) $<
+	ocamlc -c -g -I +labltk -I $(ENSLIB) $<
 .mli.cmi:
-	ocamlc -c -I $(ENSLIB) $<
+	ocamlc -c -g -I +labltk -I $(ENSLIB) $<
+.ml.cmx:
+	ocamlopt -c -I +labltk -I $(ENSLIB) $<
 
 #*************************************************************#
-
-wbml: $(OBJS) $(ENSCONFDEP) $(ENSTK)
+# The additional -cclib argument was needed so that CAML would
+# find the Tk libraries. This is a CAML bug.
+#
+wbml: wb$(CMO) $(ENSCONFDEP) $(ENSTK)
 	$(RM) wbml$(EXE)
-	ocamlc -custom -o wbml$(EXE) $(LIBTK) $(ENSCONF) $(ENSTK) $(OBJS)
+	ocamlc -custom -o wbml$(EXE)\
+	$(ENSCONF) $(LIBTK) $(ENSTK) wb$(CMO)
+
+#	-cclib -L\home\orodeh\ocaml\3.01\i386-linux\lib\labltk\
 #	ocamlc -custom -o wbml$(EXE) $(LIBTK) $(ENSCONF) $(ENSTK) $(CRYPTO_LINK) $(OBJS)
 
 #*************************************************************#
@@ -33,9 +39,12 @@ $(ENSTK):
 
 #*************************************************************#
 
-clean:
-	$(RM) *~ .*~ *.cm* .err TAGS core
+
+clean :
+	$(CLEANDIR)
 	$(RM) wbml
+
+realclean: clean 
 
 depend:
 	ocamldep -I $(ENSLIB) *.ml* > $(DEPEND)
@@ -43,3 +52,4 @@ depend:
 !include $(DEPEND)
 
 #*************************************************************#
+

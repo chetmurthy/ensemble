@@ -66,7 +66,6 @@ let init _ (ls,vs) =
 
 let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out=dnnm} =
   let log = Trace.log name ls.name in
-  let assert a m = if not a then failwith m in
   let failwith s = (dnnm (create name EDump[])) in (* BUG? *)
 
   let string_of_rk_list l = 
@@ -95,9 +94,12 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
   let up_hdlr ev abv hdr = match getType ev,hdr with
   | ECast,Appl -> 
-      assert (ev.flags land xxx_tcausal = xxx_tcausal) "SANITY";
-      assert (ev.flags land xxx_no_total = 0) "SANITY";
-      assert (not s.got_view) "ECast after EView" ;
+      if ev.flags land xxx_tcausal <> xxx_tcausal then
+	failwith "SANITY";
+      if ev.flags land xxx_no_total <> 0 then 
+	failwith "SANITY";
+      if not s.got_view then
+	failwith "ECast after EView" ;
       s.msg_log <- s.msg_log @ [(getPeer ev)];
       up ev abv
   | _ -> up ev abv

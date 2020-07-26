@@ -80,59 +80,13 @@ val action_array_map :
     ('a,'c) action array -> ('b,'d) action array
 
 (**************************************************************)
-(* Old style application interfaces.
- *)
-
-module Old : sig
-
-  (* APPL_INTF.FULL: The record interface for applications.  An
-   * application must define all the following callbacks and
-   * put them in a record.
-   *)
-
-  type (
-    'cast_msg,
-    'send_msg,
-    'merg_msg,
-    'view_msg
-  ) full = {
-
-    recv_cast 		: origin -> 'cast_msg ->
-      ('cast_msg,'send_msg) action array ;
-
-    recv_send 		: origin -> 'send_msg ->
-      ('cast_msg,'send_msg) action array ;
-
-    heartbeat_rate	: Time.t ;
-
-    heartbeat 		: Time.t ->
-      ('cast_msg,'send_msg) action array ;
-
-    block 		: unit ->
-      ('cast_msg,'send_msg) action array ;
-
-    block_recv_cast 	: origin -> 'cast_msg -> unit ;
-    block_recv_send 	: origin -> 'send_msg -> unit ;
-    block_view            : View.full -> (rank * 'merg_msg) list ;
-    block_install_view    : View.full -> 'merg_msg list -> 'view_msg ;
-    unblock_view 		: View.full -> 'view_msg ->
-      ('cast_msg,'send_msg) action array ;
-
-    exit 			: unit -> unit
-  }
-
-  type iov = (Iovec.t, Iovec.t, Iovec.t, Iovec.t) full
-  type iovl = (Iovecl.t, Iovecl.t, Iovecl.t, Iovecl.t) full
-  type ('a,'b,'c,'d) power = ('a * Iovecl.t, 'b * Iovecl.t,'c,'d) full
-  type t = iovl
-  val iovl : iovl -> t
-end
-(**************************************************************)
 
 (* This is a new version of the application interface.
  * We will be slowly transitioning to it because it
  * provides better performance and is often easier to
  * use.
+ * 
+ * OR: As of version 1.3, only the new interface is supported.
  *)
 
 module New : sig
@@ -170,45 +124,11 @@ module New : sig
   val failed_handlers : 'msg handlers
 end
 
-(* These are put here for dynamic linking reasons.
- *)
-type ('a,'b) appl_compat_header =
-  | TCast of 'a
-  | TSend of 'b
-  | TMerge
-  | TView
-
 type appl_lwe_header =
   | LCast of origin
   | LSend of origin * rank array
 
 type appl_multi_header =
   int
-
-module Protosi : sig
-  open New
-  type id = int
-  type 'a dncall_gen = ('a,'a) action
-
-  type 'a upcall_gen = 
-    | UInstall of View.full
-    | UReceive of origin * cast_or_send * 'a
-    | UHeartbeat of Time.t
-    | UBlock
-    | UExit
-
-  type endpt = string
-
-  type 'a message_gen =
-    | Create of id * View.state * Time.t * (Addr.id list)
-    | Upcall of id * 'a upcall_gen
-    | Dncall of id * ltime * 'a dncall_gen
-    | SendEndpt of id * ltime * endpt * 'a
-    | SuspectEndpts of id * ltime * endpt list
-
-  type message = Iovecl.t message_gen
-  type dncall = Iovecl.t dncall_gen
-  type upcall = Iovecl.t upcall_gen
-end
 
 (**************************************************************)

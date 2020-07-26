@@ -8,76 +8,33 @@
 # Author: Mark Hayden, 2\96
 #
 #*************************************************************#
-#MAKE = nmake -f Makefile.nt #by default, this is already set
 
-MAKE_DEF = cd $(ENSROOT)\def& $(MAKE) 
-MAKE_OPT = cd $(ENSROOT)\opt& $(MAKE) 
 
-def:
-	$(MAKE_DEF)
+all:
+	cd $(ENSROOT)& $(MAKE) all 
+
+just:
+	cd $(ENSROOT)& $(MAKE) just
 
 opt:
-	$(MAKE_OPT)
+	cd $(ENSROOT)& $(MAKE) opt
 
 tk:
-	$(MAKE_DEF) tk
+	cd $(ENSROOT)& $(MAKE) tk
 
-atm:
-	$(MAKE_DEF) atm
-
-mpi:
-	$(MAKE_DEF) mpi
+tk_opt:
+	cd $(ENSROOT)& $(MAKE) tk_opt
 
 crypto:
-	$(MAKE_DEF) crypto
+	cd $(ENSROOT)& $(MAKE) crypto
 
-installtk:
-	$(MAKE_DEF) installtk
-
-life:
-	$(MAKE_DEF) life
-
-wbml:
-	$(MAKE_DEF) wbml
-
-hot:
-	$(MAKE_DEF) hot
-
-libhot-crypto:
-	$(MAKE_DEF) libhot-crypto
-
-hoto:
-	$(MAKE_DEF) hoto
-
-hoti:
-	$(MAKE_DEF) hoti
-
-hot_ping:
-	$(MAKE_DEF) hot_ping
-
-hot_test2:
-	$(MAKE_DEF) hot_test2
-
-outb_test:
-	$(MAKE_DEF) outb_test
-
-test:
-	$(MAKE_DEF) install
-	cd ..\test& $(MAKE) 
-
-socket:
-	$(MAKE_DEF) socket
-
-cross:
-	$(MAKE_DEF) cross
-
-rpc:
-	$(MAKE_DEF) rpc
-
-tar:
-	cd $(ENSROOT)\tar & $(MAKE) tar
+crypto_opt:
+	cd $(ENSROOT)& $(MAKE) crypto_opt
 
 clean:
-	$(RM) *.cm* *.ppo *.aux .err a.out *.o *.a *.lib *.asm *.obj *~ .*~ .#?*
+	$(CLEANDIR)
+
+realclean:
+	cd $(ENSROOT)& $(MAKE) realclean
 
 #*************************************************************#

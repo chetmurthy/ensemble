@@ -14,7 +14,7 @@ type id
 
 (* Constructors.
  *)
-val create : inet -> incarn -> t
+val create : Hsys.inet -> incarn -> t
 val id : t -> id
 
 (* Display functions.

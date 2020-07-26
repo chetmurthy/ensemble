@@ -17,16 +17,20 @@ class Hot_IO_Controller {
     // can I do this ?
     private byte[] read_buf;
     private boolean print=false;
-
+    private int ml_len;
+    private int iov_len;
+    private int ml_read_len;
+    private int iov_read_len;
+    
     public Hot_IO_Controller(InputStream is, OutputStream os) {
 	HOT_MAGIC *= 10; // see the definition of the variable below...
 	HOT_MAGIC += 9;
 	this.is = is;
 	this.os = os;
-	this.bos = null;
-	this.bis = null;
-	this.dos = null;
-	this.dis = null;
+	bos = null;
+	bis = null;
+	dos = null;
+	dis = null;
     }
 
     public final int DN_JOIN = 0;
@@ -59,21 +63,38 @@ class Hot_IO_Controller {
 	    dos = new DataOutputStream(bos);
         }
 	else {
-	    // Bela is not sure this works properly
-	    bos.reset();
+	    /* I'm not sure exactly why we HAVE to close, and
+	     * then reopen this. */
+	    try {
+	      bos.close();
+	      dos.close();
+            } catch(Exception e) {}
+	    bos = new ByteArrayOutputStream();
+	    dos = new DataOutputStream(bos);
         }
+	ml_len = 0;
+	iov_len = 0;
     }
 
+    /* Write everthing out to network. Open a temporary
+     * Output stream, do2, write the ML length, and Iovec length
+     * to it. Then, flush everthing to the net.
+     */
     public void end_write() throws IOException {
 	DataOutputStream do2 = new DataOutputStream(os);
 
-	// get size of byte array out of ByteArrayOutputStream
-	int size = bos.size();
+	/* We didn't call write_msg before hand.
+	 */
+	if (ml_len == 0 && iov_len ==0) {
+	    ml_len = bos.size();
+	    iov_len = 0;
+	}
 
-	// write size to wire
-        Hot_Ensemble.trace("end_write: size to wire=" + size);
+	// write sizes to wire
+        Hot_Ensemble.trace("end_write: size =(" + ml_len + "," + iov_len + ")");
 	try {
-	    do2.writeInt(size);
+	    do2.writeInt(ml_len);
+	    do2.writeInt(iov_len);
         }
         catch(Exception e) {
 	    if (e.equals("java.io.IOException: Broken pipe"))
@@ -89,7 +110,7 @@ class Hot_IO_Controller {
         }
 
 	// write the rest of the msg to wire
-        Hot_Ensemble.trace("end_write: body=" + bos.toString());
+        Hot_Ensemble.trace("end_write: body= " + bos.toString());
 
 	// I think this way it doesn't do a copy
 	// May not write entire buffer to socket??
@@ -102,7 +123,9 @@ class Hot_IO_Controller {
         }
 
 	try {
-            do2.flush();
+	    System.out.println("Flusing do2, size=" + do2.size ());
+            //do2.flush();
+            os.flush();
         }
         catch(Exception e) {
             System.err.println("end_write: exception 3 " + e);
@@ -127,37 +150,22 @@ class Hot_IO_Controller {
 	return; 
     }
 
-    public void write_buffer(byte[] pBytes) { 
-	byte[] padBytes=new byte[INT_SIZE];
-	int l = pBytes.length;
+    /* Write the buffer length, and then the buffer itself.
+     */
+    public void write_buffer(byte[] Bytes) { 
+	int l = Bytes.length;
        
-	// writing:
-	// number of bytes in the buffer (4 byte int)
-	// the buffer
-	// padding (INT_SIZE - (buffer_size % INT_SIZE bytes))
-
 	write_int(l);
 
 	try {
-            dos.write(pBytes, 0, l);
+            dos.write(Bytes);
         }
         catch(Exception e) {
             System.err.println("write_buffer: exception " + e);
         }
 
-	int padSize = l % INT_SIZE;
-
-        if (padSize != 0) {
-	    try {
-	        dos.write(padBytes, 0, (INT_SIZE - padSize));
-            }
-            catch(Exception e) {
-	        System.err.println("write_buffer: exception 2 " + e);
-            }
-        }
         Hot_Ensemble.trace("write_buffer: size = " + l + " bytes");
-        Hot_Ensemble.trace("write_buffer: buffer = " + new String(pBytes));
-        Hot_Ensemble.trace("write_buffer: pad = " + padSize + " bytes");
+        Hot_Ensemble.trace("write_buffer: buffer = " + new String(Bytes));
 	return; 
     }
 
@@ -186,43 +194,20 @@ class Hot_IO_Controller {
     }
 
     public void write_msg(Hot_Message msg) { 
-	// we are sending:
-	// 4 bytes representing the size of the msg + 4 bytes + rounded up,
-	// 4 bytes representing the actual size of the msg
-	// the body of the msg, and
-	// 0-3 bytes padding to a 4-byte boundary, if necessary
+	byte[] Bytes = msg.getBytes();
 
-	byte[] pBytes = msg.getBytes();
-	int l = pBytes.length;
-	byte padBytes[]=new byte[INT_SIZE];
+	ml_len = bos.size(); // log the current size as the ml header.
+	iov_len = Bytes.length; // the Iovec size is the message length.
 
-	// Add 4, round up and write that size 
-	// Removed this, due to changes done by Mark to the interface
-	// This is actually done elsewhere now.
-	//write_int((l + 7)&~3);
-
-	// Write actual size of msg
-	write_int(l);
-	
+        Hot_Ensemble.trace("ml_len=" + ml_len + ", iov_len" + iov_len);
 	// Write body
 	try {
-	    dos.write(pBytes, 0, l);
+	    dos.write(Bytes);
         }
         catch(Exception e) {
 	    System.err.println("write_msg: exception " + e);
         }
-
-        // Write padding if necessary
-	if (l % INT_SIZE != 0) {
-	    try {
-                dos.write(padBytes, 0, INT_SIZE - (l % INT_SIZE));
-	    }
-            catch(Exception e) {
-	        System.err.println("write_msg: exception 2 " + e);
-            }
-	}
-        Hot_Ensemble.trace("write_msg: size = " + l + " pad = " + (INT_SIZE - (l%INT_SIZE)));
-        Hot_Ensemble.trace("write_msg: body = "  + new String(pBytes));
+        Hot_Ensemble.trace("write_msg: body = "  + new String(Bytes));
 	
 	return;
     }
@@ -247,9 +232,12 @@ class Hot_IO_Controller {
 
 	DataInputStream di2 = new DataInputStream(is);
 
-	// Get msg size 
+	// Get msg size
+	// This is the sum of the ML length, and Iovec length.
 	try {
-            read_size = di2.readInt();
+            ml_read_len = di2.readInt();
+	    iov_read_len = di2.readInt();
+	    read_size = ml_read_len + iov_read_len;
         }
         catch(EOFException e) {
 	    return(-1);
@@ -316,25 +304,17 @@ class Hot_IO_Controller {
 
     public void read_buffer(Hot_Buffer b) { 
 	int[] size = new int[1];
-	byte[] padBytes=new byte[INT_SIZE];
-
+	
+	
 	// read in size of string
 	read_int(size);
 
-	byte[] pBytes = new byte[size[0]];
+	byte[] Bytes = new byte[size[0]];
 	try {
 	    // read in string of size bytes
-	    dis.read(pBytes, 0, size[0]);
-	    Hot_Ensemble.trace("read_buffer: read in bytes: " + pBytes.length);
-
-	    b.setBytes(pBytes);
-	    int padSize = (size[0] % INT_SIZE);
-
-	    if(padSize != 0) {
-	        // read in pad bytes
-		dis.read(padBytes, 0, INT_SIZE - padSize);
-		Hot_Ensemble.trace("read_buffer: read in pad bytes: " + padSize);
-	    }
+	    dis.read(Bytes, 0, size[0]);
+	    Hot_Ensemble.trace("read_buffer: read in bytes: " + Bytes.length);
+	    b.setBytes(Bytes);
 	} catch (Exception e) {
 	    System.err.println("Hot_IO_Controller::read_buffer: error: " + e.toString());
 	    e.printStackTrace();
@@ -363,46 +343,21 @@ class Hot_IO_Controller {
     }
 
     public void read_msg(Hot_Message msg) { 
-	// we are reading:
-	// 4 bytes representing the size of the msg + 4 bytes + rounded up,
-	// 4 bytes representing the actual size of the msg
-	// the body of the msg, and
-	// 0-3 bytes padding to a 4-byte boundary, if necessary
-
-	byte padBytes[]=new byte[INT_SIZE];
-	int[] size = new int[1];
-	int[] actualSize = new int[1];
-
-	// Read padded rounded size
-	read_int(size);
-
-	// Read actual size of msg
-	read_int(actualSize);
-
-	// Only read in actualSize of msg
-	byte[] pBytes = new byte[actualSize[0]];
+	// Allocate memory
+	byte[] Bytes = new byte[iov_read_len];
 	
 	// Read body
 	try {
-	    dis.read(pBytes, 0, actualSize[0]);
+	    dis.read(Bytes, 0, iov_read_len);
 	}
         catch(Exception e) {
 	    System.err.println("read_msg: read " + e.toString());
         }
 
-	msg.setBytes(pBytes);	
+	msg.setBytes(Bytes);	
 
-        // Read (and discard) padding if necessary
-	if (actualSize[0] % INT_SIZE != 0) {
-	    try {
-                dis.read(padBytes, 0, INT_SIZE - (actualSize[0] % INT_SIZE));
-	    } catch (Exception e) {
-                System.err.println("read_msg: read2 " + e.toString());
-            }
-	}
-        Hot_Ensemble.trace("read_msg: size = " + actualSize[0] + " pad = " +
-(INT_SIZE - (actualSize[0]%INT_SIZE)) + " tot = " + size[0]);
-        Hot_Ensemble.trace("read_msg: body = "  + new String(pBytes));
+        Hot_Ensemble.trace("read_msg: size = " + iov_read_len );
+        Hot_Ensemble.trace("read_msg: body = "  + new String(Bytes));
 	
 	return;
     }

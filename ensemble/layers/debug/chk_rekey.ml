@@ -110,7 +110,7 @@ let l args vf = Layer.hdr init hdlrs None NoOpt args vf
 
 let _ = 
   Param.default "chk_rekey_degree" (Param.Int 4);
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)
 

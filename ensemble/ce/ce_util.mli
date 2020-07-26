@@ -12,9 +12,9 @@ open Buf
  * in the representation.
  *)
 type c_action = 
-  | C_Cast of Buf.t
-  | C_Send of rank array * Buf.t
-  | C_Send1 of rank * Buf.t
+  | C_Cast of Iovec.raw array
+  | C_Send of rank array * Iovec.raw array
+  | C_Send1 of rank * Iovec.raw array
   | C_Leave of unit
   | C_Prompt of unit
   | C_Suspect of rank array
@@ -27,7 +27,7 @@ type c_action =
   | C_No_op*)
   | C_Properties of string  (* For backward compatibility with HOT *)
 
-val dncall_of_c : Mbuf.t -> View.full -> c_action -> (Iovecl.t, Iovecl.t) Appl_intf.action
+val dncall_of_c : View.full -> c_action -> (Iovecl.t, Iovecl.t) Appl_intf.action
 
 (**************************************************************)
 

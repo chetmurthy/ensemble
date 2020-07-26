@@ -2,38 +2,51 @@
 (* PROTOS.ML *)
 (* Authors: Mark Hayden, Alexey Vaysburd 11/96 *)
 (**************************************************************)
+(* Create a server process that provides "Ensemble services".
+ * Client connect to it and perform application actions: 
+ * create,send,cast, ...
+*)
+(**************************************************************)
 open Util
 open Trans
 open Buf
 open View
 open Appl_intf
 open Appl_intf.New
-open Appl_intf.Protosi
 (**************************************************************)
 let name = Trace.file "PROTOS"
 let failwith s = Trace.make_failwith name s
 let log = Trace.log name
 let logc = Trace.log (name^"C")
 (**************************************************************)
-(*
-type id = int
-type endpt = string
-*)
-(**************************************************************)
-(*
-type dncall = (Iovecl.t,Iovecl.t) Appl_intf.action
-*)
-let string_of_dncall = Appl_intf.string_of_action
 
-(**************************************************************)
-(*
-type upcall = 
+type id = int
+type 'a dncall_gen = ('a,'a) action
+    
+type 'a upcall_gen = 
   | UInstall of View.full
-  | UReceive of origin * blocked * cast_or_send * Iovecl.t
+  | UReceive of origin * cast_or_send * 'a
   | UHeartbeat of Time.t
   | UBlock
   | UExit
-*)
+      
+type endpt = string
+    
+type 'a message_gen =
+  | Create of id * View.state * Time.t * (Addr.id list)
+  | Upcall of id * 'a upcall_gen
+  | Dncall of id * ltime * 'a dncall_gen
+  | SendEndpt of id * ltime * endpt * 'a
+  | SuspectEndpts of id * ltime * endpt list
+      
+type message = Iovecl.t message_gen
+type dncall = Iovecl.t dncall_gen
+type upcall = Iovecl.t upcall_gen
+    
+(**************************************************************)
+
+let string_of_dncall = Appl_intf.string_of_action
+
 let string_of_upcall = function
   | UInstall vf -> sprintf "UInstall(%s)" (View.string_of_full vf)
   | UReceive(origin,cs,_) ->
@@ -42,15 +55,6 @@ let string_of_upcall = function
   | UBlock -> sprintf "UBlock"
   | UExit -> sprintf "UExit"
 
-(**************************************************************)
-(*
-type message =
-  | Create of id * View.state * Time.t * (Addr.id list)
-  | Upcall of id * upcall
-  | Dncall of id * ltime * dncall
-  | SendEndpt of id * ltime * endpt * Iovecl.t
-  | SuspectEndpts of id * ltime * endpt list
-*)
 let string_of_message = function
   | Create(id,vs,hbr,modes) ->
       sprintf "Create(%d,%s,%s,%s)" id 
@@ -323,15 +327,15 @@ let server alarm addr config debug_ignored deliver_upcall =
  * separately handle the Iovec portion of send and receives
  * to make the payload zero-copy.  
  *)
-let make_marsh mbuf =
-  let marsh,unmarsh = Elink.get_powermarsh_f name name mbuf in
+let make_marsh () =
+  let marsh,unmarsh = Buf.make_marsh "protos" in
   let marsh msg =
-    let msg =
+    let msg,iovl =
       (* Strip the payload portion out.
        *)
       match msg with
       | Upcall(id,msg) ->
-	  let msg,inner = 
+	  let msg,iovl = 
 	    match msg with
 	    | UInstall vf -> UInstall vf, Iovecl.empty
 	    | UReceive(o,c,i) -> 
@@ -340,16 +344,16 @@ let make_marsh mbuf =
 	    | UBlock -> UBlock, Iovecl.empty
 	    | UExit -> UExit, Iovecl.empty
 	  in
-	  Upcall(id,msg),inner
+	  Upcall(id,msg),iovl
       |	Dncall(id,ltime,msg) ->
-	  let msg,inner = 
+	  let msg,iovl = 
 	    match msg with
 	    | Cast(i) -> Cast(),i
 	    | Send(d,i) -> Send(d,()),i
 	    | Send1(d,i) -> Send1(d,()),i
 	    | Control c -> Control c, Iovecl.empty
 	  in
-	  Dncall(id,ltime,msg),inner
+	  Dncall(id,ltime,msg),iovl
       | SendEndpt(id,ltime,endpt,i) ->
 	  SendEndpt(id,ltime,endpt,()),i
       | SuspectEndpts(id,ltime,endpts) ->
@@ -357,11 +361,11 @@ let make_marsh mbuf =
       | Create(id,vs,hbr,modes) ->
 	  Create(id,vs,hbr,modes), Iovecl.empty
     in
-    marsh msg
+    marsh msg, iovl
   in
   
-  let unmarsh iovl =
-    let (msg,iovl) = unmarsh iovl in
+  let unmarsh (buf,iovl) =
+    let msg = unmarsh buf len0 in
 
     (* Shift the payload portion back in.
      *)
@@ -569,9 +573,3 @@ let client alarm info send =
 
 (**************************************************************)
 
-let _ =
-  Elink.put Elink.protos_make_marsh make_marsh ;
-  Elink.put Elink.protos_server server ;
-  Elink.put Elink.protos_client client
-
-(**************************************************************)

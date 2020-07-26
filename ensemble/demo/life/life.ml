@@ -47,16 +47,16 @@ let run () =
   let makeslave () = 
     let view_state = make_view_state () in
     let interface = initSlave master_endpt (Time.of_int 1) in
-    Appl.config interface view_state ;
-    Elink.get "LIFE" Elink.htk_init (Elink.alarm_get_hack ())
+    Appl.config_new interface view_state ;
+    Htk.init_hack ()
   in
 
   let interface = init master_endpt makeslave (Time.of_int 1) in
 
-  Appl.config interface (ls,master_view_state) ;
+  Appl.config_new interface (ls,master_view_state) ;
 
   (* actually start the application *)
-  Elink.get "LIFE" Elink.htk_init (Elink.alarm_get_hack ()) ;
+  Htk.init_hack ();
   Tk.mainLoop ()
 
 (**************************************************************)

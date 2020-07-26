@@ -1,4 +1,0 @@
-wb.cmo: ..\..\lib\nt\ensemble.cmi 
-wb.cmx: ..\..\lib\nt\ensemble.cmi 
-wbexec.cmo: ..\..\lib\nt\ensemble.cmi ..\..\lib\nt\hsys.cmi wb.cmo 
-wbexec.cmx: ..\..\lib\nt\ensemble.cmi ..\..\lib\nt\hsys.cmi wb.cmx 

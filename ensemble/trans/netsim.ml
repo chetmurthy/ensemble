@@ -25,7 +25,7 @@ let _ =
 
 module Priq = Priq.Make ( Time.Ord )
 
-let alarm ((unique,sched,async,handlers,mbuf) as gorp) =
+let alarm ((unique,sched,async,handlers) as gorp) =
   let alarms = 
     let table = Priq.create (fun _ -> failwith "priq:sanity") in
     Trace.install_root (fun () ->
@@ -112,8 +112,7 @@ let alarm ((unique,sched,async,handlers,mbuf) as gorp) =
 
 let domain alarm =
   let hundredth = Time.of_string "0.01" in
-  let mbuf = Alarm.mbuf alarm in
-  let msgs = Priq.create Iovecl.empty in
+  let msgs = Priq.create (Buf.empty, Buf.len0, Buf.len0, Iovecl.empty) in
   let ready = Queuee.create () in
   let gettime () = Alarm.gettime alarm in
   let handlers = Alarm.handlers alarm in
@@ -123,8 +122,8 @@ let domain alarm =
     ignore (Priq.get msgs deliver (gettime ())) ;
     match Queuee.takeopt ready with
     | None -> gm
-    | Some iovl ->
-	Route.deliver_iovl handlers mbuf iovl ;
+    | Some (buf,len,ofs,iovl) ->
+	Route.deliver handlers buf len ofs iovl ;
 	true
   in
 
@@ -136,23 +135,13 @@ let domain alarm =
     and xmit = function
     | Domain.Pt2pt(a) when a = Arrayf.empty -> None
     | _ ->
-	let enqueue iovl =
+	let enqueue (hdr,len,ofs,iovl) =
 	  let time = Time.add (gettime ()) hundredth in
-	  Priq.add msgs time iovl
+	  Priq.add msgs time (hdr,len,ofs,iovl)
 	in
-	let x buf ofs len =
-	  let iov = Mbuf.allocl name mbuf buf ofs len in
-	  enqueue iov
-	and xv iov =
-	  enqueue iov
-	and xvs iov s =
-	  let iov = Iovecl.take name iov in
-	  let slen = Buf.length s in
-	  let iovs = Mbuf.alloc name mbuf s len0 slen in
-	  let iov = Iovecl.appendi name iov iovs in
-	  enqueue iov
-	in
-	Some(x,xv,xvs)
+	let x hdr len ofs iovl = 
+	  enqueue (hdr,len,ofs,iovl) in
+	Some(x)
     in
     Domain.handle disable xmit
   in
@@ -162,7 +151,7 @@ let domain alarm =
 (**************************************************************)
 
 let _ =
-  Elink.put Elink.netsim_domain domain ;
-  Elink.put Elink.netsim_alarm alarm
+  Domain.install Addr.Netsim domain ;
+  Alarm.install "NETSIM" alarm
 
 (**************************************************************)

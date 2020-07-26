@@ -175,6 +175,4 @@ let print () =
     eprintf "TIMESTAMP:tenths=%s words\n" (string_of_int_array words) ;
   )
 
-let _ =
-  Elink.put Elink.timestamp_add linker_add ;
-  Elink.put Elink.timestamp_print print
+

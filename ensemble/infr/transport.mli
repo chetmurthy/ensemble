@@ -17,7 +17,7 @@ val f :
   View.full ->
   Stack_id.t ->				(* stack id *)
   'msg Route.t ->			(* connection table *)
-  (Conn.kind -> rank -> bool -> 'msg) -> (* message handler *)
+  (Conn.kind -> bool -> 'msg) -> (* message handler *)
   'msg t
 
 val f2 :
@@ -26,7 +26,7 @@ val f2 :
   View.full ->
   Stack_id.t ->				(* stack id *)
   'msg Route.t ->			(* connection table *)
-  ('msg t -> ((Conn.kind -> rank -> bool -> 'msg) * 'a)) -> (* message handler *)
+  ('msg t -> ((Conn.kind -> bool -> 'msg) * 'a)) -> (* message handler *)
   'a
 	
 (**************************************************************)

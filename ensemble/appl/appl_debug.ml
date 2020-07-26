@@ -90,8 +90,3 @@ let view debug intf =
 
 (**************************************************************)
 
-let _ =
-  Elink.put Elink.appl_debug_f f ;
-  Elink.put Elink.appl_debug_view view
-
-(**************************************************************)

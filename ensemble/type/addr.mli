@@ -7,30 +7,20 @@ open Trans
 (* Address ids.
  *)
 type id =
-  | Atm
   | Deering
   | Netsim
   | Tcp
   | Udp
-  | Sp2
-  | Krb5
   | Pgp
-  | Fortezza
-  | Mpi
 
 (* Addresses.
  *)
 type t =
-  | AtmA of inet
-  | DeeringA of inet * port
+  | DeeringA of Hsys.inet * port
   | NetsimA
-  | TcpA of inet * port
-  | UdpA of inet * port
-  | Sp2A of inet * port
-  | Krb5A of string
+  | TcpA of Hsys.inet * port
+  | UdpA of Hsys.inet * port
   | PgpA of string
-  | FortezzaA of string
-  | MpiA of rank
 
 (* Processes actually use collections of addresses.
  *)

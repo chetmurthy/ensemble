@@ -11,7 +11,7 @@ open Arge
 open View
 open Appl_intf open New
 (**************************************************************)
-let name = Trace.file "FIFO"
+let name = "FIFO"
 let failwith = Trace.make_failwith name
 (**************************************************************)
 
@@ -133,7 +133,7 @@ let interface nopt2pt nocast =
     in
 
     let handlers = { 
-			flow_block = (fun _ -> ());
+      flow_block = (fun _ -> ());
       receive = receive ;
       block = block ;
       heartbeat = heartbeat ;
@@ -196,7 +196,7 @@ let run () =
   let alarm = Appl.alarm name in
 
   if Arge.get Arge.modes = [Addr.Netsim] then (
-    Appl.install_port (-2) ;
+    Alarm.install_port (-2) ;
   ) ;
 
   let instance () =

@@ -135,3 +135,16 @@ val layer_fail : (View.full -> 'a -> unit) -> View.full -> 'a -> debug -> string
 val layer_dump : debug -> (View.full -> 'a -> string array) -> View.full -> 'a -> unit
 val layer_dump_simp : debug -> View.full -> 'a -> unit
 (**************************************************************)
+(* Layer management.
+ *
+ * [OR]: This has been moved back here, away from the elink 
+ * module. I think dynamic linking should be done by the caml
+ * folk, not us. 
+ *)
+type name = string
+
+val install : name -> ('a,'b,'c) basic -> unit
+val get : name -> ('a,'b,'c) basic
+
+(**************************************************************)
+

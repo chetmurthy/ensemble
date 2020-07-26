@@ -14,6 +14,108 @@ let log1 = Trace.log (name^"1")
 (**************************************************************)
   
   
+module Prng = struct
+  type context 
+      
+  type t = {
+    name : string ;
+    init : Buf.t -> context ;
+    rand : context -> Buf.t
+  }
+      
+  type full_context = t * context
+
+  let namea t = t.name
+  let init t = t.init
+  let rand t = t.rand
+    
+  let table = ref []
+    
+  let install name init rand = 
+    let t = {
+      name = name ;
+      init = init ;
+      rand = rand
+    } in
+    table := (name,t) :: !table
+      
+  let lookup name =
+    let rec loop = function
+      | [] -> raise (Failure "no appropriate Pseudo Random Generator available. This probably means that you have not installed a cryptographic library.")
+      | (prng_name,t)::tl ->
+	  if name = prng_name then t else loop tl
+    in loop !table  
+	 
+
+  let full_ctx = ref None 
+    
+  (* This function creates random strings of arbitrary size
+   * It initializes the random number generator, if
+   * this has not been done so far.  It then uses a sequence
+   * of calls to the PRNG.  Each
+   * call produces 4 random bytes of data. They 
+   * are concatenated together to form a string.
+   *)
+  let create_random_buf (t,ctx) len = 
+    let rec loop s togo = 
+      if Buf.length s >=|| len then s
+      else 
+	let r = rand t ctx in
+	loop (Buf.append s r) (togo -|| Buf.length r) 
+    in
+    let s = loop Buf.empty len in
+    Buf.sub s len0 len 
+      
+
+  (* Get a context to the PRNG. The PRNG is initialized if it 
+   * this is the first call. 
+   *)
+  let get_full_ctx () = 
+    match !full_ctx with 
+      | None -> 
+	  let t = lookup "ISAAC" in
+	  let init = init t in
+
+	  let context = 
+	    let frac_of_time () = 
+	      let t = Time.to_float (Time.gettimeofday ()) in
+	      let sec = float (Pervasives.truncate t) in
+	      Pervasives.truncate (1000000.0 *. (t -. sec))
+	    in
+	    let frc = frac_of_time () in 
+	    let pad = Buf.of_string (string_of_int frc) in
+	    log (fun () -> sprintf "PRNG, init %s" (Buf.string_of pad));
+	    init pad
+	  in
+	  full_ctx := Some(t,context);
+	  (t,context)
+
+      | Some full_ctx -> full_ctx
+	  
+  (* Create a fresh security key/mac/cipher/buf. 
+   *)
+  let create_key () = 
+    let full_ctx = get_full_ctx () in
+    let key = create_random_buf full_ctx (Security.key_len) in
+    Security.key_of_buf key
+
+  let create_mac () = 
+    let full_ctx = get_full_ctx () in
+    let mac = create_random_buf full_ctx (Security.mac_len) in
+    Security.mac_of_buf mac
+
+  let create_cipher () = 
+    let full_ctx = get_full_ctx () in
+    let cipher = create_random_buf full_ctx (Security.cipher_len) in
+    Security.cipher_of_buf cipher
+
+  let create_buf len = 
+    let full_ctx = get_full_ctx () in
+    create_random_buf full_ctx len
+end    
+  
+(**************************************************************)
+  
 module Cipher = struct
   type src = Buf.t
   type dst = Buf.t
@@ -30,6 +132,7 @@ module Cipher = struct
     key_ok : Security.cipher -> bool;
     init   : Security.cipher -> bool -> context ;
     update : context -> Buf.t -> ofs -> Buf.t -> ofs -> len ->unit ;
+    update_iov : context -> Iovec.t ->unit ;
   } 
       
   let namea t = t.name
@@ -37,12 +140,13 @@ module Cipher = struct
 
   let table = ref []
     
-  let install name key_ok init update = 
+  let install name key_ok init update update_iov = 
     let t = {
       name = name ;
       key_ok = key_ok ;
       init = init ;
-      update = update
+      update = update ;
+      update_iov = update_iov 
     } in
     table := (name,t) :: !table
       
@@ -60,8 +164,8 @@ module Cipher = struct
     t.update ctx buf ofs res len0 len;
     res
 
-  let encrypt_inplace t ctx buf ofs len = 
-    t.update ctx buf ofs buf ofs len;
+  let encrypt_inplace t ctx iovec = 
+    t.update_iov ctx iovec;
     ()
     
   let single_use t key enc src =
@@ -105,20 +209,20 @@ module Cipher = struct
     and encrypt_inplace = encrypt_inplace t in
     
     eprintf "Sanity\n";
-    let key = Security.key_of_buf (Buf.of_string name "01234567012345670123456701234567") in
-    let buf = Buf.of_string name "11111111222222223333333344444444" in
+    let key = Security.key_of_buf (Buf.of_string "01234567012345670123456701234567") in
+    let buf = Buf.of_string "11111111222222223333333344444444" in
     let ctx_fl_enc = init (get_cipher key) true in
     let buf1 = encrypt ctx_fl_enc buf (Buf.len_of_int 0) (Buf.len_of_int 32) in
     let ctx_fl_dec = init (get_cipher key) false in
     let buf2 = encrypt ctx_fl_dec buf1 (Buf.len_of_int 0) (Buf.len_of_int 32) in
-    printf "%s\n" (Buf.to_string buf2);
+    printf "%s\n" (Buf.string_of buf2);
     if buf2 <> buf then failwith "Check_failed";
     eprintf "OK.\n";
 
     eprintf "Concatenation\n";
-    let key = Security.key_of_buf (Buf.of_string name "01234567012345670123456701234567") in
-    let buf = Buf.of_string name "11111111222222223333333344444444" in
-    let buf_next = Buf.of_string name "55555555666666667777777788888888" in
+    let key = Security.key_of_buf (Buf.of_string "01234567012345670123456701234567") in
+    let buf = Buf.of_string "11111111222222223333333344444444" in
+    let buf_next = Buf.of_string "55555555666666667777777788888888" in
     let ctx_enc = init (get_cipher key) true in
     let ctx_dec = init (get_cipher key) false in
     let buf1 = encrypt ctx_enc buf (Buf.len_of_int 0) (Buf.len_of_int 32) in
@@ -126,7 +230,7 @@ module Cipher = struct
       encrypt ctx_enc buf_next (Buf.len_of_int 0) (Buf.len_of_int 32) in
     let buf2 = encrypt ctx_dec buf1 (Buf.len_of_int 0) (Buf.len_of_int 32) in
     let buf2_next = encrypt ctx_dec buf1_next (Buf.len_of_int 0) (Buf.len_of_int 32) in
-    printf "%s:%s\n" (Buf.to_string buf2) (Buf.to_string buf2_next);
+    printf "%s:%s\n" (Buf.string_of buf2) (Buf.string_of buf2_next);
     if buf2 <> buf || buf2_next <> buf_next  then failwith "Check_failed";
     eprintf "OK.\n";
     
@@ -134,14 +238,19 @@ module Cipher = struct
     let control = Gc.get () in
     control.Gc.verbose <- 1;
     Gc.set control;
+
+    (* Check sanity of the encryption algorithm. Create a 
+     * random string of size [mlen], encrypt and decrypt it. 
+     *)
+    let mlen = len_of_int 40 in
     for i=0 to snt_loops do 
-      let key = Security.key_of_buf (Buf.of_string name "01234567012345670123456701234567") in
-      let buf = Buf.of_string name "11111111222222223333333344444444" in
+      let key = Security.key_of_buf (Buf.of_string "01234567012345670123456701234567") in
+      let buf = Prng.create_buf mlen in
       let ctx_enc = init (get_cipher key) true in
       let ctx_dec = init (get_cipher key) false in
-      let buf1 = encrypt ctx_enc buf (Buf.len_of_int 0) (Buf.len_of_int 32) in
-      let buf2 = encrypt ctx_dec buf1 (Buf.len_of_int 0) (Buf.len_of_int 32) in
-      ()
+      let buf1 = encrypt ctx_enc buf len0 mlen in
+      let buf2 = encrypt ctx_dec buf1 len0 mlen in
+      if buf <> buf2 then failwith "bad encryption"
     done;
     control.Gc.verbose <- 0;
     Gc.set control;
@@ -150,28 +259,30 @@ module Cipher = struct
     
     
     eprintf "Encrypt_inplace.\n";
+    let mlen = len_of_int 40 in
     for i=1 to 10 do
-      let key = Security.key_of_buf (Buf.of_string name "01234567012345670123456701234567") in
-      let buf0 = Buf.of_string name "11111111222222223333333344444444" in
-      let buf =  Buf.of_string name "11111111222222223333333344444444" in
+      let key = Security.key_of_buf (Buf.of_string "01234567012345670123456701234567") in
+      let buf = Prng.create_buf mlen in
+      let iov = Iovec.of_buf buf len0 (Buf.length buf) in
       let ctx_enc = init (get_cipher key) true in
       let ctx_dec = init (get_cipher key) false in
-      encrypt_inplace ctx_enc buf Buf.len0 (Buf.len_of_int 32);
-      encrypt_inplace ctx_dec buf Buf.len0 (Buf.len_of_int 32);
-      if  buf <> buf0 then
-	failwith ("Bad encryption " ^ (Buf.to_string buf) ^ " <> " ^ 
-	(Buf.to_string buf0))
+      encrypt_inplace ctx_enc iov;
+      encrypt_inplace ctx_dec iov;
+      let buf' = Iovec.buf_of iov in
+      if  buf' <> buf then
+	failwith "Bad encryption"
     done;
     eprintf "OK.\n";
     
     eprintf "Performance.\n";
     let time0 = Time.gettimeofday () in
     let len = 1000  in
-    let buf = Buf.of_string name (String.create len ) in 
-    let len = Buf.len_of_int len in
+    let buf = Buf.of_string (String.create len ) in 
+    let iov = Iovec.of_buf buf len0 (Buf.length buf) in
+    let len = len_of_int len in
     for i=1 to perf_loops do
       let context = init (get_cipher key) true in
-      encrypt_inplace context buf Buf.len0 len;
+      encrypt_inplace context iov;
     done;
     let time1 = Time.gettimeofday () in
     let diff = Time.sub time1 time0 in
@@ -240,108 +351,6 @@ module Sign  = struct
     final_hack alg ctx dst ofs
 end
   
-  
-(**************************************************************)
-  
-module Prng = struct
-  type context 
-      
-  type t = {
-    name : string ;
-    init : Buf.t -> context ;
-    rand : context -> Buf.t
-  }
-      
-  type full_context = t * context
-
-  let namea t = t.name
-  let init t = t.init
-  let rand t = t.rand
-    
-  let table = ref []
-    
-  let install name init rand = 
-    let t = {
-      name = name ;
-      init = init ;
-      rand = rand
-    } in
-    table := (name,t) :: !table
-      
-  let lookup name =
-    let rec loop = function
-      | [] -> raise (Failure "no appropriate Pseudo Random Generator available. This probably means that you have not installed a cryptographic library.")
-      | (prng_name,t)::tl ->
-	  if name = prng_name then t else loop tl
-    in loop !table  
-	 
-
-  let full_ctx = ref None 
-    
-  (* This function creates random strings of arbitrary size
-   * It initializes the random number generator, if
-   * this has not been done so far.  It then uses a sequence
-   * of calls to the PRNG.  Each
-   * call produces 4 random bytes of data. They 
-   * are concatenated together to form a string.
-   *)
-  let create_random_buf (t,ctx) len = 
-    let rec loop s togo = 
-      if Buf.length s >=|| len then s
-      else 
-	let r = rand t ctx in
-	loop (Buf.append s r) (togo -|| Buf.length r) 
-    in
-    let s = loop (Buf.empty()) len in
-    Buf.sub name s len0 len 
-      
-
-  (* Get a context to the PRNG. The PRNG is initialized if it 
-   * this is the first call. 
-   *)
-  let get_full_ctx () = 
-    match !full_ctx with 
-      | None -> 
-	  let t = lookup "ISAAC" in
-	  let init = init t in
-
-	  let context = 
-	    let frac_of_time () = 
-	      let t = Time.to_float (Time.gettimeofday ()) in
-	      let sec = float (Pervasives.truncate t) in
-	      Pervasives.truncate (1000000.0 *. (t -. sec))
-	    in
-	    let frc = frac_of_time () in 
-	    let pad = Buf.pad_string (string_of_int frc) in
-	    log (fun () -> sprintf "PRNG, init %s" (Buf.to_string pad));
-	    init pad
-	  in
-	  full_ctx := Some(t,context);
-	  (t,context)
-
-      | Some full_ctx -> full_ctx
-	  
-  (* Create a fresh security key/mac/cipher/buf. 
-   *)
-  let create_key () = 
-    let full_ctx = get_full_ctx () in
-    let key = create_random_buf full_ctx (Security.key_len) in
-    Security.key_of_buf key
-
-  let create_mac () = 
-    let full_ctx = get_full_ctx () in
-    let mac = create_random_buf full_ctx (Security.mac_len) in
-    Security.mac_of_buf mac
-
-  let create_cipher () = 
-    let full_ctx = get_full_ctx () in
-    let cipher = create_random_buf full_ctx (Security.cipher_len) in
-    Security.cipher_of_buf cipher
-
-  let create_buf len = 
-    let full_ctx = get_full_ctx () in
-    create_random_buf full_ctx len
-end    
   
 (**************************************************************)
   
@@ -452,7 +461,13 @@ module DH = struct
       
   let fromFile dh keysize = 
     log (fun () -> sprintf "fromFile, keysize=%d" keysize);
-    let ensroot = Unix.getenv "ENSROOT" in
+    let ensroot = 
+      try Unix.getenv "ENSROOT" 
+      with Not_found -> 
+	eprintf "Must have the ENSROOT enviroment variable defined, so 
+I can find the Diffie-Hellman keys.\n";
+	failwith "ENSROOT undefined"
+    in
     let fName = sprintf "%s/crypto/OpenSSL/key%d" ensroot keysize in
     let fd = open_in fName in
     let len = in_channel_length fd in
@@ -561,7 +576,7 @@ module DH = struct
     done;
     let time1 = Time.gettimeofday () in
     let diff = Time.to_float (Time.sub time1 time0) in
-    printf "\ntime for %d diffie-hellman exponentiations (key_len=%d)= %f\n" 
+    printf "\ntime for %d diffie-hellman exponentiations (key_len=%d)= %f(sec)\n" 
       100 key_len (diff/.(2.0 *. 50.0)) ;
 
     ()

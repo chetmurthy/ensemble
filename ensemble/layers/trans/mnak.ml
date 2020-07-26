@@ -160,7 +160,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     let buf = Arrayf.get s.buf rank in
     Iq.read_prefix buf (fun seqno iov abv ->
       log (fun () -> sprintf "read_prefix:%d:Data(%d)" rank seqno) ;
-      let iov = Iovecl.copy name iov in
+      let iov = Iovecl.copy iov in
       up (castPeerIov name rank iov) abv
     ) ;
 
@@ -296,7 +296,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       for seqno = lo to hi do
 	match Iq.get buf seqno with
 	| Iq.GData(iov,abv) ->
-	    let iov = Iovecl.copy name_nak iov in
+	    let iov = Iovecl.copy iov in
 	    dn (create name ESendUnrel[
 	      Peer origin ;
 	      Iov iov
@@ -438,6 +438,6 @@ let l2 args vs = Layer.hdr_noopt init hdlrs args vs
 
 let _ = 
   Param.default "mnak_iq_init" (Param.Int 0) ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)

@@ -166,6 +166,6 @@ let _ =
   Param.default "pr_suspect_sweep" (Param.Time (Time.of_string "0.5")) ;
   Param.default "pr_suspect_max_idle" (Param.Int 15) ;
   Param.default "pr_suspect_fanout" (Param.Int 3) ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)

@@ -19,7 +19,6 @@ type id =
   | Xfer				(* state transfer *)
   | Cltsvr				(* client-server management *)
   | Suspect				(* failure detection *)
-  | Evs					(* extended virtual synchrony *)
   | Flow				(* flow control *)
   | Migrate				(* process migration *)
   | Privacy				(* encryption of application data *)
@@ -52,7 +51,6 @@ val causal : id list			(* vsync + Causal *)
 val total : id list			(* vsync + Total *)
 val scale : id list			(* vsync + Scale *)
 val fifo : id list			(* only Fifo (no membership) *)
-val transis : id list			(* full Transis protocols *)
 
 val string_of_id : id -> string
 val id_of_string : string -> id

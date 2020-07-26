@@ -10,6 +10,7 @@
 /**************************************************************/
 #define NAME "CE_CONVERT"
 /**************************************************************/
+#define MAX(x,y) ((x > y) ? x : y)
 
 value
 Val_string_opt(char *s){
@@ -28,18 +29,48 @@ Val_string_opt(char *s){
  *  The call to alloc_string should be replaced with a call to ce_alloc_space. 
  */
 value
-Val_msg(ce_len_t len, ce_data_t data){
+Val_iovl(int num, ce_iovec_array_t iovl){
+  int i;
   CAMLparam0();
-  CAMLlocal1(msg_v);
+  CAMLlocal2(msg_v, ret_v);
 
-  if (len > 0) {
-    msg_v = alloc_string(len);  
-    memcpy(String_val(msg_v), (char*)data , len);
-  } else 
-    msg_v = alloc_string(0);
+  if (num==0)
+    ret_v = Atom(0);
+  else {
+    ret_v = alloc(num,0);
+    for(i=0; i<num; i++) {
+      msg_v = mm_Raw_of_len_buf(Iov_len(iovl[i]), Iov_buf(iovl[i]));
+      modify(&Field(ret_v,i), msg_v);
+    }
+  }
+  
+  CAMLreturn(ret_v);  
+}
 
-  TRACE(")");
-  CAMLreturn(msg_v);  
+/* We cache a local iovl. The user MAY NOT free it. 
+ */
+static ce_iovec_array_t iovl = NULL;
+static iovl_len = 0;
+
+ce_iovec_array_t Iovl_val(value iovl_v){
+  int i;
+  int num = Wosize_val(iovl_v);
+  value iov_v;
+
+  if (num == 0) return NULL;
+  if (num > iovl_len){
+    free(iovl);
+    iovl_len = MAX(2*iovl_len, num);
+    iovl = (ce_iovec_array_t) ce_malloc(iovl_len * sizeof(ce_iovec_t));
+  }
+  
+  for (i=0; i<num; i++){
+    iov_v = Field(iovl_v,i);
+    Iov_len(iovl[i]) = Int_val(Field(iov_v,0));
+    Iov_buf(iovl[i]) = (char*) mm_Cbuf_val(Field(iov_v,1));
+  }
+
+  return iovl;
 }
 
 char*
@@ -238,6 +269,11 @@ Val_jops (ce_jops_t *jops){
   Store_field(rt[CE_M], CE_JOPS_SECURE,     rt[CE_JOPS_SECURE]);
 
   TRACE(")");
+
+  TRACE("free C-jops("); 
+  ce_jops_free(jops);
+  TRACE(")"); 
+
   CAMLreturn(rt[CE_M]);
 
 }

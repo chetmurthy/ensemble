@@ -14,7 +14,7 @@ type kind = Cast | Send (*| Other*)
  *)
 type t
 type key
-type recv_info = id * kind * Trans.rank
+type recv_info = id * kind 
 
 (* Constructor.
  *)
@@ -32,7 +32,7 @@ val key	     	: t -> key
 val pt2pt_send 	: t -> Trans.rank -> id
 val multi_send 	: t -> id
 val gossip 	: t -> id
-val all_recv    : t -> bool(*scaled?*) -> recv_info Arrayf.t
+val all_recv    : t -> recv_info list
 
 (*
 val string_of_key : key -> string

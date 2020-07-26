@@ -18,7 +18,7 @@ let init_stack glue alarm ranking state (ls,vs) up =
   log (fun () -> sprintf "proto=%s" (Proto.string_of_id vs.proto_id)) ;
   log (fun () -> sprintf "stack=%s" (string_of_list ident stack)) ;
 *)
-  let procure l = Glue.convert glue (Elink.layer_get l) in
+  let procure l = Glue.convert glue (Layer.get l) in
   let stack =
     match stack with
     | [] -> failwith "init_stack:empty protocol stack"

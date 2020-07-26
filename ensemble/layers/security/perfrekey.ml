@@ -92,7 +92,7 @@ let init s (ls,vs) =
   let sweep = Time.of_int sweep in
   let next_flush = s.next_cleanup in
   if !next_flush = Time.zero then (
-    let alarm = Elink.alarm_get_hack () in
+    let alarm = Alarm.get_hack () in
     next_flush := Time.add (Alarm.gettime alarm) sweep;
   );
   { 
@@ -366,7 +366,7 @@ let l args vf = Layer.hdr init hdlrs None NoOpt args vf
 let _ = 
   Param.default "perfrekey_ack_tree_degree" (Param.Int 6);
   Param.default "perfrekey_sweep" (Param.Int (24 * 60 * 60));    (* 24 hours *)
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)
     

@@ -1,44 +1,29 @@
 
-     RELEASE_NOTES for Ensemble version 1.20
-
+     RELEASE_NOTES for Ensemble version 1.33
 Author: Ohad Rodeh
-Last updated: 13/09/2001
+Last updated: 6/12/2001
+
 
 CHANGES
 
-1. A new C-interface, under sub-directory ce. It works under all supported 
-   platforms. 
- 
-  The README from the CE subdirectory:
+Removed proprietery build tools.
 
-    The CE directory defines a C thin C-interface overlaid on 
-    the ML interface. To use the interface one should read the interface file
-    (ce.h) and link with the library --- libce.a on Unix platforms, and 
-    libce.lib on windows platforms. The documentation can be found in the
-    doc subdirectory.
+1. Rewritten all the makefiles, all proprietery build tools have been removed. 
+   The makefiles have been simplified, and can be easily read. Only standard
+   tools are now used (ocamlc, ocamlopt, ocamldep, GNU-make, gcc, cl, nmake).
+2. A large number of makefile bugs have been removed, makefile code has been
+   considerably reduced.
+2. Cleanup up and updated INSTALL.htm.
+3. Copyright violations have been fixed, the Ensembel code base contains
+   no CAML code, nor any other code that is not BSD.
+4. Work is underway to add IBM to the copyright holders. 
+5. Many small bug fixes. 
 
-    In the future, CE will form the major C-interface to the system, 
-    where HOT and Maestro are overlaid on top of it.
 
-    The overhead, as measured on Linux, is very low, on the order on 10\%
-    above the cost of direct ML calls. This should be lowered even
-    further in the future. Currently messages are copied between C and ML,
-    we intend to fix this, allowing for zero-copy.
+OCAML COMPILER VERSION
+  We are using version 3.01 for this version. 
 
-  Caveats: 
-    Due to a bug in the current ocaml distribution, the library is a bit
-    flaky on WIN32 platforms. 
-
-2. Removed 4-byte alignment restriction on io-vectors. 
-
-3. Various small bug fixes, and documentation patches.
-  - Added documentation to the State-Transfer layer (Xfer). 
-  - Stopped supporting the Ethernet mode. 
-  - Cleanup of the makefiles.
-  - Other small changes. 
-
-4. The current distribution was compiled under ocaml-3.01, due to
-   bugs in the Unix library in ocaml-3.02. 
-    
+PORTABILITY
+  This version was tested on Linux, WIN2000, and NT4. Light testing was carried out on Sparc/Solaris. CE still does not run on WIN32 (yet). 
 
 

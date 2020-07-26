@@ -4,6 +4,7 @@
 (**************************************************************)
 open Util
 open Trans
+open Buf
 (**************************************************************)
 let name = Trace.file "REAL"
 let failwith = Trace.make_failwith name
@@ -98,7 +99,7 @@ let unroll_loops flags handlers =
 	    Arrayf.get handlers i ()
 	done
 
-let helper mbuf route_handlers handler info = 
+let helper route_handlers handler info = 
   if Arrayf.is_empty info then 
     None
   else (
@@ -109,7 +110,12 @@ let helper mbuf route_handlers handler info =
       Arrayf.map (function
 	| (_,Hsys.Handler0 f) -> f
 	| (sock,Hsys.Handler1) ->
-	    Mbuf.alloc_udp_recv name mbuf route_handlers sock handler
+	    fun () -> 
+	      let buf,iov = Hsys.udp_recv_packet sock in
+	      if Buf.length buf <>|| len0 || Iovec.len iov <>|| len0 then (
+		let iovl = Iovecl.singleton iov in
+		handler route_handlers buf Buf.len0 (Buf.length buf) iovl
+	      )
       ) (Arrayf.combine socks handlers)
     in
     let socks = Arrayf.to_array socks in
@@ -118,10 +124,10 @@ let helper mbuf route_handlers handler info =
     Some(info,handle)
   )
 
-let build_block_poll mbuf route_handlers handler recv_info xmit_info polls =
+let build_block_poll route_handlers handler recv_info xmit_info polls =
   let (select_info,handle) =
-    let recv = helper mbuf route_handlers handler recv_info in
-    let xmit = helper mbuf route_handlers handler xmit_info in
+    let recv = helper route_handlers handler recv_info in
+    let xmit = helper route_handlers handler xmit_info in
     match recv,xmit with
     | None,None ->
 	(Hsys.select_info None None None),ident
@@ -173,13 +179,14 @@ let install_blocker f =
 
 let export_socks = ref (Arrayf.empty : Hsys.socket Arrayf.t)
 
-let alarm ((unique,sched,async,handlers,mbuf) as gorp) =
+let alarm ((unique,sched,async,handlers) as gorp) =
   let deliver = 
     if Arge.timestamp_check "recv" then (
-      let ts_add = Elink.get name Elink.timestamp_add "UDP:recv" in
-      let deliver h b o l =
+      let stamp = Timestamp.register"UDP:recv" in
+      let ts_add () = Timestamp.add stamp in
+      let deliver h buf ofs len iovl =
 	ts_add () ;
-    	Route.deliver h b o l
+    	Route.deliver h buf ofs len iovl
       in deliver
     ) else Route.deliver
   in
@@ -225,12 +232,11 @@ let alarm ((unique,sched,async,handlers,mbuf) as gorp) =
 *)
 
     if Arge.get Arge.multiread then (
-      let deliver handlers buf ofs len =
-	Sched.enqueue_4arg sched name deliver handlers buf ofs len
+      let deliver handlers buf ofs len iovl =
+	Sched.enqueue_5arg sched name deliver handlers buf ofs len iovl
       in
       let (block,poll,onlypoll) = 
 	build_block_poll 
-	  mbuf 
 	  handlers 
 	  deliver
 	  (Resource.to_array socks_recv)
@@ -257,7 +263,6 @@ let alarm ((unique,sched,async,handlers,mbuf) as gorp) =
     ) else (
       let (block,poll,onlypoll) = 
 	build_block_poll 
-	  mbuf 
 	  handlers
 	  deliver
 	  (Resource.to_array socks_recv)
@@ -367,6 +372,6 @@ Note: This has been moved to the Elink.module.
 let _ = Alarm.install Alarm.Real alarm
 *)
 
-let _ = Elink.put Elink.real_alarm alarm
+let _ = Alarm.install "REAL" alarm
 
 (**************************************************************)

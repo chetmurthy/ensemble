@@ -68,7 +68,7 @@ type 'abv state = {
 
 let iq_size iq =
   let l = Iq.list_of_iq iq in
-  List.fold_left (fun s (_,iov,_) -> s + (int_of_len (Iovecl.len name iov))) 0 l
+  List.fold_left (fun s (_,iov,_) -> s + (int_of_len (Iovecl.len iov))) 0 l
 
 (**************************************************************)
 
@@ -128,7 +128,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       log (fun () -> sprintf "slow path origin=%d seqno=%d hi=%d" origin seqno (Iq.hi recvs)) ;
       if Iq.assign recvs seqno iov abv then (
 	Iq.get_prefix recvs (fun seqno iov abv ->
-	  let iov = Iovecl.copy "Pt2pt:prefix" iov in
+	  let iov = Iovecl.copy iov in
 	  up (sendPeerIov name origin iov) abv
 	)
       ) else (
@@ -201,7 +201,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
        *)
       let list = Iq.list_of_iq_interval sends (lo,hi) in
       List.iter (fun (seqno,iov,abv) ->
-	let iov = Iovecl.copy "Pt2pt:NAKresp" iov in
+	let iov = Iovecl.copy iov in
         dn (sendPeerIov name origin iov) abv (Data seqno)
       ) list ;
 
@@ -258,7 +258,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	    let list = Iq.list_of_iq_interval sends (lo,hi) in
 	    List.iter (fun (seqno,iov,abv) ->
 	      log (fun () -> sprintf "retransmitting %d to %d" seqno i) ;
-	      let iov = Iovecl.copy "Pt2pt:retrans" iov in
+	      let iov = Iovecl.copy  iov in
 	      dn (sendPeerIov name i iov) abv (Data seqno)
 	    ) list
 	  )
@@ -336,6 +336,6 @@ let l2 args vs = Layer.hdr_noopt init hdlrs args vs
 
 let _ = 
   Param.default "pt2pt_sweep" (Param.Time (Time.of_int 1)) ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)

@@ -89,12 +89,9 @@ let l state vf =
     let {up_lin=up;dn_lin=dn} = h {up_lout=up;dn_lout=dn} in
 
     let get_transport bypass_trans = 
-      let fast_cast = Transport.cast bypass_trans in
+      let (fast_cast : rank -> seqno -> Iovecl.t -> unit) = 
+	Transport.cast bypass_trans in
       let fast_send = Array.init ls.nmembers (Transport.send bypass_trans) in
-
-      (* Need fast send, too. 
-       *)
-      let fast_cast = arity2 fast_cast in
 
       let mnak_buf = Arrayf.get mnak_s.Mnak.buf ls.rank in
 
@@ -103,7 +100,7 @@ let l state vf =
 	  match actions.(i) with
 	  | Appl_intf.Cast iov ->
 	      let seqno = Iq.read mnak_buf in
-	      fast_cast seqno iov ;
+	      fast_cast ls.rank seqno iov ;
 	      ignore (Iq.opt_insert_doread mnak_buf seqno iov abv_mnak) ;
 	      appl_s.Top_appl.cast_xmit <- succ appl_s.Top_appl.cast_xmit
 	  | Appl_intf.Send(dest,iov) ->
@@ -112,23 +109,22 @@ let l state vf =
 	      assert (dest <> ls.rank) ;
 	      let sends = Arrayf.get pt2pt_s.Pt2pt.sends dest in
 	      let seqno = Iq.hi sends in
-	      fast_send.(dest) seqno iov ;
+	      fast_send.(dest) ls.rank seqno iov ;
 	      ignore (Iq.add sends iov abv_pt2pt) ;
 	      array_incr appl_s.Top_appl.send_xmit dest ;
 	  | Appl_intf.Send1(dest,iov) ->
 	      assert (dest <> ls.rank) ;
 	      let sends = Arrayf.get pt2pt_s.Pt2pt.sends dest in
 	      let seqno = Iq.hi sends in
-	      fast_send.(dest) seqno iov ;
+	      fast_send.(dest) ls.rank seqno iov ;
 	      ignore (Iq.add sends iov abv_pt2pt) ;
 	      array_incr appl_s.Top_appl.send_xmit dest ;
 	  | Appl_intf.Control _ -> failwith "Control"
 	done
       in
 
-      let cast_bypass peer =
+      let cast_bypass peer seqno iov =
 	let buf = Arrayf.get mnak_s.Mnak.buf peer in
-	let do_cast_bypass seqno iov =
 	  if bottom_s.Bottom.all_alive 
 	  && appl_s.Top_appl.blocking = Top_appl.Unblocked
 	  && Iq.opt_insert_check buf seqno
@@ -139,27 +135,24 @@ let l state vf =
 	  ) else (
 	    up (bodyCore name ECast peer iov) (Local(Opt0 seqno))
 	  )
-	in do_cast_bypass
-      and send_bypass peer =
+      and send_bypass peer seqno iov =
 	let recvs = Arrayf.get pt2pt_s.Pt2pt.recvs peer in
-	let do_send_bypass seqno iov =
-	  if bottom_s.Bottom.all_alive 
+	if bottom_s.Bottom.all_alive 
 	  && appl_s.Top_appl.blocking = Top_appl.Unblocked
 	  && Iq.opt_update_check recvs seqno
-	  then (
-	    handle_actions (appl_s.Top_appl.recv_send.(peer) iov) ;
-	    ignore (Iq.opt_update_update recvs seqno) ;
-	    array_incr appl_s.Top_appl.send_recv peer
-	  ) else (
-	    up (bodyCore name ESend peer iov) (Local(Opt1 seqno))
-	  )
-	in do_send_bypass
+	then (
+	  handle_actions (appl_s.Top_appl.recv_send.(peer) iov) ;
+	  ignore (Iq.opt_update_update recvs seqno) ;
+	  array_incr appl_s.Top_appl.send_recv peer
+	) else (
+	  up (bodyCore name ESend peer iov) (Local(Opt1 seqno))
+	)
       in
-
-      let fast_receive kind peer _ =
+  
+      let fast_receive kind _ =
 	match kind with
-	| Conn.Cast -> cast_bypass peer
-	| Conn.Send -> send_bypass peer
+	| Conn.Cast -> cast_bypass 
+	| Conn.Send -> send_bypass 
 (*
 	| Conn.Other -> fun _ _ -> failwith sanity
 *)
@@ -177,14 +170,14 @@ let l state vf =
     in
 
     let alarm = Appl.alarm name in	(*HACK*)
-    let mbuf = Alarm.mbuf alarm in
+
 
     Transport.f2
       alarm
       Addr.default_ranking		(*BUG*)
       (ls,vs)
       Stack_id.Bypass
-      (Elink.get name Elink.bypassr_f mbuf)
+      (Bypassr.f ())
       get_transport
 (*
     bypass_disable_r := (fun () -> Transport.disable bypass_trans) ;
@@ -193,6 +186,6 @@ let l state vf =
   in
   (s,h)
 
-let _ = Elink.layer_install name l
+let _ = Layer.install name l
 
 (**************************************************************)

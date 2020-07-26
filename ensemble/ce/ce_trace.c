@@ -17,6 +17,7 @@ static int nlogs = 0 ;
 void trace_add(char* s) {
     int i ;
 
+    //    printf("trace_add\n"); fflush(stdout);
     for (i=0;i<nlogs;i++) {
 	if (!logs[i]) continue ;
 	if (strcmp(logs[i], s) ==0) break ;
@@ -28,7 +29,7 @@ void trace_add(char* s) {
       printf("TRACE:log_add:table overflow\n") ;
 	return ;
     }
-    logs[nlogs] = (char*) ce_malloc(strlen(s));
+    logs[nlogs] = (char*) ce_malloc(strlen(s)+1);
     strcpy(logs[nlogs],s) ;
     printf ("Logging %s\n", s);
     nlogs ++ ;

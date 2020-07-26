@@ -6,10 +6,11 @@
 (* Aded TCP outboard mode for NT: Werner Vogels 10/97 *)
 (* More cleanup: Mark Hayden, 11/97 *)
 (**************************************************************)
+open Ensemble
 open Util
 open View
 open Appl_intf
-open Appl_intf.Protosi
+open Protos
 open Hot_util
 open Marsh
 open Buf
@@ -17,6 +18,7 @@ open Buf
 let name = Trace.file "HOT_OUTBOARD"
 let failwith s = Trace.make_failwith name s
 let log = Trace.log name
+let log_iov = Trace.log (name^":IOV")
 (**************************************************************)
 (* Marshalling and unmarshalling.  These functions are using
  * the Ensemble Marsh module.  For marshalling, we first write
@@ -42,74 +44,73 @@ and up_heartbeat = 3
 and up_block     = 4 
 and up_exit      = 5 
 
-let marsh_upcall mbuf id msg =
-  let m = write_init mbuf in
+let marsh_upcall id msg =
+  let m = write_init () in
   write_gctx m id ;
-  begin
+  let iovl = 
     match msg with
-    | UInstall vf ->
-	let v = c_view_state vf in
-  	write_cbtype m up_view ;
-  	write_string m v.c_version ;
-  	write_string m v.c_group ;
-  	write_endpt_array m v.c_view ;
-  	write_int m v.c_rank ;
-  	write_string m v.c_protocol ;
-  	write_bool m v.c_groupd ;
-  	let ltime,coord = v.c_view_id in
-  	write_int m ltime ;
-  	write_endpt m coord ;
-  	write_string m v.c_params ;
-  	write_bool m v.c_xfer_view ;
-  	write_bool m v.c_primary ;
-  	write_bool_array m v.c_clients;
-  	write_string m v.c_key
-    | UReceive(origin,cs,iovl) -> (
-	let typ = 
-	  match cs with
-	  | Appl_intf.New.C -> up_cast
-	  | Appl_intf.New.S -> up_send
-	in
-	write_cbtype m typ ;
-	write_int m origin ;
-	write_iovl_len m iovl
-      )
-    | UHeartbeat time ->
-	write_cbtype m up_heartbeat ;
-  	let time = milli_of_time time in
-  	write_int m time
-    | UBlock ->
-  	write_cbtype m up_block
-    | UExit ->
-  	write_cbtype m up_exit
-  end ;
-  Marsh.marsh_done m
+      | UInstall vf ->
+	  let v = c_view_state vf in
+  	  write_cbtype m up_view ;
+  	  write_string m v.c_version ;
+  	  write_string m v.c_group ;
+  	  write_endpt_array m v.c_view ;
+  	  write_int m v.c_rank ;
+  	  write_string m v.c_protocol ;
+  	  write_bool m v.c_groupd ;
+  	  let ltime,coord = v.c_view_id in
+  	  write_int m ltime ;
+  	  write_endpt m coord ;
+  	  write_string m v.c_params ;
+  	  write_bool m v.c_xfer_view ;
+  	  write_bool m v.c_primary ;
+  	  write_bool_array m v.c_clients;
+  	  write_string m v.c_key;
+	  Iovecl.empty
+      | UReceive(origin,cs,iovl) -> (
+	  let typ = 
+	    match cs with
+	      | Appl_intf.New.C -> up_cast
+	      | Appl_intf.New.S -> up_send
+	  in
+	  write_cbtype m typ ;
+	  write_int m origin ;
+	  iovl
+	)
+      | UHeartbeat time ->
+	  write_cbtype m up_heartbeat ;
+  	  let time = milli_of_time time in
+  	  write_int m time;
+	  Iovecl.empty
+      | UBlock ->
+  	  write_cbtype m up_block;
+	  Iovecl.empty
+      | UExit ->
+  	  write_cbtype m up_exit;
+	  Iovecl.empty
+  in
+  let buf = Marsh.marsh_done m in
+  buf,iovl
 
 (**************************************************************)
 
 (* Process input from stdin.  Read a downcall + add to the
  * array of pending downcalls.
  *)
-let dncall_unmarsh mbuf iovl =
-  let iovl = Iovecl.take name iovl in
-  let m = Marsh.unmarsh_init mbuf iovl in
+let dncall_unmarsh buf iovl =
+
+  let m = Marsh.unmarsh_init buf len0 in
   let read_int () = Marsh.read_int m in
   let read_string () = Marsh.read_string m in
   let read_bool () = 
     let b = read_int() in
     (b != 0)
   in
-  let read_iovl () =
-    let len_iov = Marsh.read_iovl m len4 in
-    let len_int = Iovecl.read_net_int name len_iov len0 in
-    let len_len = ceil len_int in
-    let iovl = Marsh.read_iovl m len_len in
-    Iovecl.append name len_iov iovl
-  in
   let read_endpt = read_string in
   let id = read_int () in
   let ltime = read_int () in
   let dntype = read_int () in
+  log (fun () -> sprintf "id=%d ltime=%d dntype=%d" id ltime dntype);
   let ret =
     match dntype with
     | 0 ->
@@ -152,11 +153,9 @@ let dncall_unmarsh mbuf iovl =
 	let modes = Arrayf.to_list (Addr.ids_of_set (Arrayf.get vs.address 0)) in
 	Create(id,vs,heartbeat_rate,modes)
     | 1 ->				(* Cast *)
-	let iovl = read_iovl () in
 	Dncall(id,ltime,Cast(iovl))
     | 2 ->				(* Send*)
 	let dest = read_endpt () in
-	let iovl = read_iovl () in
 	SendEndpt(id,ltime,dest,iovl)
     | 3 ->				(* Suspect *)
 	let size = read_int () in
@@ -193,11 +192,10 @@ let dncall_unmarsh mbuf iovl =
 	Dncall(id,ltime,Control(Block true))
     | 11 ->
 	let dest = read_int () in
-	let iovl = read_iovl () in
-	Dncall(id,ltime,Send([|dest|],iovl))
+	Dncall(id,ltime,Send1(dest,iovl))
     | _ -> failwith sanity
   in
-  Marsh.unmarsh_done_all m ;
+  Marsh.unmarsh_check_done_all m ;
   ret
 
 (**************************************************************)
@@ -208,7 +206,6 @@ let run () =
    *)
   Arge.set Arge.pollcount 0 ;
   let set_ident name v = v in
-  let tcp_channel  = Arge.bool set_ident false "tcp_channel" "active TCP channel in outboard mode" in
   let tcp_port     = Arge.int set_ident 5002 "tcp_port" "set port outboard TCP channel" in
 
   Arge.parse [
@@ -218,50 +215,47 @@ let run () =
   ] (Arge.badarg name) "outboard:Ensemble HOT tools outboard daemon";
 
   let alarm = Appl.alarm name in
-  let mbuf = Alarm.mbuf alarm in
 
   (* Force linking of the Udp mode.  This causes
    * a port number to be installed in the 
    * Unique generator.
    *)
-  let _ = Elink.domain_of_mode alarm Addr.Udp in
+  let _ = Domain.of_mode alarm Addr.Udp in
 
   Appl.start_monitor ();
 
   (* Get the server.
    *)
-  let protos_server = (Elink.get name Elink.protos_server) alarm Appl.addr Appl.config_new in
+  let protos_server = Protos.server alarm Appl.addr Appl.config_new in
 
   (* Wrap the client handler with the HOT outboard marshaller.
    *)
   let client info send =
     let send = function
       |	Upcall(id,msg) ->
-	  let iovl = marsh_upcall mbuf id msg in
-	  send iovl
+	  let buf,iovl = marsh_upcall id msg in
+	  if Iovecl.len iovl >|| len0 then
+	    log_iov (fun () -> 
+	      sprintf "iovecs=%s" (Iovecl.sum_refs iovl));
+	  send buf len0 (Buf.length buf) iovl
       |	_ -> failwith sanity
     in
 
     let recv,disable,() = protos_server info send in
 
-    let recv iovl =
-      let msg = dncall_unmarsh mbuf iovl in
+    let recv buf iovl =
+      let msg = dncall_unmarsh buf iovl in
       recv msg
     in
 
     (recv,disable,())
   in
 
-  (* Use stdin or TCP for establishing connections.
+  (* as of version 1.3, we only use TCP.
    *)
   let chan =
-    if Arge.get tcp_channel then (
-      let port = Arge.get tcp_port in
-      Elink.get name Elink.hsyssupp_server name alarm port
-    ) else (
-      let stdin = Hsys.stdin () in
-      Elink.get_hsyssupp_client name name alarm stdin
-    )
+    let port = Arge.get tcp_port in
+    Hsyssupp.server name alarm port
   in
   chan client ;
 

@@ -26,7 +26,7 @@ let create server port my_name =
   end ;
   log (fun () -> sprintf "connected to server\n") ;
   let msg = sprintf "reg %s" my_name in
-  ignore (send sock msg 0 (String.length msg)) ;
+  ignore (send_p sock (Buf.of_string msg) Buf.len0 (Buf.length (Buf.of_string msg))) ;
   sock
 
 
@@ -55,7 +55,8 @@ let get_input sock = fun () ->
 
 let leave my_name sock =
   let msg = sprintf "leave %s" my_name in
-  ignore (send sock msg 0 (String.length msg)) ;
+  let buf = Buf.of_string msg in
+  ignore (send_p sock buf Buf.len0 (Buf.length buf)) ;
   close sock ;
   ()
 

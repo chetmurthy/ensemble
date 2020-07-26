@@ -1,9 +1,0 @@
-i386-linux
-*.cm*
-*.h
-*.a
-*.lib
-*.o
-*.obj
-.err
-*.mli

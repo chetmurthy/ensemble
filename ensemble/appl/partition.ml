@@ -89,7 +89,6 @@ let connected link_drop_rate e1 e2 =
     false
   ) else true
 
-let _ = Elink.put Elink.partition_connected connected
 
 
 

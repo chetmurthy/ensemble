@@ -5,13 +5,14 @@
 (* Bug Fixes, Cleanup: Mark Hayden, 4/97 *)
 (* More Bug Fixes, Cleanup: Mark Hayden, 5/97 *)
 (**************************************************************)
+open Ensemble
 open Trans
 open Buf
 open Util
 open View
 open Appl_intf
 open Appl_intf.New
-open Appl_intf.Protosi
+open Protos
 open Hot_util
 (**************************************************************)
 let name = Trace.file "HOT_INBOARD"
@@ -35,10 +36,10 @@ external cback_install_view : id -> c_view_state -> unit
 external cback_heartbeat : id -> millisec -> unit
     = "hot_ens_Heartbeat_cbd"
 
-external cback_recv_cast : id -> endpt -> Buf.t -> ofs -> len -> unit 
+external cback_recv_cast : id -> endpt -> Iovec.raw -> unit 
     = "hot_ens_ReceiveCast_cbd"
 
-external cback_recv_send : id -> endpt -> Buf.t -> ofs -> len -> unit 
+external cback_recv_send : id -> endpt -> Iovec.raw -> unit 
     = "hot_ens_ReceiveSend_cbd"
 
 external cback_block : id -> unit 
@@ -62,7 +63,7 @@ external c_exception_handler : string -> bool
 
 (**************************************************************)
 
-let interface mbuf id heartbeat_rate =
+let interface id heartbeat_rate =
   let install ((ls,vs) as vf) =
     let cvs = c_view_state vf in
     cback_install_view id cvs ;
@@ -73,16 +74,17 @@ let interface mbuf id heartbeat_rate =
       let upcall = 
 	match cs with
 	| S ->
-	    fun buf ofs len ->
-	      cback_recv_send id origin buf ofs len
+	    fun iovec ->
+	      cback_recv_send id origin iovec
 	| C ->
-	    fun buf ofs len ->
-	      cback_recv_cast id origin buf ofs len
+	    fun iovec ->
+	      cback_recv_cast id origin iovec
       in
       fun iovl ->
-      	let iov = Mbuf.flatten name mbuf iovl in
-      	Iovec.read name iov upcall ;
-      	Iovec.free name iov ;
+      	let iov = Iovecl.flatten iovl in
+	upcall (Iovec.raw_of iov) ;
+      	Iovecl.free iovl ;
+      	Iovec.free iov ;
       	[||]
     in
     let heartbeat time = 
@@ -104,10 +106,9 @@ let interface mbuf id heartbeat_rate =
     install = install ;
     exit = exit }
 
-let join mbuf ctxt id vf hbr dispatch = 
-  let interface = interface mbuf id hbr in
+let join ctxt id vf hbr dispatch = 
+  let interface = interface id hbr in
   Hot_appl.join
-    mbuf
     ctxt
     id
     dispatch
@@ -118,7 +119,7 @@ let join mbuf ctxt id vf hbr dispatch =
   
 (* Get pending dncalls from C application and dispatch among resp. groups. 
  *)
-let rec dispatch_dncalls mbuf ctxt () = 
+let rec dispatch_dncalls ctxt () = 
   let dn_arr = c_get_dncalls () in 
   Array.iter (function {id = gctx; dncall = dncall} ->
     (* Dispatch a downcall request to the corresp. group context.
@@ -128,7 +129,7 @@ let rec dispatch_dncalls mbuf ctxt () =
 	log (fun () -> "C_Join");
 	let vf = init_view_state jops in
 	let heartbeat_rate = Time.of_float (float jops.jops_hrtbt_rate /. 1000.0) in
-	join mbuf ctxt gctx vf heartbeat_rate (dispatch_dncalls mbuf ctxt)
+	join ctxt gctx vf heartbeat_rate (dispatch_dncalls ctxt)
     | _ ->
         (* Add request to the list of pending dncalls for the given gctx.
          *)
@@ -143,7 +144,6 @@ let rec dispatch_dncalls mbuf ctxt () =
 (* Polling function called from C.
  *)
 let poll ctxt alarm =
-  let mbuf = Alarm.mbuf alarm in
   let sched = Alarm.sched alarm in
   let sched_step = Sched.step sched in
   let count = Arge.get Arge.sched_step in
@@ -161,7 +161,7 @@ let poll ctxt alarm =
       (* Check for application downcalls.
        *)
       log (fun () -> "dispatch_dncalls");
-      let got_dncalls = dispatch_dncalls mbuf ctxt () in
+      let got_dncalls = dispatch_dncalls ctxt () in
 
       (* Schedule some events in the layers.
        *)
@@ -181,7 +181,7 @@ let poll ctxt alarm =
        *)
       got_alarms || got_msgs || got_events || got_dncalls
     with e ->
-      let e = Hsys.error e in
+      let e = Util.error e in
       if not (c_exception_handler e) then
 	eprintf "HOT_INBOARD:poll:uncaught exception:%s\n" e ;
       exit 1
@@ -197,7 +197,7 @@ let block alarm =
 *)
       Alarm.block alarm
     with e ->
-      let e = Hsys.error e in
+      let e = Util.error e in
       if not (c_exception_handler e) then
 	eprintf "HOT_INBOARD:block:uncaught exception:%s\n" e ;
       exit 1
@@ -221,7 +221,7 @@ let run () =
    * a port number to be installed in the 
    * Unique generator.
    *)
-  let _ = Elink.domain_of_mode alarm Addr.Udp in
+  let _ = Domain.of_mode alarm Addr.Udp in
 
   let ctxt = Hot_appl.context name in
   Appl.start_monitor () ;
@@ -285,7 +285,7 @@ let _ =
   in
   Util.fprintf_override printer ;
   try run () with e ->
-    let e = Hsys.error e in
+    let e = Util.error e in
     if not (c_exception_handler e) then
       eprintf "HOT_INBOARD:top:uncaught exception:%s\n" e ;
     exit 1

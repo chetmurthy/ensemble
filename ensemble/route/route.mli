@@ -6,12 +6,9 @@ open Trans
 open Buf
 (**************************************************************)
 
-type message =
-  | Signed of (bool -> Obj.t option -> int -> Iovecl.t -> unit)
-  | Unsigned of (Obj.t option -> int -> Iovecl.t -> unit)
-  | Bypass of (int -> Iovecl.t -> unit)
-  | Raw of (Iovecl.t -> unit)
-  | Scale of (rank -> Obj.t option -> int -> Iovecl.t -> unit)
+type pre_processor =
+  | Unsigned of (rank -> Obj.t option -> seqno -> Iovecl.t -> unit)
+  | Signed of (bool -> rank -> Obj.t option -> seqno -> Iovecl.t -> unit)
 
 (**************************************************************)
 
@@ -19,31 +16,28 @@ type handlers
 val handlers : unit -> handlers
 
 (* The central delivery functions of Ensemble.  All incoming
- * messages go through here.  These functions all take over
- * the reference to the object.
+ * messages go through here. the format is: (len,buf,iovec).
+ * buf - a preallocated ML buffer.
+ * iovec - a user-land iovec.
  *)
-val deliver      : handlers -> Iovec.rbuf -> ofs -> len -> unit
-val deliver_iov  : handlers -> Iovec.t -> unit
-val deliver_iovl : handlers -> Mbuf.t -> Iovecl.t -> unit
-
+val deliver : handlers -> Buf.t -> Buf.ofs -> Buf.len -> Iovecl.t -> unit
 (**************************************************************)
 
-type xmits =
-  ((Buf.t -> ofs -> len -> unit) * 
-   (Iovecl.t -> unit) *
-   (Iovecl.t -> Buf.t -> unit))
-
-(* Type of routers.
+(* transmit an Ensemble packet, this includes the ML part, and a
+ * user-land iovecl.
  *)
-type 'msg t
+type xmitf = Buf.t -> Buf.ofs -> Buf.len -> Iovecl.t -> unit
 
-val debug : 'msg t -> debug
-val secure : 'msg t -> bool
-val blast : 'msg t -> xmits -> Security.key -> Conn.id -> 'msg
-val install : 'msg t -> handlers -> Conn.key -> Conn.recv_info Arrayf.t -> 
-    Security.key -> (Conn.kind -> rank -> bool -> 'msg) -> unit
-val remove : 'msg t -> handlers -> Conn.key -> Conn.recv_info Arrayf.t -> unit
-val scaled : 'msg t -> bool
+(* Type of routers. ['xf] is the type of a message send function. 
+ *)
+type 'xf t
+
+val debug : 'xf t -> debug
+val secure : 'xf t -> bool
+val blast : 'xf t -> xmitf -> Security.key -> Conn.id -> 'xf
+val install : 'xf t -> handlers -> Conn.key -> Conn.recv_info list -> 
+    Security.key -> (Conn.kind -> bool -> 'xf) -> unit
+val remove : 'xf t -> handlers -> Conn.key -> Conn.recv_info list -> unit
 
 (**************************************************************)
 
@@ -56,13 +50,10 @@ val security_check : 'a t -> unit
 (**************************************************************)
 
 type id =
-  | SignedId
   | UnsignedId
-  | BypassId
-  | RawId
-  | ScaleId
+  | SignedId
 
-val id_of_message : message -> id
+val id_of_pre_processor : pre_processor -> id
 
 (**************************************************************)
 
@@ -71,13 +62,12 @@ val id_of_message : message -> id
 val create :
   debug ->
   bool -> (* secure? *)
-  bool -> (* scaled? *)
-  ((bool -> 'msg) -> message) ->
+  ((bool -> 'xf) -> pre_processor) ->
   (Conn.id -> Buf.t) ->			(* packer *)
-  ((Conn.id * Buf.t(*digest*) * Security.key * message) Arrayf.t -> 
-   (Iovec.rbuf -> ofs -> len -> unit) Arrayf.t) -> (* merge *)
-  (xmits -> Security.key -> Buf.t(*digest*) -> Conn.id -> 'msg) ->  (* blast *)
-  'msg t
+  ((Conn.id * digest * Security.key * pre_processor) Arrayf.t -> 
+    (Buf.t -> Buf.ofs -> Buf.len -> Iovecl.t -> unit) Arrayf.t) -> (* merge *)
+  (xmitf -> Security.key -> digest -> Conn.id -> 'xf) ->  (* blast *)
+  'xf t
 
 (**************************************************************)
 

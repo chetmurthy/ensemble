@@ -98,13 +98,13 @@ let tests = ref []
 let test_declare name f =
   tests := (name,f) :: !tests
 
-let test_exec name =
+let test_exec name = 
   eprintf "TRACE:executing test '%s'\n" name ; flush stdout ;
   try
     let f = List.assoc name !tests in
     begin
       try f () with e ->
-        eprintf "TRACE:test raised error:%s\n" (Hsys.error e)
+        eprintf "TRACE:test raised error:%s\n" (Util.error e)
     end ;
     exit 0
   with Not_found ->
@@ -186,13 +186,12 @@ let logl3 name info0 info1 =
     | None -> ()
 
 let log_add name f =
-  let name = string_uppercase name in
+(*  let name = string_uppercase name in
   if name = "HSYS" then (
     Hsys.set_error_log (fun g -> f "" (g ()))
-  ) else (
-    let x = get_log name in
-    x := Some f
-  )
+  ) else ( *)
+  let x = get_log name in
+  x := Some f
 
 let log_remove name =
   let name = string_uppercase name in

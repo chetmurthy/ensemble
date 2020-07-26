@@ -39,7 +39,7 @@ let init s (ls,vs) = {
   chans       = if ls.rank = 0 then Array.create ls.nmembers [] else Array.create 0 []
 }
 
-let marshal, unmarshal = Buf.make_marsh "CHK_SECCHAN" true
+let marshal, unmarshal = Buf.make_marsh "CHK_SECCHAN" 
 let check_all a = array_for_all ident a 
 let log ls = Trace.log2 name (string_of_int ls.rank)
 let log1 ls = Trace.log2 (name^"1") (string_of_int ls.rank)
@@ -61,7 +61,7 @@ let pad_msg m =
 
 (* Strip the padding from the message. 
  *)
-let strip_pad m actual = Buf.sub name m Buf.len0 actual 
+let strip_pad m actual = Buf.sub m Buf.len0 actual 
 
 
 let sendSecureMsg dnlm peer m = 
@@ -215,7 +215,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  let src = getPeer ev in
 	  let m = getSecureMsg ev in
 	  let m = strip_pad m actual in 
-	  let m = unmarshal m Buf.len0 (Buf.length m) in
+	  let m = unmarshal m Buf.len0 in
 	  handle_secure_msg s (ls,vs) dnlm m src
 	);
 	free name ev
@@ -266,7 +266,7 @@ let l args vf = Layer.hdr init hdlrs None NoOpt args vf
 
 let _ = 
   Param.default "chk_secchan_prog" (Param.String "ping") ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)
 

@@ -42,7 +42,7 @@ type 'abv state = {
 
 (**************************************************************)
 
-let msg_len s ev = int_of_len ((Iovecl.len name (getIov ev)) +|| s.overhead)
+let msg_len s ev = int_of_len ((Iovecl.len (getIov ev)) +|| s.overhead)
 
 let string_of_queue_len q = string_of_int (Queuee.length q)
 
@@ -100,7 +100,7 @@ let init _ (ls,vs) =
     stagger    = stagger ;
     ack_thresh = ack_thresh ;
     send_buf   = Queuee.create () ;
-    overhead   = Buf.ceil (Param.int vs.params "mflow_overhead") ;
+    overhead   = Buf.len_of_int (Param.int vs.params "mflow_overhead") ;
     credit     = Mcredit.create ls.rank ls.nmembers ack_thresh send_credit recv_credit
   }
 
@@ -260,6 +260,6 @@ let _ =
   Param.default "mflow_ack_thresh" (Param.Int 25000) ;
   Param.default "mflow_overhead" (Param.Int 100) ;
   Param.default "mflow_stagger" (Param.Bool true) ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)

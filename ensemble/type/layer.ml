@@ -334,3 +334,44 @@ let layer_dump name f vf s =
 let layer_dump_simp name = layer_dump name (fun _ _ -> [||])
 
 (**************************************************************)
+(* Layer management.  
+ * 
+ * We need to do an ugly cast here, so that all layers 
+ * will look the same, although they actually all have different
+ * headers. 
+ *
+ * Each layer installs itself in the table upon initialization
+ * time. When stacks are built, the table is searched for layer
+ * names. The layer table is of type:
+ *   (string, ('a,'b,'c) basic) Hashtbl.t
+ *)
+
+(* A layer name is just a string.
+*)
+type name = string
+
+let layer_table = 
+  let (table : (string, ('a,'b,'c) basic) Hashtbl.t) = Hashtbl.create 47 in
+  Trace.install_root (fun () ->
+    [sprintf "ELINK:#layers=%d" (hashtbl_size table)]
+  ) ;
+  table
+
+let rec(*no inline*) install name l = 
+  let name = string_uppercase name in
+  let l = (Obj.magic l : ('a,'b,'c) basic) in
+  Hashtbl.add layer_table name l
+
+let get name = 
+  let name = string_uppercase name in
+  let l = Hashtbl.find layer_table name in
+  (Obj.magic l : ('a,'b,'c) basic)
+  
+
+let list () =
+  eprintf "  ELINK:Installed Layers\n" ;
+  Hashtbl.iter (fun name _ ->
+    eprintf "	%s\n" name
+  ) layer_table
+
+(**************************************************************)

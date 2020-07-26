@@ -11,15 +11,13 @@
 /**************************************************************/
 #define NAME "CE_FIFO"
 /**************************************************************/
-typedef struct ce_iovec_t {
+typedef struct iov_t {
   int len;
   char *data;
-} ce_iovec_t;
+} iov_t;
 
-void ce_iovec_free(ce_iovec_t *iov){
-  free(iov->data);
-  free(iov);
-}
+//#define free(x)  printf("%s:freeing(", NAME); fflush(stdout); free(x); printf(")\n"); fflush(stdout);
+
 
 /**************************************************************/
 
@@ -99,17 +97,17 @@ msg_t* ignore(char *buf){
   return msg;
 }
 
-ce_iovec_t *marsh (msg_t *msg){
-  ce_iovec_t *iov;
+iov_t *marsh (msg_t *msg){
+  iov_t *iov;
 
-  iov = record_create(ce_iovec_t*, iov);
+  iov = record_create(iov_t*, iov);
   iov->len= sizeof(msg_t);
   iov->data= malloc(iov->len);
   memcpy(iov->data, (char*)msg, iov->len);
   return iov;
 }
 
-msg_t *unmarsh(ce_iovec_t *iov){
+msg_t *unmarsh(iov_t *iov){
   msg_t *msg;
 
   msg = (msg_t*) malloc(sizeof(msg_t));
@@ -146,11 +144,11 @@ void send1(
 	   msg_t *msg
 	   ){
   char *data = NULL;
-  ce_iovec_t *iov;
+  iov_t *iov;
 
   iov = marsh(msg);
   TRACE("send1");
-  ce_Send1(c_appl, dest, iov->len, iov->data);
+  ce_flat_Send1(c_appl, dest, iov->len, iov->data);
 
   free(msg);
   free(iov);
@@ -164,16 +162,15 @@ void send2(
 	   ){
   char *data = NULL;
   int *dests;
-  ce_iovec_t *iov;
+  iov_t *iov;
 
   iov = marsh(msg);
-  dests = (int*) malloc(3 * sizeof(int));
+  dests = (int*) malloc(2 * sizeof(int));
   
   TRACE("send2");
   dests[0] = dest1;
   dests[1] = dest2;
-  dests[2] = 0;
-  ce_Send(c_appl, dests, iov->len, iov->data);
+  ce_flat_Send(c_appl, 2, dests, iov->len, iov->data);
 
   free(msg);
   free(iov);
@@ -186,11 +183,11 @@ void cast(
 	  msg_t *msg
 	  ) {
   char *data = NULL;
-  ce_iovec_t *iov;
+  iov_t *iov;
 
   iov = marsh(msg);
   TRACE("cast");
-  ce_Cast(c_appl, iov->len, iov->data);
+  ce_flat_Cast(c_appl, iov->len, iov->data);
   free(msg);
   free(iov);
 }
@@ -198,7 +195,7 @@ void cast(
 
 void main_recv_cast(void *env, int rank, int len, char* data) {
   state_t *s = (state_t*) env;
-  ce_iovec_t iov;
+  iov_t iov;
   msg_t *msg;
   
   iov.len=len;
@@ -212,7 +209,7 @@ void main_recv_cast(void *env, int rank, int len, char* data) {
 void main_recv_send(void *env, int rank, int len, char* data) {
   state_t *s = (state_t*) env;
   msg_t *msg ;
-  ce_iovec_t iov;
+  iov_t iov;
   
   iov.len=len;
   iov.data=data;
@@ -227,6 +224,11 @@ void main_recv_send(void *env, int rank, int len, char* data) {
 int random_member(ce_local_state_t *ls){
   int rank ;
 
+  if (ls->nmembers == 1) {
+    printf("Cannot send a message to myself\n");
+    exit(1);
+  }
+  
   rank = (rand ()) % (ls->nmembers) ;
   if (rank == ls->rank) 
     return random_member(ls);
@@ -311,7 +313,7 @@ void fifo_recv_cast(state_t *s, int rank, msg_t *msg) {
       	cast(s->intf, ignore("junk"));
       }
       break;
-      
+       
     case F_IGNORE:
       break;
       
@@ -319,7 +321,7 @@ void fifo_recv_cast(state_t *s, int rank, msg_t *msg) {
       printf ("Error, bad message type\n");
       exit(1);
     }
-  
+
   free(msg_s);
   TRACE(")");
 }
@@ -329,7 +331,6 @@ void fifo_recv_send(state_t *s, int rank, msg_t *msg) {
   char *msg_s = string_of_msg(msg) ;
 
   TRACE2("fifo_recv_send", s->ls->endpt);
-  //  printf("recv_send <- %d msg=%s\n", rank, msg_s);
   free(msg_s);
 }
 
@@ -341,30 +342,31 @@ void main_heartbeat(void *env, double time) {
 
 /**************************************************************/
 void join(){
-  ce_jops_t jops; 
+  ce_jops_t *jops; 
   ce_appl_intf_t *main_intf;
   state_t *s;
   
   /* The rest of the fields should be zero. The
    * conversion code should be able to handle this. 
    */
-  record_clear(&jops);
-  jops.hrtbt_rate=5.0;
-  jops.transports = "NETSIM";
-  jops.group_name = "ce_fifo";
-  jops.properties = CE_DEFAULT_PROPERTIES;
-  jops.use_properties = 1;
+  jops = record_create(ce_jops_t*, jops);
+  record_clear(jops);
+  jops->transports = ce_copy_string("NETSIM");
+  jops->group_name = ce_copy_string("ce_fifo");
+  jops->properties = ce_copy_string(CE_DEFAULT_PROPERTIES);
+  jops->use_properties = 1;
+  jops->hrtbt_rate = 10.0;
 
   s = (state_t*) record_create(state_t*, s);
   record_clear(s);
     
-  main_intf = ce_create_intf(s,
+  main_intf = ce_create_flat_intf(s,
 			main_exit, main_install, main_flow_block,
 			main_block, main_recv_cast, main_recv_send,
-			main_heartbeat);
+				  main_heartbeat);
   
   s->intf= main_intf;
-  ce_Join (&jops, main_intf);
+  ce_Join(jops, main_intf);
 }
 
 
@@ -384,7 +386,7 @@ void fifo_process_args(int argc, char **argv){
 	ml_args++ ;
     }
 
-    ret = (char**) malloc ((ml_args+5) * sizeof(char*));
+    ret = (char**) malloc ((ml_args+3) * sizeof(char*));
     
     for(i=0, j=0; i<argc; i++) {
       if (strcmp(argv[i], "-n") == 0) {
@@ -397,11 +399,9 @@ void fifo_process_args(int argc, char **argv){
     }
     ret[ml_args] = "-alarm";
     ret[ml_args+1] = "Netsim";
-    ret[ml_args+2] = "-modes";
-    ret[ml_args+3] = "Netsim";
-    ret[ml_args+4] = NULL;
+    ret[ml_args+2] = NULL;
 
-    ce_Init(ml_args+4, ret); /* Call Arge.parse, and appl_process_args */
+    ce_Init(ml_args+2, ret); /* Call Arge.parse, and appl_process_args */
 }
 
 int main(int argc, char **argv){

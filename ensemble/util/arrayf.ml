@@ -137,9 +137,11 @@ let choose a k =
   in loop k []
 
 (**************************************************************)
-(* Hack *)
-let sendv = Arraye.sendv
-let sendtov = Arraye.sendtov
-let sendtosv = Arraye.sendtosv
-let sendtovs = Arraye.sendtovs
+(* This should be used with care, it is unsafe. 
+*)
+let to_array_break x = (Obj.magic x : 'a array)
+let of_array_break x = (Obj.magic x : 'a t)
+
+let of_array_map = Arraye.of_array_map
+let to_array_map = Arraye.to_array_map
 (**************************************************************)

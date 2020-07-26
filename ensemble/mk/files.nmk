@@ -13,210 +13,166 @@
 # files.
 
 ENSEMBLEMLI =\
-	$(ENSROOT)\util\hsys.mli\
-	$(ENSROOT)\util\queuee.mli\
-	$(ENSROOT)\util\trans.mli\
-	$(ENSROOT)\util\util.mli\
-	$(ENSROOT)\util\arraye.mli\
-	$(ENSROOT)\util\arrayf.mli\
-	$(ENSROOT)\util\trace.mli\
-	$(ENSROOT)\util\lset.mli\
-	$(ENSROOT)\util\resource.mli\
-	$(ENSROOT)\util\sched.mli\
-	$(ENSROOT)\buffer\buf.mli\
-	$(ENSROOT)\buffer\refcnt.mli\
-	$(ENSROOT)\buffer\pool.mli\
-	$(ENSROOT)\buffer\iovec.mli\
-	$(ENSROOT)\buffer\iovecl.mli\
-	$(ENSROOT)\buffer\mbuf.mli\
-	$(ENSROOT)\type\time.mli\
-	$(ENSROOT)\type\addr.mli\
-	$(ENSROOT)\type\proto.mli\
-	$(ENSROOT)\type\stack_id.mli\
-	$(ENSROOT)\type\unique.mli\
-	$(ENSROOT)\type\endpt.mli\
-	$(ENSROOT)\type\group.mli\
-	$(ENSROOT)\type\security.mli\
-	$(ENSROOT)\type\shared.mli\
-	$(ENSROOT)\type\param.mli\
-	$(ENSROOT)\type\view.mli\
-	$(ENSROOT)\type\conn.mli\
-	$(ENSROOT)\type\version.mli\
-	$(ENSROOT)\route\route.mli\
-	$(ENSROOT)\type\alarm.mli\
-	$(ENSROOT)\type\auth.mli\
-	$(ENSROOT)\type\domain.mli\
-	$(ENSROOT)\type\event.mli\
-	$(ENSROOT)\type\property.mli\
-	$(ENSROOT)\type\appl_intf.mli\
-	$(ENSROOT)\type\appl_handle.mli\
-	$(ENSROOT)\type\layer.mli\
-	$(ENSROOT)\infr\async.mli\
-	$(ENSROOT)\appl\elink.mli\
-	$(ENSROOT)\infr\transport.mli\
-	$(ENSROOT)\infr\stacke.mli\
-	$(ENSROOT)\appl\arge.mli\
-	$(ENSROOT)\appl\appl.mli
-
-ENSEMBLECMI =\
-	$(OBJD)\hsys$(CMI)\
-	$(OBJD)\queuee$(CMI)\
-	$(OBJD)\trans$(CMI)\
-	$(OBJD)\util$(CMI)\
-	$(OBJD)\arraye$(CMI)\
-	$(OBJD)\arrayf$(CMI)\
-	$(OBJD)\trace$(CMI)\
-	$(OBJD)\lset$(CMI)\
-	$(OBJD)\resource$(CMI)\
-	$(OBJD)\sched$(CMI)\
-	$(OBJD)\async$(CMI)\
-	$(OBJD)\buf$(CMI)\
-	$(OBJD)\refcnt$(CMI)\
-	$(OBJD)\pool$(CMI)\
-	$(OBJD)\iovec$(CMI)\
-	$(OBJD)\iovecl$(CMI)\
-	$(OBJD)\mbuf$(CMI)\
-	$(OBJD)\time$(CMI)\
-	$(OBJD)\addr$(CMI)\
-	$(OBJD)\proto$(CMI)\
-	$(OBJD)\stack_id$(CMI)\
-	$(OBJD)\unique$(CMI)\
-	$(OBJD)\endpt$(CMI)\
-	$(OBJD)\group$(CMI)\
-	$(OBJD)\security$(CMI)\
-	$(OBJD)\shared$(CMI)\
-	$(OBJD)\param$(CMI)\
-	$(OBJD)\view$(CMI)\
-	$(OBJD)\conn$(CMI)\
-	$(OBJD)\version$(CMI)\
-	$(OBJD)\route$(CMI)\
-	$(OBJD)\alarm$(CMI)\
-	$(OBJD)\auth$(CMI)\
-	$(OBJD)\domain$(CMI)\
-	$(OBJD)\event$(CMI)\
-	$(OBJD)\property$(CMI)\
-	$(OBJD)\appl_intf$(CMI)\
-	$(OBJD)\appl_handle$(CMI)\
-	$(OBJD)\layer$(CMI)\
-	$(OBJD)\elink$(CMI)\
-	$(OBJD)\transport$(CMI)\
-	$(OBJD)\stacke$(CMI)\
-	$(OBJD)\arge$(CMI)\
-	$(OBJD)\appl$(CMI)
-
-ENSEMBLECMO =\
-	$(OBJD)\hsys$(CMO)\
-	$(OBJD)\queuee$(CMO)\
-	$(OBJD)\trans$(CMO)\
-	$(OBJD)\util$(CMO)\
-	$(OBJD)\arraye$(CMO)\
-	$(OBJD)\arrayf$(CMO)\
-	$(OBJD)\trace$(CMO)\
-	$(OBJD)\lset$(CMO)\
-	$(OBJD)\resource$(CMO)\
-	$(OBJD)\sched$(CMO)\
-	$(OBJD)\async$(CMO)\
-	$(OBJD)\buf$(CMO)\
-	$(OBJD)\refcnt$(CMO)\
-	$(OBJD)\pool$(CMO)\
-	$(OBJD)\iovec$(CMO)\
-	$(OBJD)\iovecl$(CMO)\
-	$(OBJD)\mbuf$(CMO)\
-	$(OBJD)\time$(CMO)\
-	$(OBJD)\addr$(CMO)\
-	$(OBJD)\proto$(CMO)\
-	$(OBJD)\stack_id$(CMO)\
-	$(OBJD)\unique$(CMO)\
-	$(OBJD)\endpt$(CMO)\
-	$(OBJD)\group$(CMO)\
-	$(OBJD)\security$(CMO)\
-	$(OBJD)\shared$(CMO)\
-	$(OBJD)\auth$(CMO)\
-	$(OBJD)\param$(CMO)\
-	$(OBJD)\view$(CMO)\
-	$(OBJD)\conn$(CMO)\
-	$(OBJD)\route$(CMO)\
-	$(OBJD)\alarm$(CMO)\
-	$(OBJD)\domain$(CMO)\
-	$(OBJD)\event$(CMO)\
-	$(OBJD)\property$(CMO)\
-	$(OBJD)\appl_intf$(CMO)\
-	$(OBJD)\appl_handle$(CMO)\
-	$(OBJD)\layer$(CMO)\
-	$(OBJD)\elink$(CMO)\
-	$(OBJD)\transport$(CMO)\
-	$(OBJD)\stacke$(CMO)\
-	$(OBJD)\arge$(CMO)\
-	$(OBJD)\appl$(CMO)
+	socket\socket.mli\
+	util\trans.mli\
+	util\util.mli\
+	util\queuee.mli\
+	util\fqueue.mli\
+	util\trace.mli\
+	util\arraye.mli\
+	util\arrayf.mli\
+	mm\buf.mli\
+	mm\iovec.mli\
+	mm\iovecl.mli\
+\
+	util\marsh.mli\
+\
+	type\security.mli\
+	type\shared.mli\
+	util\tree.mli\
+	type\tdefs.mli\
+	util\mrekey_dt.mli\
+	util\diamond.mli\
+\
+	util\hsys.mli\
+	util\lset.mli\
+	util\resource.mli\
+	util\sched.mli\
+	type\time.mli\
+	type\addr.mli\
+	type\proto.mli\
+	type\stack_id.mli\
+	type\unique.mli\
+	type\endpt.mli\
+	type\group.mli\
+	type\param.mli\
+	type\version.mli\
+	type\view.mli\
+	type\conn.mli\
+	route\route.mli\
+	infr\async.mli\
+	trans\real.mli\
+	type\alarm.mli\
+	type\auth.mli\
+	type\domain.mli\
+	type\event.mli\
+	type\property.mli\
+	type\appl_intf.mli\
+	type\appl_handle.mli\
+	type\layer.mli\
+	infr\transport.mli\
+	infr\glue.mli\
+	infr\stacke.mli\
+	appl\arge.mli\
+	groupd\mutil.mli\
+	groupd\manage.mli\
+	appl\appl.mli\
+	appl\reflect.mli\
+	appl\protos.mli\
+	infr\hsyssupp.mli\
+	appl\timestamp.mli
 
 #*************************************************************#
 # Core Ensemble stuff
 
 ENSCOREOBJ =\
-	$(OBJD)\printe$(CMO)\
-	$(OBJD)\hsys$(CMO)\
-	$(OBJD)\queuee$(CMO)\
-	$(OBJD)\trans$(CMO)\
-	$(OBJD)\util$(CMO)\
-	$(OBJD)\trace$(CMO)\
-	$(OBJD)\arraye$(CMO)\
-	$(OBJD)\arrayf$(CMO)\
-	$(OBJD)\fqueue$(CMO)\
-	$(OBJD)\queuea$(CMO)\
-	$(OBJD)\lset$(CMO)\
-	$(OBJD)\once$(CMO)\
-	$(OBJD)\priq$(CMO)\
-	$(OBJD)\resource$(CMO)\
-	$(OBJD)\sched$(CMO)\
+	util\printe$(CMO)\
+	util\trans$(CMO)\
+	util\util$(CMO)\
+	util\queuee$(CMO)\
+	util\trace$(CMO)\
+	util\arraye$(CMO)\
+	util\arrayf$(CMO)\
+	mm\buf$(CMO)\
+	mm\iovec$(CMO)\
+	mm\iovecl$(CMO)\
+	util\hsys$(CMO)\
+	util\fqueue$(CMO)\
+	util\queuea$(CMO)\
+	util\lset$(CMO)\
+	util\once$(CMO)\
+	util\priq$(CMO)\
+	util\resource$(CMO)\
+	util\sched$(CMO)\
 \
-	$(OBJD)\buf$(CMO)\
-	$(OBJD)\refcnt$(CMO)\
-	$(OBJD)\pool$(CMO)\
-	$(OBJD)\iovec$(CMO)\
-	$(OBJD)\iovecl$(CMO)\
-	$(OBJD)\iq$(CMO)\
-	$(OBJD)\mbuf$(CMO)\
-	$(OBJD)\marsh$(CMO)\
+	mm\iq$(CMO)\
+	util\marsh$(CMO)\
+	type\time$(CMO)\
+	type\addr$(CMO)\
+	type\version$(CMO)\
 \
-	$(OBJD)\time$(CMO)\
-	$(OBJD)\addr$(CMO)\
-	$(OBJD)\version$(CMO)\
-	$(OBJD)\proto$(CMO)\
-	$(OBJD)\stack_id$(CMO)\
-	$(OBJD)\unique$(CMO)\
-	$(OBJD)\endpt$(CMO)\
-	$(OBJD)\group$(CMO)\
-	$(OBJD)\security$(CMO)\
-	$(OBJD)\shared$(CMO)\
-	$(OBJD)\auth$(CMO)\
-	$(OBJD)\param$(CMO)\
-	$(OBJD)\view$(CMO)\
-	$(OBJD)\conn$(CMO)\
-	$(OBJD)\handler$(CMO)\
-	$(OBJD)\route$(CMO)\
-	$(OBJD)\alarm$(CMO)\
-	$(OBJD)\domain$(CMO)\
-	$(OBJD)\event$(CMO)\
-	$(OBJD)\property$(CMO)\
-	$(OBJD)\appl_intf$(CMO)\
-	$(OBJD)\appl_handle$(CMO)\
-	$(OBJD)\tree$(CMO)\
-	$(OBJD)\tdefs$(CMO)\
-	$(OBJD)\mrekey_dt$(CMO)\
-	$(OBJD)\diamond$(CMO)\
-	$(OBJD)\layer$(CMO)\
+	type\security$(CMO)\
+	type\shared$(CMO)\
+	util\tree$(CMO)\
+	type\tdefs$(CMO)\
+	util\mrekey_dt$(CMO)\
+	util\diamond$(CMO)\
 \
-	$(OBJD)\async$(CMO)\
-	$(OBJD)\elink$(CMO)\
-	$(OBJD)\transport$(CMO)\
-	$(OBJD)\config_trans$(CMO)\
-	$(OBJD)\glue$(CMO)\
-	$(OBJD)\stacke$(CMO)\
+	type\proto$(CMO)\
+	type\stack_id$(CMO)\
+	type\unique$(CMO)\
+	type\endpt$(CMO)\
+	type\group$(CMO)\
+	type\param$(CMO)\
+	type\view$(CMO)\
+	type\conn$(CMO)\
+	route\handler$(CMO)\
+	route\route$(CMO)\
+	infr\async$(CMO)\
+	type\alarm$(CMO)\
+	type\auth$(CMO)\
+	type\domain$(CMO)\
+	type\event$(CMO)\
+	type\property$(CMO)\
+	type\appl_intf$(CMO)\
+	type\appl_handle$(CMO)\
+	type\layer$(CMO)\
 \
-	$(OBJD)\arge$(CMO)\
-	$(OBJD)\appl$(CMO)\
+	infr\transport$(CMO)\
 \
-	$(OBJD)\ensemble$(CMO)
+	route\unsigned$(CMO)\
+	route\signed$(CMO)\
+\
+	infr\config_trans$(CMO)\
+	infr\glue$(CMO)\
+	appl\arge$(CMO)\
+	infr\stacke$(CMO)\
+	appl\timestamp$(CMO)\
+\
+	trans\ipmc$(CMO)\
+	trans\udp$(CMO)\
+	trans\real$(CMO)\
+\
+	route\bypassr$(CMO)\
+	infr\hsyssupp$(CMO)\
+	trans\netsim$(CMO)\
+	trans\tcp$(CMO)\
+\
+	appl\pgp$(CMO)\
+	util\arrayop$(CMO)\
+	appl\debug$(CMO)\
+	appl\appl_debug$(CMO)\
+	appl\appl_aggr$(CMO)\
+	appl\appl_power$(CMO)\
+	appl\appl_lwe$(CMO)\
+	appl\appl_multi$(CMO)\
+	appl\handle$(CMO)\
+	appl\partition$(CMO)\
+\
+	appl\protos$(CMO)\
+\
+	groupd\mutil$(CMO)\
+	groupd\proxy$(CMO)\
+	groupd\member$(CMO)\
+	groupd\coord$(CMO)\
+	groupd\actual$(CMO)\
+	groupd\manage$(CMO)\
+	util\heap$(CMO)\
+	appl\appl$(CMO)\
+\
+	appl\reflect$(CMO)\
+\
+	ensemble$(CMO)
 
 #*************************************************************#
 # These are an almost minimal set of additional modules to link with
@@ -226,129 +182,90 @@ ENSCOREOBJ =\
 # protocol stacks are included here.
 
 ENSMINOBJ =\
-	$(OBJD)\ipmc$(CMO)\
-	$(OBJD)\udp$(CMO)\
-	$(OBJD)\real$(CMO)\
-	$(OBJD)\unsigned$(CMO)\
+	layers\other\top_appl$(CMO)\
+	layers\other\top$(CMO)\
+	layers\other\partial_appl$(CMO)\
+	layers\trans\stable$(CMO)\
+	layers\trans\bottom$(CMO)\
+	layers\trans\mnak$(CMO)\
+	layers\trans\pt2pt$(CMO)\
+	layers\vsync\suspect$(CMO)\
+	layers\vsync\merge$(CMO)\
+	layers\vsync\inter$(CMO)\
+	layers\vsync\intra$(CMO)\
+	layers\vsync\elect$(CMO)\
+	layers\trans\frag$(CMO)\
+	layers\trans\frag_abv$(CMO)\
+	layers\vsync\leave$(CMO)\
+	layers\vsync\sync$(CMO)\
+	layers\vsync\vsync$(CMO)\
+	layers\vsync\slander$(CMO)\
+	layers\gossip\heal$(CMO)\
+	layers\flow\pt2ptw$(CMO)\
+	layers\flow\pt2ptwp$(CMO)\
+	util\mcredit$(CMO)\
+	layers\flow\mflow$(CMO)\
+	layers\total\sequencer$(CMO)\
 \
-	$(OBJD)\top_appl$(CMO)\
-	$(OBJD)\top$(CMO)\
-	$(OBJD)\partial_appl$(CMO)\
-	$(OBJD)\stable$(CMO)\
-	$(OBJD)\bottom$(CMO)\
-	$(OBJD)\mnak$(CMO)\
-	$(OBJD)\pt2pt$(CMO)\
-	$(OBJD)\suspect$(CMO)\
-	$(OBJD)\merge$(CMO)\
-	$(OBJD)\inter$(CMO)\
-	$(OBJD)\intra$(CMO)\
-	$(OBJD)\elect$(CMO)\
-	$(OBJD)\frag$(CMO)\
-	$(OBJD)\frag_abv$(CMO)\
-	$(OBJD)\leave$(CMO)\
-	$(OBJD)\sync$(CMO)\
-	$(OBJD)\vsync$(CMO)\
-	$(OBJD)\slander$(CMO)\
-	$(OBJD)\heal$(CMO)\
-	$(OBJD)\pt2ptw$(CMO)\
-	$(OBJD)\pt2ptwp$(CMO)\
-	$(OBJD)\mcredit$(CMO)\
-	$(OBJD)\mflow$(CMO)\
-	$(OBJD)\sequencer$(CMO)\
-\
-	$(OBJD)\fpmb$(CMO)\
+	layers\bypass\fpmb$(CMO)\
 
 #*************************************************************#
 # All other modules are listed here.
 
 ENSRESTOBJ =\
-	$(OBJD)\pgp$(CMO)\
-	$(OBJD)\arrayop$(CMO)\
-	$(OBJD)\powermarsh$(CMO)\
-	$(OBJD)\timestamp$(CMO)\
-	$(OBJD)\hsyssupp$(CMO)\
-	$(OBJD)\bypassr$(CMO)\
-	$(OBJD)\raw$(CMO)\
-	$(OBJD)\signed$(CMO)\
-	$(OBJD)\scale$(CMO)\
-	$(OBJD)\debug$(CMO)\
-	$(OBJD)\appl_old$(CMO)\
-	$(OBJD)\appl_debug$(CMO)\
-	$(OBJD)\appl_aggr$(CMO)\
-	$(OBJD)\appl_power$(CMO)\
-	$(OBJD)\appl_compat$(CMO)\
-	$(OBJD)\appl_lwe$(CMO)\
-	$(OBJD)\appl_multi$(CMO)\
-	$(OBJD)\handle$(CMO)\
-	$(OBJD)\reflect$(CMO)\
-	$(OBJD)\heap$(CMO)\
-	$(OBJD)\partition$(CMO)\
+	layers\gossip\switch$(CMO)\
+	util\mexchange$(CMO)\
+	layers\security\exchange$(CMO)\
+	layers\security\rekey$(CMO)\
+	layers\security\rekey_dt$(CMO)\
+	layers\security\rekey_diam$(CMO)\
+	layers\security\secchan$(CMO)\
 \
-	$(OBJD)\protos$(CMO)\
+	layers\other\local$(CMO)\
+	layers\other\cltsvr$(CMO)\
+	layers\other\xfer$(CMO)\
+	layers\other\subcast$(CMO)\
+	layers\other\migrate$(CMO)\
+	layers\security\optrekey$(CMO)\
+	layers\security\realkeys$(CMO)\
+	layers\security\perfrekey$(CMO)\
+	layers\security\encrypt$(CMO)\
+	layers\other\primary$(CMO)\
+	layers\vsync\present$(CMO)\
 \
-	$(OBJD)\mutil$(CMO)\
-	$(OBJD)\proxy$(CMO)\
-	$(OBJD)\member$(CMO)\
-	$(OBJD)\coord$(CMO)\
-	$(OBJD)\actual$(CMO)\
-	$(OBJD)\manage$(CMO)\
+	layers\flow\window$(CMO)\
 \
-	$(OBJD)\netsim$(CMO)\
-	$(OBJD)\tcp$(CMO)\
+	layers\other\collect$(CMO)\
+	util\request$(CMO)\
+	layers\total\total$(CMO)\
+	layers\total\totem$(CMO)\
+	layers\total\seqbb$(CMO)\
+	layers\total\tops$(CMO)\
+	layers\scale\asym$(CMO)\
 \
-	$(OBJD)\switch$(CMO)\
-	$(OBJD)\mexchange$(CMO)\
-	$(OBJD)\exchange$(CMO)\
-	$(OBJD)\rekey$(CMO)\
-	$(OBJD)\rekey_dt$(CMO)\
-	$(OBJD)\rekey_diam$(CMO)\
-	$(OBJD)\secchan$(CMO)\
+	layers\debug\assert$(CMO)\
+	layers\debug\delay$(CMO)\
+	layers\debug\drop$(CMO)\
+	layers\debug\chk_secchan$(CMO)\
+	layers\debug\chk_rekey$(CMO)\
+	layers\debug\chk_fifo$(CMO)\
+	layers\debug\chk_total$(CMO)\
+	layers\debug\chk_sync$(CMO)\
+	layers\scale\pr_stable$(CMO)\
+	layers\scale\pr_suspect$(CMO)\
+	layers\scale\gcast$(CMO)\
+	layers\scale\pbcast$(CMO)\
+	layers\scale\zbcast$(CMO)\
+	layers\debug\chk_causal$(CMO)\
+	util\mcausal$(CMO)\
+	util\diamond_aux$(CMO)\
+	layers\trans\causal$(CMO)\
 \
-	$(OBJD)\local$(CMO)\
-	$(OBJD)\cltsvr$(CMO)\
-	$(OBJD)\xfer$(CMO)\
-	$(OBJD)\subcast$(CMO)\
-	$(OBJD)\migrate$(CMO)\
-	$(OBJD)\optrekey$(CMO)\
-	$(OBJD)\realkeys$(CMO)\
-	$(OBJD)\perfrekey$(CMO)\
-	$(OBJD)\encrypt$(CMO)\
-	$(OBJD)\primary$(CMO)\
-	$(OBJD)\present$(CMO)\
-\
-	$(OBJD)\window$(CMO)\
-\
-	$(OBJD)\collect$(CMO)\
-	$(OBJD)\request$(CMO)\
-	$(OBJD)\total$(CMO)\
-	$(OBJD)\totem$(CMO)\
-	$(OBJD)\seqbb$(CMO)\
-	$(OBJD)\tops$(CMO)\
-	$(OBJD)\asym$(CMO)\
-\
-	$(OBJD)\assert$(CMO)\
-	$(OBJD)\delay$(CMO)\
-	$(OBJD)\drop$(CMO)\
-	$(OBJD)\chk_secchan$(CMO)\
-	$(OBJD)\chk_rekey$(CMO)\
-	$(OBJD)\chk_fifo$(CMO)\
-	$(OBJD)\chk_total$(CMO)\
-	$(OBJD)\chk_sync$(CMO)\
-	$(OBJD)\pr_stable$(CMO)\
-	$(OBJD)\pr_suspect$(CMO)\
-	$(OBJD)\gcast$(CMO)\
-	$(OBJD)\pbcast$(CMO)\
-	$(OBJD)\zbcast$(CMO)\
-	$(OBJD)\chk_causal$(CMO)\
-	$(OBJD)\mcausal$(CMO)\
-	$(OBJD)\diamond_aux$(CMO)\
-	$(OBJD)\causal$(CMO)\
-\
-	$(OBJD)\dtbl$(CMO)\
-	$(OBJD)\dtblbatch$(CMO)\
-	$(OBJD)\disp$(CMO)\
-	$(OBJD)\dbg$(CMO)\
-	$(OBJD)\dbgbatch$(CMO)
+	util\dtbl$(CMO)\
+	util\dtblbatch$(CMO)\
+	infr\disp$(CMO)\
+	layers\debug\dbg$(CMO)\
+	layers\debug\dbgbatch$(CMO)
 
 # Yet more stuff that is no longer used\supported.
 #	$(OBJD)\credit$(CMO)\
@@ -363,103 +280,27 @@ ENSRESTOBJ =\
 #*************************************************************#
 # Socket library
 
-SOCKOBJ =\
-	$(OBJD)\socksupp$(CMO)\
-	$(OBJD)\_ssocket$(CMO)
-
 USOCKOBJ =\
-	$(OBJD)\socksupp$(CMO)\
-	$(OBJD)\_usocket$(CMO)
+	socket\socksupp$(CMO)\
+	socket\u\socket$(CMO)
+
+SSOCKOBJ =\
+	socket\socksupp$(CMO)\
+	socket\s\socket$(CMO)
+
 
 SOCKCOBJ =\
-	$(OBJD)\static_string$(OBJ)\
-	$(OBJD)\gettimeofday$(OBJ)\
-	$(OBJD)\miscsupp$(OBJ)\
-	$(OBJD)\heapc$(OBJ)\
-	$(OBJD)\md5c$(OBJ)\
-	$(OBJD)\sendrecv$(OBJ)\
-	$(OBJD)\multicasts$(OBJ)\
-	$(OBJD)\select$(OBJ)\
-	$(OBJD)\sendopt$(OBJ)\
-	$(OBJD)\sockfd$(OBJ)\
-	$(OBJD)\sockopt$(OBJ)\
-	$(OBJD)\stdin$(OBJ)
+	socket\s\gettimeofday$(OBJ)\
+	socket\s\mm$(OBJ)\
+	socket\s\md5c$(OBJ)\
+	socket\s\miscsupp$(OBJ)\
+	socket\s\heapc$(OBJ)\
+	socket\s\sendrecv$(OBJ)\
+	socket\s\multicasts$(OBJ)\
+	socket\s\select$(OBJ)\
+	socket\s\sockfd$(OBJ)\
+	socket\s\sockopt$(OBJ)\
+	socket\s\stdin$(OBJ)	
 
 #*************************************************************#
-# ATM Files
 
-ATMOBJ =\
-	$(OBJD)\atm$(CMO)
-
-ATMCOBJ =\
-	$(OBJD)\atm_unet$(OBJ)\
-	$(OBJD)\atm_ocaml$(OBJ)
-
-#*************************************************************#
-# MPI Files
-
-MPIOBJ =\
-	$(OBJD)\mpi$(CMO)
-
-MPICOBJ =\
-	$(OBJD)\mpic$(OBJ)
-
-#*************************************************************#
-# Crypto Stuff
-
-CRYPTOOBJ =\
-        $(OBJD)\isaac$(CMO)\
-	$(OBJD)\rc4$(CMO)\
-	$(OBJD)\des$(CMO)\
-	$(OBJD)\idea$(CMO)\
-	$(OBJD)\dha$(CMO)
-
-CRYPTOCOBJ =\
-        $(OBJD)\isaac_c$(OBJ)\
-        $(OBJD)\randport$(OBJ)\
-	$(OBJD)\rc4_c$(OBJ)\
-	$(OBJD)\des_c$(OBJ)\
-	$(OBJD)\idea_c$(OBJ)\
-	$(OBJD)\dha_c$(OBJ)
-
-#*************************************************************#
-# HOT files
-
-HOT_SHAREDOBJ =\
-	$(OBJD)\hot_util$(CMO)
-
-HOT_INBOARDOBJ =\
-	$(HOT_SHAREDOBJ)\
-	$(OBJD)\hot_appl$(CMO)\
-	$(OBJD)\hot_inboard$(CMO)
-
-HOT_OUTBOARDOBJ =\
-	$(HOT_SHAREDOBJ)\
-	$(OBJD)\hot_outboard$(CMO)
-
-HOT_SHAREDCOBJ =\
-	$(OBJD)\hot_mem$(OBJ)\
-	$(OBJD)\hot_error$(OBJ)\
-	$(OBJD)\hot_sys$(OBJ)\
-	$(OBJD)\hot_msg$(OBJ)\
-	$(OBJD)\$(HOT_THREAD_OBJ) # see config.mk
-
-HOT_INBOARDCOBJ =\
-	$(HOT_SHAREDCOBJ)\
-	$(OBJD)\hot_inboard_c$(OBJ)
-
-HOT_OUTBOARDCOBJ =\
-	$(HOT_SHAREDCOBJ)\
-	$(OBJD)\hot_outboard_c$(OBJ)
-
-#*************************************************************#
-# RvR's RPC support
-
-RPCOBJ =\
-	$(OBJD)\xlist$(CMO)\
-	$(OBJD)\scanf$(CMO)\
-	$(OBJD)\eval$(CMO)\
-	$(OBJD)\sockio$(CMO)\
-	$(OBJD)\rpc$(CMO)
-
-#*************************************************************#

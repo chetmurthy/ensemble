@@ -11,6 +11,7 @@
 #include "caml/misc.h"
 #include "caml/alloc.h"
 #include "caml/memory.h"
+#include "caml/fail.h"
 
 
 #include <stdio.h>

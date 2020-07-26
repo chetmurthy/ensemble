@@ -68,7 +68,7 @@ hot_err_t hot_thread_Create(void (*routine)(void*),
   if (pthread_create(&td, &attr, (hot_thread_routine) routine, arg))
     return hot_err_Create(0,"hot_thread_Create: pthread_create");
   pthread_attr_destroy(&attr);
-#else OSF1_THREADS
+#else /* OSF1_THREADS */
   /* BUG: the attributes below are a memory leak.
    * They also need to have the detached option set.
    */
@@ -76,7 +76,7 @@ hot_err_t hot_thread_Create(void (*routine)(void*),
     return hot_err_Create(0,"hot_thread_Create: pthread_attr_create");
   if (pthread_create(&td,attr,(hot_thread_routine) routine, arg))
     return hot_err_Create(0,"hot_thread_Create: pthread_create");
-#endif OSF1_THREADS
+#endif /*OSF1_THREADS*/
   return HOT_OK ;
 }
 
@@ -221,13 +221,13 @@ hot_err_t hot_sema_Create_help(
 #ifndef OSF1_THREADS
     if (pthread_mutex_init(&sema->mutex, NULL))
       return hot_err_Create(0,"hot_sema_Create: pthread_mutex_init") ;
-#else OSF1_THREADS
+#else /*OSF1_THREADS*/
     pthread_mutexattr_t attr;
     if (pthread_mutexattr_create(&attr))
       return hot_err_Create(0,"hot_sema_Create: pthread_mutexattr_init");
     if (pthread_mutex_init(&sema->mutex, attr))
       return hot_err_Create(0,"hot_sema_Create: pthread_mutex_init") ;
-#endif OSF1_THREADS
+#endif /*OSF1_THREADS*/
   }
   
   /* Initialize condition variable.
@@ -236,13 +236,13 @@ hot_err_t hot_sema_Create_help(
 #ifndef OSF1_THREADS
     if (pthread_cond_init(&sema->cond, NULL))
       return hot_err_Create(0,"hot_sema_Create: pthread_cond_init");
-#else OSF1_THREADS
+#else /*OSF1_THREADS*/
     pthread_condattr_t attr;
     if (pthread_condattr_create(&attr))
       return hot_err_Create(0,"hot_sema_Create: pthread_condattr_init");
     if (pthread_cond_init(&sema->cond, attr))
       return hot_err_Create(0,"hot_sema_Create: pthread_cond_init");
-#endif OSF1_THREADS
+#endif /*OSF1_THREADS*/
   }
   
   sema->value = initial_value;

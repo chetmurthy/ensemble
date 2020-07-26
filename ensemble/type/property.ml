@@ -24,7 +24,6 @@ type id =
   | Xfer				(* state transfer *)
   | Cltsvr           			(* client-server management *)
   | Suspect		        	(* failure detection *)
-  | Evs					(* extended virtual synchrony *)
   | Flow                	        (* flow control *)
   | Migrate         			(* process migration *)
   | Privacy		        	(* encryption of application data *)
@@ -61,7 +60,6 @@ let mapping = [|
   "XFER", Xfer ;
   "CLTSVR", Cltsvr ;
   "SUSPECT", Suspect ;
-  "EVS", Evs ;
   "DROP", Drop ;
   "PBCAST", Pbcast ;
   "ZBCAST", Zbcast ;
@@ -103,7 +101,6 @@ type r = {
     mutable xfer : bool ;
     mutable cltsvr : bool ;
     mutable suspect : bool ;
-    mutable evs : bool ;
     mutable pbcast : bool ;
     mutable zbcast : bool ;
     mutable gcast : bool ;
@@ -142,7 +139,6 @@ let flatten props =
     xfer = false ;
     cltsvr = false ;
     suspect = false ;
-    evs = false ;
     pbcast = false ;
     zbcast = false ;
     gcast = false ;
@@ -177,7 +173,6 @@ let flatten props =
   | Xfer	-> r.xfer <- true
   | Cltsvr	-> r.cltsvr <- true
   | Suspect	-> r.suspect <- true
-  | Evs		-> r.evs <- true
   | Pbcast	-> r.pbcast <- true
   | Zbcast      -> r.zbcast <- true
   | Gcast       -> r.gcast <- true
@@ -265,7 +260,7 @@ let choose props =
 	  if p.scale then ["Pr_suspect"] else ["Suspect"]) ::
 	(if p.scale then ["Pr_stable"] else ["Stable"]) ::
 	["Vsync"] ::
-	(["Frag_Abv"]) ::
+	["Frag_Abv"] ::
 
 	(if p.total then ["Partial_appl"] else ["Top_appl"]) ::
 
@@ -344,8 +339,7 @@ let vsync = [Gmp;Sync;Heal;Frag;Suspect;Flow;Slander]
 let total = vsync @ [Total]
 let scale = vsync @ [Scale]
 let fifo = [Frag;Flow]
-let transis = [Gmp;Heal;Switch;Migrate;Sync;Suspect;Evs;Subcast;Frag;Causal]
-let causal = transis
+let causal = vsync @ [Causal]
 
 (**************************************************************)
 

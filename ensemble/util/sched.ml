@@ -160,10 +160,11 @@ let enqueue_2arg s debug (f : 'a->'b->unit) (a : 'a) (b : 'b) =
   item.a <- Obj.repr a ; 
   (*if not (item.b == Obj.repr b) then*) item.b <- Obj.repr b
 
-let enqueue      s debug f         = enqueue_2arg s debug helper f ()
-let enqueue_1arg s debug f a       = enqueue_2arg s debug helper f a
-let enqueue_3arg s debug f a b c   = enqueue s debug (fun () -> f a b c)
-let enqueue_4arg s debug f a b c d = enqueue s debug (fun () -> f a b c d)
+let enqueue      s debug f           = enqueue_2arg s debug helper f ()
+let enqueue_1arg s debug f a         = enqueue_2arg s debug helper f a
+let enqueue_3arg s debug f a b c     = enqueue s debug (fun () -> f a b c)
+let enqueue_4arg s debug f a b c d   = enqueue s debug (fun () -> f a b c d)
+let enqueue_5arg s debug f a b c d e = enqueue s debug (fun () -> f a b c d e)
 let empty = Queuea.empty
 let size = Queuea.length
 

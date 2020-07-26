@@ -47,7 +47,7 @@ type t = {
 
 type kind = Cast | Send (*| Other*)
 
-type recv_info = id * kind * Trans.rank
+type recv_info = id * kind 
 
 (**************************************************************)
 
@@ -184,27 +184,13 @@ let pt2pt_send t rank =
 
 let key t = t.key
 
-let all_recv t scaled =
+let all_recv t =
   if t.key.key_stack = Stack_id.Gossip then (
-    Arrayf.singleton ((gossip t),Cast,(-1))
+    [(gossip t),Cast]
   ) else (
-    let sends =
-      if scaled then
-	Arrayf.singleton ((pt2pt_recv t (-2)),Send,-2)
-      else
-	Arrayf.init t.nmembers (fun rank -> ((pt2pt_recv t rank),Send,rank)) 
-    in
-    
-    let casts = 
-      if scaled then
-	Arrayf.singleton ((multi_recv t (-2)),Cast,-2)
-      else 
-	Arrayf.init t.nmembers (fun rank -> ((multi_recv t rank),Cast,rank)) 
-    in
-
-    let all_recv = Arrayf.concat [sends;casts] in
-    let all_recv = Arrayf.filter (fun (_,_,rank) -> rank <> t.my_rank) all_recv in
-    all_recv
+    let sends =((pt2pt_recv t (-2)),Send) in
+    let casts = ((multi_recv t (-2)),Cast) in
+    [sends;casts]
   )
 
 (**************************************************************)

@@ -1,0 +1,64 @@
+Next
+----
+6. Check the port to solaris.
+
+
+Check
+-----
+1. hot +
+2. maestro + 
+3. groupd +-  (rand -groupd_local)
+4. HOT, outboard interface. + (need to run a VERY long test)
+5. protos.
+6. Check Hsyssupp. +
+7. PGP, encryption/authentication +
+8. Java.
+
+ML suggestions:
+---------------
+1. Add a third generation to the GC.
+2. optimize using registers returned tuples.
+3. A substring library. 
+4. Functional arrays and strings. This would allow
+   optimizing "Array.map ident". 
+    Array.map ident alpah_arr === alpha_arr.
+5. Simple escape-analysis.
+
+--------------------------------------------------------
+
+Version 1.33
+------------
+1. Rewritten all the makefiles.
+2. Update the INSTALL.htm file, to describe how the new makefiles work.
+4. Add the copyright to the files.
+5. Copyright violations have been fixed, the code is now clean, containing
+   no CAML code. 
+6. Work is underway to add IBM to the copyright holders. 
+7. Use iovectors on WIN2000: (Check), does not really work. 
+
+
+1.35
+----
+6. Port CE to WIN32.
+3. More serious testing.
+
+1.36
+----
+1. Port to ocaml-3.03: 
+   - WINSOCK2 error codes, 
+   - native support for marshaling into C.
+2. Shared libraries (Unix), Dlls (on windows).
+
+
+Version 1.5
+-----
+2. Set log_iov inside Appl.monitor, instead of inside the stable 
+   layer.
+9. Add documentation for the way reference counting is performed, as well as descriptions of the Router/Transport/Alarm interfaces.
+7. Check why we block in TCP recv.
+6. Reduce header length from 8 to 4 bytes (ml_len,iovec_len).
+0. Complete debugging the wbml application. 
+1. groupd : support for SVS.
+2. Throw out most of HOT by writing an outboard mode for CE.
+
+--------------------------------------------------------

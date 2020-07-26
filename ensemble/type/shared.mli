@@ -36,9 +36,10 @@ module Cipher : sig
    *)
   val encrypt : t -> context -> src -> Buf.ofs -> Buf.len -> dst
 
-  (* Encrypt/decrypt inplace 
+  (* Encrypt/decrypt inplace. This works directly on an iovec, 
+   * i.e., this is a front-end for a C function.
    *)
-  val encrypt_inplace : t -> context -> src -> Buf.ofs -> Buf.len -> unit
+  val encrypt_inplace : t -> context -> Iovec.t -> unit
 
   val single_use : t -> Security.cipher -> bool -> src -> dst
 
@@ -55,7 +56,9 @@ module Cipher : sig
     string ->  (* NAME *)
     (Security.cipher -> bool) -> (* key_ok *) 
     (Security.cipher -> bool -> context) -> (* init *)
-    (context -> Buf.t -> ofs -> Buf.t -> ofs -> len -> unit) (* update *) -> unit
+    (context -> Buf.t -> ofs -> Buf.t -> ofs -> len -> unit) -> (* update *) 
+    (context -> Iovec.t -> unit)  (* encrypt an iovec inplace *)
+	-> unit
 
   (* [check_sanity name snt_loops perf_loops] Check that an algorithm 
    * actually works. Also measure its performance. 

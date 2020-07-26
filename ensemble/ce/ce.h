@@ -15,6 +15,8 @@
 #ifndef __CE_H__
 #define __CE_H__
 
+#include "e_iovec.h"
+
 #ifdef _WIN32
 #include <winsock2.h>
 #endif
@@ -43,7 +45,7 @@ typedef int         ce_ltime_t ;
 typedef int         ce_len_t ;
 
 /*! The type of application environments. An application can set its
- * envrionmet for a specific Ensemble stack, each callback on that stack
+ * envrionmet for a specific C-interface, each callback on that C-interface
  * will use this variable. 
  */
 typedef void       *ce_env_t ;
@@ -65,12 +67,17 @@ typedef char*       ce_addr_t;
  */
 typedef char       *ce_data_t;
 
+/*! An Io-vector array.
+ * ce_iovec_t is defined in mm.h.
+ */
+typedef ce_iovec_t *ce_iovec_array_t;
+
 /*! Arrays of endpoints, these are null terminated arrays of pointers to
  * ce_endpt_t.
  */
 typedef ce_endpt_t *ce_endpt_array_t ;
 
-/*! Arrays of ranks, this is a null terminated array of integers.
+/*! Arrays of ranks.
  */
 typedef ce_rank_t  *ce_rank_array_t ;
 
@@ -158,14 +165,14 @@ typedef struct ce_jops_t {
 /*!  
  * The default set of layers. 
  */
-#define CE_DEFAULT_PROTOCOL "Top:Heal:Switch:Leave:Inter:Intra:Elect:Merge:Sync:Suspect:Stable:Vsync:Frag_Abv:Top_appl:Frag:Pt2ptw:Mflow:Pt2pt:Mnak:Bottom"
+#define CE_DEFAULT_PROTOCOL "Top:Heal:Switch:Leave:Inter:Intra:Elect:Merge:Slander:Sync:Suspect:Stable:Vsync:Frag_Abv:Top_appl:Frag:Pt2ptw:Mflow:Pt2pt:Mnak:Bottom"
 
 
 /*! The default set of properties. A stack built with these properties
  * will provide relibale sender-ordered multicast and point-to-point
  * communication, as well as virtual synchrony. 
  */
-#define CE_DEFAULT_PROPERTIES "Gmp:Sync:Heal:Switch:Frag:Suspect:Flow"
+#define CE_DEFAULT_PROPERTIES "Gmp:Sync:Heal:Switch:Frag:Suspect:Flow:Slander"
 
 /**************************************************************/
 /*
@@ -183,6 +190,11 @@ typedef struct ce_jops_t {
 /*! Clear a record.
  */
 #define record_clear(rec) memset(rec, 0, sizeof(*rec))
+
+/*! copy a C string.
+ * @param str : a C string (ends with '\0')
+ */
+char *ce_copy_string(char *str);
 
 /*! Free a local-state and a view-state.
  * @param ls  A local-state structure.
@@ -208,16 +220,23 @@ typedef void (*ce_appl_install_t)(ce_env_t, ce_local_state_t*, ce_view_state_t*)
  */
 typedef void (*ce_appl_exit_t)(ce_env_t) ;
 
-/*! ReceiveCast is called whenever a mulicast message arrives. 
+/*! ReceiveCast is called whenever a mulicast message arrives.
+ * The iovec array is not owned by the application and should be freed.
+ * It can be used for read-only operations, and cannot be assumed to
+ * exist after the callback returns. 
  */
-typedef void (*ce_appl_receive_cast_t)(ce_env_t, ce_rank_t, ce_len_t, ce_data_t) ;
+typedef void (*ce_appl_receive_cast_t)(ce_env_t, ce_rank_t, int, ce_iovec_array_t) ;
 
 /*! ReceiveSend is called whenever a point-to-point message arrives. 
+ * The iovec array is not owned by the application and should be freed.
+ * It can be used for read-only operations, and cannot be assumed to
+ * exist after the callback returns. 
  */
-typedef void (*ce_appl_receive_send_t)(ce_env_t, ce_rank_t, ce_len_t, ce_data_t) ;
+typedef void (*ce_appl_receive_send_t)(ce_env_t, ce_rank_t, int, ce_iovec_array_t) ;
 
-/*! FlowBlock is called whenever there a flow-control problems, and
- * the application should refrain from sending messages for a while. 
+/*! FlowBlock is called whenever there are flow-control problems, and
+ * the application should refrain from sending messages until further
+ * notice.
  */
 typedef void (*ce_appl_flow_block_t)(ce_env_t, ce_rank_t, ce_bool_t) ;
 
@@ -235,15 +254,15 @@ typedef void (*ce_appl_heartbeat_t)(ce_env_t, ce_time_t) ;
 /*! The type of application interface. This is created by the constructor
  * ce_create_intf. There is no need for a destructor because Ensemble
  * frees the interface-structure and all related memory once the Exit 
- * function is called. An application interface is an opaque handle
- * which allows using an Ensemble stack. 
+ * callback is called. An application interface is an opaque handle
+ * which allows using Ensemble stacks. 
  */
 typedef struct ce_appl_intf_t ce_appl_intf_t ;
 
 /**
- * A constructor for application interfaces.
+ * A constructor for application interfaces. 
  * @param env The application environemt, includes application specific data.
- *            All callbacks on this stack will be made with the variable.
+ *            All callbacks on this interface will be made with the variable.
  * @param exit       The callback used when the stack is destroyed.
  * @param install    The callback performed when a new view is installed.
  * @param flow_block The callback used when flow-control requires
@@ -257,6 +276,8 @@ typedef struct ce_appl_intf_t ce_appl_intf_t ;
  * @param send       Received a point-to-point message. 
  * @param heartbeat  A callback performed periodically. The timeout duration
  *                   is passed to Ensemble in the ce_jops_t structure. 
+ * @param ops        A structure describing the join options for this stack.
+ *                   Consumed.
  *                   
  */
 ce_appl_intf_t*
@@ -285,8 +306,8 @@ void ce_Init(
 void ce_Main_loop (
 );
 			 
-/*! Join a group. The ops structure is not freed by the System.
- * @param ops  A structure describing the join options for this stack.
+/*! Join a group. 
+ * @param ops  A structure describing the join options for this stack. Consumed.
  * @param c_appl An application-interface created earlier.
  */ 
 void ce_Join(
@@ -304,75 +325,79 @@ void ce_Join(
 void ce_Leave(ce_appl_intf_t *c_appl) ;
 
 /*!  Send a multicast message to the group.
- * @param c_appl The stack.
- * @param len The length of the message.
- * @param buf The data to send. The buffer is freed by Ensemble.
+ * @param c_appl The C-interface.
+ * @param num The length of the iovec array.
+ * @param iovl an array of io-vectors. The iovl array is consumed.
  */
 void ce_Cast(
 	ce_appl_intf_t *c_appl,
-	ce_len_t len, 
-	ce_data_t buf
+	int num,
+	ce_iovec_array_t iovl
 ) ;
 
 /*!  Send a point-to-point message to a set of group members.
- * @param c_appl The stack.
+ * @param c_appl The C-interface.
  * @param dests A null terminated sequence of integers.
- * @param len The length of the message.
- * @param buf The data to send. The buffer is consumed.
+ * @param num_dests The number of destinations.
+ * @param num The length of the iovec array.
+ * @param iovl an array of io-vectors. The iovl array is consumed.
  */
 void ce_Send(
 	ce_appl_intf_t *c_appl,
+	int num_dests,
 	ce_rank_array_t dests,
-	ce_len_t len, 
-	ce_data_t buf
+	int num,
+	ce_iovec_array_t iovl
 ) ;
 
 
 /*!  Send a point-to-point message to the specified group member.
- * @param c_appl The stack.
+ * @param c_appl The C-interface.
  * @param dest The destination.
- * @param len The length of the message.
- * @param buf The data to send. The buffer is consumed.
+ * @param num The length of the iovec array.
+ * @param iovl an array of io-vectors. The iovl array is consumed.
  */
 void ce_Send1(
 	ce_appl_intf_t *c_appl,
 	ce_rank_t dest,
-	ce_len_t len, 
-	ce_data_t buf
+	int num,
+	ce_iovec_array_t iovl
 ) ;
 
 /*!  Ask for a new View.
- * @param c_appl The stack.
+ * @param c_appl The C-interface.
  */
 void ce_Prompt(
 	ce_appl_intf_t *c_appl
 );
 
 /*!  Report specified group members as failure-suspected.
- * @param c_appl The stack.
- * @param suspects A null terminated list of member ranks. The array is consumed.
+ * @param c_appl The C-interface.
+ * @param num The length of the suspects array
+ * @param suspects A list of member ranks. The array is consumed.
  */
 void ce_Suspect(
 	ce_appl_intf_t *c_appl,
+	int num,
 	ce_rank_array_t suspects
 );
 	
 /*!  Inform Ensemble that the state-transfer is complete. 
- * @param c_appl The stack.
+ * @param c_appl The C-interface.
  */
 void ce_XferDone(
 	ce_appl_intf_t *c_appl
 ) ;
 
 /*!  Ask the system to rekey.
- * @param c_appl The stack.
+ * @param c_appl The C-interface.
  */
 void ce_Rekey(
 	ce_appl_intf_t *c_appl
 ) ;
 
 /*!  Request a protocol change.
- * @param c_appl The stack.
+ * @param c_appl The C-interface.
  * @param protocol_name a string describing the new protocol.
  * The string is a colon separated list of layers, for example: 
  *    "Top:Heal:Switch:Leave:
@@ -388,7 +413,7 @@ void ce_ChangeProtocol(
 
 
 /*!  Request a protocol change (specify properties).
- * @param c_appl The stack.
+ * @param c_appl The C-interface.
  * @param properties a string contaning a colon separated list of
  *    properties. For example: "Gmp:Sync:Heal:Switch:Frag:Suspect:Flow:Xfer"
  * The properties string is consumed.
@@ -451,4 +476,82 @@ void ce_RmvSockRecv(
 		    );
 
 /**************************************************************/
-#endif /* __CE_H__ */
+/* Here is a simpler "flat" inteface.
+ * No iovec's are used, as above, things are zero-copy.
+ */
+
+
+
+
+
+/*! FlatReceiveCast is called whenever a mulicast message arrives.
+ * The received message is NOT owned by the application, it can only be used
+ * for read-only operations. It can be assumed to exists for the duration of
+ * the callback.
+ */
+typedef void (*ce_appl_flat_receive_cast_t)(ce_env_t, ce_rank_t, ce_len_t, ce_data_t) ;
+
+/*! FlatReceiveSend is called whenever a point-to-point message arrives. 
+ * The received message is NOT owned by the application, it can only be used
+ * for read-only operations. It can be assumed to exists for the duration of
+ * the callback.
+ */
+typedef void (*ce_appl_flat_receive_send_t)(ce_env_t, ce_rank_t, ce_len_t, ce_data_t) ;
+
+/*! Create an application interface using flat callbacks. 
+ */
+ce_appl_intf_t*
+ce_create_flat_intf(ce_env_t env, 
+	       ce_appl_exit_t exit,
+	       ce_appl_install_t install,
+	       ce_appl_flow_block_t flow_block,
+	       ce_appl_block_t block,
+	       ce_appl_flat_receive_cast_t cast,
+	       ce_appl_flat_receive_send_t send,
+	       ce_appl_heartbeat_t heartbeat
+	       );
+
+
+/*!  Send a multicast message to the group.
+ * @param c_appl The C-interface.
+ * @param len The length of the message.
+ * @param buf The data to send. The buffer is consumed.
+ */void ce_flat_Cast(
+	ce_appl_intf_t *c_appl,
+	ce_len_t len, 
+	ce_data_t buf
+) ;
+
+/*!  Send a point-to-point message to a set of group members.
+ * @param c_appl The C-inteface.
+ * @param dests A null terminated sequence of integers.
+ * @param num_dests The number of destinations.
+ * @param len The length of the message.
+ * @param buf The data to send. The buffer is consumed.
+ */
+void ce_flat_Send(
+	ce_appl_intf_t *c_appl,
+	int num_dests,
+	ce_rank_array_t dests,
+	ce_len_t len, 
+	ce_data_t buf
+) ;
+
+
+/*!  Send a point-to-point message to the specified group member.
+ * @param c_appl The C-inteface.
+ * @param dest The destination.
+ * @param len The length of the message.
+ * @param buf The data to send. The buffer is consumed.
+ */
+void ce_flat_Send1(
+	ce_appl_intf_t *c_appl,
+	ce_rank_t dest,
+	ce_len_t len, 
+	ce_data_t buf
+) ;
+
+#endif  /* __CE_H__ */
+
+/**************************************************************/
+

@@ -1,4 +1,4 @@
-// $Header: /cvsroot/ensemble/maestro/src/type/Maestro_Types.h,v 1.4 1999/03/24 16:41:51 tclark Exp $
+// $Header: /cvsroot/ensemble/maestro/src/type/Maestro_Types.h,v 1.5 2001/11/06 10:09:46 orodeh Exp $
 
 #ifndef __MAESTRO_TYPES_H__
 #define __MAESTRO_TYPES_H__
@@ -43,7 +43,7 @@ extern "C" {
 extern "C" {
   void srandom(unsigned);
 #ifdef LINUX
-  int random(void);
+  long int random(void);
   int gethostname(char*, size_t);
   int gettimeofday(struct timeval *tv, struct timezone *tz);
 #else

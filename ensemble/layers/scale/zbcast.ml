@@ -303,7 +303,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	      	      dn (sendPeerIov name origin iov) abv (Data(rank, seqno, true, false))
 	    	  end ;
 		) ;
-	      	s.datasent <- s.datasent + succ (int_of_len (Iovecl.len name iov)) + s.msg_overhead ;
+	      	s.datasent <- s.datasent + succ (int_of_len (Iovecl.len iov)) + s.msg_overhead ;
                 s.acct_sent <- succ s.acct_sent ;
 	    | _ -> ()
 	    end ;
@@ -453,6 +453,6 @@ let _ =
   Param.default "zbcast_latency" (Param.Int 0) ;
   Param.default "zbcast_reql" (Param.Int 5) ;
   Param.default "zbcast_disseminate" (Param.Bool true) ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)

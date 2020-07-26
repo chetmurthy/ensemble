@@ -35,18 +35,6 @@ type coord_msg =
 
 (**************************************************************)
 
-let string_of_member_msg = function
-  | Join(ltime) -> sprintf "Join(%d)" ltime
-  | Synced -> "Synced"
-  | Fail(endpts) -> sprintf "Fail(%d)" (List.length endpts)
-
-let string_of_coord_msg = function
-  | View(ltime,primary,view) -> sprintf "View(%d,%b,%d)" ltime primary (List.length view)
-  | Failed(_) -> "Failed"
-  | Sync -> "Sync"
-
-(**************************************************************)
-
 let soer = ref (fun _ -> raise Not_found)
 let set_string_of_endpt soe = soer := soe
 
@@ -55,6 +43,19 @@ let string_of_endpt endpt =
     (* If soer doesn't work, then just print Id as hex.
      *)
     sprintf "Endpt_nm{%s}" (Buf.to_hex endpt)
+
+(**************************************************************)
+
+let string_of_member_msg = function
+  | Join(ltime) -> sprintf "Join(%d)" ltime
+  | Synced -> "Synced"
+  | Fail(endpts) -> sprintf "Fail(%s)" (string_of_list string_of_endpt endpts)
+
+let string_of_coord_msg = function
+  | View(ltime,primary,view) -> sprintf "View(%d,%b,%d)" ltime primary (List.length view)
+  | Failed(_) -> "Failed"
+  | Sync -> "Sync"
+
 
 (**************************************************************)
 

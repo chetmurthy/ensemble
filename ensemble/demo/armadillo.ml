@@ -77,7 +77,7 @@ let create_init_key () =
     | None -> Prng.create_key () 
     | Some k -> 
 	if String.length k >= 32 then 
-	  Security.key_of_buf (Buf.of_string name k)
+	  Security.key_of_buf (Buf.of_string k)
 	else failwith "Manual Key is not of the correct size (32)"
 
 (* Sum the parameters so as to check if everyone has the same
@@ -312,31 +312,42 @@ let _ = Hashtbl.add tests_doc "encrypt_sanity" "Testing the sanity of the Encryp
 let create_stack_encrypt_sanity i = 
 
   let install (ls,vs) =
+    eprintf "view (nmembers=%d)\n" ls.nmembers;
     let log = Trace.log2 name (Endpt.string_of_id ls.endpt) in
     let next = (succ ls.rank) mod ls.nmembers 
     and pre = (pred (ls.rank + ls.nmembers)) mod ls.nmembers 
     and first_time = ref true 
     and init_time = ref Time.zero
     and count = ref 0 in
+    let rounds = !times in
 
     let measure () = 
       incr count;
-      if ls.am_coord then eprintf "Done %d rounds\n" !count;
+      if ls.am_coord 
+	&& !count mod 10 = 0 then eprintf ".";
+      if !count = rounds then (
+	eprintf "\nSanity test for encryption layer completed. %d successful communication rounds.\n" rounds;
+	exit 0
+      )
     in
 
     let receive origin bk cs m = match cs with
       | C -> 
-	  if origin = m then (
-	    log (fun () -> sprintf "%d OK, got message %d from <pre=%d>" ls.rank pre pre);
-	    [||]
-	  ) else
+	  measure ();
+	  if origin = m then 
+	    if ls.rank = 0 then (
+	      log (fun () -> sprintf "%d OK, got message %d from <pre=%d>" ls.rank pre pre);
+	      [|Cast ls.rank|]
+	    ) else 
+	      [||]
+	  else
 	    failwith "Got bad message"
       | S -> 
 	  measure ();
 	  if origin=pre 
 	     && m = pre then (
-	       log (fun () -> sprintf "%d OK, got message %d from <pre=%d>" ls.rank pre pre);
-	       [| Send([|next|],ls.rank); (Cast ls.rank) |]
+	       log (fun () -> sprintf "%d OK, got a message %d from <pre=%d>" ls.rank pre pre);
+	       [| Send1(next, ls.rank)|]
 	     ) else 
 	       failwith "Got bad message"
 		 
@@ -345,7 +356,7 @@ let create_stack_encrypt_sanity i =
 	&& !first_time 
 	&& ls.am_coord then (
 	    first_time := false ;
-	  [| Send([|next|],ls.rank) |] 
+	  [| Send1(next,ls.rank); Cast(ls.rank)|]   
 	) else
 	  [||]
 	    
@@ -383,7 +394,7 @@ let create_stack_encrypt_sanity i =
 	Property.Auth 
 	]) ""
   in
-  let vs = View.set vs [Vs_key (Security.key_of_buf (Buf.pad_string "01234567012345670123456701234567"))] in
+  let vs = View.set vs [Vs_key (Security.key_of_buf (Buf.of_string "01234567012345670123456701234567"))] in
   Appl.config_new interface (ls,vs)
 
 (**************************************************************)
@@ -399,7 +410,7 @@ let create_stack_rekey opt prompt i =
     else Rekey false
   in
   let (ls,vs) = perf_default ("o"^(string_of_int i)) None opt in 
-  let alarm = Elink.alarm_get_hack () in
+  let alarm = Appl.alarm  "armadillo" in
   
   let num_view = ref 0 in
   let first_time = ref true 
@@ -570,7 +581,7 @@ let pgp () =
      *)
   let measure () = 
     let time0 = Time.gettimeofday () in
-    let alarm = Elink.alarm_get_hack () in
+    let alarm = Appl.alarm "armadillo" in
     let rec check i f = 
       if i<=0 then f ()
       else (
@@ -597,7 +608,7 @@ let pgp () =
     ()
     
   and check_background () = 
-    let alarm = Elink.alarm_get_hack () in
+    let alarm = Appl.alarm "armadillo" in
     Auth.bckgr_ticket false addr addr original alarm (function
       | None -> failwith "could not background encrypt"
       | Some ticket -> 
@@ -661,7 +672,7 @@ let perf () =
   eprintf "Testing PRNG, creating random keys.\n";
   for i=1 to 10 do
     let s = Prng.create_key () in 
-    let s = Buf.to_string (Security.buf_of_key s) in
+    let s = Buf.string_of (Security.buf_of_key s) in
     printf "\t";
     for j=0 to (String.length s -1) do
       printf "%d " (Char.code (s.[j]));
@@ -669,12 +680,6 @@ let perf () =
     printf "\n" 
   done;
 
-  eprintf "**************************************\n";
-  eprintf "<IDEA>\n";
-  Shared.Cipher.sanity_check "OpenSSL/IDEA" !num_enc_loops 1000;
-  eprintf "**************************************\n";
-  eprintf "<DES>\n";
-  Shared.Cipher.sanity_check "OpenSSL/DES"  !num_enc_loops 1000;
   eprintf "**************************************\n";
   eprintf "<RC4>\n";
   Shared.Cipher.sanity_check "OpenSSL/RC4"  !num_enc_loops 1000;

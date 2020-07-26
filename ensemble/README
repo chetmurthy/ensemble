@@ -30,6 +30,7 @@ FILES
   BUGS		known bugs
   RELEASE_NOTES what's new for this release
   LICENSE	Ensemble copyright notice and license
+  CHANGES       What has changed since previous releases.  
 
 DIRECTORIES
 
@@ -39,7 +40,7 @@ DIRECTORIES
   doc/tut.ps	tutorial (Postscript file)
   doc/ref.ps	reference manual (Postscript file)
   util		general purpose utility modules
-  buffer	buffer management
+  mm            Memory management.
   type		abstract data types
   route         intra-process routers
   infr		infrastructure support
@@ -47,13 +48,13 @@ DIRECTORIES
   trans		communication transports (UDP, TCP, ...)
   layers	protocol layers
   crypto	Cryptographic support (with Ohad Rodeh)
-  rpc		TCP/IP RPC support (by Robbert vanRenesse)
   groupd	Group daemon directory
 
   demo		application demos
   demo/tk	Tcl/Tk application demos (with Robbert vanRenesse)
   demo/life	Game of Life demo (by Samuel Weber)
 
+  ce            Revised C interface (Ohad Rodeh)
   hot		C application interface (by Alexey Vaysburd)
   maestro	C++ application interface (by Alexey Vaysburd)
   ejava		Java application interface (contributed)

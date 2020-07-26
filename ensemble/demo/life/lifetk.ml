@@ -1,6 +1,7 @@
 open Rules
 open Msgs
 open Tk
+open Printf
 
 let unit _ = ()
 
@@ -19,19 +20,20 @@ let setStartCallback f = startFunc := f
 
 (* holds the global state of the main display *)
 type graphicState = Starting
-                  | MainDisplay of (Widget.widget *   (* the canvas display *)
-                              Widget.widget list * (* list of gen counters *)
-                              int *  (* generation being displayed *)
-                              Widget.widget * (* label showing generation # *)
-                              Widget.widget)  (* label showing endpoints *)
+                  | MainDisplay of 
+		      (Widget.canvas Widget.widget *   (* the canvas display *)
+                      Widget.label Widget.widget list * (* list of gen counters *)
+                      int *  (* generation being displayed *)
+                      Widget.label Widget.widget * (* label showing generation # *)
+                      Widget.label Widget.widget)  (* label showing endpoints *)
 
 let state = ref Starting
 
 (* maps cell states to the colors that they will be displayed as *)
 
-let cellColors = [(Bottom, NamedColor "grey");
-                  (Live, NamedColor "blue");
-                  (Dead, Black)]
+let cellColors = [(Bottom, `Color "grey");
+                  (Live, `Color "blue");
+                  (Dead, `Color "black")]
 
 let cellstate2color c = List.assoc c cellColors
 
@@ -85,16 +87,18 @@ let endpointCounter () = match !state with
    | _ -> raise (Match_failure("",0,0))
 
 let paintCell x y c =
-   Canvas.create_rectangle (boardcanvas ()) 
-       (Pixels (cellSize*x)) (Pixels (cellSize*y))
-       (Pixels (cellSize*x+cellSize-1)) (Pixels (cellSize*y+cellSize-1))
-       [FillColor (cellstate2color c);
-       Width (Pixels 0);
-       Tags [(Tag "pixels")]]
+   Canvas.create_rectangle
+     ~x1:(cellSize*x)            
+     ~y1:(cellSize*y)
+     ~x2:(cellSize*x+cellSize-1) 
+     ~y2:(cellSize*y+cellSize-1)
+     ~fill:(cellstate2color c)
+     ~width:0
+     ~tags:["pixels"]
+     (boardcanvas ()) 
 
 let setGenerationMsg g m =
-    Label.configure (List.nth (gencounters ()) g)
-                    [Text m]
+    Label.configure ~text:m (List.nth (gencounters ()) g)
 
 let initializeGenCounters maxgen parent pressfunc genvariable =
   let rec range i limit = if i == limit then
@@ -102,35 +106,34 @@ let initializeGenCounters maxgen parent pressfunc genvariable =
                        else
                           i :: (range (i+1) limit)
   in
-     let titleframe = Frame.create parent []
-     and genframes =   List.map (function g ->
-                                    Frame.create parent 
-                                                 [BorderWidth (Pixels 1);
-                                                  Relief Raised ]
-                                )
-                       (range 0 maxgen)
+     let titleframe = Frame.create parent
+     and genframes =  List.map (function g ->
+       Frame.create 
+       ~borderwidth:1
+       ~relief:`Raised
+       parent 
+     ) (range 0 maxgen)
      in
-       pack [titleframe] [Side Side_Left];
-       pack genframes [Side Side_Left];
-       pack [(Label.create titleframe [Text "generation"])] [Side Side_Top];
-       pack [(Label.create titleframe [Text "computed"])] [Side Side_Top];
-       pack [(Label.create titleframe [Text ""])] [Side Side_Top];
+       pack ~side:`Left [titleframe];
+       pack ~side:`Left genframes;
+       pack ~side:`Top [Label.create ~text:"generation" titleframe] ;
+       pack ~side:`Top [Label.create ~text:"computed" titleframe] ;
+       pack ~side:`Top [Label.create ~text:"" titleframe] ;
        List.map (function g ->
-                   let thisframe = List.nth genframes g
-                   in
-                      pack [(Label.create thisframe [Text (string_of_int g)])]
-                           [Side Side_Top];
-                      let thisCounter = Label.create thisframe [Text "0"]
-                      in
-                        pack [thisCounter] [Side Side_Top];
-                        pack [(Radiobutton.create thisframe
-                                    [Variable genvariable;
-                                     Value (string_of_int g);
-                                     Command (pressfunc g)])]
-                             [Side Side_Top];
-                        thisCounter
-                 )
-                 (range 0 maxgen)
+         let thisframe = List.nth genframes g in
+         pack ~side:`Top [Label.create ~text:(string_of_int g) thisframe];
+	 let thisCounter = Label.create ~text:"0"  thisframe in
+         pack ~side:`Top [thisCounter];
+         pack ~side:`Top 
+	   [Radiobutton.create 
+             ~variable:genvariable
+             ~value:(string_of_int g)
+             ~command:(pressfunc g)
+	     thisframe
+	   ];
+         thisCounter
+       )
+         (range 0 maxgen)
 
 let displayGeneration canvas g =
   if g = currentGen () then
@@ -138,7 +141,7 @@ let displayGeneration canvas g =
   else
     begin
       setCurrentGen g;
-      Canvas.delete canvas [(Tag "pixels")];
+      Canvas.delete canvas [`Tag "pixels"] ;
       let cells = !computedCellsFunc g in
         List.iter (fun ((x,y),v) -> unit (paintCell x y v))
                   cells
@@ -176,34 +179,37 @@ let rec initializeStartDisplay () =
           ()
     in
       begin
-        let xdimframe = Frame.create top []
-        and ydimframe = Frame.create top []
-        and genframe = Frame.create top []
+        let xdimframe = Frame.create top 
+        and ydimframe = Frame.create top 
+        and genframe = Frame.create top 
         in
-          pack [xdimframe;ydimframe;genframe] [Side Side_Top; Fill Fill_X];
-          pack [Label.create xdimframe [Text "Board width:"];
-                Label.create ydimframe [Text "Board height:"];
-                Label.create genframe [Text "generations:"]]
-               [Side Side_Left; Fill Fill_X; Expand true];
-          pack [Label.create xdimframe [TextVariable xdimVar];
-                Button.create xdimframe [Text "-";
-                                         Command (buttonCallback xdimVar (-1))];
-                Button.create xdimframe [Text "+";
-                                         Command (buttonCallback xdimVar 1)];
-                Label.create ydimframe [TextVariable ydimVar];
-                Button.create ydimframe [Text "-";
-                                         Command (buttonCallback ydimVar (-1))];
-                Button.create ydimframe [Text "+";
-                                         Command (buttonCallback ydimVar 1)];
-                Label.create genframe [TextVariable gensVar];
-                Button.create genframe [Text "-";
-                                         Command (buttonCallback gensVar (-1))];
-                Button.create genframe [Text "+";
-                                         Command (buttonCallback gensVar 1)]
-]
-              [Side Side_Left];
-           pack [(Button.create top [(Text "Enter Grid"); Command doNext])] 
-                  [Side Side_Top; Expand false]
+          pack ~side:`Top ~fill:`X [xdimframe;ydimframe;genframe];
+          pack ~side:`Left ~fill:`X ~expand:true
+	    [Label.create ~text:"Board width:" xdimframe ;
+            Label.create ~text:"Board height:" ydimframe ;
+            Label.create ~text:"generations:" genframe ];
+          pack ~side:`Left [
+	    coe (Label.create ~textvariable:xdimVar 
+	      xdimframe);
+            coe (Button.create ~text:"-" ~command:(buttonCallback xdimVar (-1))
+	      xdimframe) ;
+            coe (Button.create ~text:"+" ~command:(buttonCallback xdimVar 1)
+	      xdimframe) ;
+            coe (Label.create ~textvariable:ydimVar 
+	      ydimframe) ;
+            coe (Button.create ~text:"-" ~command:(buttonCallback ydimVar (-1))
+	      ydimframe) ;
+            coe (Button.create ~text:"+" ~command:(buttonCallback ydimVar 1)
+	      ydimframe) ;
+            coe (Label.create ~textvariable:gensVar genframe) ;
+            coe (Button.create ~text:"-" ~command:(buttonCallback gensVar (-1))
+	      genframe) ;
+            coe (Button.create ~text:"+" ~command:(buttonCallback gensVar 1)
+	      genframe)
+	  ];
+          pack ~side:`Top ~expand:false 
+	    [Button.create ~text:"Enter Grid" ~command:doNext top] 
+
    end
 end
 
@@ -214,73 +220,75 @@ and initializeInitialPosition gens xdim ydim =
   and valueArray = Array.create_matrix xdim ydim false
   in
   let doMain () =
-    Printf.eprintf "doMain\n" ;
     let b (x,y) = valueArray.(x).(y)
     in
          destroy top;
          initializeMainDisplay gens xdim ydim;
          !startFunc xdim ydim b gens
-  and grid = Canvas.create top [Height (Pixels (cellSize*ydim));
-                                Width (Pixels (cellSize*xdim));
-                                Background (cellstate2color Bottom)]
+  and grid = Canvas.create 
+    ~height:(cellSize*ydim)
+    ~width:(cellSize*xdim)
+    ~background:(cellstate2color Bottom)
+    top 
   in
-  let pixelfunc x y pixel _ =
+  let pixelfunc x y pixel =
     valueArray.(x).(y) <- not valueArray.(x).(y);
-    Canvas.configure_rectangle grid pixel 
-      [FillColor (mapbool2color valueArray.(x).(y))]
+    Canvas.configure_rectangle 
+      ~fill:(mapbool2color valueArray.(x).(y)) grid pixel 
+      
   in
-      pack [Label.create top [(Text "Enter Initial Grid")];
-            grid;
-            Button.create top [(Text "Start"); Command doMain]]
-           [Side Side_Top];
+      pack ~side:`Top [
+	coe (Label.create ~text:"Enter Initial Grid" top);
+        coe grid;
+        coe (Button.create ~text:"Start" ~command:doMain top)
+      ];
       for x = 0 to xdim-1 do
         for y = 0 to ydim-1 do
           begin
-            let pixel = Canvas.create_rectangle grid
-                           (Pixels (cellSize*x)) 
-                           (Pixels (cellSize*y))
-                           (Pixels (cellSize*x+cellSize-1))
-                           (Pixels (cellSize*y+cellSize-1))
-                           [FillColor (mapbool2color valueArray.(x).(y));
-                           Width (Pixels 0)]
-            in
-                Canvas.bind grid pixel [([Button1],ButtonRelease)]
-                                          (BindSet ([],pixelfunc x y pixel))
+            let pixel = 
+	      Canvas.create_rectangle 
+              ~x1:(cellSize*x)
+              ~y1:(cellSize*y)
+              ~x2:(cellSize*x+cellSize-1)
+              ~y2:(cellSize*y+cellSize-1)
+              ~fill:(mapbool2color valueArray.(x).(y))
+              ~width:0
+	      grid
+	    in
+	    Canvas.bind ~events:[(*([Button1],*)`ButtonRelease] 
+              ~action:(fun _ -> pixelfunc x y pixel) grid pixel
           end
         done
-     done
-
+      done
     
 (* ----------------------------------------------------------------- *)
 (* Main display *)
 
 and initializeMainDisplay gens xSize ySize =
   let top = openTk () in
-  let gridframe = Frame.create top []
-  and viewframe = Frame.create top []
+  let gridframe = Frame.create top 
+  and viewframe = Frame.create top 
   and showngen = Textvariable.create ()
   in
     Textvariable.set showngen "0";
-    let generationLabel = Label.create gridframe 
-                                     [Text "Generation displayed: "]
-    and generationDisplay = Label.create gridframe
-                                     [TextVariable showngen]
-    and grid = Canvas.create gridframe [Height (Pixels (cellSize*ySize));
-                                Width (Pixels (cellSize*xSize));
-                                Background (cellstate2color Bottom)]
-    and generationCountFrame = Frame.create top [BorderWidth (Pixels 3);
-                                                 Relief Groove]
-    and viewCountLabel = Label.create viewframe [Text "Number of endpoints: "]
-    and viewCountDisplay = Label.create viewframe 
-                                                [TextVariable 
-                                                    (getViewVariable ())]
-  in
-    pack [Button.create top [Text "Quit"; Command (fun () -> closeTk ())]]
-         [Side Side_Bottom];
-    pack [generationCountFrame; viewframe; gridframe] [Side Side_Bottom];
-    pack [viewCountLabel; viewCountDisplay] [Side Side_Left];
-    pack [grid] [Side Side_Bottom];
-    pack [generationLabel;generationDisplay] [Side Side_Left];
+    let generationLabel = Label.create ~text:"Generation displayed: " gridframe 
+    and generationDisplay = Label.create ~textvariable:showngen gridframe
+    and grid = Canvas.create 
+      ~height:(cellSize*ySize)
+      ~width:(cellSize*xSize)
+      ~background:(cellstate2color Bottom)
+      gridframe 
+    and generationCountFrame = Frame.create ~borderwidth:3 ~relief:`Groove top 
+    and viewCountLabel = Label.create ~text:"Number of endpoints: " viewframe 
+    and viewCountDisplay = Label.create ~textvariable:(getViewVariable ()) 
+      viewframe 
+    in
+    pack ~side:`Bottom 
+      [Button.create ~text:"Quit" ~command:(fun () -> closeTk ()) top];
+    pack ~side:`Bottom [generationCountFrame; viewframe; gridframe] ;
+    pack ~side:`Left [viewCountLabel; viewCountDisplay] ;
+    pack ~side:`Bottom [grid];
+    pack ~side:`Left [generationLabel;generationDisplay];
     let genCounters = initializeGenCounters gens generationCountFrame
                                            (function g -> function () ->
                                               displayGeneration grid g

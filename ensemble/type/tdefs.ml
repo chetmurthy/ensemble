@@ -73,7 +73,7 @@ module RealKey = struct
   let string_of_t (k,s_r) = match !s_r with 
     | None -> (Key.string_of_t k) ^ " None"
     | Some cipher -> 
-	(Key.string_of_t k) ^ " " ^ (Buf.to_string (Security.buf_of_cipher cipher))
+	(Key.string_of_t k) ^ " " ^ (Buf.string_of (Security.buf_of_cipher cipher))
 
   let add  r_k_l tag key = 
     let s_r = List.assoc tag r_k_l in

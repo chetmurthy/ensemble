@@ -6,7 +6,7 @@ open View
 
 let f i =
   eprintf "APPL_INTF:aggregate:preprocessing not done" ;
-  let ma,um = Iovecl.make_marsh "APPL_INTF:aggregate" in
+  let ma,um = Iovecl.make_marsh true in
 
   let install (ls,vs) =
     let actions,handlers = i.install (ls,vs) in
@@ -75,7 +75,7 @@ let f i =
     in
 
     let handlers = { 
-		  flow_block = handlers.flow_block ;
+      flow_block = handlers.flow_block ;
       heartbeat = heartbeat ;
       receive = receive ;
       block = block ;
@@ -89,8 +89,5 @@ let f i =
   { heartbeat_rate = i.heartbeat_rate ;
     install = install ;
     exit = i.exit }
-
-let _ = 
-  Elink.put Elink.appl_aggr_f f
 
 (**************************************************************)

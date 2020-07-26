@@ -312,6 +312,6 @@ let l args vf = Layer.hdr init hdlrs None NoOpt args vf
 
 let _ = 
   Param.default "total_account" (Param.Bool false) ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)

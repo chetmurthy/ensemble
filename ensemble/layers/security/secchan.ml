@@ -169,7 +169,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       let key = compute_key bignum in
       match ch.status with 
 	| SemiOpen -> 
-	    ch.key <- Some (Security.cipher_of_buf (Buf.of_string name key));
+	    ch.key <- Some (Security.cipher_of_buf (Buf.of_string key));
 	    ch.status <- Open;
 	    Queue.iter (fun (msg,abv) -> 
 	      let msg  = encrypt ch.key msg in
@@ -185,7 +185,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
 	let key = compute_key bignum in
 	let ch = {
-	  key   = Some (Security.cipher_of_buf (Buf.of_string name key));
+	  key   = Some (Security.cipher_of_buf (Buf.of_string key));
 	  msgs  = Queue.create ();
 	  status = Open
 	} in
@@ -359,7 +359,7 @@ let l args vf = Layer.hdr init hdlrs None NoOpt args vf
 let _ = 
   Param.default "secchan_debug" (Param.Bool false);
   Param.default "secchan_key_len" (Param.Int 768);
-  Elink.layer_install name l
+  Layer.install name l
     
 (**************************************************************)
     

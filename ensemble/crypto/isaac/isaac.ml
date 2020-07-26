@@ -2,6 +2,7 @@
 (* ISAAC.ML *)
 (* Author: Ohad Rodeh, 11/98 *)
 (**************************************************************)
+open Ensemble
 open Shared
 
 external isaacml_Init : Buf.t -> Prng.context

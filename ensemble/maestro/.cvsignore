@@ -6,3 +6,5 @@
 .err
 maestro_test maestro_test_threads
 elec
+conf
+.depend.nt

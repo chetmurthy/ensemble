@@ -4,6 +4,7 @@
 (**************************************************************)
 open Trans
 open Util
+open Buf
 (**************************************************************)
 let name = Trace.file "DEBUG"
 let failwith = Trace.make_failwith name
@@ -17,7 +18,7 @@ type message =
   | Logs_reply of name list      
   | Data of name * string * string
       
-let marsh,unmarsh = Iovecl.make_marsh name
+let marsh,unmarsh = Iovecl.make_marsh true
 
 (**************************************************************)
 
@@ -28,8 +29,8 @@ let server alarm port =
     let logs = ref [] in
     
     let send msg =
-      let msg = marsh msg in
-      send msg ;
+      let iovl = marsh msg in
+      send Buf.empty len0 len0 iovl ;
       ()
     in
 
@@ -38,7 +39,7 @@ let server alarm port =
       List.iter (fun name -> Trace.log_remove name) !logs
     in
 	   
-    let recv iovl =
+    let recv _ iovl =
       let msg = unmarsh iovl in
       match msg with
       | Add(name) ->
@@ -58,7 +59,7 @@ let server alarm port =
 
   (* Start the server.
    *)
-  (Elink.get name Elink.hsyssupp_server) name alarm port client_init
+  Hsyssupp.server name alarm port client_init
 	
 (**************************************************************)
 
@@ -86,13 +87,13 @@ let client alarm host port =
   Hsys.connect sock host port ;
   eprintf "DEBUG:connected\n" ;
 
-  (Elink.get_hsyssupp_client name) name alarm sock (fun info send ->
+  Hsyssupp.client name alarm sock (fun info send ->
     let send msg =
-      let msg = marsh msg in
-      send msg
+	let iovl = marsh msg in
+	send Buf.empty len0 len0 iovl
     in
 
-    let recv msg =
+    let recv _ msg =
       let msg = unmarsh msg in
       match msg with
       | Data(kind,id,data) ->
@@ -130,7 +131,7 @@ let client alarm host port =
       | End_of_file ->
 	  exit 0
       | e ->
-	  eprintf "DEBUG:error:%s\n" (Hsys.error e)
+	  eprintf "DEBUG:error:%s\n" (Util.error e)
     in
 
     Alarm.add_sock_recv alarm name stdin (Hsys.Handler0 input_handler) ;
@@ -139,8 +140,3 @@ let client alarm host port =
 
 (**************************************************************)
 
-let _ =
-  Elink.put Elink.debug_client client ;
-  Elink.put Elink.debug_server server
-
-(**************************************************************)

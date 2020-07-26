@@ -1,6 +1,65 @@
 (**************************************************************)
 (* SOCKET.MLI *)
 (* Authors: Robbert vanRenesse and Mark Hayden, 4/95 *)
+(* Memory mangement support by Ohad Rodeh 9/2001 *)
+(**************************************************************)
+
+module Basic_iov : sig 
+  (* The type of a C memory-buffer. It is opaque.
+   *)
+  type t 
+  type ofs = int
+  type len = int
+
+  (* The underling iovec representation. No ref-counting.
+   * t_of_raw is only safe if raw is allocated on its own, 
+   * and not as part of a larger iovec.
+   *)
+  type raw
+  val t_of_raw : raw -> t
+  val raw_of_t : t -> raw
+
+  (* allocation, and copy. 
+   *)
+  val string_of_t : t -> string 
+  val string_of_t_full : string -> len -> t -> unit
+  val t_of_string : string -> ofs -> len -> t
+    
+  val len : t -> int
+
+  val empty : t 
+
+  val alloc : len -> t
+
+  val sub : t -> ofs -> len -> t
+    
+  (* Decrement the refount, and free the cbuf if the count
+   * reaches zero. 
+   *)
+  val free : t -> unit 
+    
+  (* Increment the refount, do not really copy. 
+   *)
+  val copy : t -> t 
+
+  (* copy into a fresh iovec. 
+   *)
+  val really_copy : t -> t 
+    
+  (* Flatten an iovec array into a single iovec.  Copying only
+   * occurs if the array has more than 1 non-empty iovec.
+   *)
+  val flatten : t array -> t
+
+  (* As above, but copy even if there is only one part to the iovl.
+   *)
+  val flatten_w_copy : t array -> t
+    
+  (* For debugging. The number of references to the iovec.
+   *)
+  val num_refs : t -> int
+end
+  
 (**************************************************************)
 
 type socket = Unix.file_descr
@@ -9,17 +68,11 @@ type buf = string
 type ofs = int
 type len = int
 
-type 'a refcnt = { mutable count : int ; obj : 'a } 
-type 'a iovec = { rbuf : 'a ; ofs : ofs ; len : len }
 
 type timeval = {
   mutable sec10 : int ;
   mutable usec : int
 } 
-
-(**************************************************************)
-
-val set_error_log : ((unit -> string) -> unit) -> unit
 
 (**************************************************************)
 
@@ -44,43 +97,41 @@ val poll : select_info -> int
 
 (**************************************************************)
 
-(* Allocate a static string (with stat_alloc).
- *)
-val static_string : len -> string
-
-(* Release such a string (with stat_free).
- *)
-val static_string_free : string -> unit
-
 (* Check if portions of two strings are equal.
  *)
 val substring_eq : string -> ofs -> string -> ofs -> len -> bool
 
 (**************************************************************)
-
 (* Optimized transmission functions.  No exceptions are
  * raised.  Scatter-gather used if possible.  No interrupts
  * are serviced during call.  No bounds checks are made.
  *)
 
+(* A context structure.
+*)
 type sendto_info
-val sendto_info : socket -> Unix.msg_flag list -> Unix.sockaddr array -> sendto_info
+val sendto_info : socket -> Unix.sockaddr array -> sendto_info
+
+(* The returned length only refers to the last buffer sent. 
+ * It is used only when using TCP sockets.
+*)
 val sendto : sendto_info -> buf -> ofs -> len -> unit
+val sendtov : sendto_info -> Basic_iov.t array -> unit
+val sendtosv : sendto_info -> buf -> ofs -> len -> Basic_iov.t array -> unit
 
-(**************************************************************)
+val udp_recv_packet : socket -> string * Basic_iov.t
 
-(* Same as above except that exceptions are raised.
- *)
-type send_info
-val send_info : socket -> Unix.msg_flag list -> send_info
-val sendp : send_info -> buf -> ofs -> len -> len
+(* These functions are used in Hsyssupp in receiving 
+ * TCP packets. 
+*)
+val recv : socket -> buf -> ofs -> len -> len
+val recv_iov : socket -> Basic_iov.t -> ofs -> len -> len
+val tcp_recv_packet : socket -> string -> ofs -> len -> Basic_iov.t -> len
 
-(**************************************************************)
-
-val sendv : send_info -> string refcnt iovec array -> int
-val sendtov : sendto_info -> string refcnt iovec array -> unit
-val sendtosv : sendto_info -> string -> string refcnt iovec array -> unit
-val sendtovs : sendto_info -> string refcnt iovec array -> string -> unit
+val send_p : socket -> buf -> ofs -> len -> len
+val sendv_p : socket -> Basic_iov.t array -> len
+val sendsv_p : socket -> buf -> ofs -> len -> Basic_iov.t array -> len
+val sends2v_p : socket -> buf -> buf -> ofs -> len -> Basic_iov.t array -> len
 
 (**************************************************************)
 
@@ -129,13 +180,13 @@ val setsockopt_nonblock : socket -> bool -> unit
 val setsockopt_bsdcompat : socket -> bool -> unit
 
 (**************************************************************)
-
 (* MD5 support.
  *)
 type md5_ctx
 val md5_init : unit -> md5_ctx
 val md5_init_full : string -> md5_ctx
 val md5_update : md5_ctx -> buf -> ofs -> len -> unit
+val md5_update_iov : md5_ctx -> Basic_iov.t -> unit
 val md5_final : md5_ctx -> Digest.t
 
 (**************************************************************)
@@ -145,19 +196,14 @@ val md5_final : md5_ctx -> Digest.t
 val int_of_file_descr : Unix.file_descr -> int
 val int_of_socket : socket -> int
 
-(**************************************************************)
-(* PUSH_INT/POP_INT: read and write 4-byte integers to
- * strings in network byte order.
+(* On WIN32 we need to use WINSOCK2's calls, instead of
+ * regular ones. Since Caml uses WINSOCK1 for maximum portability, we 
+ * need to override this for WIN32.
  *)
-(*
-val push_nint : buf -> ofs -> int -> unit 
-val pop_nint : buf -> ofs -> int
+val socket : Unix.socket_domain -> Unix.socket_type -> int -> Unix.file_descr
+val socket_mcast : Unix.socket_domain -> Unix.socket_type -> int -> Unix.file_descr
+val connect : Unix.file_descr -> Unix.sockaddr -> unit
 
-(* INT_OF_SUBSTRING: read a 4-byte integer in host
- * byte order.
- *)
-val int_of_substring : buf -> ofs -> int
-*)
 (**************************************************************)
 
 (* Same as Unix.gettimeofday.  Except that
@@ -165,24 +211,6 @@ val int_of_substring : buf -> ofs -> int
  * the time is returned in.
  *)
 val gettimeofday : timeval -> unit
-
-(**************************************************************)
-
-val recv : socket -> buf -> ofs -> len -> len
-val send : socket -> buf -> ofs -> len -> len
-
-(**************************************************************)
-
-type recv_info
-val recv_info : socket -> recv_info
-
-(* Receive on a datagram socket.  Some errors cause a 0 to
- * be returned instead of generating an exception.  Also,
- * the size & offset values should be 4-byte aligned and the
- * return value is guaranteed to be aligned as well
- * (non-aligned packets will be dropped!).  
- *)
-val udp_recv : recv_info -> buf -> ofs -> len -> len
 
 (**************************************************************)
 
@@ -206,5 +234,9 @@ type os_t_v =
 (* Return the version of the windows OS.
  *)
 val os_type_and_version : unit -> os_t_v
+
 (**************************************************************)
 
+      
+
+  

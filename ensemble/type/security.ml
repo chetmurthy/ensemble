@@ -40,14 +40,14 @@ let buf_of_cipher = ident
 let cipher_of_buf buf = 
   if (Buf.length buf) < cipher_len then 
     failwith "cipher_of_buf: buf is too short";
-  Buf.sub name buf len0 cipher_len
+  Buf.sub buf len0 cipher_len
 
 let buf_of_mac = ident
 
 let mac_of_buf buf = 
   if (Buf.length buf) < mac_len then 
     failwith "mac_of_buf: buf is too short";
-  Buf.sub name buf len0 mac_len
+  Buf.sub buf len0 mac_len
 
 let get_cipher = function
   | NoKey -> failwith "get_cipher:NoKey"
@@ -65,7 +65,7 @@ let string_of_key_short = function
   | NoKey -> "None"
   | Common key -> 
       let key = Buf.append key.mac key.cipher in
-      let key = Buf.to_string key in
+      let key = Buf.string_of key in
       let key = Digest.string key in
       let key = Util.hex_of_string key in
       let len = String.length key in
@@ -77,7 +77,7 @@ let string_of_key = function
   | NoKey -> "{Key:None}"
   | Common key -> 
       let key = Buf.append key.mac key.cipher in
-      let key = Buf.to_string key in
+      let key = Buf.string_of key in
       let key = Digest.string key in
       let key = Util.hex_of_string key in
       sprintf "{Key:Shared:%s(sig)}" key
@@ -85,8 +85,8 @@ let string_of_key = function
 let key_of_buf s = 
   if Buf.length s < key_len then 
     failwith "Key is too short. must be (at least) 32 bytes long";
-  let mac = Buf.sub name s len0 mac_len in
-  let cipher = Buf.sub name s mac_len cipher_len in
+  let mac = Buf.sub s len0 mac_len in
+  let cipher = Buf.sub s mac_len cipher_len in
   Common ({
     mac = mac ;
     cipher = cipher

@@ -3,6 +3,7 @@
 # LIFE: makefile for life demo
 #
 # Author: Mark Hayden, 8\96
+# Changes: Ohad Rodeh 11\2001
 #
 #*************************************************************#
 ENSROOT = ..\..
@@ -11,11 +12,13 @@ ENSROOT = ..\..
 !include $(ENSROOT)\mk\ocaml.nmk
 #*************************************************************#
 
-.SUFFIXES: .ml .cmo .mli .cmi
+.SUFFIXES: .ml .cmo .mli .cmi .cmx
 .ml.cmo:
-	ocamlc -c -I $(ENSLIB) $<
+	ocamlc -c -I +labltk -I $(ENSLIB) $<
 .mli.cmi:
-	ocamlc -c -I $(ENSLIB) $<
+	ocamlc -c -I +labltk -I $(ENSLIB) $<
+.ml.cmx:
+	ocamlopt -c -I +labltk -I $(ENSLIB) $<
 
 #*************************************************************#
 
@@ -29,9 +32,13 @@ OBJS =\
 	life$(CMO)
 
 #*************************************************************#
-
+# The additional -cclib argument was needed so that CAML would
+# find the Tk libraries. This is a CAML bug.
+#
 life: $(OBJS) $(ENSCONFDEP) $(ENSTK)
-	ocamlc -custom -o life$(EXE) $(LIBTK) $(ENSCONF) $(ENSTK) $(OBJS)
+	ocamlc -custom -o life$(EXE)\
+	-cclib -L\home\orodeh\ocaml\3.01\i386-linux\lib\labltk\
+	$(ENSCONF) $(LIBTK) $(ENSTK) $(OBJS)
 
 #*************************************************************#
 
@@ -40,9 +47,11 @@ $(ENSTK):
 
 #*************************************************************#
 
-clean:
-	$(RM) *~ .*~ *.cm* .err TAGS core
+clean :
+	$(CLEANDIR)
 	$(RM) life
+
+realclean: clean 
 
 depend:
 	ocamldep -I $(ENSROOT)\lib *.ml* > $(DEPEND)
@@ -50,3 +59,4 @@ depend:
 !include $(DEPEND)
 
 #*************************************************************#
+

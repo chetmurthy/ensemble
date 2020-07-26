@@ -106,10 +106,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	  origin (getPeer ev) ls.rank (Arrayf.int_to_string dests)) ;
 	let iov = getIov ev in
 	Arrayf.iter (fun dest ->
-	  let iov = Iovecl.copy name iov in
+	  let iov = Iovecl.copy iov in
 	  dn (sendPeerIov name dest iov) abv hdr ;
 	) dests ;
-	let iov = Iovecl.copy name iov in
+	let iov = Iovecl.copy iov in
 	up (castPeerIov name origin iov) abv
       ) ;
       free name ev
@@ -139,7 +139,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       log (fun () -> sprintf "root:%d -> %s" 
 	ls.rank (Arrayf.int_to_string dests)) ;
       Arrayf.iter (fun dest ->
-	let iov = Iovecl.copy name iov in
+	let iov = Iovecl.copy iov in
       	dn (sendPeerIov name dest iov) abv (Cast ls.rank)
       ) dests ;
       free name ev
@@ -156,6 +156,6 @@ let l args vf = Layer.hdr init hdlrs None NoOpt args vf
 
 let _ = 
   Param.default "gcast_fanout" (Param.Int 2) ;
-  Elink.layer_install name l
+  Layer.install name l
     
 (**************************************************************)

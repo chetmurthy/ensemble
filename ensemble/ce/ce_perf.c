@@ -22,6 +22,17 @@ static int size = 1000 ;
 static double terminate_time = 10.0;
 
 /**************************************************************/
+ce_iovec_array_t create_iovl(int size){
+  ce_iovec_array_t iovl;
+  
+  iovl = (ce_iovec_array_t) malloc(1 * sizeof(ce_iovec_t));
+  Iov_len(iovl[0]) = size;
+  Iov_buf(iovl[0]) = malloc(size);
+
+  return iovl;
+}
+
+/**************************************************************/
 typedef struct rpc_state_t {
   ce_local_state_t *ls;
   ce_view_state_t *vs;
@@ -57,7 +68,7 @@ void rpc_block(void *env){
   TRACE2("rpc_block",s->ls->endpt); 
 }
 
-void rpc_recv_send(void *env, int rank, ce_len_t len, ce_data_t data) {
+void rpc_recv_send(void *env, int rank, int num, ce_iovec_array_t iovl) {
   rpc_state_t *s = (rpc_state_t*) env;
 
   s->total++;
@@ -66,13 +77,14 @@ void rpc_recv_send(void *env, int rank, ce_len_t len, ce_data_t data) {
       && s->ls->nmembers ==2) {
     if (s->ls->rank ==0) {
       if (s->phase == BEGIN || s->phase == END)
-	ce_Send1(s->intf,1, size, malloc(size));
+	ce_Send1(s->intf, 1, 1, create_iovl(size));
     } else
-      ce_Send1(s->intf,0, size, malloc(size));
+      ce_Send1(s->intf,0, 1, create_iovl(size));
   }
 }
 
-void rpc_recv_cast(void *env, int rank, ce_len_t len, ce_data_t data) {}
+void rpc_recv_cast(void *env, int rank, int num, ce_iovec_array_t iovl) {
+}
 
 void rpc_heartbeat(void *env, double time) {
   rpc_state_t *s = (rpc_state_t*) env;
@@ -89,7 +101,7 @@ void rpc_heartbeat(void *env, double time) {
     s->start_time = time;
     if (s->ls->rank == 0) {
       printf ("Starting RPC test\n");
-      ce_Send1(s->intf, 1, size, malloc(size));
+      ce_Send1(s->intf, 1, 1, create_iovl(size));
     }
   }
 
@@ -98,25 +110,26 @@ void rpc_heartbeat(void *env, double time) {
     s->phase = DONE;
     printf("total=%d\n", s->total);
     printf("time=%5.3f\n", terminate_time);
-    printf("latency=%1.6f(sec)\n", (time - s->start_time)/s->total);
+    printf("round-trip latency=%1.6f(sec)\n", (time - s->start_time)/s->total);
     exit(0);
   }
 }
 
 void rpc_join(){
-  ce_jops_t jops; 
+  ce_jops_t *jops; 
   ce_appl_intf_t *rpc_intf;
   rpc_state_t *s;
   
   /* The rest of the fields should be zero. The
    * conversion code should be able to handle this. 
    */
-  record_clear(&jops);
-  jops.hrtbt_rate=1.0;
-  jops.transports = "DEERING";
-  jops.group_name = "ce_perf";
-  jops.properties = CE_DEFAULT_PROPERTIES;
-  jops.use_properties = 1;
+  jops = record_create(ce_jops_t*, jops);
+  record_clear(jops);
+  //  jops->transports = ce_copy_string("UDP");
+  jops->group_name = ce_copy_string("ce_perf");
+  jops->properties = ce_copy_string(CE_DEFAULT_PROPERTIES);
+  jops->use_properties = 1;
+  jops->hrtbt_rate = 1.0;
 
   s = (rpc_state_t*) record_create(rpc_state_t*, s);
   record_clear(s);
@@ -124,10 +137,11 @@ void rpc_join(){
   rpc_intf = ce_create_intf(s,
 			rpc_exit, rpc_install, rpc_flow_block,
 			rpc_block, rpc_recv_cast, rpc_recv_send,
-			rpc_heartbeat);
+			    rpc_heartbeat);
+			    
   
   s->intf= rpc_intf;
-  ce_Join (&jops, rpc_intf);
+  ce_Join(jops,rpc_intf);
 }
      
 /**************************************************************/
@@ -175,12 +189,17 @@ void throu_block(void *env){
   TRACE2("throu_block",s->ls->endpt); 
 }
 
-void throu_recv_send(void *env, int rank, ce_len_t len, ce_data_t data) {}
+void throu_recv_send(void *env, int rank, int num, ce_iovec_array_t iovl) {
+}
 
-void throu_recv_cast(void *env, int rank, ce_len_t len, ce_data_t data) {
+void throu_recv_cast(void *env, int rank, int num, ce_iovec_array_t iovl) {
   throu_state_t *s = (throu_state_t*) env;
+  int i;
 
-  s->total += len;
+  /* Sum up the total received length
+   */
+  for(i=0; i< num; i++) 
+    s->total += Iov_len(iovl[i]);
 }
 
 void throu_heartbeat(void *env, double time) {
@@ -195,7 +214,7 @@ void throu_heartbeat(void *env, double time) {
       s->next = time + 2.0;
       printf("Starting in 2 seconds\n");
     }
-
+  
     if (s->phase == BEGIN
 	&& s->ls->rank == 0) {
       if (s->flow_blocked ==1)
@@ -203,7 +222,7 @@ void throu_heartbeat(void *env, double time) {
       else
 	while (time > s->next) {
 	  TRACE("Sending bcast");
-	  ce_Cast(s->intf, size, malloc(size));
+	  ce_Cast(s->intf, 1, create_iovl(size));
 	  s->next += rate;
 	  s->total += size;
 	}
@@ -215,24 +234,25 @@ void throu_heartbeat(void *env, double time) {
     s->phase = END;
     printf("total=%d\n", s->total);
     printf("time=%5.3f\n", terminate_time);
-    printf("throughput=%5.3f\n", s->total/(time - s->start_time));
+    printf("throughput=%5.3f(K/sec)\n", s->total/(1024 * (time - s->start_time)));
   }
 }
 
 void throu_join(){
-  ce_jops_t jops; 
+  ce_jops_t *jops; 
   ce_appl_intf_t *throu_intf;
   throu_state_t *s;
   
   /* The rest of the fields should be zero. The
    * conversion code should be able to handle this. 
    */
-  record_clear(&jops);
-  jops.hrtbt_rate=0.1;
-  jops.transports = "DEERING";
-  jops.group_name = "ce_perf";
-  jops.properties = CE_DEFAULT_PROPERTIES;
-  jops.use_properties = 1;
+  jops = record_create(ce_jops_t*, jops);
+  record_clear(jops);
+  jops->hrtbt_rate=0.1;
+  jops->transports = ce_copy_string ("DEERING");
+  jops->group_name = ce_copy_string("ce_perf");
+  jops->properties = ce_copy_string(CE_DEFAULT_PROPERTIES);
+  jops->use_properties = 1;
 
   s = (throu_state_t*) record_create(throu_state_t*, s);
   record_clear(s);
@@ -240,17 +260,17 @@ void throu_join(){
   throu_intf = ce_create_intf(s,
 			throu_exit, throu_install, throu_flow_block,
 			throu_block, throu_recv_cast, throu_recv_send,
-			throu_heartbeat);
+			      throu_heartbeat);
   
   s->intf= throu_intf;
-  ce_Join (&jops, throu_intf);
+  ce_Join (jops, throu_intf);
 }
      
 
      
 /**************************************************************/
 
-void fifo_process_args(int argc, char **argv){
+void process_args(int argc, char **argv){
     int i,j ;
     int ml_args=0;
     char **ret = NULL;
@@ -311,8 +331,10 @@ void fifo_process_args(int argc, char **argv){
 	      j++;
 	    }
     }
-    
+
+    TRACE("before init("); 
     ce_Init(ml_args, ret); /* Call Arge.parse, and appl_process_args */
+    TRACE(")"); 
 }
 
 void usage(){
@@ -334,7 +356,7 @@ int main(int argc, char **argv){
   void (*join_fun)();
     
   //ce_Init(argc, argv);
-  fifo_process_args(argc, argv);
+  process_args(argc, argv);
   usage();
 
   TRACE("determining test");

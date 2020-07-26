@@ -18,9 +18,9 @@ let log2 = Trace.log (name^"2")
 (**************************************************************)
 
 type c_action = 
-  | C_Cast of Buf.t
-  | C_Send of rank array * Buf.t
-  | C_Send1 of rank * Buf.t
+  | C_Cast of Iovec.raw array
+  | C_Send of rank array * Iovec.raw array
+  | C_Send1 of rank * Iovec.raw array
   | C_Leave of unit
   | C_Prompt of unit
   | C_Suspect of rank array
@@ -48,18 +48,27 @@ let string_of_c_action = function
   | C_Properties _ -> "C_Properties"
 
 
-let dncall_of_c mbuf (ls,vs) = 
+let of_iovec_array = Iovecl.of_iovec_raw_array
+
+let dncall_of_c (ls,vs) = 
   function dncall -> 
     log2 (fun () -> string_of_c_action dncall);
     match ( dncall : c_action) with 
-      | C_Cast buf ->
-	  let iovl = Mbuf.allocl name mbuf buf len0 (Buf.length buf) in
+      | C_Cast iovl ->
+	  let iovl = of_iovec_array iovl in
+	  (*let ilen = int_of_len (Iovecl.len iovl) in
+	  log (fun () -> sprintf "Cast, len=%d msg=%s" 
+	    ilen
+	    (Iovec.string_of (Iovec.sub (Iovecl.flatten iovl) len0 len16))
+	  );*)
 	  Cast(iovl)
-      | C_Send(dests,buf) -> 
-	  let iovl = Mbuf.allocl name mbuf buf len0 (Buf.length buf) in
+      | C_Send(dests,iovl) -> 
+	  let iovl = of_iovec_array iovl in
+	  log (fun () -> sprintf "dests=%s  iovl=%d" 
+	    (string_of_int_array dests) (int_of_len (Iovecl.len iovl)));
 	  Send(dests,iovl)
-      | C_Send1(dest,buf) -> 
-	  let iovl = Mbuf.allocl name mbuf buf len0 (Buf.length buf) in
+      | C_Send1(dest,iovl) -> 
+	  let iovl = of_iovec_array iovl in
 	  Send1(dest,iovl)
       | C_Leave () -> Control Leave
       | C_Prompt () -> Control Prompt
@@ -249,8 +258,13 @@ let init_view_full jops =
   in
   let protos = false in
   let transports = jops.jops_transports in
-  let transp_list = string_split ":" transports in
-  let modes = List.map Addr.id_of_string transp_list in
+  let modes = 
+    if transports = "" then 
+      Arge.get Arge.modes
+    else
+      let transp_list = string_split ":" transports in
+      List.map Addr.id_of_string transp_list 
+  in
     
   let params = jops.jops_params in
   let params = paraml_of_string params in
@@ -270,8 +284,8 @@ let init_view_full jops =
       if String.length key = 0 then (
 	log2 (fun () -> "Key is empty, setting to NoKey");
 	Security.NoKey
-      ) else Security.key_of_buf (Buf.pad_string key)
-  | Some s -> Security.key_of_buf (Buf.pad_string s)
+      ) else Security.key_of_buf (Buf.of_string key)
+  | Some s -> Security.key_of_buf (Buf.of_string s)
   in
   let secure = jops.jops_secure in
 
@@ -303,7 +317,7 @@ let init_view_full jops =
 let c_view_full (ls,vs) = 
   let key = match vs.key with 
     | Security.NoKey -> ""
-    | Security.Common _ -> hex_of_string (Buf.to_string (Security.buf_of_key vs.key))
+    | Security.Common _ -> hex_of_string (Buf.string_of (Security.buf_of_key vs.key))
   in    
   let c_prev_ids = Array.of_list (List.map c_view_id_of_ml vs.prev_ids) in
   let c_vs = { 

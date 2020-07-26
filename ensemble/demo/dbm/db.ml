@@ -14,7 +14,7 @@ open Appl_intf open Old
 exception Exit_DB
 exception Cmd_Error
 (**************************************************************)
-let name = Trace.source_file "DB"
+let name = Trace.file "DB"
 let failwith s = failwith (Util.failmsg name s)
 (**************************************************************)
 
@@ -139,7 +139,7 @@ let intf (ls,vs) db alarm =
       begin
       	try
       	  List.iter (fun com -> apply db com) !buffer
-      	with Exit_DB -> msgs := !msgs @ [Leave]
+      	with Exit_DB -> msgs := !msgs @ [Control Leave]
       end ;
       buffer := [] ;
       Array.of_list !msgs
@@ -154,7 +154,7 @@ let intf (ls,vs) db alarm =
     try
       apply db com ;
       check_buf ()
-    with Exit_DB -> [|Leave|]
+    with Exit_DB -> [|Control Leave|]
 
   and recv_send _ _ = failwith "error"
   and block () = [||]
@@ -171,12 +171,12 @@ let intf (ls,vs) db alarm =
   and unblock_view (ls',vs') _ =
     ls := ls' ;
     vs := vs' ;
-    printf "(DB:view change)\n" ;
+    printf "(DB:view change %d)\n" ls'.nmembers;
     check_buf ()
   and exit () =
     printf "(DB:got exit)\n" ;
     exit 0
-  in full {
+  in (Elink.get_appl_old_full "") {
     recv_cast           = recv_cast ;
     recv_send           = recv_send ;
     heartbeat           = heartbeat ;
@@ -208,7 +208,7 @@ let run () =
    * Get default transport and alarm info.
    *)
   let view_state = Appl.default_info "DB" in
-  let alarm = Alarm.get () in
+  let alarm = Elink.alarm_get_hack () in
 
   (*
    * Initialize the application interface.

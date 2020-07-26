@@ -14,20 +14,16 @@ exception Error of string
 let error s = raise (Error s)
 
 (**************************************************************)
-
 type item =
   | Int of int
-  | Iovecl of Iovecl.t
-  | String of int * Buf.t
+  | String of Buf.t
   | Buf of Buf.t
 
 type marsh = {
-  mbuf : Mbuf.t ;
   mutable buf : item list
 } 
 
-let marsh_init mbuf = {
-  mbuf = mbuf ;
+let marsh_init () = {
   buf = []
 } 
 
@@ -47,19 +43,8 @@ let write_buf m b =
   add m (Buf b)
 
 let write_string m s =
-  add m (String((String.length s),(Buf.pad_string s)))
-
-let write_iovl_len m iovl =
-  let debug = Refcnt.info2 name "write_iovl_len" "" in
-  let iovl = Iovecl.take debug iovl in
-  let len = Iovecl.len name iovl in
-  add m (Int(int_of_len len)) ;
-  add m (Iovecl iovl)
-
-let write_iovl m iovl =
-  let debug = Refcnt.info2 name "write_iovl_len" "" in
-  let iovl = Iovecl.take debug iovl in
-  add m (Iovecl iovl)
+  let buf = Buf.of_string s in
+  add m (String buf)
 
 let write_list m f l =
   write_int m (List.length l) ;
@@ -78,79 +63,57 @@ let write_option m f o =
 
 let length = function
   | Int _ -> len4
-  | Iovecl iovl -> Iovecl.len name iovl
-  | String(_,buf) -> Buf.length buf +|| len4
+  | String buf 
   | Buf buf -> Buf.length buf +|| len4
 
+(* The total length accumulated in a list of objects. 
+*)
+let len l = List.fold_left (fun accu item -> 
+  accu +|| length item
+) len0 l
+  
+(* Marshal a list into a set 
+ *)
 let marsh_done msh =
   let l = List.rev msh.buf in
-  let len = List.fold_left (fun len buf -> len +|| length buf) len0 l in
-  let fill dbuf dofs =
-    let test = 
-      List.fold_left (fun pos it ->
-	let len =
-	  match it with
-	  | Int i ->
-	      Buf.write_net_int dbuf pos i ;
-	      len4
-	  | String(actlen,buf) -> 
-	      let len = Buf.length buf in
-	      Buf.write_net_int dbuf pos actlen ;
-	      Buf.blit name buf len0 dbuf (pos +|| len4) (Buf.length buf) ;
-	      len +|| len4
-	  | Buf buf -> 
-	      let len = Buf.length buf in
-	      Buf.write_net_len dbuf pos len ;
-	      Buf.blit name buf len0 dbuf (pos +|| len4) (Buf.length buf) ;
-	      len +|| len4
-	  | Iovecl iovl -> 
-	      let len = Iovecl.len name iovl in
-	      let test = Iovecl.flatten_buf name iovl dbuf pos len in
-	      Iovecl.free name iovl ;
-	      assert (test = len) ;
-	      len
-	in
-	pos +|| len
-      ) dofs l 
+  let len = len l in
+  let buf = Buf.create len in
+  let _ = List.fold_left (fun pos it ->
+    let len =
+      match it with
+	| Int i ->
+	    Buf.write_int32 buf pos i ;
+	    len4
+	| String str
+	| Buf str -> 
+	    let len = Buf.length str in
+	    Buf.write_int32 buf pos (int_of_len len) ;
+	    Buf.blit str len0 buf (pos+||len4) len;
+	    len +|| len4
     in
-    assert (test = dofs +|| len) ;
+    pos +|| len
+  ) len0 l 
   in
-  let iovl =
-    if len <=|| Mbuf.max_len msh.mbuf then (
-      fst (Mbuf.alloc_fun name msh.mbuf 
-	     (fun buf ofs _ -> fill buf ofs ; len,()))
-    ) else (
-      let m = Buf.create len in
-      fill m len0 ;
-      Mbuf.allocl name msh.mbuf m len0 (Buf.length m)
-    )
-  in
-  Iovecl.take name iovl
-
+  buf
+    
 (**************************************************************)
+      
 
 type unmarsh = {
-  mbuf : Mbuf.t ;
-  iovl : Iovecl.t ;
+  unm : Buf.t;
   mutable pos : ofs ;
   len : len ;
-  mutable loc : Iovecl.loc ;
 } 
 
-let unmarsh_init mbuf iovl = {
-  mbuf = mbuf ;
-  iovl = Iovecl.take name iovl ;
-  pos = len0 ;
-  len = Iovecl.len name iovl ;
-  loc = Iovecl.loc0
+let unmarsh_init buf ofs = {
+  unm = buf ;
+  pos = ofs ;
+  len = Buf.length buf -|| ofs
 } 
 
-let unmarsh_done m =
-  Iovecl.free name m.iovl
-
-let unmarsh_done_all m =
+let unmarsh_check_done_all m =
   assert (m.pos == m.len) ;
-  unmarsh_done m
+  ()
 
 let bounds_check m len =
   if m.pos +|| len >|| m.len then
@@ -159,31 +122,19 @@ let bounds_check m len =
 let advance m len =
   m.pos <- m.pos +|| len
 
-let get_iovl m len =
-  bounds_check m len ;
-  let ret,loc = Iovecl.sub_scan name m.loc m.iovl m.pos len in
-  m.loc <- loc ;
-  advance m len ;
-  ret
-
-let get_buf m len =
-  let iovl = get_iovl m len in
-  let iov = Iovecl.flatten name iovl in
-  let ret = Iovec.read name iov (Buf.sub name) in
-  Iovec.free name iov ;
-  ret
+let get_string m len =
+  let buf = Buf.string_of (Buf.sub m.unm m.pos len) in
+  advance m len;
+  buf
 
 let read_int m =
-  bounds_check m len4 ;
-  let ret = Iovecl.read_net_int name m.iovl m.pos in
+  let ret = Buf.read_int32 m.unm m.pos in
   advance m len4 ;
   ret
-       
+      
 let read_len m =
-  bounds_check m len4 ;
-  let ret = Iovecl.read_net_len name m.iovl m.pos in
-  advance m len4 ;
-  ret
+  let len = read_int m in
+  len_of_int len
 
 let read_bool m =
   match read_int m with
@@ -192,21 +143,11 @@ let read_bool m =
   | _ -> error "read_bool:not a bool"
 
 let read_string m =
-  let len = read_int m in
-  let tlen = Buf.ceil len in
-  let buf = get_buf m tlen in
-  let s = Buf.to_string buf in
-  String.sub s 0 len
+  let len = read_len m in
+  get_string m len
 
 let read_buf m =
-  let len = read_len m in
-  get_buf m len
-
-let read_iovl_len m =
-  let len = read_len m in
-  get_iovl m len
-
-let read_iovl = get_iovl
+  Buf.of_string (read_string m)
 
 let read_list m f =
   let len = read_int m in
@@ -219,5 +160,6 @@ let read_option m f =
   if read_bool m then 
     Some (f ())
   else None
+
 
 (**************************************************************)

@@ -45,7 +45,7 @@ let init _ (ls,vs) =
   { my_name = my_name ;
     fname = fname ;
     buf = Priq.create Zero ;
-    alarm = Elink.alarm_get_hack ()
+    alarm = Alarm.get_hack ()
   }
 
 (**************************************************************)
@@ -144,7 +144,7 @@ let l args vf = Layer.hdr init hdlrs None NoOpt args vf
 let _ = 
   Param.default "dbgbatch_name" (Param.String "") ;
   Param.default "dbgbatch_fname" (Param.String "data") ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)
 

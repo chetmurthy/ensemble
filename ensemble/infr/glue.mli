@@ -8,7 +8,6 @@ open Trans
 type glue = 
   | Imperative 
   | Functional
-  | Threaded
 
 type ('state,'a,'b) t
 
@@ -33,11 +32,6 @@ val init : ('top,'bot) init
 *)
 val init : ('state,'top,('a,'b,'c)Layer.msg) init
 
-(**************************************************************)
-
-val stats : unit -> unit
-
-(**************************************************************)
 (**************************************************************)
 
 module type S =

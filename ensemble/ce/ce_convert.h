@@ -6,35 +6,17 @@
 #include "ce.h"
 #include "ce_actions.h"
 
-#ifdef _WIN32
-#include <windows.h>
-
-/* From unixsupport.h
- */ 
-extern value win_alloc_handle(HANDLE);
-
-/* Get the file descriptor inside the wrapper.  We define Socket_val
- * in terms of Handle_val() to make it clear what is going on here.
- */
-#define Handle_val(v) (*((HANDLE *)(v))) /* from unixsupport.h */
-
-#define Val_socket(sock) (win_alloc_handle((HANDLE)sock))
-#define Socket_val(sock_v) ((SOCKET) (Handle_val(sock_v)))
-
-#else
-
-/* Get the file descriptor inside the wrapper.
- */
-#define Socket_val(sock_v) (Int_val(sock_v))
-#define Val_socket(sock)   (Val_int(sock))
-
-#endif
-
-
-
 value Val_string_opt(char*);
 
-value Val_msg(ce_len_t, ce_data_t);
+/* Conversions between ML<->C iovec representations.
+ */
+value Val_iovl(int, ce_iovec_array_t);
+
+/* The returned array is STATICALLY allocated.
+ * Whenever this function is called, the previous result
+ * is invalidated.
+ */
+ce_iovec_array_t Iovl_val(value);
 
 //ce_view_id_t*
 //View_id_of_val(value view_id_v);

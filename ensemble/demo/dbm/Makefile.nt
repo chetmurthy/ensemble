@@ -2,27 +2,30 @@ ENSROOT = ..\..
 !include $(ENSROOT)\mk\preamble.nmk
 !include $(ENSROOT)\mk\config.nmk
 !include $(ENSROOT)\mk\ocaml.nmk
+!include $(ENSROOT)\mk\sub.nmk
 #*************************************************************#
 OBJS = db$(CMO) 
 #*************************************************************#
 
 .SUFFIXES: .ml .cmo .mli .cmi
 .ml.cmo:
-	ocamlc -c -I $(ENSROOT)\lib $<
+	ocamlc -c -I $(ENSROOT)\lib\$(PLATFORM) $<
 .mli.cmi:
-	ocamlc -c -I $(ENSROOT)\lib $<
+	ocamlc -c -I $(ENSROOT)\lib\$(PLATFORM) $<
 
 #*************************************************************#
 
-db: $(OBJS) $(ENSCONFDEP) $(ENSTK)
+db: $(OBJS) $(ENSCONFDEP)
 	$(RM) db$(EXE)
-	ocamlc -custom -o db$(EXE) $(LIBTK) $(ENSCONF) $(ENSTK) str.cma dbm.cma $(OBJS) -cclib -lstr -cclib -lmldbm -cclib -lndbm
+	ocamlc -custom -o db$(EXE) $(ENSCONF) str.cma dbm.cma $(OBJS) -cclib -lstr -cclib -lmldbm -cclib -lndbm
 
 #*************************************************************#
 
-clean:
-	$(RM) *~ .*~ *.cm* .err TAGS core
+clean : 
+	$(CLEANDIR)
 	$(RM) db
+
+realclean: clean
 
 depend:
 	ocamldep -I $(ENSROOT)\lib *.ml* > $(DEPEND)

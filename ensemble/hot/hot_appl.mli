@@ -2,8 +2,9 @@
 (* HOT_APPL.MLI *)
 (* Authors: Alexey Vaysburd, Mark Hayden 11/96 *)
 (**************************************************************)
+open Ensemble
 open Trans
-open Appl_intf.Protosi
+open Protos
 (**************************************************************)
 
 (* Types of C application's downcalls to Ensemble.  The
@@ -12,8 +13,8 @@ open Appl_intf.Protosi
  *)
 type c_dncall = 
   | C_Join of Hot_util.join_options 
-  | C_Cast of Buf.t
-  | C_Send of endpt * Buf.t
+  | C_Cast of Iovec.raw
+  | C_Send of endpt * Iovec.raw
   | C_Suspect of endpt array 
   | C_XferDone of unit
   | C_Protocol of string
@@ -31,7 +32,6 @@ val context : debug -> context
 val get : context -> id -> c_dncall -> unit
 
 val join : 
-  Mbuf.t ->
   context ->
   id ->					(* group ctx id *)
   (unit -> bool) ->			(* get downcalls *)

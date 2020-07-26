@@ -20,6 +20,8 @@ type typ =
   | ESendUnrel				(* Unreliable pt2pt message *)
   | EMergeRequest			(* Request a merge *)
   | EMergeGranted			(* Grant a merge request *)
+  | EMergeDenied			(* Deny a merge request *)
+  | EMergeFailed			(* Merge request failed *)
   | EOrphan				(* Message was orphaned *)
 
     (* These types do not have messages. *)
@@ -36,8 +38,6 @@ type typ =
   | EInit				(* First event delivered *)
   | ELeave				(* A member wants to leave *)
   | ELostMessage			(* Member doesn't have a message *)
-  | EMergeDenied			(* Deny a merge request *)
-  | EMergeFailed			(* Merge request failed *)
   | EMigrate				(* Change my location *)
   | EPresent                            (* Members present in this view *)
   | EPrompt				(* Prompt a new view *)
@@ -227,12 +227,12 @@ let create debug typ fields =
 let free debug ev = Iovecl.free (Refcnt.info name debug) ev.iov
 let copy debug ev = Iovecl.ref (Refcnt.info name debug) ev.iov ; ev
 *)
-let free debug ev = Iovecl.free debug ev.iov
+let free debug ev = Iovecl.free ev.iov
 let free_noIov = ignore2
-let copy debug ev = { ev with iov = Iovecl.copy debug ev.iov }
+let copy debug ev = { ev with iov = Iovecl.copy ev.iov }
 
-let upCheck debug ev = Iovecl.check debug ev.iov
-let dnCheck debug ev = Iovecl.check debug ev.iov
+let upCheck debug ev = () (*Iovecl.check ev.iov*)
+let dnCheck debug ev = () (*Iovecl.check ev.iov*)
 
 (**************************************************************)
 
@@ -306,7 +306,7 @@ let getRekeyFlag = getExtendFail  (function RekeyFlag flg -> Some flg | _ -> Non
 
 let getIovLen ev =
   let iov = getIov ev in
-  Iovecl.len name iov
+  Iovecl.len iov
 
 (**************************************************************)
 

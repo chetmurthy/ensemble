@@ -13,7 +13,7 @@
 #include <memory.h>
 #include <limits.h>
 
-#define HOT_MSG_PADDING	4	/* Pad messages to 4-byte boundaries */
+//#define HOT_MSG_PADDING	4	/* Pad messages to 4-byte boundaries */
 
 #ifndef HOT_UINT32
 #define HOT_UINT32

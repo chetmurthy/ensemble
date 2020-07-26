@@ -61,9 +61,19 @@ val sort : ('a -> 'a -> int) -> 'a t -> 'a t
 val exists : (int -> 'a -> bool) -> 'a t -> bool
 
 (**************************************************************)
-(* Hack *)
-val sendv : Hsys.send_info -> Hsys.buf Hsys.refcnt Hsys.iovec t -> int
-val sendtov : Hsys.sendto_info -> Hsys.buf Hsys.refcnt Hsys.iovec t -> unit
-val sendtosv : Hsys.sendto_info -> Hsys.buf -> Hsys.buf Hsys.refcnt Hsys.iovec t -> unit
-val sendtovs : Hsys.sendto_info -> Hsys.buf Hsys.refcnt Hsys.iovec t -> Hsys.buf -> unit
+(* This should be used with care, it is unsafe. 
+ * 
+ * It is currently used for a hacky reason in Iovec.ml. 
+ * It saves copying an arrayf to an array.
+*)
+val to_array_break : 'a t -> 'a array
+val of_array_break : 'a array -> 'a t
+
+(* These functions allows converting an 'a array into a 'b Arraye.t 
+ * (and backward) without an intermidiate copy taking place. 
+ * 
+ * This is used in ce_util.ml.
+*)
+val of_array_map : ('a -> 'b) -> 'a array -> 'b t
+val to_array_map : ('a -> 'b) -> 'a t -> 'b array
 (**************************************************************)

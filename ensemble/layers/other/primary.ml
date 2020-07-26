@@ -226,4 +226,4 @@ let l args vf = Layer.hdr init hdlrs None NoOpt args vf
 
 let _ =
   Param.default "primary_quorum" (Param.Int 0) ;
-  Elink.layer_install name l
+  Layer.install name l

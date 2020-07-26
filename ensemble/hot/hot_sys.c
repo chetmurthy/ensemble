@@ -8,7 +8,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
-#ifndef WIN32
+#include <stdlib.h>
+#ifndef _WIN32
 #include <unistd.h>
 #endif
 

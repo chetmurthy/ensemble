@@ -39,11 +39,10 @@ let dump = Layer.layer_dump name (fun (ls,vs) s -> [|
 
 let init _ (ls,vs) =
   let pad = Param.int vs.params "suspect_pad" in
-  let pad = ceil pad in 
 {
   max_idle   = Param.int vs.params "suspect_max_idle" ;
   sweep	     = Param.time vs.params "suspect_sweep" ;
-  pad        = pad ;
+  pad        = Buf.len_of_int pad ;
 
   failed     = ls.falses ;
   send 	     = Array.create ls.nmembers 0 ;
@@ -58,8 +57,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 
   let pad = 
     if s.pad >|| len0 then (
-      let iov = Iovec.create name s.pad in
-      let iov = Iovecl.of_iovec name iov in
+      let iov = Iovec.alloc s.pad in
+      let iov = Iovecl.of_iovec iov in
       iov
     ) else Iovecl.empty
   in
@@ -115,12 +114,13 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	 *)
 	let ev =
 	  if s.pad >|| len0 then (
-	    create name ECastUnrel[Iov (Iovecl.copy name pad)]
+	    create name ECastUnrel[Iov (Iovecl.copy pad)]
 	  ) else (
 	    create name ECastUnrel[]
 	  )
 	in
 	array_incr s.send ls.rank ;
+	log (fun () -> "sending ping");
 	dnlm ev (Ping(s.failed,Arrayf.of_array s.send)) ;
 
 	let suspicions = Array.create ls.nmembers false in
@@ -157,6 +157,6 @@ let _ =
   Param.default "suspect_sweep" (Param.Time (Time.of_int 1)) ;
   Param.default "suspect_max_idle" (Param.Int 15) ;
   Param.default "suspect_pad" (Param.Int 0) ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)

@@ -12,24 +12,35 @@ open Appl_intf open New
 (**************************************************************)
 let name = Trace.file "RAND"
 let failwith = Trace.make_failwith name
+let log = Trace.log name
 (**************************************************************)
 let size = ref 100
 (**************************************************************)
 
 type action = ACast | ASend | ALeave
 
+let string_of_action = function
+    ACast -> "ACast"
+  | ASend -> "ASend"
+  | ALeave -> "ALeave"
+
 let policy nmembers thresh =
   let next = Random.int 10000000 * nmembers in
   let p = Random.int 100 in
   let action =
     if nmembers >= thresh 
-    && p < 10
-    then ALeave
-    else if p < 40
-    then ACast
-    else ASend
-  in (action,(Time.of_ints 0 next))
-(*
+      && p < 10 
+    then 
+      ALeave
+    else 
+      if p < 40
+      then ACast
+      else ASend
+  in 
+  if p < 10 then 
+    log (fun () -> string_of_action action);
+  (action,(Time.of_ints 0 next))
+       (*
 let policy nmembers thresh =
   let next = Random.int 1000000 * nmembers in
   let p = Random.int 100 in
@@ -60,120 +71,67 @@ let dump (ls,vs) s =
 let max_time = ref Time.zero
 
 (**************************************************************)
-(*
-let gen_msg vs = 
-  let s = String.create (Random.int !size) in
-  let d = Digest.string s in
-  (d,s)
-let check _ vs (d,s) =
-  let d' = Digest.string s in
-  if d <> d' then
-    failwith "bad message"
-let ai _ = full
-*)
-
-(*
-let gen_msg vs = 
-  vs
-let check _ vs msg_vs = 
-  if vs <> msg_vs then (
-    eprintf "RAND:my vs=%s\n" (View.string_of_state vs) ;
-    eprintf "RAND:hisvs=%s\n" (View.string_of_state msg_vs) ;
-    failwith "mismatched view id on message"
-  )
-let ai _ = full
-*)
-
-(*
-let digest iovl =
-  let md5 = Hsys.md5_init () in
-  Iovecl.md5_update name md5 iovl ;
-  Hsys.md5_final md5
-let gen_msg vs = 
-  let len = Buf.len_of_int ((Random.int (!size/4)) * 4) in
-  (*eprintf "RAND:len=%d\n" len ;*)
-  let buf = Buf.create len in
-  let iov = Iovecl.alloc name (Iovec.heap name buf) Buf.len0 len in
-  let d = digest iov in
-  (d,iov)
-let check mbuf vs (d,iov) =
-  if d <> digest iov then
-    failwith "bad message"
-let ai mbuf = Elink.get_appl_power_newf name mbuf
-*)
-
-(*
-let gen_msg vs = 
-  Iovecl.empty
-let check _ vs iov = 
-  if Iovecl.len name iov <> len0 then
-    failwith "bad message"
-let ai _ = ident
-*)
-
 
 let digest iovl =
   let md5 = Hsys.md5_init () in
-  Iovecl.md5_update name md5 iovl ;
+  Hsys.md5_update_iovl md5 iovl ;
   Hsys.md5_final md5
-let gen_msg vs = 
-  let name = "RAND:gen_msg" in
-  let len =
+
+let gen_msg () = 
+  let len = 
     if !size > 0 then
-      Random.int (!size/4) * 4
+      Random.int !size
     else
       0
   in
   (*eprintf "RAND:len=%d\n" len ;*)
   let len = Buf.len_of_int len in
-  let iov = Iovec.create name len in
-  let iov = Iovecl.of_iovec name iov in
+  let iov = Iovec.alloc len in
+  let iov = Iovecl.of_iovec iov in
   let d = digest iov in
-  let d = Iovec.of_string name d in
-  let iov = Iovecl.prependi name d iov in
-  iov
-let check mbuf vs iovl =
-  let name = "RAND:checker" in
-  let len = Iovecl.len name iovl in
+  let d = Iovec.of_buf (Buf.of_string d) len0 md5len in
+  let iovl = Iovecl.prependi d iov in
+  iovl
+
+let check iovl =
+  let len = Iovecl.len iovl in
   assert (len >= md5len) ;
-  let d = Iovecl.sub name iovl len0 md5len in
-  let d_iov = Iovecl.flatten name d in
-  let d = Iovec.read name d_iov (fun buf ofs len -> Buf.to_string (Buf.sub name buf ofs len)) in
-  Iovec.free name d_iov ;
-  let iovl = Iovecl.sub_take name iovl md5len (len -|| md5len) in
-  let d' = digest iovl in
-  Iovecl.free name iovl ;
+  let d_iovl = Iovecl.sub iovl len0 md5len in
+  let d_iov = Iovecl.flatten d_iovl in
+  let d = Iovec.buf_of d_iov in
+  Iovec.free d_iov ;
+  Iovecl.free d_iovl ;
+  let iovl = Iovecl.sub iovl md5len (len -|| md5len) in
+  let d' = Buf.of_string (digest iovl) in
+  Iovecl.free iovl ;
   if d <> d' then 
     failwith "bad message"
-let ai _ = ident
 
 (**************************************************************)
 
 let block_msg (ls,vs) =
-  let msg = gen_msg vs in
   if Random.int 2 = 0 then (
-    Cast(msg)
+    Cast(gen_msg ())
   ) else (
     let rec loop () =
       let rank = Random.int ls.nmembers in
       if rank = ls.rank then loop () else
-        Send1(rank,msg)
+        Send1(rank,gen_msg())
     in loop ()
   )
 
 (**************************************************************)
 
 let interface alarm policy thresh on_exit time merge primary_views =
-  let mbuf = Alarm.mbuf alarm in
   let s = {
     max_ltime   = 0 ;
     last_view	= time ;
     next_action = Time.zero
   } in
 
+
   let install ((ls,vs) as vf) =
-    let msg () = gen_msg vs in
-    let check msg = check mbuf vs msg in
+    let msg () = gen_msg () in
 
     let heartbeat time =
       max_time := max time !max_time ;
@@ -183,6 +141,7 @@ let interface alarm policy thresh on_exit time merge primary_views =
       && s.last_view <> Time.invalid
       && time >= Time.add s.last_view (Time.of_int 600) 
       then (
+	printf "RAND: Error, the view lingered more than 600 simulated seconds";
 	dump vf s ;
 	s.last_view <- time ;
 	acts := Control Dump :: !acts
@@ -197,13 +156,14 @@ let interface alarm policy thresh on_exit time merge primary_views =
   (*
 	    eprintf "RAND:%s:casting\n" ls.name ;
   *)
-	    acts := [Cast(msg())] @ !acts
+	    acts := [Cast(msg())] @ !acts;
 	| ASend ->
 	    let dest = Random.int ls.nmembers in
-	    if dest <> ls.rank then
-	      acts := [Send1(dest,(msg()))] @ !acts
+	    if dest <> ls.rank then (
+	      acts := [Send1(dest, msg())] @ !acts;
+	    )
 	| ALeave ->
-	    acts := [Cast(msg());Cast(msg());Cast(msg());Control(Leave)] @ !acts ;
+	    acts := [Cast(msg()); Cast(msg()); Cast(msg()); Control(Leave)] @ !acts ;
 	    if !verbose then (
 	      printf "RAND:%s:Leaving(nmembers=%d)\n" ls.name ls.nmembers
 	    )
@@ -222,6 +182,7 @@ let interface alarm policy thresh on_exit time merge primary_views =
 	) ;
 
 	check msg ; 
+	Iovecl.free msg;
 	[||] 
       in handle
     in
@@ -276,7 +237,7 @@ let interface alarm policy thresh on_exit time merge primary_views =
       if vs.xfer_view then 
 	[|Control XferDone|] 
       else 
-	[|Cast(msg())|]
+	[|Cast (msg ())|]
     in
     actions,handlers
   in
@@ -284,8 +245,7 @@ let interface alarm policy thresh on_exit time merge primary_views =
   let exit () =
     on_exit (succ s.max_ltime)
   in
-
-  (ai mbuf) { 
+  { 
     heartbeat_rate      = Time.of_int 1 ;
     install             = install ;
     exit                = exit 
@@ -297,6 +257,7 @@ let thresh   	= ref 5
 let merge       = ref 0
 let nmembers    = ref 7
 let groupd_local = ref false
+let ngroupds    = ref 3
 
 (**************************************************************)
 
@@ -322,14 +283,15 @@ let run () =
     "-t",	Arg.Int(fun i -> thresh := i),undoc ;
     "-s",	Arg.Int(fun i -> size := i),undoc ;
     "-groupd_local", Arg.Set(groupd_local),undoc ;
-    "-quiet",	Arg.Set(quiet),undoc
+    "-quiet",	Arg.Set(quiet),undoc ;
+    "-ngroupds", Arg.Int (fun i -> ngroupds := i), "number of group-daemons"
   ] (Arge.badarg name) 
   "rand: random failure generation test program" ;
 
   let alarm = Appl.alarm name in
 
   if Arge.get Arge.modes = [Addr.Netsim] then (
-    Appl.install_port (-2) ;
+    Alarm.install_port (-2) ;
   ) ;
 
   let gettime () = 
@@ -352,12 +314,12 @@ let run () =
     ) else (
       (* Start up some number of local groupd daemons.
        *)
-      let ngroupds = 3 in
+      let ngroupds = !ngroupds in
       let groupds = 
 	Arrayf.init ngroupds (fun _ ->
 	  let vf = Appl.default_info "groupd" in
-	  let handle,vf,interface = (Elink.get name Elink.manage_create) alarm vf in
-	  Appl.config interface vf ;
+	  let handle,vf,interface = Manage.groupd_create alarm vf in
+	  Appl.config_new interface vf ;
 	  handle
         )
       in
@@ -367,6 +329,7 @@ let run () =
        *)
       Arge.set groupd true ;
       let rec instance (ls,vs) ltime =
+    	let (ls,vs) = Appl.default_info "rand" in
     	let vs = View.set vs [Vs_ltime ltime] in
 	let ls = View.local name ls.endpt vs in
     	let time = gettime() in
@@ -375,7 +338,8 @@ let run () =
   	let glue = Arge.get Arge.glue in
 	let state = Layer.new_state interface in
     	let member = Stacke.config_full glue alarm Addr.default_ranking state in
-    	groupd (ls,vs) member
+    	let res = groupd (ls,vs) member in
+	res
       in instance
     )
   in
@@ -389,5 +353,36 @@ let run () =
   Appl.main_loop ()
 
 let _ = Appl.exec ["rand"] run
+
+(**************************************************************)
+
+(*
+let _ = 
+  printf "Running Iovecl fragmentation test\n";
+  let size = 20000 in
+  let frag_size = len_of_int 3000 in
+  for i=1 to 1000 do
+    let len = 
+      let len = Random.int size in
+      if len <= 3000 then (len_of_int 1000) +|| frag_size 
+      else 
+	len_of_int len
+    in
+    let iovl = Iovecl.of_iovec (Iovec.alloc len) in
+    let d = digest iovl in
+    let frags = Iovecl.fragment frag_size iovl in
+    let iovl2 = Iovecl.concata frags in
+    let d' = digest iovl in
+    let len = Iovecl.len iovl in
+    let len2 = Iovecl.len iovl2 in
+    printf "len=%d  len2=%d\n" (int_of_len len) (int_of_len len2);
+    if d<>d' || len<>len2 then 
+      failwith "iovecl's don't match";
+    Iovecl.free iovl;
+    Iovecl.free iovl2;
+  done;
+  printf "fragmentation test done\n";
+  ()
+*)
 
 (**************************************************************)

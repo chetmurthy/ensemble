@@ -1,0 +1,319 @@
+Ensemble 1.32
+-------------
+Port to WIN32 and some bug fixes.
+
+1. The system has been ported to use Winsock2 on WIN32 platforms. 
+   Testing was done on an NT4 work-station, so WIN2000 clients should 
+   work as well. 
+   - Performance is not optimal because Winsock2 is somewhat 
+     buggy on NT4. I think it will work much better on more advanced 
+     Microsoft OSes. 
+
+2. A fix for a reference counting bug that occurs when using a mesh 
+   of TCP connections to transport messages between group members. 
+
+3. Many small bug fixes. 
+
+4. CE still does not run on WIN32, I think this is due to 
+    'ocamlc -output-obj' not behaving correctly.
+
+
+Ensemble 1.31
+-------------
+
+This experimental version contains an improved C-interface, 
+whose performance is identical to the native ML
+interface. Zero-copying technology is used whereby
+IO-vectors are passed between C and ML without copying.
+This interface is named CE, short for "native Ensemble C interface".
+CE has nothing to do with the old C interface, HOT.
+An additional chapter was added to the tutorial explaining CE.
+
+In detail:
+1. The underlying routers, socket library, and reference counting 
+   code were completely rewritten.
+
+2. The reference manual and tuturial were updated.
+
+3. Removed 4-byte alignment restriction from the whole (ML/C/C++/Java ...) 
+   system.
+
+4. No longer supported:
+   - Mpi, Atm, and Sp2.
+   - Threaded scheduling. 
+   - The Old ML interface.
+   - Removed support for high-encryption, only RC4 
+     is natively supported. This is to abide by US encryption 
+     restrictions.
+
+5. Small changes and bug fixes:
+   - Fixed two race conditions in maestro (contributed by Mouna Seri)
+   - Fixed the dbm demo.
+   - Outboard now works only with TCP.
+   - Catch EBUF error in HSYS.
+   - Ported Tk to run on the new LablTk API. The life demo runs
+     fine, the wbml does not (yet). 
+   - Pgp now works on WIN32.
+  
+Ensemble 1.20
+-------------
+
+1. A new C-interface, under sub-directory ce. It works under all supported 
+   platforms. 
+ 
+  The README from the CE subdirectory:
+
+    The CE directory defines a C thin C-interface overlaid on 
+    the ML interface. To use the interface one should read the interface file
+    (ce.h) and link with the library --- libce.a on Unix platforms, and 
+    libce.lib on windows platforms. The documentation can be found in the
+    doc subdirectory.
+
+    In the future, CE will form the major C-interface to the system, 
+    where HOT and Maestro are overlaid on top of it.
+
+    The overhead, as measured on Linux, is very low, on the order on 10\%
+    above the cost of direct ML calls. This should be lowered even
+    further in the future. Currently messages are copied between C and ML,
+    we intend to fix this, allowing for zero-copy.
+
+  Caveats: 
+    Due to a bug in the current ocaml distribution, the library is a bit
+    flaky on WIN32 platforms. 
+
+2. Removed 4-byte alignment restriction on io-vectors. 
+
+3. Various small bug fixes, and documentation patches.
+  - Added documentation to the State-Transfer layer (Xfer). 
+  - Stopped supporting the Ethernet mode. 
+  - Cleanup of the makefiles.
+  - Other small changes. 
+
+4. The current distribution was compiled under ocaml-3.01, due to
+   bugs in the Unix library in ocaml-3.02. 
+
+
+Ensemble 1.10
+-------------
+1. The socket library was rewritten so as to be compatible with 
+   the OCaml Unix library. This allows ML programs to freely
+   intermix code and data structures from the Ensemble Socket library
+   with code written for the Unix library. 
+
+2. Final touches for the security code. The diamond rekey protocol, and 
+   the key-tree rekey protocol are complete. All known security holes have
+   been plugged. The system should now be completly secure, please send us
+   any possible attack scenarios. 
+
+3. Port to WIN2000 is complete. In fact, the code works better on WIN2000 
+   than on NT. 
+
+4. Revised all the makefiles. 
+
+5. Various bug fixes:
+   - Thread race conditions in maestro were fixed.
+   - 15 second delays while merging. 
+   - etc.
+
+
+Ensemble 0.70p1
+---------------
+
+This release, 0.70p1, is a special patch release, which fixes
+several problems:
+
+1) Ensemble version 0.70 did not compile with the latest compiler
+   release from Ocaml, ocaml-3.00.  This patch release fixes this
+   problem, and is also backward compatible with the ocaml-2.04
+   compiler.
+
+2) A bug was discovered in the ensemble/util/lset.ml code which
+   broke the "groupd" application.  This has been fixed.
+
+3) The version number for Ensemble 0.70 was inadvertently left
+   as 0.61.  This version contains the version number 0.70p1.
+
+4) A bug in the Maestro "group" application was discovered which
+   caused a segmentation fault when starting two applications as
+   servers (with the "-s" parameter).  This has been fixed.
+
+The rest of the release notes correspond to the release notes for
+the Ensemble 0.70 release.
+
+
+CONTENTS UPDATE
+
+This distribution of Ensemble contains only the Ensemble "core"
+toolkit code.  This includes all the protocols and the HOT C,
+Maestro C++, and EJava interfaces.  The contributed add-on code, 
+such as an ADA interface, rvr_threads, and the Dynamic Virtually
+Private Network code will be available separately by request.
+
+
+INTERFACE CHANGES
+
+In Ensemble version 0.70, some interface changes were made within the 
+Ocaml (ML) code and the "C" code in relation to the HOT "C" interface.
+The changes made may prevent HOT "C", Maestro, and EJava applications 
+linked with pre-version-0.70 libraries from interoperating with version
+0.70 applications.  These changes were necessary in order to allow HOT
+"C" and EJava applications to interoperate.  To use the new versions, 
+just recompile and relink with the new libraries.  Also the Hot "outboard" 
+mode includes the "outboard" executable, which acts as a server for 
+outboard-enable application processes (including all EJava apps).  Be 
+sure to switch to using the 0.70 version of outboard.  
+
+
+OCAML COMPILER VERSION
+
+This distribution of Ensemble can be compiled with EITHER the Ocaml 2.04
+compiler or the Ocaml 3.00 compiler.  See INSTALL.htm for instructions on 
+downloading this version of Ocaml.
+
+
+ADDED FUNCTIONALITY
+
+* Updated security features have been added to this release.  The
+  security protocols are documented in the ensemble/doc/ref.ps file.
+  A distributed version of the WGL protocol was added, the rekey
+  protocol was optimized, some bugs in the PGP code were fixed, the
+  code now allows an interface to PGP versions 2.6.3 or 5.0, and some 
+  new security tests were added.
+
+* Added interoperability between EJava and Hot "C"/Maestro programs.
+  Ejava, by default, sends class HotObjectMessage objects to other 
+  EJava apps, which allows for the serialization of EJava objects.  
+  Hot "C" does not understand HotObjectMessages, so a new interface 
+  was added to EJava, receiveCastByteStream(), and handleCastByteStream(), 
+  which send simple byte streams and allow interoperability with HOT "C"
+  programs.  When mixing EJava and HOT "C"/Maestro applications in a 
+  group, the EJava programs need to use this new interface.
+
+
+BUG FIXES
+
+* A bug related to multi-mode transports was fixed.
+
+* Refcount problem in ensemble/route/signed.ml has been fixed.
+
+* The Time module was updated so that Ensemble continues to work 
+  properly until the year 2300 (it was due to rollover at 2004).
+
+* Modifications were made so that Ensemble can bind to a specific 
+  port (instead of the kernel-assigned port), and to allow dynamic 
+  updates to the gossip hosts (fixed a partition merge problem on 
+  linux).
+
+* Bug in demo/ensemble was fixed, relating to reading long input 
+  lines from stdin.
+
+* Some miscellaneous code cleanup was done and numerous small bugs, 
+  were fixed.
+
+* Added EJava documentation (the API linke in ensemble/ejava/readme.html 
+  now correctly points to ensemble/ejava/docs/ html documentation)
+
+* Much of the documentation was updated.
+
+
+
+Ensemble 0.60
+-------------
+INTERFACE CHANGES
+
+In this version of Ensemble, there have been interface changes within
+the Ocaml (ML) code.  These are changes which have been pending for a
+long time and which fix bugs, improve performance, or streamline the
+architecture.  For this reason, previously written applications in ML
+may no longer compile as is.  The main change is the addition of a
+"flow control" callback.  We apologize for any inconvenience this may
+cause, but the changes were necessary for the evolution of the code
+base.  We hope that the ML interface presented in version 0.60 will
+remain unchanged in future releases.
+
+The Hot "C" and Maestro C++ interfaces have not changed.  To use the
+new versions, just relink with the new libraries.  The Hot "outboard"
+mode includes the "outboard" program, which acts as a server for the
+application processes.  Be sure to switch to using the 0.60 outboard
+with the new libraries, because the 0.50 outboard server will not work 
+with the 0.60 libraries (and vice-versa).
+
+OCAML COMPILER VERSION
+
+This distribution of Ensemble requires the Ocaml 2.01 compiler.
+See INSTALL.htm for instructions on downloading this version of
+Ocaml.
+
+NEW DIRECTORY STRUCTURE
+
+Binary files are now generated in architecture-specific directories
+instead of embedding the architecture in the file names, e.g. 
+
+  obj/i386-linux/util.cmx instead of obj/util-i386-linux.cmx  
+  lib/i386-linux/libhot.a instead of lib/libhot-i386-linux.a  
+
+This was requested by one of our users and presents a cleaner
+structure for multi-platform compilations.
+
+NEW LIBRARY STRUCTURE
+
+Support for bytecode dynamic linking and pared-down libraries now
+completed.  This now allows creation of stripped down Ensemble
+libraries 1/3 or 1/2 the size of the full library.  libens.* has 
+been divided into 3 sub-libraries.  These are:
+
+1) libenscore.* includes all the core modules that are always needed
+   (no layers, no routers, no groupd, no protos).  On bytecode,
+   everything else can be dynamically linked by (a) setting
+   USE_DYNLINK to 'yes' in ensemble/mk/config.mk and setting the
+   ENS_LIB_DIR environment variable to point to the Ensemble
+   ensemble/def/obj/$(PLATFORM) directory.
+
+2) libensmin.* include a minimal set of layers and other stuff.  
+   libenscore.* + libensmin.* is enough to use a basic protocol stack.
+
+3) libensrest.* has everything else.  
+
+There is a macro, ENSLIBS_TYPE, in config.mk that can be used to
+switch between different sets of these.  The default it to use all
+three.
+
+ADDED FUNCTIONALITY
+
+1) Added authorization to the regular stack. This allows a regular
+   stack to control the members that join its group. 
+
+2) Added application-level multicast flow control. Generally, there can
+   be a window of pending multicast messages to be sent. When this
+   window grows too large, the application is notified to stop
+   multicasting. When the window shrinks again (to below the low water
+   mark) the application is notified that it can start multicasting
+   again. 
+
+SECURITY
+
+1) Made the security code optional. In order to add it in, uncomment the 
+   CRYPTO_LINK flag in config.mk. 
+
+2) Added a strong pseudo-random-number-generator. The default generator 
+   is rather weak. 
+
+3) Added an efficient group-rekeying protocol. For more information,
+   see the Cornell technical report repository (author == Rodeh).
+
+BUG FIXES
+
+* Upgrade to Ocaml 2.01.
+
+* Fixed bug in the TCP packetizing code in Hsyssupp.ml.  Previously,
+  it did not support TCP connections that delivered packets that were
+  not 4 byte aligned.
+
+* Fixed bug in hot/pthread_intf.c that causes threads to not work
+  with Linux pthreads.
+
+* Fixed bug in hot_appl.ml which significantly improves performance
+  for "C" and C++ applications.
+
+* Other various performance and protocol fixes.
+

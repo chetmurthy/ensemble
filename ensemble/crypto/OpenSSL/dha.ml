@@ -3,6 +3,7 @@
 (* Interface to the Diffie-Hellman algorithm. ML side *)
 (* Author: Ohad Rodeh, 4/2000 *)
 (**************************************************************)
+open Ensemble
 open Shared
 open DH
 (**************************************************************)

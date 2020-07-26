@@ -21,7 +21,7 @@ let remove_timeout = Time.of_int 20
  *)
 let repeat_timeout = Time.of_string "0.1"
 
-let max_msg_len = Hsys.max_msg_len ()
+let max_msg_len = Buf.int_of_len Buf.max_msg_len
 
 (* This function returns the interface record that defines
  * the callbacks for the application.
@@ -36,7 +36,7 @@ let intf alarm sock =
 
   let install (ls,vs) =
     if not !quiet then
-      eprintf "REFLECT:view:%d:%s\n" ls.nmembers (View.to_string vs.view) ;
+      printf "REFLECT:view:%d:%s\n" ls.nmembers (View.to_string vs.view) ;
     let async = Appl.async (vs.group,ls.endpt) in
     let actions = Queuee.create () in
     let reflect (inet,port) msg =
@@ -61,14 +61,15 @@ let intf alarm sock =
 	  List.iter (fun ((inet,port),(info,time',_)) ->
 	    if Time.ge time (Time.add !time' remove_timeout) then (
 	      if !verbose then
-		eprintf "REFLECT:removing          (%s,%d)\n" 
+		printf "REFLECT:removing          (%s,%d)\n" 
 		  (Hsys.string_of_inet inet) port ;
 	      Hashtbl.remove clients (inet,port)
 	    ) else (
 	      if !verbose then
-		eprintf "REFLECT:send_gossip: to   (%s,%d)\n" 
+		printf "REFLECT:send_gossip: to   (%s,%d)\n" 
 		  (Hsys.string_of_inet inet) port ;
-	      Hsys.sendto info msg 0 (String.length msg)
+	      let buf = Buf.of_string msg in
+	      ignore (Hsys.sendto info buf Buf.len0 (Buf.length buf))
 	    )
 	  ) dests
 	)
@@ -83,18 +84,18 @@ let intf alarm sock =
       let buf = String.create max_msg_len in
       fun () ->
 	if !verbose then 
-	  eprintf "REFLECT:#clients=%d\n" (hashtbl_size clients) ;
+	  printf "REFLECT:#clients=%d\n" (hashtbl_size clients) ;
 	try
           let (len,inet,port) = Hsys.recvfrom sock buf 0 max_msg_len in
 	  if !verbose then (
-	    eprintf "REFLECT:recv_gossip: from (%s,%d)\n" 
+	    printf "REFLECT:recv_gossip: from (%s,%d)\n" 
 	      (Hsys.string_of_inet inet) port ;
 	    ) ;
 	  let msg = String.sub buf 0 len in
 	  reflect (inet,port) msg
 	with e -> 
 	  if !verbose then
-	    eprintf "REFLECT:warning:%s\n" (Hsys.error e)
+	    printf "REFLECT:warning:%s\n" (Util.error e)
     in
     recv_gossip_r := recv_gossip ;
 
@@ -103,7 +104,7 @@ let intf alarm sock =
       |	U,S -> (
 	  fun (from,msg) ->
 	    if !verbose then
-	      eprintf "REFLECT:forwarded:origin=%s gossiper=(%s,%d)\n" 
+	      printf "REFLECT:forwarded:origin=%s gossiper=(%s,%d)\n" 
 	      	(Endpt.string_of_id (Arrayf.get vs.view origin))
 	      	(Hsys.string_of_inet (fst from)) (snd from) ;
 	    reflect from msg ;
@@ -146,7 +147,7 @@ let init alarm (ls,vs) port force =
   let host = Hsys.gethost () in
   let localhost = Hsys.inet_of_string "localhost" in
   if not !quiet then
-    eprintf "REFLECT:server starting on %s\n" (Hsys.string_of_inet host) ;
+    printf "REFLECT:server starting on %s\n" (Hsys.string_of_inet host) ;
 
   let hosts = Arge.check name Arge.gossip_hosts in
   let hosts = Arge.inet_of_string_list Arge.gossip_hosts hosts in
@@ -158,15 +159,15 @@ let init alarm (ls,vs) port force =
   && (not (List.mem localhost hosts)) 
   then (
     if not !quiet then (
-      eprintf "REFLECT:I'm not in the list of gossip hosts, exiting\n" ;
-      eprintf "  (the hosts are %s)\n" 
+      printf "REFLECT:I'm not in the list of gossip hosts, exiting\n" ;
+      printf "  (the hosts are %s)\n" 
         (string_of_list Hsys.string_of_inet hosts) ;
     ) ;
     exit 1
   ) ;
 
   if not !quiet then
-    eprintf "REFLECT:server binding to port %d\n" port ;
+    printf "REFLECT:server binding to port %d\n" port ;
 
   (* Create datagram socket.
    *)
@@ -177,7 +178,7 @@ let init alarm (ls,vs) port force =
   begin try
     Hsys.setsockopt sock (Hsys.Bsdcompat true)
   with e ->
-    log (fun () -> sprintf "warning:setsockopt:Bsdcompat:%s" (Hsys.error e))
+    log (fun () -> sprintf "warning:setsockopt:Bsdcompat:%s" (Util.error e))
   end ;
 
   (* Bind it to the gossip port.
@@ -187,14 +188,14 @@ let init alarm (ls,vs) port force =
       (* Don't bother closing the socket.
        *)
       if not !quiet then (
-	eprintf "REFLECT:error when binding to port\n" ;
-	eprintf "  (this probably means that a gossip server is already running)\n" ;
+	printf "REFLECT:error when binding to port\n" ;
+	printf "  (this probably means that a gossip server is already running)\n" ;
       ) ;
       raise e
   end ;
 
   if not !quiet then
-    eprintf "REFLECT:server ready\n" ;
+    printf "REFLECT:server ready\n" ;
 
   (*
    * Initialize the application interface.
@@ -215,7 +216,4 @@ let init alarm (ls,vs) port force =
 
 (**************************************************************)
 
-let _ =
-  Elink.put Elink.reflect_init init
 
-(**************************************************************)

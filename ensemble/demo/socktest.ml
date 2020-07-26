@@ -3,6 +3,7 @@
 (* Author: Ohad Rodeh 7/2001 *)
 (**************************************************************)
 open Unix
+open Ensemble
 open Socket
 open Printf
 

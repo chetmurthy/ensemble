@@ -6,6 +6,7 @@ open Util
 open View
 open Layer
 open Appl_intf
+open Buf
 (**************************************************************)
 let name = Trace.file "APPL"
 let failwith s = Trace.make_failwith name s
@@ -44,22 +45,17 @@ let alarm debug =
   match !alarm_ref with
   | Some a -> a
   | None -> 
-      let mbuf = Mbuf.create name Mbuf.mbuf_size (Buf.len_of_int (Hsys.max_msg_len())) in
-
       if Arge.get Arge.refcount then (
-	let pool = Mbuf.pool mbuf in
 	if not !quiet then 
       	  eprintf "APPL:warning:using reference counted Iovecs\n" ;
-	Pool.actually_use_counts pool true ;
-	Pool.force_major_gc pool false
       ) ;
 
       let handlers = Route.handlers () in
       let sched = Sched.create name in
       let async = Async.create sched in
       let unique = unique_generator () in
-      let gorp = (unique,sched,async,handlers,mbuf) in
-      let alarm = Elink.alarm_choose (Arge.get Arge.alarm) gorp in
+      let gorp = (unique,sched,async,handlers) in
+      let alarm = Alarm.choose (Arge.get Arge.alarm) gorp in
       alarm_ref := Some alarm ;
       alarm
 
@@ -69,7 +65,7 @@ let addr modes =
   let alarm = alarm name in
   let addr = 
     List.map (fun mode ->
-      let dom = Elink.domain_of_mode alarm mode in
+      let dom = Domain.of_mode alarm mode in
       Domain.addr dom mode
     ) modes
   in 
@@ -146,12 +142,6 @@ let groupd_warning = do_once (fun () ->
     eprintf "APPL:warning:stripping unnecessary properties for '-groupd'\n" ;
 )
 
-let install_port port =
-  log (fun () -> sprintf "setting Unique port to %d" port) ;
-  let alarm = alarm name in
-  let unique = Alarm.unique alarm in
-  Unique.set_port unique port
-
 let default_info name =
   let alarm = alarm name in
 (*
@@ -165,14 +155,14 @@ let default_info name =
 
   let key = match key with
   | None -> Security.NoKey
-  | Some s -> Security.key_of_buf (Buf.pad_string s)
+  | Some s -> Security.key_of_buf (Buf.of_string s)
   in
 
   (* Force linking of the Udp mode.  This causes
    * a port number to be installed in the 
    * Unique generator.
    *)
-  let _ = Elink.domain_of_mode alarm Addr.Udp in
+  let _ = Domain.of_mode alarm Addr.Udp in
 
   let endpt = Endpt.id (Alarm.unique alarm) in
 
@@ -234,7 +224,7 @@ let exec names run =
     | Sys.Break ->
         exit 0
     | exc ->
-      let error_msg = Hsys.error exc in
+      let error_msg = Util.error exc in
       eprintf "ENSEMBLE:uncaught exception:%s\n" error_msg ;
       eprintf "  (Ensemble Version.id is %s)\n" (Version.string_of_id Version.id) ;
       exit 1
@@ -249,9 +239,9 @@ let init_groupd = do_once (fun () ->
   let hosts = Arge.inet_of_string_list Arge.groupd_hosts hosts in
   let balance = Arge.get Arge.groupd_balance in
   let repeat = Arge.get Arge.groupd_repeat in
-  let connect = Elink.get name Elink.hsyssupp_connect in
+  let connect = Hsyssupp.connect in
   let sock = connect "groupd" port hosts balance repeat in
-  (Elink.get name Elink.manage_proxy) alarm sock
+  Manage.groupd_proxy alarm sock
 )
 
 (**************************************************************)
@@ -290,14 +280,14 @@ let socketpair () =
 let init_protos = do_once (fun () ->
   if Arge.get Arge.protos_test then (
     let alarm = alarm name in
-    let client = Elink.get name Elink.protos_client alarm in
+    let client = Protos.client alarm in
     let config s vf =
       let glue = Arge.get Arge.glue in
       let ranking = Arge.get Arge.ranking in
       let s = Layer.new_state s in
       Stacke.config glue alarm ranking s vf
     in
-    let server = Elink.get name Elink.protos_server alarm addr config in
+    let server = Protos.server alarm addr config in
     let client_conn,server_conn = socketpair () in
     server_conn server ;
     client_conn client
@@ -311,20 +301,19 @@ let init_protos = do_once (fun () ->
     let hosts = Arge.inet_of_string_list Arge.groupd_hosts hosts in
     let balance = Arge.get Arge.groupd_balance in
     let repeat = Arge.get Arge.groupd_repeat in
-    let connect = Elink.get name Elink.hsyssupp_connect in
+    let connect = Hsyssupp.connect in
     let sock = connect "protos" port hosts balance repeat in
-    let chan = Elink.get_hsyssupp_client name name alarm sock in
-    let client = Elink.get name Elink.protos_client alarm in
-    let marsh,unmarsh = Elink.get name Elink.protos_make_marsh (Alarm.mbuf alarm) in
+    let chan = Hsyssupp.client name alarm sock in
+    let client = Protos.client alarm in
+    let marsh,unmarsh = Iovecl.make_marsh true in
 
     chan (fun info send ->
-      let send msg =
-	send (marsh msg)
+      let send msg = send Buf.empty len0 len0 (marsh msg)
       in
 
       let recv,disable,state = client info send in
 
-      let recv msg =
+      let recv _ msg =
 	recv (unmarsh msg)
       in
       recv,disable,state
@@ -370,25 +359,12 @@ let config_new_full state ((ls,vs) as vf) =
 let config_new interface vf =
   let interface = 
     if Trace.log_check "APPL_TRACE" then
-      (Elink.get_appl_debug_f name name interface)
+      (Appl_debug.f name interface)
     else
       interface
   in
   let state = Layer.new_state interface in
   config_new_full state vf
-
-let config interface vf =
-  let alarm = alarm name in
-  let mbuf = Alarm.mbuf alarm in
-  let interface = 
-    if Trace.log_check "APPL_TIMED" then 
-      (Elink.get_appl_old_timed name) name interface
-    else
-      interface
-  in
-  let interface = Elink.get name Elink.appl_compat_compat interface in
-  let interface = Elink.get_appl_power_newf name mbuf interface in
-  config_new interface vf
 
 (**************************************************************)
 
@@ -402,11 +378,6 @@ let start_monitor () =
   let next = ref Time.zero in
 
   let do_monitor () =
-    log_refcnt (fun () ->
-      let mbuf = Alarm.mbuf alarm in
-      let pool = Mbuf.pool mbuf in
-      Pool.debug pool
-    ) ;
 
     log_gc (fun () ->
 (*
@@ -416,7 +387,7 @@ let start_monitor () =
     ) ;
 
     log_heap (fun () ->
-      (Elink.get name Elink.heap_analyze) () ;
+      Heap.analyze () ;
       []
     ) ;
 
@@ -457,6 +428,11 @@ let main_loop () =
   let pollcount = max 0 (Arge.get Arge.pollcount) in
   let count = Arge.get Arge.sched_step in
   if count <= 0 then failwith "non-positive scheduler counter" ;
+
+  (* Compact the ML heap if it gets too large. This needs to be
+   * further investigated.
+   *)
+  Arge.gc_compact 300;
   start_monitor () ;
 
   let counter = ref 0 in
@@ -515,7 +491,7 @@ let main_loop_opt () =
     done
   in
   
-  Hsys.catch f ()
+  Util.catch f ()
 
 (**************************************************************)
 open Trans
@@ -537,57 +513,4 @@ let cast_info = {
 } 
 
 (**************************************************************)
-let mpi_info = ref None
-(**************************************************************)
 
-let udp_socket () =
-  (* Open a datagram socket.
-   *)
-  let sock =
-    try Hsys.socket_dgram () with e ->
-      eprintf "APPL:error creating socket:%s, exiting\n" (Hsys.error e) ;
-      exit 1
-  in
-  log (fun () -> sprintf "sock=%d" (Hsys.int_of_socket sock)) ;
-  
-  (* Set the socket to be nonblocking.
-   *)
-  begin try
-    Hsys.setsockopt sock (Hsys.Nonblock true)
-  with e ->
-    log (fun () -> sprintf "warning:setsockopt:Nonblock:%s" (Hsys.error e))
-  end ;
-  
-  (* Try to disable error ICMP error reporting.
-   *)
-  begin try
-    Hsys.setsockopt sock (Hsys.Bsdcompat true)
-  with e ->
-    log (fun () -> sprintf "warning:setsockopt:Bsdcompat:%s" (Hsys.error e))
-  end ;
-
-  let sock_buf = Arge.get Arge.sock_buf in
-
-  (* Try to set the size of the send buffer.
-   *)
-  begin try
-    Hsys.setsockopt sock (Hsys.Sendbuf sock_buf)
-  with e ->
-    log (fun () -> sprintf "warning:setsockopt:Sendbuf(%d):%s" sock_buf (Hsys.error e))
-  end ;
-  
-  (* Try to set the size of the receive buffer.
-   *)
-  begin try
-    Hsys.setsockopt sock (Hsys.Recvbuf sock_buf)
-  with e ->
-    log (fun () -> sprintf "warning:setsockopt:Recvbuf(%d):%s" sock_buf (Hsys.error e))
-  end ;
-
-  (* Children don't get access to it and make it non-blocking.
-   *)
-  (*set_close_on_exec sock ;*)
-  
-  sock
-
-(**************************************************************)

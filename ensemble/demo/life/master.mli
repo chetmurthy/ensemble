@@ -40,7 +40,7 @@ val setExitFunc: (unit->unit)->unit
  and the return value is an application interface.
 *)
 
-val init: Endpt.id -> (unit -> unit) -> Time.t -> Appl_intf.Old.t
+val init: Endpt.id -> (unit -> unit) -> Time.t -> Appl_intf.New.t
 
 (* startMaster starts the computation                        *)
 (*      startMaster xdim ydim board generations              *)

@@ -17,6 +17,7 @@ val enqueue_1arg : t -> debug -> ('a -> unit) ->  'a -> unit
 val enqueue_2arg : t -> debug -> ('a -> 'b -> unit) -> 'a -> 'b -> unit
 val enqueue_3arg : t -> debug -> ('a -> 'b -> 'c -> unit) -> 'a -> 'b -> 'c -> unit
 val enqueue_4arg : t -> debug -> ('a -> 'b -> 'c -> 'd -> unit) -> 'a -> 'b -> 'c -> 'd -> unit
+val enqueue_5arg : t -> debug -> ('a -> 'b -> 'c -> 'd -> 'e -> unit) -> 'a -> 'b -> 'c -> 'd -> 'e -> unit
 
 (* Is it empty?
  *)

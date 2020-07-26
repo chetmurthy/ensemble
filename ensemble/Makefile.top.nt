@@ -1,0 +1,163 @@
+#*************************************************************#
+#
+# MAKEFILE: root Ensemble Makefile
+#
+# Author: Ohad Rodeh  12\2001
+# Based on code by Mark Hayden
+#
+#*************************************************************#
+
+.PHONY: socket tar hot ce maestro
+
+!include mk\config.nmk
+!include mk\preamble.nmk
+!include mk\files.nmk
+
+#*************************************************************#
+# Choose whether to use the optimizing compiler or not.
+#
+!ifdef OPT
+!include mk\ocamlopt.nmk
+!else
+!include mk\ocaml.nmk
+!endif
+
+#*************************************************************#
+ENSROOT = .
+
+INCLUDE =\
+	-I socket -I util -I mm -I type -I infr -I route -I appl\
+	-I trans -I groupd -I layers\trans -I layers\other 
+
+#*************************************************************#
+
+.SUFFIXES: .cmo .cmx .cmi .ml .mli .c .o .obj
+.mli.cmi:
+	ocamlc $(INCLUDE) -c $<
+.ml.cmo:
+	ocamlc $(MLFLAGS) $(INCLUDE) -c $<
+.ml.cmx: 
+	ocamlopt $(MLFLAGS) $(INCLUDE) -c $<
+.c.o:
+	$(CC) -c $(CFLAGS) $< -o $@
+.c.obj:
+	$(CC) -c $(CFLAGS) $< $(OBJRULE)$@
+#*************************************************************#
+
+
+LIBS =\
+	usocket$(CMA)\
+	ssocket$(CMA)\
+	libsock$(ARC)\
+	libenscore$(CMA)\
+	libensmin$(CMA)\
+	libensrest$(CMA)\
+	ensemble$(CMI)\
+	ensemble.mli 
+
+#*************************************************************#
+
+all : $(LIBS) 
+
+
+# Call ourselves with the optimizing compiler switch
+#
+opt : 
+	$(MAKE_BASE) -f Makefile.top.nt OPT=yes all
+
+dirs : 
+	$(MKDIR) bin
+	$(MKDIR) lib
+	$(MKDIR) bin\$(PLATFORM)
+	$(MKDIR) lib\$(PLATFORM)
+
+# Install Ensemble stuff
+install: dirs
+	$(CP) usocket.*    	$(ENSLIB)
+	$(CP) ssocket.*    	$(ENSLIB)
+	$(CP) libsock$(ARC)  	$(ENSLIB)
+	$(CP) socket\s\sockfd.h $(ENSLIB)
+	$(CP) socket\s\e_iovec.h $(ENSLIB)
+	$(CP) socket\s\mm.h	$(ENSLIB)
+	$(CP) libenscore.* 	$(ENSLIB)
+	$(CP) libensmin.* 	$(ENSLIB)
+	$(CP) libensrest.*  	$(ENSLIB)
+	$(CP) ensemble$(CMI)   	$(ENSLIB)
+	$(CP) ensemble.mli     	$(ENSLIB)
+
+# Make and install Tk library
+tk : libhtk$(CMA)
+	$(CP) trans\htk$(CMI) $(ENSLIB)
+	$(CP) trans\htk.mli $(ENSLIB)
+	$(CP) libhtk$(CMA) $(ENSLIB)
+
+#*************************************************************#
+#
+#Special tools
+
+$(EMRG): tools\emrg.ml tools\mkutil.ml
+	ocamlc -c -I tools tools\mkutil.ml tools\emrg.ml 
+	ocamlc -o $(EMRG) tools\mkutil.cmo tools\emrg.cmo
+
+#*************************************************************#
+# Make libraries and global interface files.
+
+libenscore$(CMA): $(ENSCOREOBJ)
+	$(MLLIBR) -o libenscore$(CMA) -linkall $(ENSCOREOBJ)
+
+libensmin$(CMA): $(ENSMINOBJ)
+	$(MLLIBR) -o libensmin$(CMA) -linkall $(ENSMINOBJ)
+
+libensrest$(CMA): $(ENSRESTOBJ)
+	$(MLLIBR) -o libensrest$(CMA) -linkall $(ENSRESTOBJ)
+
+libhtk$(CMA): trans\htk.ml trans\htk.mli
+	$(ENSCOMP) -c -I $(ENSLIB) -I +labltk trans\htk.mli
+	$(ENSCOMP) -c -I $(ENSLIB) -I +labltk trans\htk.ml
+	$(MLLIBR) -o libhtk$(CMA) -linkall trans\htk$(CMO)
+
+#*************************************************************#
+# C libraries
+
+libsock$(ARC): $(SOCKCOBJ)
+	$(MKLIB) $(MKLIBO)libsock$(ARC) $(SOCKCOBJ)
+	$(RANLIB) libsock$(ARC)
+
+
+#*************************************************************#
+# The obj\ensemble.ml* files are generated from exported .mli
+# files
+
+ensemble.mli: socket\socket$(CMI) $(ENSEMBLEMLI) $(EMRG)
+	$(RM) ensemble.mli
+	$(EMRG) -mli $(ENSEMBLEMLI) -o ensemble.mli
+
+ensemble.ml: socket\socket$(CMI) $(ENSEMBLEMLI) $(EMRG)
+	$(RM) ensemble.ml
+	$(EMRG) -ml $(ENSEMBLEMLI) -o ensemble.ml
+
+ensemble$(CMI): ensemble.mli 
+	$(ENSCOMP) ensemble.mli
+
+ensemble$(CMO): ensemble$(CMI) ensemble.ml ensemble.mli 
+	$(ENSCOMP) -c $(INCLUDE) ensemble.ml
+
+#*************************************************************#
+# The socket stuff.
+
+socket\u\socket.mli : socket\socket.mli
+	$(CP) socket\socket.mli socket\u
+
+socket\s\socket.mli : socket\socket.mli
+	$(CP) socket\socket.mli socket\s
+
+usocket$(CMA) : socket\socket$(CMI) socket\u\socket.mli socket\u\socket$(CMI) $(USOCKOBJ) 
+	$(MLLIBR) -o usocket$(CMA) -linkall $(USOCKOBJ)
+
+ssocket$(CMA) : socket\socket$(CMI) socket\s\socket.mli socket\s\socket$(CMI) $(SSOCKOBJ) 
+	$(MLLIBR) -o ssocket$(CMA) -linkall $(SSOCKOBJ)
+
+#*************************************************************#
+!include $(DEPEND)
+#*************************************************************#
+

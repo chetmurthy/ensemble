@@ -37,7 +37,7 @@ open View
 open Event
 open Util
 (**************************************************************)
-let name = Trace.filel "XFER"
+let name = Trace.file "XFER"
 (**************************************************************)
 
 type header = NoHdr
@@ -80,8 +80,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     && ls.am_coord			(* I am coordinator *)
     && (not prev)			(* this entry used to be false *)
     && array_for_all ident s.xfer_done	(* all entries are now true *)
-    then
+    then (
+      log (fun () -> "EPrompt");
       dnnm (create name EPrompt[])	(* start view change *)
+    )
   in
 
   let up_hdlr ev abv hdr = match getType ev,hdr with
@@ -155,6 +157,6 @@ in {up_in=up_hdlr;uplm_in=uplm_hdlr;upnm_in=upnm_hdlr;dn_in=dn_hdlr;dnnm_in=dnnm
 
 let l args vf = Layer.hdr init hdlrs None NoOpt args vf
 
-let _ = Elink.layer_install name l
+let _ = Layer.install name l
 
 (**************************************************************)

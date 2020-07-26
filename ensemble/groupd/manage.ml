@@ -2,6 +2,7 @@
 (* MANAGE.ML *)
 (* Author: Mark Hayden, 11/96 *)
 (* Designed with Roy Friedman *)
+(* Ohad Rodeh 11/2001: Ported to the new interface and marhaling code *)
 (**************************************************************)
 (* BUGS:
 
@@ -19,16 +20,18 @@ open Buf
 (**************************************************************)
 let name = Trace.file "MANAGE"
 let failwith s = failwith (name^":"^s)
+let log = Trace.log name
 (**************************************************************)
 
 let make_marsh_id debug =
-  let marsh,unmarsh = Buf.make_marsh (info name debug) false in
+  let marsh,unmarsh = Buf.make_marsh (info name debug) in
   let marsh o =
     let o = deepcopy o in
     marsh o
   and unmarsh s =
-    unmarsh s len0 (Buf.length s)
+    unmarsh s len0 
   in (marsh,unmarsh)
+
 
 (**************************************************************)
 
@@ -91,6 +94,7 @@ let join s g e ltime send =
     | Proxy s ->
  	Proxy.join s g e ltime send
   in
+  log (fun () -> sprintf "Joining %s" (string_of_endpt e));
   join (Join ltime) ;
   join
 
@@ -109,6 +113,7 @@ let split_view vf =
 
 let config s (ls,vs) stack =
   let log = Trace.log2 name ls.name in
+  log (fun () -> "configuring, a new interface");
   let endpt = ls.endpt in
 
   if Arrayf.length vs.lwe <> ls.nmembers then failwith sanity ;
@@ -246,22 +251,21 @@ let destroy s group =
   Actual.destroy s group
 
 (**************************************************************)
-
-let _ =
-  let create appl vf =
-    let (m,vf,ai) = create appl vf in
-    let m a b = config m a b in
-    (m,vf,ai)
-  in
-
-  let proxy appl s =
-    let m = proxy appl s in
-    let m a b = config m a b in
-    m
-  in
+(* Create and configure
+*)
+let groupd_create appl vf =
+  let (m,vf,ai) = create appl vf in
+  let m a b = config m a b in
+  (m,vf,ai)
+  
+type t2 = 
+    View.full -> 
+    (View.full -> (Event.up -> unit) -> (Event.dn -> unit)) -> 
+      unit
+  
+let groupd_proxy appl s =
+  let m = proxy appl s in
+  let m a b = config m a b in
+  m
     
-  Elink.put Elink.manage_create create ;
-  Elink.put Elink.manage_proxy proxy ;
-  Elink.put Elink.manage_create_proxy_server create_proxy_server
-
 (**************************************************************)

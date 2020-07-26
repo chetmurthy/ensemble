@@ -9,6 +9,6 @@ open Msgs
 (* creates a slave which connects to master "masterendpt" and   *)
 (* with with timer "time"                                     *)
 
-val initSlave: Endpt.id -> Time.t -> Appl_intf.Old.t
+val initSlave: Endpt.id -> Time.t -> Appl_intf.New.t
 
 

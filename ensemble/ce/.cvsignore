@@ -1,0 +1,8 @@
+ce_mtalk ce_rand ce_fifo ce_perf 
+*.cm*
+*.a
+*.o*
+*.lib
+.depend*
+Makefile.nt
+gmon.out

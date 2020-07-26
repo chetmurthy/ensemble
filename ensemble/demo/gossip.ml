@@ -21,12 +21,16 @@ let init appl =
 
   (* Initialize the Gossip stack.
    *)
-  let view_state, interface = (Elink.get name Elink.reflect_init) appl view_state port false in
+  let view_state, interface = Reflect.init appl view_state port false in
   Appl.config_new interface view_state
   (* end of init function *)
 
 
 let run () = 
+(*  let stat = Gc.get () in
+  stat.Gc.verbose <- 3;
+  Gc.set stat;*)
+
   (* Set the default pollcount value to 0.  This makes the
    * application somewhat more efficient.  
    *)
@@ -58,31 +62,33 @@ let run () =
     	Groupd.init alarm ;
 	groupd_started := true ;
       with e ->
-	printf "GOSSIP:error initializing groupd (%s)\n" (Hsys.error e) ;
+	printf "GOSSIP:error initializing groupd (%s)\n" (Util.error e) ;
     ) ;
 
     if !protos then (
       let port = Arge.check name Arge.protos_port in
       try
-	let marsh,unmarsh = Elink.get name Elink.protos_make_marsh (Alarm.mbuf alarm) in
+	let marsh,unmarsh = Protos.make_marsh () in
 	let client_init info send =
 	  let send msg =
-	    send (marsh msg)
+	    let buf, iovl = marsh msg in
+	    send buf Buf.len0 (Buf.length buf) iovl
 	  in
 	  let recv,disable,() =
-	    Elink.get name Elink.protos_server alarm Appl.addr Appl.config_new info send
+	    Protos.server alarm Appl.addr Appl.config_new info send
 	  in
 
-	  let recv msg =
-	    recv (unmarsh msg)
+	  let recv buf iovl =
+	    let msg = unmarsh (buf,iovl) in
+	    recv msg
 	  in
 	  recv,disable,()
 	in
 
-	(Elink.get name Elink.hsyssupp_server) name alarm port client_init ;
+	Hsyssupp.server name alarm port client_init ;
 	protos_started := true ;
       with e ->
-	printf "GOSSIP:error initializing protos (%s)\n" (Hsys.error e) ;
+	printf "GOSSIP:error initializing protos (%s)\n" (Util.error e) ;
     ) ;
 
     begin
@@ -90,7 +96,7 @@ let run () =
     	init alarm ;
 	gossip_started := true ;
       with e ->
-	printf "GOSSIP:error initializing gossip (%s)\n" (Hsys.error e) ;
+	printf "GOSSIP:error initializing gossip (%s)\n" (Util.error e) ;
     end ;
 
     begin

@@ -21,23 +21,40 @@ void *ce_malloc(int size){
   return ptr;
 }
 
-void
-ce_view_id_free(ce_view_id_t *id){
-  free(id->endpt);
-  free(id);
+#define ce_free(x) if (x != NULL) free(x)
+
+char*
+ce_copy_string(char *str){
+  char *buf;
+  int len;
+
+  TRACE("ce_copy_string(");
+  len = strlen(str);
+  buf = malloc(len+1);
+  TRACE(".");
+  memcpy(buf,str,len);
+  buf[len] = '\0';
+  TRACE(")");
+  return buf;
 }
 
-/* Free a null terminated string array.
+void
+ce_view_id_free(ce_view_id_t *id){
+  ce_free(id->endpt);
+  ce_free(id);
+}
+
+/* Ce_Free a null terminated string array.
  */
 void
 ce_string_array_free(char **sa){
   int i=0;
   
   while (sa[i] != NULL) {
-    free(sa[i]);
+    ce_free(sa[i]);
     i++;
   }
-  free(sa);
+  ce_free(sa);
 }
 
 /* Free a null terminated view_id array.
@@ -50,7 +67,7 @@ ce_view_id_array_free(ce_view_id_array_t va){
     ce_view_id_free(va[i]);
     i++;
   }
-  free(va);
+  ce_free(va);
 }
 
 
@@ -59,35 +76,45 @@ void ce_view_full_free(ce_local_state_t *ls, ce_view_state_t* vs) {
     return;
 
   TRACE("ce_view_full_free(");
-  free(vs->version);
-  free(vs->group);
-  free(vs->proto);
-  free(vs->key);
+  ce_free(vs->version);
+  ce_free(vs->group);
+  ce_free(vs->proto);
+  ce_free(vs->key);
   ce_view_id_array_free(vs->prev_ids);
-  free(vs->params);
+  ce_free(vs->params);
   ce_string_array_free(vs->view);
   ce_string_array_free(vs->address);
-  free(vs);
+  ce_free(vs);
   TRACE(".");
 
-  free(ls->endpt);
-  free(ls->addr);
-  free(ls->name);
+  ce_free(ls->endpt);
+  ce_free(ls->addr);
+  ce_free(ls->name);
   ce_view_id_free(ls->view_id);
-  free(ls);
+  ce_free(ls);
   TRACE(")");
 }
 
 void ce_jops_free(ce_jops_t* jops) {
-  free(jops->transports);
-  free(jops->protocol);
-  free(jops->group_name);
-  free(jops->properties);
-  free(jops->params);
-  free(jops->endpt);
-  free(jops->princ);
-  free(jops->key);
-  free(jops);
+  TRACE("ce_jops_free(");
+  ce_free(jops->transports);
+  TRACE(".");
+  ce_free(jops->protocol);
+  TRACE(".");
+  ce_free(jops->group_name);
+  TRACE(".");
+  ce_free(jops->properties);
+  TRACE(".");
+  ce_free(jops->params);
+  TRACE(".");
+  ce_free(jops->endpt);
+  TRACE(".");
+  ce_free(jops->princ);
+  TRACE(".");
+  ce_free(jops->key);
+  TRACE(".");
+  ce_free(jops);
+  TRACE(")");
 }
 
 ce_appl_intf_t*
@@ -120,7 +147,7 @@ void
 ce_intf_free(ce_appl_intf_t* intf){
   ce_queue_clear(intf->aq);
   ce_queue_free(intf->aq);
-  free(intf);
+  ce_free(intf);
 }
 
 char**

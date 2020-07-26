@@ -13,6 +13,7 @@ open Buf
 let name = Trace.file "PERF"
 let failwith s = Trace.make_failwith name s
 let log = Trace.log name
+let log_iov = Trace.log (name^":IOV")
 (**************************************************************)
 external (=|) : int -> int -> bool = "%eq"
 external (<>|) : int -> int -> bool = "%noteq"
@@ -21,9 +22,40 @@ external (<=|) : int -> int -> bool = "%leint"
 external (>|) : int -> int -> bool = "%gtint"
 external (<|) : int -> int -> bool = "%ltint"
 (**************************************************************)
+(* Should we add an md5 hash to messages? 
+*)
+let md5 = ref false 
+(**************************************************************)
 
-let timestamp_add a = Elink.get name Elink.timestamp_add a
-let timestamp_print () = Elink.get name Elink.timestamp_print ()
+let digest iovl =
+  let md5 = Hsys.md5_init () in
+  Hsys.md5_update_iovl md5 iovl ;
+  Hsys.md5_final md5
+
+let gen_msg len  = 
+  printf "generating message\n";
+  (*eprintf "RAND:len=%d\n" len ;*)
+  let iov = Iovec.alloc len in
+  let iov = Iovecl.of_iovec iov in
+  let d = digest iov in
+  let d = Iovec.of_buf (Buf.of_string d) len0 md5len in
+  let iovl = Iovecl.prependi d iov in
+  iovl
+
+let check iovl =
+  let len = Iovecl.len iovl in
+  assert (len >= md5len) ;
+  let d_iovl = Iovecl.sub iovl len0 md5len in
+  let d_iov = Iovecl.flatten d_iovl in
+  let d = Iovec.buf_of d_iov in
+  Iovec.free d_iov ;
+  Iovecl.free d_iovl ;
+  let iovl = Iovecl.sub iovl md5len (len -|| md5len) in
+  let d' = Buf.of_string (digest iovl) in
+  Iovecl.free iovl ;
+  if d <> d' then 
+    failwith "bad message"
+
 
 (**************************************************************)
 
@@ -66,7 +98,7 @@ let meter name often max callb =
       |	None -> ()
       |	Some max ->
 	  if !cntr >= max then (
-	    timestamp_print () ;
+	    Timestamp.print () ;
 	    exit 0
 	  )
     ) ;
@@ -85,13 +117,15 @@ let meter name often max callb =
 let timestamp () =
   let n = 10000 in
   let s = Time.gettimeofday () in
-  let add_recv = timestamp_add "UDP:recv" in
-  let add_xmit = timestamp_add "UDP:xmit" in
+  let s_recv = Timestamp.register "UDP:recv" in
+  let add_recv () = Timestamp.add s_recv in
+  let s_xmit = Timestamp.register "UDP:xmit" in
+  let add_xmit () = Timestamp.add s_xmit in
   for i = 1 to n do
     add_recv () ;
     add_xmit ()
   done ;
-  timestamp_print () ;
+  Timestamp.print () ;
 (*
   let e = Time.gettimeofday () in
   let t = Time.sub e s in
@@ -113,9 +147,11 @@ type test = {
 type testrun = View.full -> test option
 
 let fast_iov len =(* Hack! *)
-  let len = Buf.ceil len in
-  let msg = Iovec.create name len in
-  Iovecl.of_iovec name msg
+  if !md5 then 
+    gen_msg len
+  else
+    let msg = Iovec.alloc len in
+    Iovecl.of_iovec msg
 
 (**************************************************************)
 (**************************************************************)
@@ -149,11 +185,7 @@ let rt size nrounds (ls,vs) =
   let print_result () =
     let end_t = Time.to_float (Time.gettimeofday ()) in
     let time = end_t -. start_t in
-    timestamp_print () ;
-(*
-    Arge.stats () ;
-    Profile.end () ;
-*)
+    Timestamp.print () ;
     printf "real-time: %.6f\n"time ;
     printf "latency/round: %.6f\n"      (time /. (float nrounds)) ;
     printf "msgs/sec: %.3f\n"((float nrounds) /. time)
@@ -167,11 +199,11 @@ let rt size nrounds (ls,vs) =
       	if !round >=| nrounds then (
 	  async () ;
 	  if ls.rank =| 1 then ( 
-	    Iovecl.ref name msgi ;
+	    ignore (Iovecl.copy msgi) ;
 	    msg
 	  ) else [||]
 	) else (
-	  Iovecl.ref name msgi ;
+	  ignore (Iovecl.copy msgi) ;
 	  msg
 	)
       )
@@ -185,7 +217,7 @@ let rt size nrounds (ls,vs) =
     ) else [||]
   and start = 
     if ls.rank =| 0 then (
-      Iovecl.ref name msgi ;
+      ignore (Iovecl.copy msgi) ;
       msg 
     ) else [||]
   in 
@@ -206,18 +238,25 @@ let latency size nrounds (ls,vs) =
 
   let src = (pred ls.rank + ls.nmembers) mod ls.nmembers in
   let msg = fast_iov size in
-  let msg_ref () = Iovecl.ref name msg in
+  let msg_ref () = ignore (Iovecl.copy msg) in
   let msg = [|Cast msg|] in
   
   let print_result () =
     let end_t = Time.to_float (Time.gettimeofday ()) in
     let time = end_t -. start_t in
-    timestamp_print () ;
+    Timestamp.print () ;
     printf "real-time: %.6f\n"time ;
     printf "latency/round: %.6f\n" (time /. (float nrounds))
   in
 
   let cast origin _ =
+    if Random.int 100 = 0 then
+      log_iov (fun () ->
+	let num,lens = Iovec.debug () in
+	sprintf "refcounts = %d,%d\n   GC=%s" num lens 
+	  (Util.string_of_list ident
+	    (Util.string_list_of_gc_stat (Gc.stat ())))
+      );
     incr round ;
     if origin =| src then (
       if !round >=| nrounds then (
@@ -263,7 +302,7 @@ let ring nmsgs size nrounds (ls,vs) =
   let msgs = Array.create nmsgs (Cast msg) in
   let msg_ref () =
     for i = 1 to nmsgs do
-      Iovecl.ref name msg
+      ignore (Iovecl.copy msg)
     done
   in
   msg_ref () ;
@@ -281,13 +320,13 @@ let ring nmsgs size nrounds (ls,vs) =
     let time = !end_t -. start_t in
     let total_msgs = nrounds * nmsgs * ls.nmembers in
     (*Profile.end () ;*)
-    (*timestamp_print () ;*)
+    (*Timestamp.print () ;*)
 
     let latency = time /. (float nrounds) in
     let msgs_sec = (float total_msgs) /. time in
     let msgs_mbr_sec = (float total_msgs) /. time /. (float ls.nmembers) in
     if not !quiet then (
-      timestamp_print () ;
+      Timestamp.print () ;
       printf "latency/round: %.6f\n"    latency ;
       printf "msgs/sec: %.3f\n"msgs_sec ;
       printf "msgs/mbr/sec: %.3f\n"     msgs_mbr_sec ;
@@ -377,7 +416,7 @@ let chain nrounds size nchains (ls,vs) =
     end_t := Time.to_float (Time.gettimeofday ()) ;
     let time = !end_t -. start_t in
     let latency = time /. (float nrounds) in
-    timestamp_print () ;
+    Timestamp.print () ;
     if not !quiet then (
       printf "real-time: %.6f\n"time ;
       printf "latency/round: %.6f\n"    latency
@@ -431,7 +470,9 @@ let chain nrounds size nchains (ls,vs) =
 (**************************************************************)
 
 let one_to_n size rate terminate_time (ls,vs) =
-  let iov = fast_iov size in
+  let iov = 
+    fast_iov size
+  in
   let msg = Cast iov in
   let next = ref (Time.gettimeofday ()) in
 	let stop = Time.add !next terminate_time in
@@ -439,11 +480,10 @@ let one_to_n size rate terminate_time (ls,vs) =
 	let fcount = ref 0 in
   let start =
     if ls.am_coord then (
-      Iovecl.ref name iov ;
+      ignore (Iovecl.copy iov) ;
       [|msg|]
     ) else [||]
-  and cast _ = fun iov ->
-    Iovecl.free name iov ;
+  and cast _ iovl = 
     ctr () ;
     [||]
   and send _ = null
@@ -464,7 +504,7 @@ let one_to_n size rate terminate_time (ls,vs) =
       	  let msgs = ref [] in
       	  while time >= !next do
     	    ctr () ;
-	    Iovecl.ref name iov ;
+	    ignore (Iovecl.copy iov) ;
 	    msgs := msg :: !msgs ;
 	    next := Time.add !next rate ;
       	  done ;
@@ -498,11 +538,10 @@ let m_to_n size rate sender terminate_time (ls,vs) =
   let ctr,_ = meter name 100 None callback in
   let start =
     if sender then (
-      Iovecl.ref name iov ;
+      ignore (Iovecl.copy iov) ;
       [|msg|]
     ) else [||]
-  and cast origin = fun iov ->
-    Iovecl.free name iov ;
+  and cast origin _ = 
     ctr () ; 
     [||]
   and send _ = null
@@ -514,7 +553,7 @@ let m_to_n size rate sender terminate_time (ls,vs) =
       let msgs = ref [] in
       while time >= !next do
 	ctr () ;
-	Iovecl.ref name iov ;
+	ignore (Iovecl.copy iov) ;
 	msgs := msg :: !msgs ;
 	next := Time.add !next rate ;
       done ;
@@ -532,7 +571,7 @@ let m_to_n size rate sender terminate_time (ls,vs) =
 
 let rpc size rounds (ls,vs) =
   let msg = fast_iov size in
-  let msg_ref () = Iovecl.ref name msg in
+  let msg_ref () = ignore (Iovecl.copy msg) in
   let request = [|Cast(msg)|] in
   let reply = [|Send1(0,msg)|] in
   let count = ref 0 in
@@ -623,8 +662,7 @@ let pt2ptfc size rate terminate_time (ls,vs) =
   let sending = ref false in
   let start = [||]
   and cast _ = null
-  and send origin = fun iov -> 
-    Iovecl.free name iov ;
+  and send origin _ = 
     (* ctr () ;*) 
     messages.(origin) <- succ messages.(origin) ;
     [||]
@@ -635,13 +673,13 @@ let pt2ptfc size rate terminate_time (ls,vs) =
       if ls.rank = 0 then (
 	let dt = Time.to_float (Time.sub stop_t start_t) in
 	for i = 1 to pred ls.nmembers do
-	  let bytes = messages.(i) * size in
+	  let bytes = messages.(i) * (int_of_len size) in
 	  printf "from %d : %d msgs, bandwidth %.3f B/s, throughput %.3f msgs/s\n" 
 	    i  messages.(i) (float_of_int bytes /. dt) (float_of_int messages.(i) /. dt)
 	done ;
 	let sum = ref 0 in
 	Array.iter (fun v -> sum := !sum + v) messages ;
-	let bytes = !sum * size in
+	let bytes = !sum * (int_of_len size) in
 	printf "total  : %d msgs, bandwidth %.3f B/s, throughput %.3f msgs/s\n"
 	  !sum (float_of_int bytes /. dt) (float_of_int !sum /. dt);
 	printf "real-time: %.6f sec\n" dt
@@ -658,7 +696,7 @@ let pt2ptfc size rate terminate_time (ls,vs) =
 	  ) ;
     	  (* ctr () ;*)
 	  if (snd fub).(0) && (not var_test || !sending) then (
-	    Iovecl.ref name iov ;
+	    ignore (Iovecl.copy iov) ;
 	    msgs := msg :: !msgs 
 	  ) ;
 	  next := Time.add !next rate ;
@@ -702,7 +740,7 @@ let once f =
   let ran = ref false in
   fun vs ->
     if !ran then (
-      timestamp_print () ;
+      Timestamp.print () ;
       exit 0
     ) ;
     let i = f vs in
@@ -745,15 +783,18 @@ let interface rate test =
 	    | None -> flow_unblocked := not b; 
 		log (fun () -> sprintf "flow_unblocked=%b" !flow_unblocked) ;
 		()
-	and receive origin block cs =
+	and receive origin block cs msg =
+	  if !md5 then check msg;
+	  Iovecl.free msg;
 	  match block,cs with
-	  | U,C -> cb.cast origin
-	  | U,S -> cb.send origin
-	  | _ -> null
+	  | U,C -> cb.cast origin msg
+	  | U,S -> cb.send origin msg
+	  | _ -> null msg
 	and heartbeat time =
 	  if !unblocked then
 	    cb.hbt time (!flow_unblocked,flow_unblocked_arr)
-	  else [||]
+	  else
+	    [||]
 	and block () = 
 	  unblocked := false ;
 	  [||] 
@@ -869,13 +910,13 @@ let use_locator file am_server =
   if am_server then (
     let vf = Appl.default_info "locator:gossip" in
     let port = Arge.check name Arge.gossip_port in
-    let vf, interface = (Elink.get name Elink.reflect_init) alarm vf port true in
+    let vf, interface = Reflect.init alarm vf port true in
     Appl.config_new interface vf ;
 
     let vf = Appl.default_info "locator:groupd" in
     let port = Arge.check name Arge.groupd_port in
-    let vf, intf = (Elink.get name Elink.manage_create_proxy_server) alarm port vf in
-    Appl.config intf vf ;
+    let vf, intf = Manage.create_proxy_server alarm port vf in
+    Appl.config_new intf vf ;
   ) ;
 
   (* Sleep for 5 seconds for everyone who wants to 
@@ -904,15 +945,6 @@ let locator     = ref None
 let locator_server = ref false
 let proto_id    = ref None
 let terminate_time = ref (Time.of_float 20.0)
-let mpi_fixed_view = ref false
-
-let grow n =
-  let alarm = Appl.alarm name in
-  let mbuf = Alarm.mbuf alarm in
-  let pool = Mbuf.pool mbuf in
-  Pool.grow pool n ;
-  ignore (String.create 2000000) ;
-  Gc.full_major ()
 
 let run () =
   let undoc = "undocumented" in
@@ -922,7 +954,6 @@ let run () =
     "-r",Arg.Int(fun i -> nrounds := i), ": # of rounds" ;
     "-c",Arg.Int(fun i -> nchains := i),undoc ;
     "-k", Arg.Int(fun i -> msgs_per_round := i),undoc ;
-    "-grow", Arg.Int(grow),undoc;
     "-often", Arg.Int(fun i -> often := i), undoc ;
     "-local",   Arg.Int(fun i -> nlocal := i), ": # of local members" ;
     "-rate",    Arg.Float(fun i -> rate_r := Time.of_float i),undoc ;
@@ -931,13 +962,13 @@ let run () =
     "-nowait",  Arg.Clear(wait_r),undoc ;
     "-ngroups", Arg.Int(fun i-> ngroups :=i),"";
     "-prog",    Arg.String(fun s -> prog := s), undoc ;
-    "-mpi_fixed_view",  Arg.Set mpi_fixed_view, " : use MPI rank and nmember info";
     "-sender",  Arg.Set sender, " : set this process as a sender";
     "-mlocal",  Arg.Set mlocal, " : use local manager" ;
     "-once",    Arg.Set once_r, " : only run test once" ;
     "-locator", Arg.String(fun s -> locator := Some s), " : use locator (for SP2)" ;
     "-locator_server", Arg.Set locator_server, " : act as locator server (for SP2)" ;
     "-protocol",Arg.String(fun s -> proto_id := Some s), " : set protocol" ;
+    "-md5", Arg.Set(md5), "Add an MD5 hash to messages"; 
     "-terminate_time", Arg.Float(fun f -> terminate_time := Time.of_float f), undoc  ] 
     (Arge.badarg name) "perf: Ensemble performance testing" ;
 
@@ -962,10 +993,7 @@ let run () =
   let ready () =
     for i = 1 to !nlocal do
       let (ls,vs) =
-	if !mpi_fixed_view then 
-	  (some_of "perf:mpi_info" !Appl.mpi_info)
-	else
- 	  Appl.default_info "perf" 
+ 	Appl.default_info "perf" 
       in
       let vs =
 	match !proto_id with
@@ -973,23 +1001,24 @@ let run () =
 	| Some proto -> View.set vs [Vs_proto_id (Proto.id_of_string proto)] 
       in
 
+      let size = len_of_int !size in
       let prog = match !prog with
       |	"timestamp" -> timestamp ()
-      | "ring"  -> ring !msgs_per_round !size !nrounds
-      | "rt"    -> rt !size !nrounds
-      | "chain" -> chain !nrounds !size !nchains
-      | "latency" -> latency !size !nrounds
+      | "ring"  -> ring !msgs_per_round size !nrounds
+      | "rt"    -> rt size !nrounds
+      | "chain" -> chain !nrounds size !nchains
+      | "latency" -> latency size !nrounds
       | "rpc"   -> 
 	  once_r := true ;
-	  rpc !size !nrounds 
+	  rpc size !nrounds 
       | "switch" -> 
 	  switch ()
       | "1-n" -> 
 	  heartbeat_rate := !rate_r ;
-	  one_to_n !size !rate_r !terminate_time
+	  one_to_n size !rate_r !terminate_time
       | "m-n"   -> 
 	  heartbeat_rate := !rate_r ;
-	  m_to_n !size !rate_r !sender !terminate_time
+	  m_to_n size !rate_r !sender !terminate_time
 (*
       | "empty" ->
 	  let start_t = Hsys.gettimeofday () in
@@ -1048,7 +1077,7 @@ let run () =
 *)
 	| "pt2ptfc"  -> 
 	    heartbeat_rate := !rate_r ;
-	    pt2ptfc !size !rate_r !terminate_time
+	    pt2ptfc size !rate_r !terminate_time
 
 	|  _ -> failwith "unknown performance test"
       in

@@ -160,6 +160,6 @@ in {up_in=up_hdlr;uplm_in=uplm_hdlr;upnm_in=upnm_hdlr;dn_in=dn_hdlr;dnnm_in=dnnm
 
 let l args vs = Layer.hdr init hdlrs None NoOpt args vs
 
-let _ = Elink.layer_install name l
+let _ = Layer.install name l
 
 (**************************************************************)

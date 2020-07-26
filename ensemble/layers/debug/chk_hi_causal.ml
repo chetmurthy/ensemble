@@ -76,7 +76,6 @@ let dump s vs  =
 
 let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out=dnnm} =
   let failwith = layer_fail dump vf s name in
-  let assert = make_assert failwith in
   let log = Trace.log name ls.name in
 
   let check_acks ack_vct = 

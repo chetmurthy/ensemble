@@ -1,37 +1,36 @@
 (**************************************************************)
 (* PROTOS.MLI *)
 (* Authors: Mark Hayden, Alexey Vaysburd 11/96 *)
+(* Cleanup by Ohad Rodeh 11/2001, removed direct dynamic linking *)
+(* support. Hopefully Caml will support it natively.*)
 (**************************************************************)
 open Trans
-open Appl_intf
-open Appl_intf.Protosi
+open Appl_intf open New
 (**************************************************************)
 
-(* NOTE: these types are defined in Appl_intf.Protosi
- * (for the Elink module).
- *)
-(*
 type id = int
-
-type endpt = string
-
-type dncall = (Iovecl.t,Iovecl.t) Appl_intf.action
-
-type upcall = 
+type 'a dncall_gen = ('a,'a) action
+    
+type 'a upcall_gen = 
   | UInstall of View.full
-  | UReceive of origin * blocked * cast_or_send * Iovecl.t
+  | UReceive of origin * cast_or_send * 'a
   | UHeartbeat of Time.t
   | UBlock
   | UExit
-
-type message =
+      
+type endpt = string
+    
+type 'a message_gen =
   | Create of id * View.state * Time.t * (Addr.id list)
-  | Upcall of id * upcall
-  | Dncall of id * ltime * dncall
-  | SendEndpt of id * ltime * endpt * Iovecl.t
+  | Upcall of id * 'a upcall_gen
+  | Dncall of id * ltime * 'a dncall_gen
+  | SendEndpt of id * ltime * endpt * 'a
   | SuspectEndpts of id * ltime * endpt list
-*)
-
+      
+type message = Iovecl.t message_gen
+type dncall = Iovecl.t dncall_gen
+type upcall = Iovecl.t upcall_gen
+    
 val string_of_message : 'a message_gen -> string
 
 val string_of_dncall : 'a dncall_gen -> string
@@ -47,11 +46,12 @@ type config = View.full -> Layer.state -> unit
 (**************************************************************)
 
 (* Generate a message marshaller.
- *)
+ * marshal a message into an ML buffer, and an iovecl.
+  *)
 val make_marsh :
-  Mbuf.t -> 
-    (message -> Iovecl.t) *
-    (Iovecl.t -> message)
+  unit -> 
+    (message -> Buf.t * Iovecl.t) *
+    (Buf.t * Iovecl.t -> message)
 
 (* Handle a new client connection.
  *)

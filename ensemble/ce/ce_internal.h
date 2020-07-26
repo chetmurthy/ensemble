@@ -15,7 +15,11 @@
 #include "caml/config.h"
 #include <string.h>  // UNIX
 
+#include <assert.h>
+
 #include "ce.h"
+#include "mm.h"
+#include "sockfd.h"
 #include "ce_actions.h"
 #include "ce_convert.h"
 
@@ -68,5 +72,9 @@ void ce_intf_free(ce_appl_intf_t*);
 char **
 ce_process_args(int argc, char **argv); 
 
+
+/* For debugging
+ */
+//#define free(x)  printf("%s:freeing(", NAME); fflush(stdout); free(x); printf(")\n"); fflush(stdout);
 
 #endif /*__CE_INTERNAL_H__*/

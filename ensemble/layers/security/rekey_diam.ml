@@ -131,8 +131,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let log2 = Trace.log2 (name^"2") (sprintf "%d" ls.rank) in
   let log3 = Trace.log2 (name^"3") (sprintf "%d" ls.rank) in
   let logm = Trace.log2 (name^"M") "" in
-  let dummy = (Buf.of_string name "0123456701234567") in
-  let alarm = Elink.alarm_get_hack () in
+  let dummy = (Buf.of_string "0123456701234567") in
+  let alarm = Alarm.get_hack () in
 
   let subleader (t : D.t) : int = 
     let l = D.members_of_t t in 
@@ -461,7 +461,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
      
 let l args vf = Layer.hdr init hdlrs None NoOpt args vf
 		  
-let _ = Elink.layer_install name l
+let _ = Layer.install name l
 
 (**************************************************************)
 

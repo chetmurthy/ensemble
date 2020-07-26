@@ -2,6 +2,7 @@
 /* CE_INBOARD_C.C */
 /* Author:  Ohad Rodeh, Aug. 2001. */
 /* Based on code by: Alexey Vaysburd, and Mark Hayden.  */
+/* This provides the raw IOV interface*/
 /****************************************************************************/
 #include "ce_internal.h"
 #include "ce_trace.h"
@@ -105,6 +106,23 @@ ce_Block_cbd(value c_appl_v) {
   return(ce_actions_of_queue(intf->aq));
 }
 
+/*
+value
+ce_Disable_cbd(value c_appl_v) {
+  ce_appl_intf_t *intf = C_appl_val(c_appl_v);
+
+  TRACE("ce_Disblae_cbd"); 
+  intf->req_heartbeat = 1;
+  (intf->disable) (intf->env);
+  intf->req_heartbeat = 0;
+
+  return Val_unit;
+}
+*/
+
+/* We do not return a list of actions, because polling
+ * is done on the ML side right after this callback.
+ */
 value
 ce_Heartbeat_cbd(value c_appl_v, value time_v) {
   ce_appl_intf_t *intf = C_appl_val(c_appl_v);
@@ -115,39 +133,45 @@ ce_Heartbeat_cbd(value c_appl_v, value time_v) {
   (intf->heartbeat) (intf->env, time);
   intf->req_heartbeat = 0;
 
-  return(ce_actions_of_queue(intf->aq));
+  return Val_unit;
 }
 
 value
-ce_ReceiveCast_cbd(value c_appl_v, value origin_v, value buf_v, value ofs_v, value len_v){
+ce_ReceiveCast_cbd(value c_appl_v, value origin_v, value iovl_v){
   ce_appl_intf_t *intf = C_appl_val(c_appl_v);
   ce_bool_t origin = Int_val(origin_v);
-  char *buf = String_val(buf_v);
-  int ofs = Int_val(ofs_v);
-  int len = Int_val(len_v);
+  ce_iovec_array_t iovl = Iovl_val(iovl_v);
+  int num = Wosize_val(iovl_v);
   
   TRACE("ce_ReceiveCast_cbd"); 
   /* The application does not own the msg.
    */
   intf->req_heartbeat = 1;
-  (intf->receive_cast) (intf->env, origin, len, (char*)(buf + ofs));  
+  (intf->receive_cast) (intf->env, origin, num, iovl);
   intf->req_heartbeat = 0;
+
+  /* No need to free the iovl, it is static.
+   */
+  //free(iovl);
 
   return (ce_actions_of_queue(intf->aq));
 }
 
 value
-ce_ReceiveSend_cbd(value c_appl_v, value origin_v, value buf_v, value ofs_v, value len_v){
+ce_ReceiveSend_cbd(value c_appl_v, value origin_v, value iovl_v){
   ce_appl_intf_t *intf = C_appl_val(c_appl_v);
   ce_bool_t origin = Int_val(origin_v);
-  char *buf = String_val(buf_v);
-  int ofs = Int_val(ofs_v);
-  int len = Int_val(len_v);
+  ce_iovec_array_t iovl = Iovl_val(iovl_v);
+  int num = Wosize_val(iovl_v);
 
   TRACE("ce_ReceiveSend_cbd"); 
   intf->req_heartbeat = 1;
-  (intf->receive_send) (intf->env, origin, len, (char*)(buf + ofs));  
+  (intf->receive_send) (intf->env, origin, num, iovl);  
   intf->req_heartbeat = 0;
+
+  /* No need to free the iovl, it is static.
+   */
+  //free(iovl);
 
   return (ce_actions_of_queue(intf->aq));
 }
@@ -197,87 +221,97 @@ ce_MLHandleException(value msg_v) {
 
 /* Request an asynchrous call if this hasn't been done already. 
  */
-#define check_heartbeat(c_appl){ \
-  if (!(c_appl -> req_heartbeat)) { \
+#define check_heartbeat(c_appl){\
+  if (!(c_appl -> req_heartbeat)){ \
     c_appl->req_heartbeat = 1; \
     ce_Async(c_appl); \
   } \
 }
 
-void ce_Cast(
+void
+ce_Cast(
 	ce_appl_intf_t *c_appl,
-	ce_len_t len,
-	ce_data_t data
+	ce_len_t num,
+	ce_iovec_array_t iovl
 	) {
   check_heartbeat(c_appl);
-  ce_queue_add(c_appl->aq, ce_appl_cast(len,data));
+  ce_appl_cast(c_appl->aq, num,iovl);
 }
 
-void ce_Send(
+void
+ce_Send(
 	ce_appl_intf_t *c_appl,
+	int num_dests,
 	ce_rank_array_t dests,
-	ce_len_t len,
-	ce_data_t data
+	int num,
+	ce_iovec_array_t iovl
 	) {
   check_heartbeat(c_appl);
-  ce_queue_add(c_appl->aq, ce_appl_send(dests, len, data));
+  ce_appl_send(c_appl->aq, num_dests, dests, num, iovl);
 }
 
-void ce_Send1(
-	ce_appl_intf_t *c_appl,
-	ce_rank_t dest,
-	ce_len_t len,
-	ce_data_t data
-	) {
+void
+ce_Send1(
+	 ce_appl_intf_t *c_appl,
+	 ce_rank_t dest,
+	 int num,
+	 ce_iovec_array_t iovl
+	 ) {
   check_heartbeat(c_appl);
-  ce_queue_add(c_appl->aq, ce_appl_send1(dest, len, data));
+  ce_appl_send1(c_appl->aq, dest, num, iovl);
 }
 
 
 void
 ce_Leave(
 	 ce_appl_intf_t *c_appl
-) {
+	 ) {
   check_heartbeat(c_appl);
-  ce_queue_add(c_appl->aq, ce_appl_leave());
+  ce_appl_leave(c_appl->aq);
 }
 
-void ce_Prompt(
-	ce_appl_intf_t *c_appl
-	) {
+void
+ce_Prompt(
+	  ce_appl_intf_t *c_appl
+	  ) {
   check_heartbeat(c_appl);
-  ce_queue_add(c_appl->aq, ce_appl_prompt());
+  ce_appl_prompt(c_appl->aq);
 }
 
-void ce_Suspect(
-	ce_appl_intf_t *c_appl,
-	ce_rank_array_t suspects
-	){
+void
+ce_Suspect(
+	   ce_appl_intf_t *c_appl,
+	   int num,
+	   ce_rank_array_t suspects
+	   ){
   check_heartbeat(c_appl);
-  ce_queue_add(c_appl->aq, ce_appl_suspect(suspects));
+  ce_appl_suspect(c_appl->aq, num, suspects);
 }
 
-void ce_XferDone(
-	ce_appl_intf_t *c_appl
-	) {
+void
+ce_XferDone(
+	    ce_appl_intf_t *c_appl
+	    ) {
   check_heartbeat(c_appl);
-  ce_queue_add(c_appl->aq, ce_appl_xfer_done());
+  ce_appl_xfer_done(c_appl->aq);
 }
 
-void ce_ChangeProtocol(
-	 ce_appl_intf_t *c_appl,
-	 char *proto
-	) {
+void
+ce_ChangeProtocol(
+		  ce_appl_intf_t *c_appl,
+		  char *proto
+		  ) {
   check_heartbeat(c_appl);
-  ce_queue_add(c_appl->aq, ce_appl_protocol(proto));
+  ce_appl_protocol(c_appl->aq, proto);
 }
 
-void ce_ChangeProperties(
-         ce_appl_intf_t *c_appl,
-	 char *properties
-	) {
+void
+ce_ChangeProperties(
+		    ce_appl_intf_t *c_appl,
+		    char *properties
+		    ) {
   check_heartbeat(c_appl);
-  ce_queue_add(c_appl->aq, ce_appl_properties(properties));
+  ce_appl_properties(c_appl->aq, properties);
 }
 
 /*****************************************************************************/
@@ -297,7 +331,7 @@ void ce_PassSock(value handler_v, value env_v){
   (*handler)(env);
 }
 
-void ce_AddSockRecv(CE_SOCKET socket, ce_handler_t handler, ce_env_t env){
+void ce_AddSockRecv(ocaml_skt_t socket, ce_handler_t handler, ce_env_t env){
   CAMLparam0();
   CAMLlocal3(socket_v,env_v, handler_v);
 
@@ -309,7 +343,7 @@ void ce_AddSockRecv(CE_SOCKET socket, ce_handler_t handler, ce_env_t env){
   CAMLreturn0;
 }
 
-void ce_RmvSockRecv(CE_SOCKET socket){
+void ce_RmvSockRecv(ocaml_skt_t socket){
   CAMLparam0();
   CAMLlocal1(socket_v);
 
@@ -319,6 +353,23 @@ void ce_RmvSockRecv(CE_SOCKET socket){
   CAMLreturn0;
 }
 /*****************************************************************************/
+#ifndef _WIN32
+void startup(){}
+#else
+void startup()
+{
+  WSADATA wsaData;
+  HANDLE h;
+
+  (void) WSAStartup(MAKEWORD(2, 0), &wsaData);
+  DuplicateHandle(GetCurrentProcess(), GetCurrentProcess(),
+                  GetCurrentProcess(), &h, 0, TRUE,
+                  DUPLICATE_SAME_ACCESS);
+}
+#endif
+/*****************************************************************************/
+
+
 /* Initialize the interface, start Ensemble/OCAML if necessary.
  * Pass the command line arguements to Ensemble. 
  */ 
@@ -336,6 +387,10 @@ ce_Init(int argc, char **argv){
   ce_async_v = caml_named_value((char*)"ce_async_v") ;
   ce_join_v = caml_named_value((char*)"ce_join_v") ;
   ce_main_loop_v = caml_named_value((char*)"ce_main_loop_v") ;
+
+  /* We need to startup winsock on WIN32.
+   */
+  startup ();
 }
 
 /* Join a group
@@ -345,7 +400,8 @@ ce_Join(
         ce_jops_t *jops,
 	ce_appl_intf_t *c_appl
 ) {
-  value jops_v, c_appl_v;
+  CAMLparam0();
+  CAMLlocal2(jops_v, c_appl_v);
 
   if (ce_join_v == NULL){
     printf("Main loop callback not initialized yet. You need to do"
@@ -357,7 +413,9 @@ ce_Join(
   c_appl_v = Val_c_appl(c_appl);
   TRACE("before the callback"); 
   callback2(*ce_join_v, c_appl_v, jops_v);
+  CAMLreturn0;
 }
+
 
 /* Start the Ensemble main_loop
  */

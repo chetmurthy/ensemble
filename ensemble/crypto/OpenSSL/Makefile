@@ -1,9 +1,10 @@
-#ENSROOT = ../..
-#include $(ENSROOT)/mk/sub.mk
-
-OPENSSL = /cs/phd/orodeh/far/e/openssl/$(PLATFORM)
-OPENSSL_INC = -I $(OPENSSL)/include
-OPENSSL_LIB = $(OPENSSL)/lib/libcrypto$(ARC)
+#*************************************************************#
+ENSROOT = ../..
+include $(ENSROOT)/mk/config.mk
+include $(ENSROOT)/mk/sub.mk
+#*************************************************************#
+# Local sanity tests for internal development. 
+#
 
 all : bench 
 
@@ -15,6 +16,4 @@ bench : bench.o
 	-L $(OPENSSL)/lib -lcrypto \
 	-o bench 
 
-clean :  
-	rm -f *.o idea_c des_c rc4_c *.cm* gct dha rc4 des
-
+#*************************************************************#

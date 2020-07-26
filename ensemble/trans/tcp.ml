@@ -24,7 +24,7 @@ let init host =
    *)
   let sock =
     try Hsys.socket_stream () with e ->
-      eprintf "TCP:error creating socket:%s, exiting\n" (Hsys.error e) ;
+      eprintf "TCP:error creating socket:%s, exiting\n" (Util.error e) ;
       exit 1
   in
 
@@ -35,7 +35,7 @@ let init host =
   
   begin
     try Hsys.listen sock 5 with e ->
-      eprintf "TCP:error listening to socket:%s, exiting\n" (Hsys.error e) ;
+      eprintf "TCP:error listening to socket:%s, exiting\n" (Util.error e) ;
       exit 1
   end ;
 
@@ -46,7 +46,7 @@ let init host =
 type conn = {
   mutable sock : Hsys.socket option ;
   mutable peer : (inet * port) option ;
-  mutable send : (Iovecl.t -> unit) option ;
+  mutable send : (Buf.t -> Buf.ofs -> Buf.len -> Iovecl.t -> unit) option ;
   mutable access : Time.t
 }
 
@@ -54,7 +54,6 @@ type conn = {
 
 let domain alarm =
   let handlers = Alarm.handlers alarm in
-  let mbuf = Alarm.mbuf alarm in
   let conns = 
     let table = Hashtbl.create (*name*) 10 in
     Trace.install_root (fun () ->
@@ -109,8 +108,8 @@ let domain alarm =
     | None -> failwith "install_conn:sanity"
     | Some sock ->
 	let client info send =
-	  let recv iovl =
-	    Route.deliver_iovl handlers mbuf iovl
+	  let recv buf iovl =
+	    Route.deliver handlers buf len0 (Buf.length buf) iovl
 	  in
 	  let disable () =
 	    log (fun () -> sprintf "lost connection to %s"
@@ -127,7 +126,7 @@ let domain alarm =
 	  (recv,disable,())
 	in
 
-	(Elink.get_hsyssupp_client name) name alarm sock client
+	Hsyssupp.client name alarm sock client
   in
 
   let connect c =
@@ -141,7 +140,7 @@ let domain alarm =
 	  c.sock <- Some sock ;
 	  install c ;
 	with e ->
-	  log (fun () -> sprintf "error:%s" (Hsys.error e)) ;
+	  log (fun () -> sprintf "error:%s" (Util.error e)) ;
 	  Hsys.close sock
 	end
     | _,_ -> failwith "connect:sanity" ;
@@ -158,7 +157,7 @@ let domain alarm =
       conn.sock <- Some sock ;
       install conn
     with e ->
-      log (fun () -> sprintf "error:%s" (Hsys.error e)) ;
+      log (fun () -> sprintf "error:%s" (Util.error e)) ;
       failwith "error occurred while accepting"
   in
 
@@ -193,37 +192,44 @@ let domain alarm =
       if Arrayf.is_empty conns then (
 	None 
       ) else (
-	let xmitv iovl =
+	let x hdr hdr2 len iovl =
 	  for i = 0 to pred (Arrayf.length conns) do
+	    (* Increate the refcount for every connection we send
+	     * on (except the first).
+	     *)
+	    let iovl = 
+	      if i=0 then iovl 
+	      else Iovecl.copy iovl
+	    in
 	    match Arrayf.get conns i with
 	    | {send=Some send} -> 
-		send iovl
+		send hdr hdr2 len iovl
 	    | {sock=None;peer=Some _} as c ->
 		(* If we have a name, but no socket, then
 		 * try connecting.
 		 *)
 		connect c ;
 		if_some c.send (fun send ->
-		  send iovl
-		)
+		  send hdr hdr2 len iovl) ;
+
+		(*
+		 * Hsyssupp already frees the iovecl.
+		 *)
+		  (* Iovecl.free iovl *) 
 	    | _ -> ()
 	  done 
 	in
-	let xmit buf ofs len =
-	  let iovl = Mbuf.allocl name mbuf buf ofs len in
-	  xmitv iovl ;
-	  Iovecl.free name iovl
-	in
-	let xmitvs iovl s =
-	  let iov = Mbuf.alloc name mbuf s len0 (Buf.length s) in
-	  let iovl = Iovecl.appendi name iovl iov in
-	  xmitv iovl ;
-	  Iovecl.free name iovl
-	in
-	Some(xmit,xmitv,xmitvs)
+
+	let x =
+      	  if Arge.timestamp_check "send" then (
+	    let stamp = Timestamp.register "TCP:xmit" in
+	    let ts_xmit () = Timestamp.add stamp in
+	    let x hdr hdr2 len iovl = ts_xmit () ; x hdr hdr2 len iovl in 
+	    x
+	  ) else x
+	in Some x
       )
     in
-
     Domain.handle disable xmit
   in
 
@@ -231,6 +237,6 @@ let domain alarm =
 
 (**************************************************************)
 
-let _ = Elink.put Elink.tcp_domain domain
+let _ = Domain.install Addr.Tcp domain
 
 (**************************************************************)

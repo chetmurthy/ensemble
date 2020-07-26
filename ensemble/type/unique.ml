@@ -13,7 +13,7 @@ let name = Trace.file "UNIQUE"
  *)
 type id	= {
   mux 		: mux ;
-  host 		: inet ;
+  host 		: Hsys.inet ;
   port 		: port ;
   incarn 	: incarn
 }

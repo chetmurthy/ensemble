@@ -11,30 +11,20 @@ let log = Trace.log name
 (**************************************************************)
 
 type id =
-  | Atm
   | Deering
   | Netsim
   | Tcp
   | Udp
-  | Sp2
-  | Krb5
   | Pgp
-  | Fortezza
-  | Mpi
 
 (*let all = [|Atm;Deering;Netsim;Tcp;Udp;Sp2;Krb5;Pgp;Fortezza;Mpi|]*)
 
 type t =
-  | AtmA of inet
-  | DeeringA of inet * port
+  | DeeringA of Hsys.inet * port
   | NetsimA
-  | TcpA of inet * port
-  | UdpA of inet * port
-  | Sp2A of inet * port
-  | Krb5A of string
+  | TcpA of Hsys.inet * port
+  | UdpA of Hsys.inet * port
   | PgpA of string
-  | FortezzaA of string
-  | MpiA of rank
 
 type set = t Lset.t
 
@@ -43,26 +33,16 @@ let id_of_addr = function
   | TcpA     _ -> Tcp
   | UdpA     _ -> Udp
   | DeeringA _ -> Deering
-  | AtmA     _ -> Atm
-  | Sp2A     _ -> Sp2
-  | Krb5A    _ -> Krb5
   | PgpA     _ -> Pgp
-  | FortezzaA _ -> Fortezza
-  | MpiA     _ -> Mpi
 
 let ids_of_set s = Arrayf.map id_of_addr (Lset.project s)
 
 let mapping = [|
-  "ATM", Atm ;
   "DEERING", Deering ;
   "NETSIM", Netsim ;
   "TCP", Tcp ;
   "UDP", Udp ;
-  "SP2", Sp2 ;
   "PGP", Pgp ;
-  "FORTEZZA", Fortezza ;
-  "KRB5", Krb5 ;
-  "MPI", Mpi ;
 |] 
 
 let id_of_string s = Util.id_of_string name mapping s
@@ -84,19 +64,13 @@ let string_of_addr = function
   | TcpA     (i,p) -> sprintf "Tcp%s" (string_of_inet_port (i,p))
   | UdpA     (i,p) -> sprintf "Udp%s" (string_of_inet_port (i,p))
   | DeeringA (i,p) -> sprintf "Deering%s" (string_of_inet_port (i,p))
-  | AtmA     i     -> sprintf "Atm(%s)" (Hsys.string_of_inet i)
-  | Sp2A     (i,p) -> sprintf "Sp2%s" (string_of_inet_port (i,p))
   | PgpA         a -> sprintf "Pgp(%s)" a
-  | Krb5A        _ -> sprintf "Krb5(_)"
-  | FortezzaA    _ -> sprintf "Fortezza(_)"
-  | MpiA      rank -> sprintf "Mpi(%d)" rank
 
 let string_of_set a = Arrayf.to_string string_of_addr (Lset.project a)
 
 let has_mcast = function
   | Udp
   | Deering 
-  | Mpi					(*BUG*)
   | Netsim -> true
   | _ -> false
 
@@ -104,25 +78,17 @@ let has_pt2pt = function
   | Udp
   | Deering
   | Tcp
-  | Atm
-  | Netsim 
-  | Mpi
-  | Sp2 -> true
+  | Netsim -> true
   | _ -> false
 
 let has_auth = function
-  | Pgp
-  | Krb5
-  | Fortezza -> true
+  | Pgp -> true
   | _ -> false
       
-let all_trans = Arrayf.of_array [|Atm;Deering;Sp2;Udp;Tcp;Netsim;Mpi|]
+let all_trans = Arrayf.of_array [|Deering;Udp;Tcp;Netsim|]
 
 let default_ranking = function
-  | Atm -> 6
-  | Deering -> 5
-  | Mpi -> 4
-  | Sp2 -> 3
+  | Deering -> 3
   | Udp -> 2
   | Tcp -> 1
   | Netsim -> 0
@@ -284,12 +250,7 @@ module SafeMarshal = struct
     | TcpA     (i,p) -> sprintf "Tcp(%s)" (string_of_inet_port (i,p))
     | UdpA     (i,p) -> sprintf "Udp(%s)" (string_of_inet_port (i,p))
     | DeeringA (i,p) -> sprintf "Deering(%s)" (string_of_inet_port (i,p))
-    | AtmA     i     -> sprintf "Atm(%s)" (string_of_inet i)
-    | Sp2A     (i,p) -> sprintf "Sp2(%s)" (string_of_inet_port (i,p))
     | PgpA         a -> sprintf "Pgp(%s)" a
-    | Krb5A        a -> sprintf "Krb5(%s)" a
-    | FortezzaA    a -> sprintf "Fortezza(%s)" a
-    | MpiA      rank -> sprintf "Mpi(%d)" rank
 	
   let addr_of_string s = 
     let l = string_split "(,)" s in
@@ -305,21 +266,8 @@ module SafeMarshal = struct
       | ["Deering";i;p] -> 
 	  let i,p = inet_port_of_pair i p in
 	  DeeringA(i,p)
-      | ["Atm";i] -> 
-	  AtmA (inet_of_string i)
-      | ["Sp2";i;p] -> 
-	  let i,p = inet_port_of_pair i p in
-	  Sp2A(i,p)
       | ["Pgp";a] -> 
 	  PgpA(a)
-      | ["Krb5";a] -> 
-	  Krb5A(a)
-      | ["Fortezza";a] -> 
-	  FortezzaA(a)
-      | ["Mpi";rank] -> 
-	  let rank = try int_of_string rank with _ -> 
-	    raise (Bad_format "Mpi, int_of_string") in
-	  MpiA(rank)
       | _ -> 
 	  log (fun () -> sprintf "l=%s" (string_of_list (fun x -> " <" ^ x ^ "> " )l));
 	  raise (Bad_format "addr_of_string")

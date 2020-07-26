@@ -2,6 +2,7 @@
 (* HOT_UTIL.ML *)
 (* Authors: Alexey Vaysburd, Mark Hayden 11/96 *)
 (**************************************************************)
+open Ensemble
 open Util
 open Trans
 open Buf
@@ -192,8 +193,8 @@ let init_view_state jops =
       if String.length key = 0 then (
 	log (fun () -> "Key is empty, setting to NoKey");
 	Security.NoKey
-      ) else Security.key_of_buf (Buf.pad_string key)
-  | Some s -> Security.key_of_buf (Buf.pad_string s)
+      ) else Security.key_of_buf (Buf.of_string key)
+  | Some s -> Security.key_of_buf (Buf.of_string s)
   in
   let secure = jops.jops_secure in
 
@@ -230,7 +231,7 @@ let c_view_state (ls,vs) =
   in
   let key = match vs.key with 
     | Security.NoKey -> ""
-    | Security.Common _ -> Buf.to_string (Security.buf_of_key vs.key)
+    | Security.Common _ -> Buf.string_of (Security.buf_of_key vs.key)
   in    
   { c_version = Version.string_of_id vs.View.version ;
     c_group = Group.string_of_id vs.View.group ;

@@ -17,7 +17,7 @@ type ('member,'group) t
  * The view state gives information about this member,
  * including the name of the manager group.
  *)
-val create : Alarm.t -> View.full -> (('m,'g) t * View.full * Appl_intf.Old.t)
+val create : Alarm.t -> View.full -> (('m,'g) t * View.full * Appl_intf.New.t)
 
 (*
  * PROXY: create a proxy for a manager in another process.
@@ -49,7 +49,7 @@ val config :
  *)
 val proxy_server : Alarm.t -> ('m,'g) t -> port -> unit
 
-val create_proxy_server : Alarm.t -> port -> View.full -> View.full * Appl_intf.Old.t
+val create_proxy_server : Alarm.t -> port -> View.full -> View.full * Appl_intf.New.t
 
 (**************************************************************)
 (**************************************************************)
@@ -102,3 +102,21 @@ val destroy :				(* NOT IMPLEMENTED *)
   unit
 
 (**************************************************************)
+(* These are tailored for the groupd.
+ *)
+
+type t2 = 
+    View.full -> 
+    (View.full -> (Event.up -> unit) -> (Event.dn -> unit)) -> 
+      unit
+
+val groupd_create : 
+  Alarm.t -> View.full -> (t2 * View.full * Appl_intf.New.t)
+
+
+val groupd_proxy : 
+  Alarm.t -> Hsys.socket -> t2
+
+(**************************************************************)
+
+

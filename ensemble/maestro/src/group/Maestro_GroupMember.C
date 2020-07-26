@@ -1,4 +1,4 @@
-// $Header: /cvsroot/ensemble/maestro/src/group/Maestro_GroupMember.C,v 1.4 1998/10/14 20:15:44 tclark Exp $
+// $Header: /cvsroot/ensemble/maestro/src/group/Maestro_GroupMember.C,v 1.6 2001/09/25 12:42:11 orodeh Exp $
 
 /********************************************************************
  *                                                                  *
@@ -103,11 +103,11 @@ Maestro_GroupMember::join() {
   expectingViewMsg = 0;
 
   // Join the group.
+  jl_status = JL_JOINING;
   err = hot_ens_Join(&join_ops, &gctx);
   check_err("Maestro_GroupMember::join: hot_ens_Join");
 
   // Don't return till the first view is delivered.
-  jl_status = JL_JOINING;
   jl_sema.dec();
 }
 
@@ -263,11 +263,11 @@ Maestro_GroupMember::leave() {
     error->panic("Maestro_GroupMember::leave: Bad member state");
   mbrState = GRPMEMB_LEAVING;
 
+  jl_status = JL_LEAVING;
   err = hot_ens_Leave(gctx);
   check_err("Maestro_GroupMember::leave: hot_ens_Leave");
 
   // Don't return till the exit callback is invoked.
-  jl_status = JL_LEAVING;
   jl_sema.dec();
 }
   

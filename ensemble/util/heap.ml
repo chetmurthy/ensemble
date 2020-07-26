@@ -248,9 +248,6 @@ let analyze () =
 *)
   flush stdout
 
-let _ =
-  Elink.put Elink.heap_analyze analyze
-
 (**************************************************************)
 
 let _ =

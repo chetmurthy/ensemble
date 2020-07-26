@@ -22,12 +22,11 @@ MLFAST		= -unsafe -noassert -compact
 PROFILE		=# -p
 DEBUGGER	=
 MLFLAGS		= $(DEBUGGER) $(MLFAST) $(PROFILE)
-MLLINKFLAGS	= $(MLFAST) $(PROFILE) -ccopt -g
+MLLINKFLAGS	= $(MLFAST) $(PROFILE)
 DEPFLAGS	= -opt
 ENSCOMPFLAGS	= -opt $(MLFLAGS)
-ENSCOMP		= $(ECAMLCC) -Io $(OBJD) $(ENSCOMPFLAGS)
+ENSCOMP		= $(MLCOMP) $(MLFLAGS)
 MLRUNTIME	= $(OCAML_LIB)\libasmrun$(ARCS)
-LIBDYNLINK	= -cclib -ldynlink dynlink$(CMAS)
 #*************************************************************#
 CUSTOM		=# no -custom option for ocamlopt
 #*************************************************************#

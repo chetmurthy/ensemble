@@ -47,7 +47,7 @@ let init _ (ls,vs) = {
   drop_link_rate = Param.float vs.params "drop_link_rate" ;
   acct_dropped = 0 ;
   acct_delivered = 0 ;
-  alarm = Elink.alarm_get_hack ()
+  alarm = Alarm.get_hack ()
 }
 
 (**************************************************************)
@@ -55,7 +55,7 @@ let init _ (ls,vs) = {
 let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out=dnnm} =
   let failwith = layer_fail dump vf s name in
   let log = Trace.log2 name ls.name in
-  let connected = (Elink.get name Elink.partition_connected) s.drop_link_rate in
+  let connected = Partition.connected s.drop_link_rate in
 
   let distrib =
     let drop_rate = Param.float vs.params "drop_rate" in
@@ -185,6 +185,6 @@ let _ =
   Param.default "drop_delay" (Param.Time (Time.of_string "0.001")) ;
   Param.default "drop_partition" (Param.Bool false) ;
   Param.default "drop_link_rate" (Param.Float 0.001) ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)

@@ -14,10 +14,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <openssl/crypto.h>
 
+#include <openssl/crypto.h>
 #include <openssl/rc4.h>
 
+#include "mm.h"
 
 value rc4ml_context_length (
 ) {
@@ -63,4 +64,15 @@ value rc4ml_encrypt_bytecode(
                                 argv[4], argv[5]);
 }
 
+value rc4ml_encrypt_iov(
+			value ctx_v,
+			value iov_v
+){
+  RC4_KEY *rc4_ks = (RC4_KEY*) ctx_v;
+  int len = Int_val(Field(iov_v,0));
+  char *buf = mm_Cbuf_val(Field(iov_v,1));
+  
+  RC4(rc4_ks,len,buf,buf);
+  return Val_unit;
+}
 

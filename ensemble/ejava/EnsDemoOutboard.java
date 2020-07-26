@@ -96,7 +96,7 @@ public class EnsDemoOutboard implements MouseListener, WindowListener , Hot_Call
 	mainThread.start();
 
 	jops = new Hot_JoinOps();
-	jops.heartbeat_rate = 5000;
+	jops.heartbeat_rate = 10000;
 
 	// Can use IP Multicast here if desired
 	// jops.transports = "DEERING:UDP";

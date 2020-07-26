@@ -7,7 +7,7 @@ open Tk
 open Util
 open Appl
 open View
-open Appl_intf open Old
+open Appl_intf open New
 open Proto
 (**************************************************************)
 let name = Trace.file "WB"
@@ -23,14 +23,29 @@ type seqno = int
 (* MESSAGE: the type of messages sent by this application.
  *)
 type message =
-| DrawLine of seqno * coord * coord * coord * coord
-| Xfer of (seqno * coord * coord * coord * coord) array
-| ClearLines
-| ClearAllLines
-| ClearGreyLines
-| PtrSet of coord * coord
-| PtrLeave
-| ProtocolSwitch of Property.id list
+  | Xfer of (seqno * coord * coord * coord * coord) array
+  | DrawLine of seqno * coord * coord * coord * coord
+  | ClearLines
+  | ClearAllLines
+  | ClearGreyLines
+  | PtrSet of coord * coord
+  | PtrLeave
+  | ProtocolSwitch of Property.id list
+      
+let string_of_message = function
+  | Xfer _ -> "Xfer"
+  | DrawLine _ -> "DrawLine"
+  | ClearLines -> "CleanLines"
+  | ClearAllLines -> "ClearAllLines"
+  | ClearGreyLines -> "CleanGreyLines"
+  | PtrSet _ -> "PtrSet"
+  | PtrLeave -> "PtrLeave"
+  | ProtocolSwitch _ -> "ProtocolSwitch"
+      
+type wrap = 
+  | R of message
+  | X of string * Property.id list
+  | X_Sum of string array * Property.id list option
 
 (**************************************************************)
 
@@ -50,12 +65,12 @@ type line = {
 (**************************************************************)
 
 let colors = [
-  Red ;
-  Green	;
-  NamedColor "Yellow" ;
-  Blue ;
-  NamedColor "Brown" ;
-  NamedColor "NavyBlue"
+  `Red ;
+  `Green	;
+  `Color "Yellow" ;
+  `Blue ;
+  `Color "Brown" ;
+  `Color "NavyBlue"
 ]
 
 (* COLOR_OF_RANK: return the color corresponding to a
@@ -64,7 +79,10 @@ let colors = [
 let color_of_rank rank =
   if rank < List.length colors then
     List.nth colors rank
-  else Black
+  else `Black
+
+let pix_of_inch x = pixels (`In x)
+let pix_of_cm x = pixels (`Cm x)
 
 (**************************************************************)
 
@@ -75,7 +93,7 @@ let color_of_rank rank =
  *)
 let stack_widget top props do_switch =
   let props = ref props in
-  let top = Toplevel.create top [] in
+  let top = Toplevel.create top in
   Focus.set top ;
   Wm.title_set top "Protocol Switch" ;
 
@@ -96,34 +114,36 @@ let stack_widget top props do_switch =
    * the destroy_stack button, and clb the close button
    * which closes this frame.
    *)
-  let src = Frame.create top [
-    Relief Sunken; BorderWidth (Pixels 3) ;
-    Width (Inches 1.5); Height (Inches 6.0)
-  ]
-  and dst = Frame.create top [
-    Relief Sunken; BorderWidth (Pixels 3) ;
-    Width (Inches 1.5); Height (Inches 6.0)
-  ]
-  and but_frm = Frame.create top [] in
 
-  let csb = Button.create but_frm [
-    Text "Switch" ;
-    Command (fun () ->
+  let src = Frame.create 
+    ~borderwidth:3 ~height:(pix_of_inch 6.0)
+    ~relief:`Sunken ~width:(pix_of_inch 1.5)
+    top
+  and dst = Frame.create 
+    ~borderwidth:3  ~height:(pix_of_inch 6.0)
+    ~relief:`Sunken  ~width:(pix_of_inch 1.5) 
+    top
+  and but_frm = Frame.create top in
+
+  let csb = Button.create 
+    ~text:"Switch"
+    ~command:(fun () ->
       do_switch !props ;
       destroy top
     )
-  ]
-  and clb = Button.create but_frm [
-    Text "Cancel" ;
-    Command (fun () -> destroy top)
-  ]
+    but_frm 
+
+  and clb = Button.create 
+    ~text:"Cancel"
+    ~command:(fun () -> destroy top)
+    but_frm 
   in
 
   (*
    * Labels for the frames.
    *)
-  let srclabel = Label.create src [ Text "Properties"; Width (Pixels 20) ] in
-  let dstlabel = Label.create dst [ Text "Layers"; Width (Pixels 20) ] in
+  let srclabel = Label.create ~text:"Properties" ~width:20 src in
+  let dstlabel = Label.create ~text:"Layers" ~width:20 dst  in
 
   (*
    * The frames are fixed size.
@@ -145,9 +165,9 @@ let stack_widget top props do_switch =
     stack := [] ;
     
     List.iter (fun name ->
-      let b = Label.create dst [Text name; Relief Groove] in
+      let b = Label.create ~text:name ~relief:`Groove dst in
       stack := (name, b) :: !stack;
-      pack [b][Anchor S; Side Side_Bottom; Fill Fill_X]
+      pack ~anchor:`S ~side:`Bottom ~fill:`X [b] 
     ) (List.rev layers)
   in
 
@@ -155,16 +175,17 @@ let stack_widget top props do_switch =
     let buttons =
       List.map (fun prop ->
       	let name = Property.string_of_id prop in
-      	let but = Checkbutton.create src [
-      	  Command (fun () ->
+      	let but = Checkbutton.create 
+      	  ~text:name
+      	  ~command:(fun () ->
 	    if List.mem prop !props then
 	      props := except prop !props
 	    else
 	      props := prop :: !props ;
             get_protocol ()
-	  ) ;
-      	  Text name
-      	] in
+	  )
+	  src 
+	in
       	if List.mem prop !props then
       	  Checkbutton.select but
       	else
@@ -191,11 +212,11 @@ let stack_widget top props do_switch =
   (*
    * Pack everything.
    *)
-  pack [srclabel; dstlabel][] ;
-  pack [but_frm][Side Side_Bottom] ;
-  pack [clb;csb][Side Side_Right] ;
-  pack buttons [Side Side_Top;Anchor W] ;
-  pack [src;dst] [Side Side_Left] ;
+  pack [srclabel; dstlabel] ;
+  pack ~side:`Bottom [but_frm]  ;
+  pack ~side:`Right [clb;csb] ;
+  pack ~side:`Top ~anchor:`W buttons ;
+  pack ~side:`Left [src;dst] ;
 
   get_protocol () ;
   Tkwait.visibility top ;
@@ -207,152 +228,172 @@ let stack_widget top props do_switch =
  * the callbacks for the application.
  *)
 
-let intf (ls_init,vs_init) my_name alarm top do_migrate =
+type state = {
+  mutable ls : View.local ;
+  mutable vs : View.state ;
+
+  (* A name for each member in the group.
+   *)
+  mutable names : string array ;
+  my_name : string ;
 
   (* The current properties in use.
    *)
-  let props = ref Property.vsync in
-  let my_endpt = ls_init.endpt in
-  
-  (* The current view of the group.
-   *)
-  let view	= ref [||] in
-
-  (* This is an association list of (endpt,string name) for every
-   * member in the group.
-   *)
-  let names 	= ref [|my_name|] in
+  mutable props: Property.id list ;
 
   (* This is set below in the handler of the same name.  Get_input
    * calls the installed function to request an immediate callback.
    *)
-  let async = Appl.async (vs_init.group,ls_init.endpt) in
+  async : unit -> unit;
   
   (* This is the last member to have sent data to be output.
    * When another member sends data, we print a prompt for
    * the new source and update this val.
    *)
-  let last_id = ref (-1) in
-
-  (* My rank in the group
-   *)
-  let rank = ref (-1) in
+  mutable last_id : int ;
 
   (* The seqno for my lines (to use for creating unique id's
    *)
-  let seqno = ref 0 in
+  mutable my_seqno : int ;
 
   (* This is the buffer used to store typed input prior
    * to sending it.
    *)
-  let msg_buf = Queuee.create () in
+  msg_buf : ((wrap, wrap) Ensemble.Appl_intf.action) Queuee.t ;
+
+  (* Pointers is an array containing locations of all the
+   * members in the group.
+   *)
+  mutable pointers : Tk.tagOrId option array ;
+
+  (* Some flags to manage state-transfer
+   *)
+  mutable blocked : bool ;
+  mutable xfer : bool ;
+
+  (* Also, to manage state-transfer
+   *)
+  mutable sum_states : (string * Property.id list) option array ;
+  mutable counter : int 
+}
+
+(* To avoid mutablity problems while sending.
+ *)
+let copy_props s = s.props
+(**************************************************************)
+
+let initialize my_name (ls_init, vs_init) = {
+  ls = ls_init ;
+  vs = vs_init ;
+  names = [|my_name|] ;
+  my_name = my_name ;
+  props = Property.vsync ;
+  async = Appl.async (vs_init.group,ls_init.endpt) ;
+  last_id = -1;
+  my_seqno = 0;
+  msg_buf = Queuee.create () ;
+  pointers = [||] ;
+  blocked = false ;
+  xfer = false ;
+  sum_states = Array.create 1 None ;
+  counter = 0
+}
+
+let intf s alarm top =
   let msg_action a = 
-    async () ;
-    Alarm.schedule (Alarm.alarm alarm (fun _ ->())) (Time.zero) ;
-    Queuee.add a msg_buf 
+    Queuee.add a s.msg_buf ;
+    s.async () 
+(*    Alarm.schedule (Alarm.alarm alarm (fun _ ->())) (Time.zero) ;*)
   in
-  let msg_cast m = msg_action (Cast(m)) in
+  let msg_cast m = msg_action (Cast (R m)) in
 
   (* CHECK_BUF: If there is buffered data, then return
    * actions to send them (after packing them).
    *)
   let check_buf () =
-    let send = Queuee.to_list msg_buf in
-    Queuee.clear msg_buf ;
-    Array.of_list send
+    let send = Queuee.to_array s.msg_buf in
+    Queuee.clear s.msg_buf ;
+(*    if Array.length send > 0 then 
+      log (fun () -> sprintf "len=%d" (Array.length send));*)
+    send
   in
 
-  (* Pointers is an array containing locations of all the
-   * members in the group.
-   *)
-  let pointers = ref [||] in
-  
-  let main = Frame.create top [] in
+  let main = Frame.create top in
 
   (* Create the widgets and pack them.
    *)
-  let menu_frm	= Frame.create main [BorderWidth (Pixels 2); Relief Raised] in
-  let clear_mb	= Menubutton.create menu_frm [Text "Clear"] in
-  let proto_mb  = Menubutton.create menu_frm [Text "Action"] in
-  let xfer_but =  Checkbutton.create menu_frm [Text "Xfer"; Relief Groove] in
+  let menu_frm	= Frame.create ~borderwidth:2 ~relief:`Raised main in
+  let clear_mb	= Menubutton.create ~text:"Clear" menu_frm in
+  let proto_mb  = Menubutton.create ~text:"Action" menu_frm in
+  let xfer_but =  Checkbutton.create ~text:"Xfer" ~relief:`Groove menu_frm in
   Checkbutton.deselect xfer_but ;
 
-  let status_frm = Frame.create main [BorderWidth (Pixels 2); Relief Groove] in
-  let proto_lab = Label.create status_frm [] in
-  let trans_lab = Label.create status_frm [] in
-  let key_lab   = Label.create status_frm [] in
+  let status_frm = Frame.create ~borderwidth:2 ~relief:`Groove main in
+  let proto_lab = Label.create status_frm in
+  let trans_lab = Label.create status_frm in
+  let key_lab   = Label.create status_frm in
 
-  let body_frm	= Frame.create main [] in
+  let body_frm	= Frame.create main in
 
-  let wb_frm    = Frame.create body_frm [
-    BorderWidth (Pixels 3);
-    Relief Raised
-  ] in
+  let wb_frm    = Frame.create 
+    ~borderwidth:3 
+    ~relief:`Raised
+    body_frm in
 
-  let wb_cv 	= Canvas.create wb_frm [
-    BorderWidth (Pixels 3);
-    Background White ;
-    Height (Inches 2.5) ;
-    Width (Inches 2.5)
-  ] in
+  let wb_cv 	= Canvas.create 
+    ~borderwidth:3
+    ~background:`White 
+    ~height:(pix_of_inch 2.5)
+    ~width:(pix_of_inch 2.5)
+    wb_frm in
 
   (* Initialize the membership frame.
    *)
-  let mbr_frm	= Frame.create body_frm [] in
-  let mbr_lbl   = Label.create mbr_frm [Text "Membership"] in
-  let mbr_lb	= Listbox.create mbr_frm [TextHeight 8] in
+  let mbr_frm	= Frame.create body_frm in
+  let mbr_lbl   = Label.create ~text:"Membership" mbr_frm in
+  let mbr_lb	= Listbox.create ~height:8 mbr_frm in
 
-  pack [
-    wb_frm;
-    wb_cv
-  ] [
-    Side Side_Left;
-    Anchor NW
-  ] ;
+  pack ~side:`Left ~anchor:`Nw 
+    [
+      coe wb_frm;
+      coe wb_cv
+    ] ;
 
-  pack [
-    clear_mb;
-    proto_mb;
-    xfer_but
-  ] [
-    Side Side_Left
-  ] ;
+  pack ~side:`Left 
+    [
+      coe clear_mb;
+      coe proto_mb;
+      coe xfer_but
+    ];
 
-  pack [
-    mbr_frm;
-    menu_frm;
-    status_frm;
-    body_frm
-  ] [
-    Side Side_Top;
-    PadX (Millimeters 2.);
-    PadY (Millimeters 1.);
-    Anchor NW
-  ] ;
+  pack 
+    ~anchor:`Nw ~side:`Top   
+    ~padx:(pix_of_cm 0.2) ~pady:(pix_of_cm 0.1) 
+    [
+      mbr_frm;
+      menu_frm;
+      status_frm;
+      body_frm
+    ] ;
 
-  pack [
-    proto_lab;
-    trans_lab;
-    key_lab
-  ] [
-    Side Side_Top;
-    PadX (Millimeters 0.5);
-    PadY (Millimeters 0.5);
-    Anchor NW
-  ] ;
 
-  pack [
-    mbr_lbl;
-    mbr_lb
-  ] [
-    Side Side_Top ;
-    Anchor NW
-  ] ;
+  pack ~anchor:`Nw ~side:`Top
+    ~padx:(pix_of_cm 0.05) ~pady:(pix_of_cm 0.05) 
+    [
+      proto_lab;
+      trans_lab;
+      key_lab
+    ];
 
-  pack [main] [
-    Side Side_Left;
-    Anchor NW
-  ] ;
+  pack ~anchor:`Nw ~side:`Top 
+    [
+      coe mbr_lbl;
+      coe mbr_lb
+    ] ;
+
+  pack ~side:`Left ~anchor:`Nw 
+    [main] 
+  ;
 
   (* Drag_pos is the current position of the mouse on the
    * canvass.
@@ -387,18 +428,16 @@ let intf (ls_init,vs_init) my_name alarm top do_migrate =
   let draw_line who seqno x1 y1 x2 y2 =
     let color =
       try
-	let rank = array_index who !view in
+	let rank = Arrayf.index who s.vs.view in
 	color_of_rank rank
       with Not_found -> (
-        NamedColor "Grey"
+        `Color "Grey"
       )
     in
-    let line = Canvas.create_line wb_cv [
-      Pixels x1;
-      Pixels y1;
-      Pixels x2;
-      Pixels y2
-    ] [FillColor color; Width (Pixels 3)] in {
+    let line = Canvas.create_line 
+      ~xys:[x1,y1 ; x2,y2] ~fill:color ~width:3 
+      wb_cv 
+    in {
       from = who ;
       seqno = seqno ;
       x1=x1; y1=y1; x2=x2; y2=y2;
@@ -419,7 +458,7 @@ let intf (ls_init,vs_init) my_name alarm top do_migrate =
   in
 
   let delete_grey_lines () =
-    let view = Array.to_list !view in
+    let view = Arrayf.to_list s.vs.view in
     drag_filt (fun {from=from} -> List.mem from view)
   in
 
@@ -431,32 +470,33 @@ let intf (ls_init,vs_init) my_name alarm top do_migrate =
    *)
   let ptr_reset nmembers =
     Array.iter (function
-    | Some obj -> Canvas.delete wb_cv [obj]
+    | Some obj  -> Canvas.delete wb_cv [obj]
     | None -> ()
-    ) !pointers ;
-    pointers := Array.create nmembers None
+    ) s.pointers ;
+    s.pointers <- Array.create nmembers None
   in
 
   (* PTR_SET: Update one of the other member's pointers.
    *)
   let ptr_set rank x y =
-     if_some !pointers.(rank) (fun obj ->
+     if_some s.pointers.(rank) (fun obj ->
        Canvas.delete wb_cv [obj]
      ) ;
-    let name = !names.(rank) in
-    let obj = Canvas.create_text wb_cv
-      (Pixels x) (Pixels y) [Text name]
+    let name = s.names.(rank) in
+    let obj = Canvas.create_text 
+      ~x:(x) ~y:(y) ~text:name 
+      wb_cv
     in
-    !pointers.(rank) <- Some obj
+    s.pointers.(rank) <- Some obj
   in
 
   (* PTR_LEAVE: Remove a member's pointer from the canvass.
    *)
   let ptr_leave rank =
-    match !pointers.(rank) with
+    match s.pointers.(rank) with
     | Some obj -> (
       	Canvas.delete wb_cv [obj] ;
-	!pointers.(rank) <- None
+	s.pointers.(rank) <- None
       )
     | None -> ()
   in
@@ -478,9 +518,9 @@ let intf (ls_init,vs_init) my_name alarm top do_migrate =
     begin
       match !drag_pos with
       | Some(x1,y1) -> (
-	  msg_cast (DrawLine(!seqno,x1,y1,x2,y2)) ;
-	  add_line my_endpt !seqno x1 y1 x2 y2 ;
-	  incr seqno
+	  msg_cast (DrawLine(s.my_seqno,x1,y1,x2,y2)) ;
+	  add_line s.ls.endpt s.my_seqno x1 y1 x2 y2 ;
+	  s.my_seqno <- succ s.my_seqno
 	)
       | None -> ()
     end ;
@@ -499,9 +539,10 @@ let intf (ls_init,vs_init) my_name alarm top do_migrate =
     begin
       match !drag_pos with
       | Some(x1,y1) -> (
-	  msg_cast (DrawLine(!seqno,x1,y1,x2,y2)) ;
-	  add_line my_endpt !seqno x1 y1 x2 y2 ;
-	  incr seqno
+	  log (fun () -> "cast draw_line");
+	  msg_cast (DrawLine(s.my_seqno,x1,y1,x2,y2)) ;
+	  add_line s.ls.endpt s.my_seqno x1 y1 x2 y2 ;
+	  s.my_seqno <- succ s.my_seqno
 	)
       | None -> ()
     end ;
@@ -509,25 +550,18 @@ let intf (ls_init,vs_init) my_name alarm top do_migrate =
   in
 
   let protocol_switch props' =
-    props := props' ;
-    let proto_id = Property.choose !props in
+    s.props <- props' ;
+    let proto_id = Property.choose s.props in
     msg_action (Control(Protocol(proto_id))) ;	(* install the protocol locally *)
-    msg_cast (ProtocolSwitch(!props)) ;	(* broadcast the switch *)
+    msg_cast (ProtocolSwitch(props')) ;	(* broadcast the switch *)
   in
 
   let switch_press _ =
-    stack_widget top !props protocol_switch
-  in
-
-  let migrate_press _ =
-    let addr = do_migrate "gulag" in
-    msg_action (Control(Migrate(addr)))
+    stack_widget top s.props protocol_switch
   in
 
   let rekey_press _ =
-()(* Not supported right now.
-    msg_action (Control Rekey)
-*)
+    msg_action (Control (Rekey false))
   in
 
   (* Reactions for various button presses.
@@ -544,48 +578,54 @@ let intf (ls_init,vs_init) my_name alarm top do_migrate =
 
   let clear_press _ =
     msg_cast ClearLines ;
-    delete_lines my_endpt
+    delete_lines s.ls.endpt
   in
 
   (* Configure the protocol menu.
    *)
-  let proto_menu = Menu.create proto_mb [] in
-  Menu.add_command proto_menu [Label "Switch Stack"; Command switch_press] ;
-  Menu.add_command proto_menu [Label "Migrate"; Command migrate_press] ;
-  Menu.add_command proto_menu [Label "Rekey"; Command rekey_press] ;
-  Menubutton.configure proto_mb [Menu proto_menu] ;
+  let proto_menu = Menu.create proto_mb in
+  Menu.add_command ~command:switch_press ~label:"Switch Stack" proto_menu ;
+  Menu.add_command ~command:rekey_press ~label:"Rekey" proto_menu ;
+  Menubutton.configure ~menu:proto_menu proto_mb ;
 
   (* Configure the clear menu.
    *)
-  let clear_menu = Menu.create clear_mb [] in
-  Menu.add_command clear_menu [Label "Clear All";  Command clear_all_press] ;
-  Menu.add_command clear_menu [Label "Clear Mine"; Command clear_press] ;
-  Menu.add_command clear_menu [Label "Clear Grey"; Command clear_grey_press] ;
-  Menubutton.configure clear_mb [Menu clear_menu] ;
+  let clear_menu = Menu.create clear_mb in
+  Menu.add_command ~label:"Clear All"  ~command:clear_all_press clear_menu;
+  Menu.add_command ~label:"Clear Mine" ~command:clear_press clear_menu;
+  Menu.add_command ~label:"Clear Grey" ~command:clear_grey_press  clear_menu;
+  Menubutton.configure ~menu:clear_menu clear_mb ;
 
   (* Bind above functions to various events.
    * TODO: this should be cleaned up.
    *)
-  bind wb_cv [[Button1],	Motion] 	(BindSet([Ev_MouseX; Ev_MouseY],drag_moved)) ;
-  bind wb_cv [[Button1],	ButtonPress] 	(BindSet([Ev_MouseX; Ev_MouseY],drag_begin)) ;
-  bind wb_cv [[Button1],	ButtonRelease] 	(BindSet([Ev_MouseX; Ev_MouseY],drag_end)) ;
-  bind wb_cv [[Button1],	Enter] 		(BindSet([Ev_MouseX; Ev_MouseY],drag_begin)) ;
-  bind wb_cv [[Button1],	Tk.Leave]       (BindSet([Ev_MouseX; Ev_MouseY],drag_end)) ;
-  bind wb_cv [[],		Motion]		(BindSet([Ev_MouseX; Ev_MouseY],mouse_move)) ;
-  bind wb_cv [[],		Tk.Leave]	(BindSet([],mouse_leave)) ;
+  bind ~events:[(*[Button1],*) `Motion] ~fields:[`MouseX; `MouseY]
+    ~action:drag_moved wb_cv ;
+  bind ~events:[(*[Button1],*)	`ButtonPress] 	~fields:[`MouseX; `MouseY]
+    ~action:drag_begin wb_cv ;
+  bind ~events:[(*[Button1],*)	`ButtonRelease]  ~fields:[`MouseX; `MouseY]
+    ~action:drag_end wb_cv ;
+  bind ~events:[(*[Button1],*) `Enter] ~fields:[`MouseX; `MouseY]
+    ~action:drag_begin wb_cv ;
+  bind ~events:[(*[Button1],*) `Leave] ~fields:[`MouseX; `MouseY]
+    ~action:drag_end wb_cv ;
+  bind ~events:[`Motion] ~fields:[`MouseX; `MouseY]
+    ~action:mouse_move wb_cv ;
+  bind ~events:[`Leave]	~action:mouse_leave wb_cv ;
 
   (* Process a message from someone else.
    *)
   let recv_msg origin msg =
-    if origin <> !rank then (
-      let from = !view.(origin) in
+    if origin <> s.ls.rank then (
+      let from = Arrayf.get s.vs.view origin in
       match msg with
       | DrawLine(seqno,x1,y1,x2,y2) ->
+	  log (fun () -> "recv draw_line");
          add_line from seqno x1 y1 x2 y2
       | Xfer(lines) ->
-	    Array.iter (fun (seqno,x1,y1,x2,y2) ->
-	      add_line from seqno x1 y1 x2 y2
-	    ) lines
+	  Array.iter (fun (seqno,x1,y1,x2,y2) ->
+	    add_line from seqno x1 y1 x2 y2
+	  ) lines
       | ClearAllLines 	-> delete_all_lines ()
       | ClearGreyLines 	-> delete_grey_lines ()
       | ClearLines 	-> delete_lines from
@@ -593,48 +633,29 @@ let intf (ls_init,vs_init) my_name alarm top do_migrate =
 	    ptr_set origin x y
       | PtrLeave ->
 	    ptr_leave origin
-      | ProtocolSwitch props' ->
-	  props := props' ;
-	  let proto_id = Property.choose !props in
+      | ProtocolSwitch props ->
+	  s.props <- props ;
+	  let proto_id = Property.choose props in
 	  msg_action (Control (Protocol(proto_id))) (* install the protocol locally *)
     )
   in
 
-  let recv_cast origin msg =
-    recv_msg origin msg ;
-    check_buf ()
-  and recv_cast_iov _ _ = failwith "recv_cast_iov"
 
-  and recv_send _ _ = failwith "error"
-  and block () = [||]
-  and heartbeat _ =
-    check_buf ()
+  (* 
+   * Recolor all the lines according to new ranks.
+   *)
+  let receive_x_sum (ls,vs) names' props' = 
+    s.xfer  <- false ;
+    s.sum_states <- Array.create 0 None;
+    s.counter <- 0;
+    s.names <- names' ;
+    s.ls <- ls ;
+    s.vs <- vs ;
 
-  and block_recv_cast origin msg =
-    recv_msg origin msg
-  and block_recv_cast_iov _ _ = failwith "block_recv_cast_iov"
-  and block_recv_send _ _ = ()
-  and block_view (ls,vs) =
-    [ls.rank,(my_name,!props)]
-  and block_install_view (ls',vs') info =
-    let names = List.map fst info in
-    let props = List.map snd info in
-    let props = 
-      List.fold_left (fun res props ->
-        if Property.choose props = vs'.proto_id then
-          Some props
-        else res
-      ) None props
-    in
-    (props,names)
-  and unblock_view (ls,vs) (props',names') =
-    names       := Array.of_list names' ;
-    view 	:= Arrayf.to_array vs.view ;
-    rank 	:= ls.rank ;
     if_some props' (fun props' ->	(*HACK*)
-      props       := props'
-    ) ;
-     
+      s.props <- props'
+    );
+    
     (* If state transfer view, then multicast all of my
      * active lines.  If not then recolor all the lines
      * according to new ranks.
@@ -646,7 +667,7 @@ let intf (ls_init,vs_init) my_name alarm top do_migrate =
        *)
       let xfer = ref [] in
       List.iter (fun {from=who;seqno=seqno;x1=x1;y1=y1;x2=x2;y2=y2} ->
-      	if who = my_endpt then (
+      	if who = s.ls.endpt then (
 	  xfer := (seqno,x1,y1,x2,y2) :: !xfer
 	)
       ) !drag_lines ;
@@ -659,98 +680,176 @@ let intf (ls_init,vs_init) my_name alarm top do_migrate =
       (* Redraw all the lines with new coloring.
        *)
       drag_lines := List.map (fun {from=who;seqno=seqno;x1=x1;y1=y1;x2=x2;y2=y2;obj=line} ->
-  	Canvas.delete wb_cv [line] ;
+	Canvas.delete wb_cv [line] ;
 	draw_line who seqno x1 y1 x2 y2
       ) !drag_lines ;
-
+    
       (* Update the group view information.
        *)
-      Listbox.delete mbr_lb (Number 0) End ;
-      Listbox.insert mbr_lb (Number 0) (Array.to_list !names)
-    ) ;
+      Listbox.delete mbr_lb (`Num 0) `End ;
+      Listbox.insert mbr_lb (`Num 0) (Array.to_list s.names);
+    );
 
     (* Update the pointers to new view size.
      *)
     ptr_reset (Arrayf.length vs.view) ;
-
+    
     (* Print current protocol in use.
      *)
-    let props_s = List.map Property.string_of_id !props in
+    let props_s = List.map Property.string_of_id s.props in
     let props_s = String.concat ":" props_s in
-     
-    Label.configure proto_lab [Text ("Properties: "^props_s)] ;
-
+    
+    Label.configure ~text:("Properties: "^props_s) proto_lab ;
+    
     (* Print available protocols in this view. 
      *)
     let modes = Addr.modes_of_view vs.address in
     let modes = Arrayf.map Addr.string_of_id modes in
     let modes = String.concat ":" (Arrayf.to_list modes) in
-    Label.configure trans_lab [Text ("Transports: "^modes)] ;
-
+    Label.configure ~text:("Transports: "^modes) trans_lab ;
+    
     (* Print security key in use.
      *)
     let key = Security.string_of_key_short vs.key in
-    Label.configure key_lab [Text ("Key: "^key)] ;
+    Label.configure ~text:("Key: "^key) key_lab ;
 
     Array.append (check_buf ()) [|Control XferDone|]
+  in
+  
+  
+  let install (ls,vs) = 
+    log (fun () -> sprintf "install nmembers=%d\n" ls.nmembers);
+    s.blocked <- false ;
+
+    let actions = 
+      if ls.nmembers > 1 then (
+	s.xfer <- true ;
+	s.sum_states <- Array.create ls.nmembers None ;
+	s.sum_states.(ls.rank) <- Some(s.my_name, s.props);
+	s.counter <- 1;
+	if ls.rank = 0 then [||]
+	else [|Send1 (0, X (s.my_name,copy_props s))|]
+      ) else (
+	receive_x_sum (ls,vs) s.names (Some s.props)
+      )
+    in
+
+
+    let receive origin _ _ msg =
+      match msg with 
+	  R msg -> 
+	    if not s.blocked && not s.xfer then (
+	      recv_msg origin msg ;
+	      check_buf ()
+	    ) else (
+	      recv_msg origin msg ;
+	      [||]
+	    )
+	| X (name,props) -> 
+	    assert (ls.rank = 0);
+	    s.sum_states.(origin) <- Some(name,props);
+	    s.counter <- succ s.counter;
+	    if s.counter = ls.nmembers then
+	      let info = Array.map (function
+		  None -> failwith "some_of" 
+		| Some x -> x
+	      ) s.sum_states in
+	      let names = Array.map fst info in
+	      let props = Array.map snd info in
+	      let props = 
+		Array.fold_left (fun res props ->
+		  if Property.choose props = s.vs.proto_id then
+		    Some props
+		  else res
+		) None props
+	      in
+	      let msgs = receive_x_sum (ls,vs) names props in
+	      if not s.blocked then 
+		Array.append [|Cast (X_Sum (names,props))|] msgs
+	      else
+		[||]
+	    else
+	      [||]
+	| X_Sum (names,props) -> 
+	    if ls.rank <> 0 then 
+	      receive_x_sum (ls,vs) names props
+	    else
+	      [||]
+		
+    and block () = 
+      s.blocked <- true;
+      [||]
+      
+    and heartbeat _ =
+      if not s.blocked && not s.xfer then (
+	(*log (fun () -> "heartbeat");*)
+	check_buf ()
+      ) else [||]
+
+    in actions, {
+      flow_block = (fun _ -> ());
+      receive = receive ;
+      block = block ;
+      heartbeat = heartbeat ;
+      disable = (fun _ -> ())
+    }
 
   and exit () =
     printf "exiting\n"
 
-  in {
-    recv_cast           = recv_cast ;
-    recv_send           = recv_send ;
-    heartbeat           = heartbeat ;
-    heartbeat_rate      = (Time.of_int 10) ;
-    block               = block ;
-    block_recv_cast     = block_recv_cast ;
-    block_recv_send     = block_recv_send ;
-    block_view          = block_view ;
-    block_install_view  = block_install_view ;
-    unblock_view        = unblock_view ;
-    exit                = exit
+  in full {
+    heartbeat_rate      = Time.of_int 3 ;
+    install             = install ;
+    exit                = exit 
   }
 
 (**************************************************************)
 
-let init top view_state username do_migrate =
-  let ready_to_migrate = ref None in
+let run () =
+  (* Set defaults for domain and alarm.
+   *)
+  Arge.set_string Arge.alarm "Tk" ;
+  Param.default "stable_sweep" (Param.Time (Time.of_float 0.5)) ;
+  Param.default "suspect_sweep" (Param.Time (Time.of_float 0.5)) ;
+(*  Param.default "suspect_max_idle" (Param.Int 4) ;
+  Param.default "merge_timeout" (Param.Time (Time.of_float 8.0)) ;
+*)
 
-  let do_migrate host_name =
-    let addr,got_vs = do_migrate host_name in
-    ready_to_migrate := Some got_vs ;
-    addr
+  (* Parse command line arguments.
+   *)
+  Arge.parse [
+  ] (Arge.badarg name) "" ; 
+
+  (* Choose a string name for this member.  Usually
+   * this is "userlogin@host".
+   *)
+  let username =
+    try
+      (Hsys.getlogin ()) ^ "@" ^ (Hsys.gethostname ())
+    with _ ->
+      ("unknown")
   in
 
-  (* Initialize the application interface.
-   *)
-  let alarm = Elink.alarm_get_hack () in
-  let interface = intf view_state username alarm top do_migrate in
-  
-  let up ev =
-    match Event.getType ev with
-    | Event.EView -> (
-        let vs = Event.getViewState ev in
-        match !ready_to_migrate with
-        | Some got_vs ->
-            got_vs vs
-        | None -> 
-            eprintf "WB:ready to migrate, but no function\n" ;
-            exit 0
-      )
-    | _ -> ()
-  in
+  let top = Tk.openTk () in
+  let (ls,vs) = Appl.default_info "wb" in
+  let alarm = Alarm.get_hack () in
+  let state = initialize username (ls,vs) in
+  let interface = intf state alarm top in
+  Appl.config_new interface (ls,vs) ;
 
-  (* Initialize the protocol stack, using the
-   * interface, protocol stack, and transports chosen above.
-   *)
-  let mbuf = Alarm.mbuf alarm in
-  let interface = Elink.get_appl_old_full name interface in
-  let interface = Elink.get name Elink.appl_compat_compat interface in
-  let interface = Elink.get_appl_power_newf name mbuf interface in
-  let glue = Arge.get Arge.glue in
-  let state = Layer.new_state interface in
-  let dn = Stacke.config_full glue alarm Addr.default_ranking state view_state up in
-  ()
+  Htk.init alarm;
+  Tk.mainLoop ()
 
 (**************************************************************)
+(* Run the application, with exception handlers to catch any
+ * problems that might occur.
+ *)
+let _ = Printexc.catch run ()
+
+(* Flush output and exit the process.
+ *)
+let _ = exit 0
+
+(**************************************************************)
+
+

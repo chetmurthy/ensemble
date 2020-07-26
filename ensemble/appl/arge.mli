@@ -28,7 +28,6 @@ val string : (name -> string -> 'a) -> 'a -> name -> string -> 'a t
 
 val aggregate    : bool t		(* aggregate messages *)
 val alarm	 : string t		(* alarm to use *)
-val eth_interface : string t		(* name of ethernet interface (see notes in arge.ml) *)
 val force_modes	 : bool t		(* force modes, no matter what *)
 val gossip_hosts : string list option t	(* where to find gossip servers *)
 val gossip_port  : port option t	(* where to find gossip server *)
@@ -51,7 +50,6 @@ val deering_port : port option t	(* deering port *)
 val properties   : Property.id list t	(* default protocol properties *)
 val refcount     : bool t		(* use reference counts for iovecs *)
 val roots	 : bool t		(* output resource info? *)
-val sp2_suffixes : string list t	(* suffixes to hostname for SP2 fast interconnect *)
 val glue         : Glue.glue t		(* selected layer glue. *)
 val pgp          : string option t	(* are we using pgp? *)
 val pgp_pass     : string option t	(* pass phrase for pgp *)
@@ -64,9 +62,11 @@ val udp_port     : port option t	(* port override for UDP communication *)
 val netsim_socks : bool t		(* allow socks with Netsim *)
 val debug_real   : bool t		(* use real time for debugging logs *)
 val short_names  : bool t		(* use short names for endpoints *)
-val lib_dir      : string option t	(* location of Ensemble library (for dynamic linking) *)
 val sock_buf     : int t                (* size of kernel socket buffers *)
 
+(**************************************************************)
+val gc_compact  : int -> unit           (* Set GC compaction rate *)
+val gc_verb     : unit -> unit          (* Set GC verbosity *)
 (**************************************************************)
 
 val inet_of_string : 'a t -> string -> inet
@@ -86,10 +86,6 @@ val parse	: (string * Arg.spec * string) list -> (string -> unit) -> string -> u
 (* Can be used for capturing command-line problems.
  *)
 val badarg 	: string -> string -> unit
-
-(**************************************************************)
-
-val stats : unit -> unit
 
 (**************************************************************)
 

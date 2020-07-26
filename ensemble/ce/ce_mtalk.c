@@ -32,7 +32,7 @@ typedef struct state_t {
 
 void cast(state_t *s, char *msg){
   if (s->blocked == 0)
-    ce_Cast(s->intf, strlen(msg), msg);
+    ce_flat_Cast(s->intf, strlen(msg)+1, msg);
 }
  
 
@@ -43,10 +43,13 @@ void stdin_handler(void *env){
   
   fgets(buf, 100, stdin);
   len = strlen(buf);
-  tmp = (char*) malloc(len+1);
-  memcpy(tmp, buf, len);
-  tmp[len] = '\0';
-  printf("Read :len=%d:%s:\n", len, tmp);
+  if (len>=100)
+    /* string too long, dumping it.
+     */
+    return;
+
+  tmp = ce_copy_string(buf);
+  TRACE2("Read: ", tmp);
   cast(s, tmp);
 }
 
@@ -76,45 +79,42 @@ void main_block(void *env){
 void main_recv_cast(void *env, int rank, ce_len_t len, char *msg) {
   state_t *s = (state_t*) env;
 
-  TRACE2("main_recv_cast", s->ls->endpt);
-  printf("recv_cast <- %d msg=%s\n", rank, msg);
+  TRACE2("main_recv_send", s->ls->endpt);
+  printf("%d -> msg=%s", rank, msg);
 }
 
 void main_recv_send(void *env, int rank, ce_len_t len, char *msg) {
-  state_t *s = (state_t*) env;
-
-  TRACE2("main_recv_send", s->ls->endpt);
-  printf("recv_send <- %d msg=%s\n", rank, msg);
 }
 
 void main_heartbeat(void *env, double time) {}
 
 void join(){
-  ce_jops_t jops; 
+  ce_jops_t *jops; 
   ce_appl_intf_t *main_intf;
   state_t *s;
   
   /* The rest of the fields should be zero. The
    * conversion code should be able to handle this. 
    */
-  record_clear(&jops);
-  jops.hrtbt_rate=10.0;
-  jops.transports = "DEERING";
-  jops.group_name = "ce_mtalk";
-  jops.properties = CE_DEFAULT_PROPERTIES;
-  jops.use_properties = 1;
+  jops = record_create(ce_jops_t*, jops);
+  record_clear(jops);
+  jops->hrtbt_rate=10.0;
+  //  jops->transports = ce_copy_string("UDP");
+  jops->group_name = ce_copy_string("ce_mtalk");
+  jops->properties = ce_copy_string(CE_DEFAULT_PROPERTIES);
+  jops->use_properties = 1;
 
   s = (state_t*) record_create(state_t*, s);
   record_clear(s);
     
-  main_intf = ce_create_intf(s,
+  main_intf = ce_create_flat_intf(s,
 			main_exit, main_install, main_flow_block,
 			main_block, main_recv_cast, main_recv_send,
 
 			     main_heartbeat);
   
   s->intf= main_intf;
-  ce_Join (&jops, main_intf);
+  ce_Join (jops, main_intf);
   
   ce_AddSockRecv(0, stdin_handler, s);
 }

@@ -1,6 +1,6 @@
 open Ensemble
 open Appl
-open Appl_intf open Old
+open Appl_intf open New
 open Util
 open Transport
 open Proto
@@ -11,6 +11,7 @@ open Debug
 open View
 (**************************************************************)
 let name = Trace.file "MASTER"
+let log = Trace.log name
 (**************************************************************)
 
 type board = int * int -> bool
@@ -49,6 +50,7 @@ let setExitFunc f = exitFunc := f
   (* be acted upon at the next heartbeat. *)
 
 let startMaster xdim ydim initboard generations =
+  log (fun () -> "startMaster");
   state := Starting (xdim,ydim,initboard,generations)
 
 (* This function returns the interface record that defines
@@ -56,6 +58,7 @@ let startMaster xdim ydim initboard generations =
  *)
 
 let life my_endpt makeSlave rate =
+  log (fun () -> "life");
      (* our current view *)
   let view = ref []
      (* the matrix of slave endpts *)
@@ -124,110 +127,118 @@ let life my_endpt makeSlave rate =
         );
        [||]
   in
-  let recv_cast _ m = [||]
-  and recv_send _ m = receiveMsg m
-  and block () = [||]
-  and heartbeat _ =
-    begin
-      begin
-        match !state with
-          Starting (xdim,_,_,_) ->
-            if !numstarted == 0 then
+
+    let install (ls,vs) = 
+      let blocked = ref false in
+      let view' = Arrayf.to_list vs.view in
+      !viewFunc (List.length view');
+      view := view';
+
+      let receive origin bk cs m = 
+	match bk,cs with
+	    _ , C -> [||]
+	  | U, S -> receiveMsg m
+	  | B, S -> ignore (receiveMsg m); [||]
+	      
+      and block () = 
+	blocked := true;
+	[||]
+	
+      and heartbeat _ =
+	begin
+	  begin
+            match !state with
+		Starting (xdim,_,_,_) ->
+		  if !numstarted == 0 then
+		    begin
+                      makeSlave ();
+                      incr numstarted
+		    end
+		  else
+		    ()
+              | _ -> ()
+	  end;
+	  sendMsgs ()
+	end
+	
+      and initial_actions = 
+	match !state with
+	    Computing _ -> 
               begin
-                makeSlave ();
-                incr numstarted
+		[||]
               end
-            else
-              ()
-          | _ -> ()
-      end;
-      sendMsgs ()
-    end
-  and block_recv_cast _ m = ()
-  and block_recv_send _ m = unit (receiveMsg m)
-  and block_view (ls,vs) = 
-    if ls.rank = 0 then
-      List.map (fun rank -> (rank,())) (Array.to_list (Util.sequence ls.nmembers))
-    else []
-  and block_install_view vs _ = ()
-  and unblock_view (ls,vs) () =
-    let view' = Arrayf.to_list vs.view in
-    !viewFunc (List.length view');
-    view := view';
-    match !state with
-      Computing _ -> 
-        begin
-          [||]
-        end
-     |Idle ->
-        begin
-          if (List.length view' == 1) then
-            [||]
-          else
-            begin
-              eprintf "Protocol Error!\n";
-              flush stdout;
-              exit 1;
-              [||]
-            end
-        end
-     |Stopping -> [||]
-     |Starting (xdim, ydim, board, gens) ->
-          if (List.length view' == xdim*ydim+1) then
-            (* Everyone's here! *)
-            begin
-              state := Computing(xdim,ydim,board,gens);
-              assignSlaves view';
-              for x = 0 to (xdim-1) do
-                for y = 0 to ydim-1 do
-                  queueOutMsg (Send ([|coords2rank (x,y)|],YourCoordinates (x,y)))
-                done
-              done;
-              queueOutMsg (Cast (NumberOfGenerations gens));
-              for x = 0 to xdim-1 do
-               for y = 0 to ydim-1 do
-                 queueOutMsg (Send ([|coords2rank (x,y)|], 
-                                      InitValue (if (board (x,y)) then
-                                                    Live
-                                                 else
-                                                    Dead)))
-               done
-              done;
-              for x = 0 to xdim-1 do
-                for y = 0 to ydim-1 do
-                  queueOutMsg (Send ([|coords2rank (x,y)|], 
-                                  YourNeighbours (List.map coords2rank (neighbours x y))))
-                done
-              done;
-              sendMsgs ()
-            end
-          else
-            begin
-              (* wait until we've gotten the number we've started, and then *)
-              (* start more. *)
-              if (List.length view' == !numstarted+1) then
-                begin 
-                  makeSlave ();
-                  incr numstarted;
-                  [||]
-                end
-              else 
-                [||]
-            end
-  and exit () = exit 0
-  in Elink.get_appl_old_full name {
-    recv_cast           = recv_cast ;
-    recv_send           = recv_send ;
-    heartbeat           = heartbeat ;
-    heartbeat_rate      = rate ;
-    block               = block ;
-    block_recv_cast     = block_recv_cast ;
-    block_recv_send     = block_recv_send ;
-    block_view          = block_view ;
-    block_install_view  = block_install_view ;
-    unblock_view        = unblock_view ;
-    exit                = exit
-  } 
+	  |Idle ->
+             begin
+               if (List.length view' == 1) then
+		 [||]
+               else
+		 begin
+		   eprintf "Protocol Error!\n";
+		   flush stdout;
+		   exit 1;
+		   [||]
+		 end
+             end
+	  |Stopping -> [||]
+	  |Starting (xdim, ydim, board, gens) ->
+             if (List.length view' == xdim*ydim+1) then
+               (* Everyone's here! *)
+               begin
+		 state := Computing(xdim,ydim,board,gens);
+		 assignSlaves view';
+		 for x = 0 to (xdim-1) do
+                   for y = 0 to ydim-1 do
+                     queueOutMsg (Send ([|coords2rank (x,y)|],YourCoordinates (x,y)))
+                   done
+		 done;
+		 queueOutMsg (Cast (NumberOfGenerations gens));
+		 for x = 0 to xdim-1 do
+		   for y = 0 to ydim-1 do
+                     queueOutMsg (Send ([|coords2rank (x,y)|], 
+                     InitValue (if (board (x,y)) then
+                       Live
+                     else
+                       Dead)))
+		   done
+		 done;
+		 for x = 0 to xdim-1 do
+                   for y = 0 to ydim-1 do
+                     queueOutMsg (Send ([|coords2rank (x,y)|], 
+                     YourNeighbours (List.map coords2rank (neighbours x y))))
+                   done
+		 done;
+		 sendMsgs ()
+               end
+             else
+               begin
+		 (* wait until we've gotten the number we've started, and then *)
+		 (* start more. *)
+		 if (List.length view' == !numstarted+1) then
+                   begin 
+                     makeSlave ();
+                     incr numstarted;
+                     [||]
+                   end
+		 else 
+                   [||]
+               end
+      in initial_actions, {
+	flow_block = (fun _ -> ());
+	receive = receive;
+	block  = block ;
+	heartbeat = heartbeat ;
+	disable = (fun _ -> ());
+      }
+
+    and exit () = 
+      eprintf "(lifemaster:got exit)\n" ;
+      exit 0
+	
+    in full {
+      heartbeat_rate = rate ;
+      install = install ;
+      exit = exit
+    }
 
 (**************************************************************)
 

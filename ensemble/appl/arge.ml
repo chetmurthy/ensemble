@@ -142,7 +142,7 @@ let set_modes name modes =
     try List.map Addr.id_of_string modes with e ->
       eprintf "ARGE:bad value for %s, exiting\n" name ;
       eprintf "  (modes={%s}, error=%s\n" 
-        (String.concat ", " modes) (Hsys.error e) ;
+        (String.concat ", " modes) (Util.error e) ;
       exit 1
   in	
   modes
@@ -160,7 +160,7 @@ let inet_of_string_list a hosts =
       |	e ->
 	  eprintf "ARGE:bad value for %s, exiting\n" a.name ;
 	  eprintf "  (host=%s, all hosts={%s}, error=%s)\n" 
-	    host (String.concat ", " hosts) (Hsys.error e) ;
+	    host (String.concat ", " hosts) (Util.error e) ;
 	  exit 1
     ) hosts
   in
@@ -174,7 +174,7 @@ let inet_of_string_list a hosts =
 let inet_of_string a host =
   try Hsys.inet_of_string host with e -> 
     eprintf "ARGE:bad value for %s, exiting\n" a.name ;
-    eprintf "  (host={%s}, error=%s\n" host (Hsys.error e) ;
+    eprintf "  (host={%s}, error=%s\n" host (Util.error e) ;
     exit 1
 
 let set_glue name s =
@@ -201,11 +201,23 @@ let sock_buf_default = 64*1024*1024/(2*128+1024) (* = 52428 *)
 
 (**************************************************************)
 
+(* Set the verbose flag for the Ocaml garbage collector.
+ *)
+let gc_verb () =
+  let r = Gc.get () in		
+  r.Gc.verbose <- 127 ;		
+  Gc.set r			
+
+(* Set the compaction rate for the Ocaml garbage collector.
+ *)
+let gc_compact pct =
+  let r = Gc.get () in		
+  r.Gc.max_overhead <- pct;
+  Gc.set r			
+(**************************************************************)
+
 let aggregate    = bool set_ident false "aggregate" "aggregate messages"
 let alarm        = string set_ident "REAL" "alarm" "set alarm package to use"
-let eth_interface = string set_ident "eth0" "eth_interface" 
-    ("set name of ethernet interface when using the ETH transport mode (normal users"^
-    "use UDP mode and do not set this)")
 let force_modes  = bool set_ident false "force_modes" "disable transport modes checking"
 let glue         = string set_glue Glue.Imperative "glue" "set layer glue to use"
 let gossip_hosts = string set_string_list_option None "gossip_hosts" "set hosts for gossip servers"
@@ -228,7 +240,6 @@ let properties   = string set_properties Property.vsync "properties" "set defaul
 let groupd       = bool set_ident false "groupd" "use groupd server"
 let protos       = bool set_ident false "protos" "use protos server"
 let roots        = bool set_ident false "roots" "print information about Ensemble roots"
-let sp2_suffixes = string set_string_list ["sw";"-hps"] "sp2_suffix" "set hostname suffixes for SP2 fast interconnect"
 let pgp          = string set_option None "pgp" "set my id for using pgp"
 let pgp_pass     = string set_option None "pgp_pass" "set my passphrase for using pgp"
 let pollcount    = int set_ident 10 "pollcount" "number of polling operations before blocking"
@@ -242,7 +253,6 @@ let traces       = string set_ident "" "traces" "set modules to trace"
 let netsim_socks = bool set_ident false "netsim_socks" "allow socks with Netsim"
 let debug_real   = bool set_ident false "debug_real" "use real time for debugging logs"
 let short_names  = bool set_ident false "short_names" "use short names for endpoints"
-let lib_dir      = string set_option None "lib_dir" "location of Ensemble library (for dynamic linking)"
 let sock_buf     = int set_ident sock_buf_default "sock_buf" "size of kernel socket buffers"
 
 (**************************************************************)
@@ -270,12 +280,6 @@ let remove_properties p =
   let p = colon_split p in
   let p = List.map Property.id_of_string p in
   set_properties (Lset.subtract (get properties) p)
-
-(**************************************************************)
-
-let set_thread () =
-  set glue Glue.Threaded ;
-  set alarm "Threaded"			(* must use Threaded Alarm *)
 
 (**************************************************************)
 
@@ -332,11 +336,6 @@ let version () =
 
 (**************************************************************)
 
-let stats () =
-  Glue.stats ()
-
-(**************************************************************)
-
 (* Helper function for parameter management.
  *)
 let param_help debug cb s =
@@ -383,22 +382,6 @@ let param_bool =
 
 (**************************************************************)
 
-(* Set the verbose flag for the Ocaml garbage collector.
- *)
-let gc_verb () =
-  let r = Gc.get () in		
-  r.Gc.verbose <- 127 ;		
-  Gc.set r			
-
-(* Set the compaction rate for the Ocaml garbage collector.
- *)
-let gc_compact pct =
-  let r = Gc.get () in		
-  r.Gc.max_overhead <- pct;
-  Gc.set r			
-
-(**************************************************************)
-
 let seedval s = 
   let s = Digest.string s in
   let len = String.length s in
@@ -441,7 +424,6 @@ let args () =
     "-seed",		Arg.Unit(Random.self_init), ": seed the random number generator" ;
     "-seedval",		Arg.String(seedval), ": seed the random number generator" ;
     "-test",		Arg.String(Trace.test_exec), ": run named test (-print_config lists available tests)" ;
-    "-thread",          Arg.Unit(set_thread), ": use threaded layers" ;
     "-time",            Arg.String(timestamp_use), ": enable timers for performance testing" ;
     "-total",           Arg.Unit add_total, ": add total ordering property" ;
     "-trace",		Arg.String(trace), ": enable named trace messages" ;
@@ -549,13 +531,6 @@ let parse app_args badarg doc =
       let traces = get traces in
       let traces = string_split " \t" traces in
       List.iter trace traces
-    end ;
-    
-    begin
-      match get lib_dir with
-      | None -> ()
-      | Some lib ->
-	  Elink.set_ensemble_lib lib
     end
 
  (**************************************************************)

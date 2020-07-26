@@ -2,12 +2,13 @@
 (* HOT_APPL.ML *)
 (* Authors: Alexey Vaysburd, Mark Hayden 11/96 *)
 (**************************************************************)
+open Ensemble
 open Util
 open Trans
 open View
 open Appl_intf
 open Appl_intf.New
-open Appl_intf.Protosi
+open Protos
 open Hot_util
 open Buf
 (**************************************************************)
@@ -22,8 +23,8 @@ let log = Trace.log name
  *)
 type c_dncall = 
   | C_Join of Hot_util.join_options 
-  | C_Cast of Buf.t
-  | C_Send of endpt * Buf.t
+  | C_Cast of Iovec.raw
+  | C_Send of endpt * Iovec.raw
   | C_Suspect of endpt array 
   | C_XferDone of unit
   | C_Protocol of string
@@ -48,7 +49,7 @@ let string_of_dncall = function
   | C_BlockOk _ -> "C_BlockOk"
   | C_Void _ -> "C_Void"
 
-let dncall_of_c mbuf (ls,vs) = 
+let dncall_of_c (ls,vs) = 
   let viewh = Hashtbl.create 10 in
   for rank = 0 to pred ls.nmembers do
     let endpt = Arrayf.get vs.view rank in
@@ -60,17 +61,18 @@ let dncall_of_c mbuf (ls,vs) =
     log (fun () -> string_of_dncall dncall);
     match dncall with 
       | C_Join jops -> failwith "dncall_of_c:C_Join"
-      | C_Cast buf ->
-	  let iovl = Mbuf.allocl name mbuf buf len0 (Buf.length buf) in
+      | C_Cast iov ->
+	  let iovl = Iovecl.of_iovec (Iovec.of_raw iov) in
 	  Cast(iovl)
-      | C_Send(dest,buf) -> (
+      | C_Send(dest,iov) -> (
+	  let iovl = Iovecl.of_iovec (Iovec.of_raw iov) in
 	  try
       	    let rank = Hashtbl.find viewh dest in
-	    let iovl = Mbuf.allocl name mbuf buf len0 (Buf.length buf) in
 	    Send1(rank,iovl)
 	  with Not_found -> 
 	    (* Drop the message and do a no-op.
 	     *)
+	    Iovecl.free iovl;
 	    eprintf "HOT_APPL:Send:warning:unknown destination '%s'\n" dest ;
   	    Control(No_op)
 	)
@@ -131,7 +133,7 @@ let get active id dncall =
 
 (* Join a group.  Use specified group context id.
  *)
-let join mbuf active id dispatch_dncalls ((init_ls,init_vs) as init_vf) interface =
+let join active id dispatch_dncalls ((init_ls,init_vs) as init_vf) interface =
   (* Initialize the state.
    *)
   let dncalls = Queuee.create () in
@@ -194,7 +196,7 @@ let join mbuf active id dispatch_dncalls ((init_ls,init_vs) as init_vf) interfac
        * For suspect actions, if a suspected endp is not in the
        * current view, don't include it in the suspect action.  
        *)
-      let dncall_of_c = dncall_of_c mbuf (ls,vs) in
+      let dncall_of_c = dncall_of_c (ls,vs) in
       let pending_actions () =
 	dispatch_dncalls () ;
 	let actions = Queuee.to_list dncalls in
@@ -311,7 +313,7 @@ let join mbuf active id dispatch_dncalls ((init_ls,init_vs) as init_vf) interfac
       try
         (* Ensure that the link was in the table.
 	 *)
-    	ignore (Hashtbl.find active id) ;
+    	let _ = Hashtbl.find active id in
     	
         (* Then remove it.
          *)

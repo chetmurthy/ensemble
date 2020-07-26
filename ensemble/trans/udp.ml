@@ -14,14 +14,15 @@ let log = Trace.log name
 (**************************************************************)
 
 let init_sock host =
-  let sock = Appl.udp_socket () in
+  let sock_buf = Arge.get Arge.sock_buf in
+  let sock = Hsys.udp_socket sock_buf in
 
   let rec loop port =
     try
       Hsys.bind sock (Hsys.inet_any ()) port;
       port
     with e ->
-      log (fun () -> Hsys.error e);
+      log (fun () -> Util.error e);
       loop (succ port)
   in
 
@@ -68,35 +69,6 @@ let domain alarm =
     if inet = host then localhost else inet
   in
 
-  let sp2_info = do_once (fun () ->
-    let host = Hsys.gethostname () in
-    let try_suffix suffix =
-      try
-	match string_split "." host with
-	| [p1;p2;p3;p4] ->
-	    let p1 = p1 ^ suffix in
-	    let host = [p1;p2;p3;p4] in
-	    let host = String.concat "." host in
-	    eprintf "UDP:trying sp2 udp hostname:'%s'\n" host ;
-	    let host = Hsys.inet_of_string host in
-	    Some(host)
-	| _ -> failwith "bad inet list"
-      with _ ->
-	None
-    in
-    let suffixes = Arge.get Arge.sp2_suffixes in
-    let rec loop = function
-      | [] -> failwith "no suffixes worked for sp2 fast interconnect hostname"
-      | hd :: tl ->
-	  match try_suffix hd with
-	  | None -> loop tl
-	  | Some inet ->
-	      let (sock,port) = init_sock inet in
-	      let addr = Addr.Sp2A(inet,port) in
-	      (sock,addr)
-    in loop suffixes
-  ) in
-
   (* Initialize send and receive sockets.  Both are bound
    * to INADDR_ANY so that messages will be accepted on
    * all network interfaces.
@@ -114,9 +86,9 @@ let domain alarm =
   in
 *)
 
-  (* Tell the Appl module our unique port number.
+  (* Tell the alarm module our unique port number.
    *)
-  Appl.install_port port ;
+  Alarm.install_port port ;
 
   (* TODO: I'm having problems with the loopback stuff.
    *)
@@ -136,7 +108,6 @@ let domain alarm =
   let addr mode = match mode with
   | Addr.Udp     -> udp_addr
   | Addr.Deering -> deering_addr ()
-  | Addr.Sp2     -> snd (sp2_info ())
   | _ -> failwith "addr:bad mode"
   in
 
@@ -161,11 +132,6 @@ let domain alarm =
 	  in
 
 	  deering_sock, disable
-      | Addr.Sp2 ->
-	  let sp2_sock = fst (sp2_info ()) in
-	  Alarm.add_sock_recv alarm "SP2" sp2_sock Hsys.Handler1 ;
-	  let disable () = Alarm.rmv_sock_recv alarm sp2_sock in
-	  sp2_sock, disable
       | _ -> failwith "enable:bad mode"
     in
 
@@ -177,16 +143,9 @@ let domain alarm =
 	| Domain.Pt2pt dests ->
 	    assert (not (Arrayf.is_empty dests)) ;
 
-	    (* Depending on the type of the address, use
-	     * either the standard Udp socket or the
-	     * special Sp2 socket.  
-	     *)
 	    let sock = match mode with
 	    | Addr.Deering
-	    | Addr.Udp -> 
-		udp_sock
-	    | Addr.Sp2 ->
-		fst (sp2_info ())
+	    | Addr.Udp -> udp_sock
 	    | _ -> failwith "xmit:sanity"
 	    in
 
@@ -195,7 +154,6 @@ let domain alarm =
 		match Addr.project dest mode with 
 		| Addr.UdpA    (inet,port) -> (map_localhost inet,port)
 		| Addr.DeeringA(inet,port) -> (map_localhost inet,port)
-		| Addr.Sp2A    (inet,port) -> (map_localhost inet,port)
 		| _ -> failwith "xmit:sanity"
 	      ) dests
 	    in
@@ -242,21 +200,21 @@ let domain alarm =
 	    | _ -> failwith "bad mode"
       in
 
-      let x buf ofs len = Buf.sendto dests buf ofs len
-      and xv iov = Iovecl.sendtov dests iov ; Iovecl.free name iov
-      and xvs iov s = Iovecl.sendtovs dests iov s ; Iovecl.free name iov
+      let x hdr ofs len iovl = 
+	Hsys.sendtosv dests hdr ofs len iovl;
+	Iovecl.free iovl
       in
-      let xmits =
+      let x =
 	if Arge.timestamp_check "send" then (
-	  let ts_xmit = Elink.get name Elink.timestamp_add "UDP:xmit" in
-	  let x buf ofs len = ts_xmit () ; x buf ofs len
-	  and xv iov = ts_xmit () ; xv iov
-	  and xvs iov s = ts_xmit () ; xvs iov s
-	  in (x,xv,xvs)
-	) else (x,xv,xvs)
-      in Some xmits
+	  let stamp = Timestamp.register "UDP:xmit" in
+	  let ts_xmit () = Timestamp.add stamp in
+	  let x hdr ofs len iovl = ts_xmit () ; x hdr ofs len iovl in 
+	  x
+	) else x
+      in Some x
     in
-      
+
+    log (fun () -> sprintf "ipmc_sock=%d" (Hsys.int_of_socket ipmc_sock));
     Domain.handle disable xmit
   in
 
@@ -264,6 +222,6 @@ let domain alarm =
 
 (**************************************************************)
 
-let _ = Elink.put Elink.udp_domain domain
+let _ = Domain.install Addr.Udp domain
 
 (**************************************************************)

@@ -187,201 +187,6 @@ end
 
 (**************************************************************)
 (**************************************************************)
-
-let lock_count = ref 0
-let thread_create = ref 0
-let context_count = ref 0
-
-let stats () =
-  eprintf "GLUE:stats\n" ;
-  eprintf "  thread_create=%d" !thread_create ;
-  eprintf "  lock_count=%d\n" !lock_count ;
-  eprintf "  context_count=%d\n" !context_count
-
-(*
-module Thread = struct
-  type t = Thread.t
-  let create f a = 
-    incr thread_create ;
-    incr context_count ;
-    Thread.create f a
-  let exit = Thread.exit
-  let critical_section = Thread.critical_section
-  let self = Thread.self
-  let sleep () = 
-    incr context_count ;
-    Thread.sleep ()
-  let wakeup = Thread.wakeup
-end
-
-module Mutex = struct
-  type t = { mutable locked: bool; mutable waiting: Thread.t list }
-
-  let create () = { locked = false; waiting = [] }
-
-  let rec lock m =
-    if m.locked then begin                (* test and set atomic *)
-      Thread.critical_section := true;
-      m.waiting <- Thread.self() :: m.waiting;
-      Thread.sleep();
-      lock m
-    end else begin
-      incr lock_count ;
-      m.locked <- true                    (* test and set atomic *)
-    end
-
-  let try_lock m =                        (* test and set atomic *)
-    if m.locked then false else begin 
-      incr lock_count ;
-      m.locked <- true; true 
-    end
-
-  let unlock m =
-    (* Don't play with Thread.critical_section here because of Condition.wait *)
-    let w = m.waiting in                  (* atomic *)
-    m.waiting <- [];                      (* atomic *)
-    m.locked <- false;                    (* atomic *)
-    List.iter Thread.wakeup w
-end
-
-module Condition = struct
-  type t = { mutable waiting: Thread.t list }
-
-  let create () = { waiting = [] }
-
-  let wait cond mut =
-    Thread.critical_section := true;
-    Mutex.unlock mut;
-    cond.waiting <- Thread.self() :: cond.waiting;
-    Thread.sleep();
-    Mutex.lock mut
-
-  let signal cond =
-    match cond.waiting with               (* atomic *)
-      [] -> ()
-    | th :: rem -> cond.waiting <- rem (* atomic *); Thread.wakeup th
-
-  let broadcast cond =
-    let w = cond.waiting in                  (* atomic *)
-    cond.waiting <- [];                      (* atomic *)
-    List.iter Thread.wakeup w
-end
-*)
-(**************************************************************)
-(**************************************************************)
-(**************************************************************)
-
-module Threader : S = struct
-  let name = Trace.file "Threaded"
-  let failwith s = Trace.make_failwith name s
-
-  type ('s,'a,'b) t = 
-    Layer.state ->
-    View.full -> 
-    (('a,'b) handlers_lout -> ('a,'b) handlers_lin)
-
-    type ('s,'top,'bot) init = 
-      ('s,'top,'bot) t -> 
-      'top -> 'bot ->
-      Alarm.t ->
-      (Addr.id -> int) ->
-      Layer.state ->
-      View.full ->
-      (Event.up -> unit) -> 
-      (Event.dn -> unit)
-
-  let convert l vs = failwith "convert:unimplemented"
-  let revert _ = failwith "revert:unimplemented"
-  let wrap_msg _ = failwith "wrap_msg:not supported"
-  let compose l1 l2 = failwith "compose:unimplemented"
-  let init _ _ _ _ _ _ = failwith "init:unimplemented"
-
-(*
-  let convert l vs =
-    let _,h = l vs in
-    let h out =
-      let {empty_lin=empty;up_lin=up;dn_lin=dn} = h out in
-      let seqno_r = ref 0 in
-      let seqno_w = ref 0 in
-      let seqno_rl = Mutex.create () in
-      let seqno_rc = Condition.create () in
-      let seqno_wl = Mutex.create () in
-
-      let insert f =
-	Mutex.lock seqno_wl ;
-	let seqno = !seqno_w in
-	incr seqno_w ;
-	Mutex.unlock seqno_wl ;
-
-	let opt = 
-	  if Mutex.try_lock seqno_rl then
-	    if !seqno_r = seqno then (
-	      f () ;
-	      incr seqno_r ;
-	      Condition.broadcast seqno_rc ;(* Should not be necessary *)
-	      Mutex.unlock seqno_rl ;
-              true
-	    ) else (
-	      Mutex.unlock seqno_rl ;
-	      false
-	    )
-	  else false
-	in	      
-	if not opt then (
-	  let spawn () =
-	    Mutex.lock seqno_rl ;
-	    while !seqno_r <> seqno do
-	      Condition.wait seqno_rc seqno_rl
-	    done ;
-	    f () ;
-	    incr seqno_r ;
-	    Condition.broadcast seqno_rc ;
-	    Mutex.unlock seqno_rl ;
-	    Thread.exit ()
-	  in
-	  Thread.create spawn () ; 
-	  ()
-	)
-      in
-
-      let up ev msg = 
-        insert (fun () -> up ev msg)
-      and dn ev msg = 
-        insert (fun () -> dn ev msg)
-      in
-
-      {empty_lin=empty;up_lin=up;dn_lin=dn}
-    in h
-
-  let revert _ = failwith "revert:not supported"
-  let wrap_msg _ = failwith "wrap_msg:not supported"
-
-  let compose top bot vs =
-    let l {empty_lout=top_empty;up_lout=top_up;dn_lout=bot_dn} =
-      let mid_dn_r = ref (fun e h -> failwith "compose:sanity") in
-      let mid_dn e h = !mid_dn_r e h in
-
-      let {empty_lin=mid_empty;up_lin=mid_up;dn_lin=top_dn} =
-	top vs {empty_lout=top_empty;up_lout=top_up;dn_lout=mid_dn} in
-      let {empty_lin=bot_empty;up_lin=bot_up;dn_lin=mid_dn} =
-	bot vs {empty_lout=mid_empty;up_lout=mid_up;dn_lout=bot_dn} in
-
-      mid_dn_r := mid_dn ;
-      {empty_lin=bot_empty;up_lin=bot_up;dn_lin=top_dn}
-    in l
-
-  let init l top_msg bot_nomsg sched vs up_out =
-    let dn_r = ref (fun _ _ -> failwith "premature event") in
-    let dn ev msg = !dn_r ev msg in
-    let up ev msg = up_out ev in
-    let {up_lin=up;dn_lin=dn} = l vs {empty_lout=top_msg;up_lout=up;dn_lout=dn} in
-    dn_r := Config_trans.f bot_nomsg vs up ;
-    inject_init name sched up bot_nomsg ;
-    let dn ev = dn ev top_msg in
-    dn
-*)
-end
-
 (**************************************************************)
 
 module Functional : S with
@@ -614,12 +419,10 @@ end
 type glue = 
   | Imperative 
   | Functional
-  | Threaded
 
 type ('s,'a,'b) t =
   | Imp of ('s,'a,'b) Imperative.t
   | Fun of ('s,'a,'b) Functional.t
-  | Thr of ('s,'a,'b) Threader.t
 
 type ('s,'top,'bot) init = 
     ('s,'top,'bot) t -> 
@@ -635,19 +438,16 @@ let of_string s =
   match String.uppercase s with
   | "IMPERATIVE" -> Imperative
   | "FUNCTIONAL" -> Functional
-  | "THREADED" -> Threaded
   | _ -> failwith "glue_of_string:unknown glue"
 
 let convert g l =
   match g with
   | Imperative -> Imp (Imperative.convert l)
   | Functional -> Fun (Functional.convert l)
-  | Threaded   -> Thr (Threader  .convert l)
 
 let compose l1 l2 = match l1,l2 with
 | Imp(l1),Imp(l2) -> Imp(Imperative.compose l1 l2)
 | Fun(l1),Fun(l2) -> Fun(Functional.compose l1 l2)
-| Thr(l1),Thr(l2) -> Thr(Threader  .compose l1 l2)
 | _,_ -> failwith "mismatched layers"
 
 (* We take all the arguments first in order to prevent
@@ -656,7 +456,6 @@ let compose l1 l2 = match l1,l2 with
 let init a b c d e f g h = match a with
 | Imp(l) -> Imperative.init l b c d e f g h
 | Fun(l) -> Functional.init l b c d e f g h
-| Thr(l) -> Threader  .init l b c d e f g h
 
 (**************************************************************)
 (**************************************************************)

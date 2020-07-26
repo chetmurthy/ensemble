@@ -3,12 +3,6 @@
 (* Authors: Ohad Rodeh 4/98 *)
 (* Based on code by Mark Hayden, with suggestions by Ron Minsky *)
 (**************************************************************)
-(* Improvments
- * -----------
- * 1. Why send the ticket as a gossip message, use point-to-point unreliable
- * comm.
- * 2. We need better PGP support that will authenticate better recieved messages. 
-*)
 
 open Buf
 open Layer
@@ -140,7 +134,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     let material = DH.compute_key s.dh s.dhl_key bignum in
     if Buf.len_of_int (String.length material) < Security.cipher_len then 
       failwith "key material is too short";
-    Security.cipher_of_buf (Buf.of_string name material)
+    Security.cipher_of_buf (Buf.of_string  material)
   in
 
   (* Handle a verified message
@@ -352,6 +346,6 @@ let l args vf = Layer.hdr init hdlrs None NoOpt args vf
 let _ = 
   Param.default "sec_sim" (Param.Bool false) ;
   Param.default "sec_diff" (Param.Int 10) ;
-  Elink.layer_install name l
+  Layer.install name l
     
 (**************************************************************)

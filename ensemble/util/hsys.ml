@@ -2,8 +2,11 @@
 (* HSYS.ML *)
 (* Author: Mark Hayden, 5/95 *)
 (**************************************************************)
+open Buf
+(**************************************************************)
 let name = "HSYS"
 let failwith s = failwith (name^":"^s)
+let log = Trace.log name
 (**************************************************************)
 
 let fprintf ch fmt =
@@ -20,27 +23,18 @@ let eprintf fmt = fprintf stderr fmt
 (**************************************************************)
 
 type debug = string
-type buf = string
-type ofs = int
-type len = int
 type port = int
 type socket = Socket.socket
-type md5_ctx = Socket.md5_ctx
 
 type inet = Unix.inet_addr
-type send_info = Socket.send_info
 type sendto_info = Socket.sendto_info
 type sock_info = ((socket array) * (bool array)) option
 type select_info = Socket.select_info
-type recv_info = Socket.recv_info
 
 type timeval = Socket.timeval = {
   mutable sec10 : int ;
   mutable usec : int
 } 
-
-type 'a refcnt = 'a Socket.refcnt = { mutable count : int ; obj : 'a } 
-type 'a iovec = 'a Socket.iovec = { rbuf : 'a ; ofs : ofs ; len : len }
 
 type handler =
   | Handler0 of (unit -> unit)
@@ -59,63 +53,30 @@ type socket_option =
 
 (**************************************************************)
 
-(* Handler defaults to nothing.
- *)
-let error_log = ref (fun _ -> ())
-
-let log f = !error_log f
-
-(**************************************************************)
-
-let full_error = ref (fun _ -> "Unknown Exception")
-
-let install_error f = full_error := f
-
-let error e =
-  match e with
-  | Out_of_memory  -> "Out_of_memory";
-  | Stack_overflow -> "Stack_overflow";
-  | Not_found      -> "Not_found"
-  | Failure s      -> sprintf "Failure(%s)" s
-  | Sys_error s    -> sprintf "Sys_error(%s)" s
-  | Unix.Unix_error(err,s1,s2) ->
-      let msg = 
-	try Unix.error_message err 
-      	with _ -> "Unix(unknown error)"
-      in
-      let s1 = if s1 = "" then "" else ","^s1 in
-      let s2 = if s2 = "" then "" else ","^s2 in
-      sprintf "Unix(%s%s%s)" msg s1 s2
-  | Invalid_argument s -> 
-      raise e
-  | _ ->
-      !full_error e
-
-let catch f a =
-  try f a with e ->
-    eprintf "gorp\n\n" ;
-    eprintf "Uncaught exception: %s\n" (error e) ;
-    exit 2
-
-(**************************************************************)
-
+(* Wrap uses of TCP, so that exceptions will be logged, and a len0
+ * will be returned. This simplifies handling TCP recv's at
+ * higher levels. 
+*)
 let rec unix_wrap_again debug f =
   try f () with Unix.Unix_error(err,s1,s2) as exc ->
     match err with 
     | Unix.EINTR
     | Unix.EAGAIN ->
-	log (fun () -> sprintf "warning:%s:%s" debug (error exc)) ;
+	log (fun () -> sprintf "warning:%s:%s" debug (Util.error exc)) ;
 	unix_wrap_again debug f
     | Unix.ECONNREFUSED 
     | Unix.ECONNRESET 
     | Unix.EHOSTDOWN			(* This was reported on SGI *)
     | Unix.ENETUNREACH
     | Unix.ENOENT
-    | Unix.EPIPE ->
-	log (fun () -> sprintf "warning:%s:%s" debug (error exc)) ;
-	0
+    | Unix.EPIPE 
+    | Unix.ECONNABORTED         
+    | Unix.ESHUTDOWN
+    | Unix.EBADF -> 
+	log (fun () -> sprintf "warning:%s:%s" debug (Util.error exc)) ;
+	len0
     | _ ->
-	eprintf "HSYS:%s:%s\n" debug (error exc) ;
+	eprintf "HSYS:%s:%s\n" debug (Util.error exc) ;
 	flush stderr ;
 	raise exc
 	  
@@ -123,7 +84,7 @@ let rec unix_wrap_again debug f =
 
 let bind sock inet port = Unix.bind sock (Unix.ADDR_INET(inet,port))
 let close sock		= Unix.close sock
-let connect sock inet port = Unix.connect sock (Unix.ADDR_INET(inet,port))
+let connect sock inet port = Socket.connect sock (Unix.ADDR_INET(inet,port))
 let getlogin 		= Unix.getlogin
 let getpid              = Unix.getpid
 let gettimeofdaya 	= Socket.gettimeofday
@@ -132,36 +93,112 @@ let inet_any () 	= Unix.inet_addr_any
 let int_of_socket 	= Socket.int_of_socket
 (*let int_of_substring	= Socket.int_of_substring*)
 let listen sock i	= Unix.listen sock i
-let max_msg_len () 	= 9*1024	(* suggested by Werner Vogels *)
-(*let pop_nint 		= Socket.pop_nint*)
-(*let push_nint 	= Socket.push_nint*)
-let read                = Socket.read
-let recv s b o l 	= unix_wrap_again "recv" (fun () -> Socket.recv s b o l)
-let recv_info           = Socket.recv_info
 let select      	= Socket.select
 let poll        	= Socket.poll
-let send_info s         = Socket.send_info s []
-let send s b o l 	= unix_wrap_again "send" (fun () -> Socket.send s b o l)
-let sendp s b o l 	= unix_wrap_again "sendp" (fun () -> Socket.sendp s b o l)
-let sendv s i    	= unix_wrap_again "sendv" (fun () -> Socket.sendv s i)
-let sendto_info s a 	= Socket.sendto_info s [] (Array.map (fun (i,p) -> Unix.ADDR_INET(i,p)) a)
-let sendto 		= Socket.sendto
-let sendtov             = Socket.sendtov
-let sendtosv            = Socket.sendtosv
-let sendtovs            = Socket.sendtovs
-let set_error_log f     = error_log := f ; Socket.set_error_log f
-let socket_dgram () 	= Unix.socket Unix.PF_INET Unix.SOCK_DGRAM 0
-let socket_stream () 	= Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0
-let static_string       = Socket.static_string
-let static_string_free  = Socket.static_string_free
+
+(* Convert errors on stdin into a return value of 0.
+*)
+let read s buf ofs len  = 
+  try Socket.read s buf ofs len with _ -> 0
+(**************************************************************)
+let sendto_info s a 	= Socket.sendto_info s (Array.map (fun (i,p) -> Unix.ADDR_INET(i,p)) a)
+
+let tcp_info s = 
+(*  let sockname = Unix.getsockname s in
+  let inet,port = match sockname with 
+      Unix.ADDR_UNIX _ -> failwith "socket is a UNIX socket, not a TCP/IP one"
+    | Unix.ADDR_INET (inet,port) -> inet,port
+  in*)
+  sendto_info s [||] (*[|inet,port|]*)
+
+let sendto sendto_info buf ofs len =
+  Socket.sendto sendto_info (Buf.string_of buf) (int_of_len ofs) (int_of_len len) 
+
+let sendtov info iovl = 
+  Iovec.Priv.sendtov info (Iovecl.to_iovec_array iovl)
+    
+let sendtosv info buf ofs len iovl = 
+  Iovec.Priv.sendtosv info 
+    (Buf.string_of buf) (Buf.int_of_len ofs) (Buf.int_of_len len) 
+    (Iovecl.to_iovec_array iovl) 
+    
+(* PERF: I hope this is removed by ocamlopt !
+*)
+let udp_recv_packet sock = 
+  let hdr,iovec = Iovec.Priv.udp_recv_packet sock in
+  hdr, iovec
+
+let recv s b o l 	= 
+    len_of_int (Socket.recv s (Buf.string_of b) (int_of_len o) (int_of_len l))
+
+let tcp_recv s b o l 	= 
+  unix_wrap_again "recv_iov" (fun () -> 
+    len_of_int (Socket.recv s (Buf.string_of b) (int_of_len o) (int_of_len l))
+  )
+
+let tcp_recv_iov s iov o l 	= 
+  unix_wrap_again "recv_iov" (fun () -> 
+    len_of_int (Iovec.Priv.recv_iov s iov (int_of_len o) (int_of_len l))
+  )
+
+let tcp_recv_packet sock buf ofs len iov = 
+  unix_wrap_again "tcp_recv_packet" (fun () -> 
+    len_of_int (Iovec.Priv.tcp_recv_packet sock 
+      (Buf.string_of buf) (int_of_len ofs) (int_of_len len) iov)
+  )
+
+let send_p s b o l = 
+  unix_wrap_again "send_p" (fun () -> 
+    len_of_int (Socket.send_p s (Buf.string_of b) (int_of_len o) (int_of_len l)))
+
+let sendv_p s iovl = 
+  unix_wrap_again "sendv_p" (fun () -> 
+    len_of_int (Iovec.Priv.sendv_p s (Iovecl.to_iovec_array iovl))
+  )
+
+let sendsv_p s buf ofs len iovl = 
+  unix_wrap_again "sendsv_p" (fun () -> 
+    len_of_int (Iovec.Priv.sendsv_p s (Buf.string_of buf) 
+      (Buf.int_of_len ofs) (Buf.int_of_len len) (Iovecl.to_iovec_array iovl))
+  )
+
+let sends2v_p s buf1 buf2 ofs len iovl = 
+  unix_wrap_again "sends2v_p" (fun () -> 
+    len_of_int (Iovec.Priv.sends2v_p s
+      (Buf.string_of buf1) 
+      (Buf.string_of buf2) (Buf.int_of_len ofs) (Buf.int_of_len len) 
+      (Iovecl.to_iovec_array iovl))
+  )
+(**************************************************************)
+
+let socket_dgram () 	= Socket.socket Unix.PF_INET Unix.SOCK_DGRAM 0
+let socket_stream () 	= Socket.socket Unix.PF_INET Unix.SOCK_STREAM 0
+let socket_mcast () 	= Socket.socket_mcast Unix.PF_INET Unix.SOCK_DGRAM 0
 let stdin 		= Socket.stdin
 let string_of_inet_nums = Unix.string_of_inet_addr
-let substring_eq        = Socket.substring_eq
-let udp_recv            = Socket.udp_recv
+let substring_eq s1 ofs1 s2 ofs2 len = 
+  Socket.substring_eq 
+    (Buf.string_of s1) (int_of_len ofs1)
+    (Buf.string_of s2) (int_of_len ofs2) (int_of_len len)
+
+(**************************************************************)
+type md5_ctx = Socket.md5_ctx
+
 let md5_init            = Socket.md5_init
 let md5_init_full       = Socket.md5_init_full
-let md5_update          = Socket.md5_update
+let md5_update ctx buf ofs len = 
+  Socket.md5_update ctx (Buf.string_of buf) (Buf.int_of_len ofs) (Buf.int_of_len len)
+
+let md5_update_iov      = Iovec.Priv.md5_update_iov
 let md5_final           = Socket.md5_final
+
+(**************************************************************)
+
+let md5_update_iovl ctx il = 
+  let il = Iovecl.to_arrayf il in
+  for i = 0 to pred (Arrayf.length il) do
+    md5_update_iov ctx (Arrayf.get il i) 
+  done
 
 (**************************************************************)
 
@@ -412,7 +449,7 @@ let bind_any debug sock host =
     try bind sock host 0 with _ ->
       try bind sock host 0 with _ ->
       	try bind sock host 0 with e ->
-  	  eprintf "HSYS:error:binding socket to port 0 (tried 3 times):%s\n" (error e) ;
+  	  eprintf "HSYS:error:binding socket to port 0 (tried 3 times):%s\n" (Util.error e) ;
   	  eprintf "  (Note: this should not fail because binding to port 0 is\n" ;
   	  eprintf "   a request to bind to any available port.  However, on some\n" ;
   	  eprintf "   platforms (i.e., Linux) this occasionally fails and trying\n" ;
@@ -425,7 +462,7 @@ let bind_any debug sock host =
       let (_,port) = getsockname sock in
       port
     with e ->
-      eprintf "HSYS:error:getsockname:%s\n" (error e) ;
+      eprintf "HSYS:error:getsockname:%s\n" (Util.error e) ;
       exit 1
   in
 
@@ -482,3 +519,68 @@ let background_process cmd env input =
    Unix.descr_of_in_channel in_err)
 
 (**************************************************************)
+let set_udp_options sock sock_buf = 
+  (* Set the socket to be nonblocking.
+   *)
+  begin try
+    setsockopt sock (Nonblock true)
+  with e ->
+    log (fun () -> sprintf "warning:setsockopt:Nonblock:%s" (Util.error e))
+  end ;
+  
+  (* Try to disable error ICMP error reporting.
+   *)
+  begin try
+    setsockopt sock (Bsdcompat true)
+  with e ->
+    log (fun () -> sprintf "warning:setsockopt:Bsdcompat:%s" (Util.error e))
+  end ;
+  
+  (* Try to set the size of the send buffer.
+   *)
+  begin try
+    setsockopt sock (Sendbuf sock_buf)
+  with e ->
+    log (fun () -> sprintf "warning:setsockopt:Sendbuf(%d):%s" sock_buf (Util.error e))
+  end ;
+  
+  (* Try to set the size of the receive buffer.
+   *)
+  begin try
+    setsockopt sock (Recvbuf sock_buf)
+  with e ->
+    log (fun () -> sprintf "warning:setsockopt:Recvbuf(%d):%s" sock_buf (Util.error e))
+  end ;
+
+  (* Children don't get access to it and make it non-blocking.
+   *)
+  (*set_close_on_exec sock ;*)
+  
+  sock
+
+
+(* Open a datagram socket.
+ *)
+let udp_socket sock_buf =
+  let sock =
+    try socket_dgram () with e ->
+      eprintf "HSYS:error creating socket:%s, exiting\n" (Util.error e) ;
+      exit 1
+  in
+  log (fun () -> sprintf "udp_socket: sock=%d" (int_of_socket sock)) ;
+  set_udp_options sock sock_buf
+
+
+(* Open a multicast socket
+*)
+let multicast_socket sock_buf =
+  let sock =
+    try socket_mcast () with e ->
+      eprintf "HSYS:error creating socket:%s, exiting\n" (Util.error e) ;
+      exit 1
+  in
+  log (fun () -> sprintf "multicast_sock: sock=%d" (int_of_socket sock)) ;
+  set_udp_options sock sock_buf
+
+(**************************************************************)
+

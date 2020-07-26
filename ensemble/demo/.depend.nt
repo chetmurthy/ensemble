@@ -1,18 +1,18 @@
-armadillo.cmo: ..\lib\nt\ensemble.cmi ..\lib\nt\hsys.cmi 
-armadillo.cmx: ..\lib\nt\ensemble.cmi ..\lib\nt\hsys.cmi 
+armadillo.cmo: ..\lib\nt\ensemble.cmi 
+armadillo.cmx: ..\lib\nt\ensemble.cmi 
 fifo.cmo: ..\lib\nt\ensemble.cmi 
 fifo.cmx: ..\lib\nt\ensemble.cmi 
-gossip.cmo: ..\lib\nt\ensemble.cmi groupd.cmo ..\lib\nt\hsys.cmi 
-gossip.cmx: ..\lib\nt\ensemble.cmi groupd.cmx ..\lib\nt\hsys.cmi 
+gossip.cmo: ..\lib\nt\ensemble.cmi groupd.cmo 
+gossip.cmx: ..\lib\nt\ensemble.cmi groupd.cmx 
 groupd.cmo: ..\lib\nt\ensemble.cmi 
 groupd.cmx: ..\lib\nt\ensemble.cmi 
-lensemble.cmo: ..\lib\nt\ensemble.cmi ..\lib\nt\hsys.cmi 
-lensemble.cmx: ..\lib\nt\ensemble.cmi ..\lib\nt\hsys.cmi 
-mtalk.cmo: ..\lib\nt\ensemble.cmi ..\lib\nt\hsys.cmi 
-mtalk.cmx: ..\lib\nt\ensemble.cmi ..\lib\nt\hsys.cmi 
-perf.cmo: ..\lib\nt\ensemble.cmi ..\lib\nt\hsys.cmi 
-perf.cmx: ..\lib\nt\ensemble.cmi ..\lib\nt\hsys.cmi 
-rand.cmo: ..\lib\nt\ensemble.cmi ..\lib\nt\hsys.cmi 
-rand.cmx: ..\lib\nt\ensemble.cmi ..\lib\nt\hsys.cmi 
-socktest.cmo: ..\lib\nt\socket.cmi 
-socktest.cmx: ..\lib\nt\socket.cmi 
+lensemble.cmo: ..\lib\nt\ensemble.cmi 
+lensemble.cmx: ..\lib\nt\ensemble.cmi 
+mtalk.cmo: ..\lib\nt\ensemble.cmi 
+mtalk.cmx: ..\lib\nt\ensemble.cmi 
+perf.cmo: ..\lib\nt\ensemble.cmi 
+perf.cmx: ..\lib\nt\ensemble.cmi 
+rand.cmo: ..\lib\nt\ensemble.cmi 
+rand.cmx: ..\lib\nt\ensemble.cmi 
+socktest.cmo: ..\lib\nt\ensemble.cmi 
+socktest.cmx: ..\lib\nt\ensemble.cmi 

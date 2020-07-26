@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include "caml/mlvalues.h"
 #include "rand.h"
+#include <memory.h>
 
 value isaacml_Init(
   value s_v

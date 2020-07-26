@@ -18,8 +18,8 @@ let name_recv = "CONFIG_TRANS(recv)"
 let name_goss = "CONFIG_TRANS(goss)"
 (**************************************************************)
 
-let gossip_marsh mbuf =
-  let marsh,unmarsh,_ = Mbuf.make_marsh name mbuf in
+let gossip_marsh () =
+  let pack,unpack = Util.make_magic () in
   let pack_gossip ev =
     let exchange = Event.getExtender
       (function Event.ExchangeGos(a) -> (Some (Some (a))) | _ -> None)
@@ -47,40 +47,86 @@ let gossip_marsh mbuf =
     in
 
     match exchange,switch,heal,merge,dbg_name with
-    | None,None,None,None,None -> None
+    | None,None,None,None,None -> 
+	None
     | _ ->
-	let msg = Marsh.marsh_init mbuf in
-	Marsh.write_option msg (Marsh.write_string msg) exchange ;
-	let iovl = marsh (switch,heal,merge,dbg_name) in
-	Marsh.write_iovl_len msg iovl ;
-	let iovl = Marsh.marsh_done msg in
-	Some iovl
+	Some (pack (exchange,switch,heal,merge,dbg_name))
 
-  and unpack_gossip secure iovl =
+
+  and unpack_gossip secure mlobj =
     let exchange,switch,heal,merge,dbg_name =
-      try
-	let msg = Marsh.unmarsh_init mbuf iovl in
+      match mlobj with 
+	  None -> 
+	    (None,None,None,None,None)
+	| Some buf -> 
+	    if not (
+	      Obj.is_block buf
+	      && Obj.tag buf = 0
+	      && Obj.size buf = 5
+	    ) then (
+	      eprintf "CONFIG_TRANS:unpack_gossip: not a correct block (tag=%d, size=%d is_block=%b) (continuing)\n" (Obj.tag buf) (Obj.size buf) (Obj.is_block buf);
+		(None,None,None,None,None)
+	    ) else
+	      let incorrect mo = 
+		eprintf "CONFIG_TRANS:unpack_gossip: not a correct exchange block (tag=%d, size=%d is_block=%b) (continuing)\n" 
+		  (Obj.tag mo) (Obj.size mo) (Obj.is_block mo);
+		None
+	      in
+	      let incorrect_int mo = 
+		eprintf "CONFIG_TRANS:unpack_gossip: not a correct exchange block: is_int (continuing)\n";
+		None
+	      in
 
-	let exchange = 
-	  Marsh.read_option msg (fun () -> Marsh.read_string msg)
-	in
-
-	(* Only read the other fields if things are secure.
-	 *)
-	let switch,heal,merge,dbg_name = 
-	  if secure then (
-	    let iovl = Marsh.read_iovl_len msg in
-	    unmarsh iovl
-	  ) else (None,None,None,None)
-	in
-
-	Marsh.unmarsh_done msg ;
-	(exchange,switch,heal,merge,dbg_name)
-      with Marsh.Error s -> 
-	eprintf "CONFIG_TRANS:unpack_gossip:bad gossip format:%s (continuing)\n" s ;
-	(None,None,None,None,None)
+	      (* exchange is supposed to be a 
+	       *        Some(string) value : string option.
+	       * We need to decompose it through first opening the option
+	       * and then the string.
+	       *)
+	      let exchange = Obj.field buf 0 in
+	      let exchange = 
+		(* Check the option
+		 *)
+		if Obj.is_int exchange then 	
+		  (* This is a none value.
+		   *)
+		  None
+		else
+		  if not (
+		    Obj.is_block exchange 
+		    && Obj.size exchange = 1
+		    && Obj.tag exchange = 0) then 
+		    incorrect exchange
+		  else
+		    (* Check the string
+		     *)
+		    let exchange = Obj.field exchange 0 in
+		    if Obj.is_int exchange then 	
+		      incorrect_int exchange
+		    else
+		      if not (
+			Obj.is_block exchange
+			&& Obj.tag exchange = Obj.string_tag) then
+			incorrect exchange
+		      else
+			(* All is well, a safe case is in order.
+			 *)
+			let exchange = (Obj.magic exchange : string) in
+			Some exchange
+	      in
+	      
+	      (* Only read the other fields if things are secure.
+	       *)
+	      let switch,heal,merge,dbg_name = 
+		if secure then (
+		  let buf = unpack buf in
+		  let (_,switch,heal,merge,dbg_name) = buf in
+		  (switch,heal,merge,dbg_name)
+		) else (None,None,None,None)
+	      in
+	      
+	      (exchange,switch,heal,merge,dbg_name)
     in
-
+    
     let exchange = option_map (fun (a)         -> Event.ExchangeGos(a)    ) exchange in
     let switch   = option_map (fun (a,b,c)     -> Event.SwitchGos(a,b,c)  ) switch in
     let heal     = option_map (fun (a,b,c,d,e) -> Event.HealGos(a,b,c,d,e)) heal in
@@ -88,19 +134,18 @@ let gossip_marsh mbuf =
     let dbg_name = option_map (fun (a)         -> Event.DbgName(a)        ) dbg_name in
     let fields = filter_nones [exchange;switch;heal;merge;dbg_name] in
     match fields with
-    | [] -> None
-    | _ ->
-	let ev = Event.create name Event.EGossipExt fields in
-	Some ev
+      | [] -> None
+      | _ ->
+	  let ev = Event.create name Event.EGossipExt fields in
+	  Some ev
 
   in pack_gossip,unpack_gossip
 
 (**************************************************************)
 
 let f alarm ranking bot_nomsg ((ls,vs) as vf) up_hdlr =
-  let mbuf = Alarm.mbuf alarm in
   let pack,unpack = Util.make_magic () in
-  let pack_gossip,unpack_gossip = gossip_marsh mbuf in
+  let pack_gossip,unpack_gossip = gossip_marsh () in
 
   (* OR support for 
    *)
@@ -119,20 +164,16 @@ let f alarm ranking bot_nomsg ((ls,vs) as vf) up_hdlr =
   in
 
   let router =
-    Elink.get name (if vs.key = Security.NoKey then Elink.unsigned_f else Elink.signed_f) mbuf
-(*
-    Elink.get name Elink.scale_f mbuf
-*)
+    if vs.key = Security.NoKey then Unsigned.f () else Signed.f ()
   in
 
   let (gossip_gossip,gossip_disable) =
     if ls.am_coord then (
-      let receive _ _ secure =
-	let handler _ _ iov =
-	  match unpack_gossip secure iov with
-	  | None -> ()			(* No fields *)
-	  | Some ev ->
-	      up_hdlr ev bot_nomsg
+      let receive _ secure =
+	let handler _ mlobj _ _ =
+	  match unpack_gossip secure mlobj with
+	      None -> ()
+	    | Some ev -> up_hdlr ev bot_nomsg
 	in handler
       in
 
@@ -142,20 +183,20 @@ let f alarm ranking bot_nomsg ((ls,vs) as vf) up_hdlr =
       let disable () = Transport.disable trans in
       (gossip,disable)
     ) else (
-      let gossip _ _ _ _ = failwith "non-coord gossipping" ; () in
+      let gossip _ _ _ _ _ = failwith "non-coord gossipping" ; () in
       (gossip,ident)
     )
   in
 
   let (primary_cast,primary_send,primary_disable) =
-    let receive kind rank secure =
+    let receive kind secure =
       if secure then (
 	let ut = match kind with
 	| Conn.Send  -> Event.ESend
 	| Conn.Cast  -> Event.ECast
 	in
 	let debug = addinfo (Event.string_of_type ut) name in
-	let handler msg seqno iov =
+	let handler rank msg seqno iov =
 	  let msg = match msg with
 	  | None -> Local_seqno seqno	(*MEM:alloc*)
 	  | Some d -> unpack d
@@ -163,7 +204,7 @@ let f alarm ranking bot_nomsg ((ls,vs) as vf) up_hdlr =
 	  up_hdlr (Event.bodyCore debug ut rank iov) msg
 	in handler
       ) else (
-	fun _ _ _ ->
+	fun _ _ _ _ ->
 	  Route.drop (fun () -> "CONFIG_TRANS:insecure message being dropped")
       )
     in
@@ -186,9 +227,9 @@ let f alarm ranking bot_nomsg ((ls,vs) as vf) up_hdlr =
       let iov = Event.getIov ev in
       match msg with
       | Local_seqno seqno -> 
-	  primary_cast None seqno iov
+	  primary_cast ls.rank None seqno iov
       | _ ->
-	  primary_cast (Some (pack(msg))) (-1) iov 
+	  primary_cast ls.rank (Some (pack(msg))) (-1) iov 
     )
   | Event.ESendUnrel
   | Event.ESend -> (
@@ -209,9 +250,9 @@ let f alarm ranking bot_nomsg ((ls,vs) as vf) up_hdlr =
       let iov = Event.getIov ev in
       match msg with
       | Local_seqno seqno -> 
-	  send None seqno iov
+	  send ls.rank None seqno iov
       | _ ->
-	  send (Some (pack(msg))) (-1) iov 
+	  send ls.rank (Some (pack(msg))) (-1) iov 
     )
   | Event.EExit -> 
       primary_disable () ;
@@ -223,9 +264,8 @@ let f alarm ranking bot_nomsg ((ls,vs) as vf) up_hdlr =
       begin
 	match pack_gossip ev with
 	| None -> ()
-	| Some iov ->
-	    let iov = Iovecl.take name iov in
-	    gossip_gossip None None (-1) iov
+	| Some _ as s_buf ->
+	    gossip_gossip None (-1) s_buf (-1) Iovecl.empty
       end ;
       Event.free name ev
 
@@ -234,9 +274,8 @@ let f alarm ranking bot_nomsg ((ls,vs) as vf) up_hdlr =
       begin
 	match pack_gossip ev with
 	| None -> ()
-	| Some iov ->
-	    let iov = Iovecl.take name iov in
-	    gossip_gossip (Some dest) None (-1) iov
+	| Some _ as s_buf ->
+	    gossip_gossip (Some dest) (-1) s_buf (-1) Iovecl.empty
       end ;
       Event.free name ev
 

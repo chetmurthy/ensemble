@@ -2,48 +2,31 @@
 #
 # MAKEFILE: root Ensemble Makefile
 #
-# Author: Mark Hayden, 2\96
-#
+# Author: Ohad Rodeh  12\2001
+# Based on code by Mark Hayden
 #
 #*************************************************************#
 
-.PHONY: all def socket opt tar
+.PHONY: socket tar hot ce maestro
 
 !include mk\config.nmk
-#*************************************************************#
-TOUCH	= touch
 
-SRCS	=\
-	  util\*.ml util\*.mli\
-	  buffer\*.ml buffer\*.mli\
-	  type\*.ml type\*.mli\
-	  layers\*\*.ml\
-	  trans\*.ml trans\*.mli\
-	  trans\atm\*.ml trans\atm\*.mli\
-	  trans\mpi\*.ml\
-	  groupd\*.ml groupd\*.mli\
-	  buffer\*.ml buffer\*.mli\
-	  appl\*.ml appl\*.mli\
-	  route\*.ml route\*.mli\
-	  infr\*.ml infr\*.mli\
-	  demo\*.ml\
-	  demo\life\*.ml demo\life\*.mli\
-	  demo\tk\*.ml\
-	  hot\*.ml hot\*.mli
+ENSROOT = .
 
 SUBDIRS =\
-	mk\
-	socket\
-	util\
-	buffer\
-	type\
-	infr\
-	route\
 	appl\
-	trans\
-	trans\atm\
-	trans\mpi\
+	ce\
+	crypto\
+	demo\
+	demo\tk\
+	demo\life\
+	demo\dbm\
+	doc\
+	ejava\
 	groupd\
+	hot\
+	hot\include\
+	infr\
 	layers\
 	layers\bypass\
 	layers\debug\
@@ -55,188 +38,115 @@ SUBDIRS =\
 	layers\gossip\
 	layers\scale\
 	layers\security\
-	demo\
-	demo\tk\
-	demo\life\
-	demo\dbm\
-	crypto\
-	rpc\
-	hot\
-	hot\include\
-	doc\maestro\
-	doc
+	maestro\
+	mk\
+	mm\
+	route\
+	socket\
+	socket\u\
+	socket\s\
+	tar\
+	tools\
+	trans\
+	type\
+	util	
 
-#	maestro
 
-#*************************************************************#
 
-all:
-	cd def & $(MAKE)
+# Make everything from scratch
+# 
+all: 
+	$(MAKE_BASE) -f Makefile.top.nt all& $(MAKE_BASE) -f Makefile.top.nt install
+	cd demo & $(MAKE) & $(MAKE) install
+	cd ce & $(MAKE)	  & $(MAKE) install
+	cd hot & $(MAKE)  & $(MAKE) install
 
-def:
-	cd def & $(MAKE)
+just:
+	$(MAKE_BASE) -f Makefile.top.nt all& $(MAKE_BASE) -f Makefile.top.nt install
+	cd demo & $(MAKE) 
 
-opt:
-	cd opt & $(MAKE)
+# Make the optimized versions
+opt: 
+	$(MAKE_BASE) -f Makefile.top.nt opt& $(MAKE_BASE) -f Makefile.top.nt install
+	cd demo & 	$(MAKE) opt &	$(MAKE) install
+	cd ce & $(MAKE) opt & $(MAKE) install
+	cd hot & $(MAKE) opt & $(MAKE) install
 
-socket:
-	cd def & $(MAKE) socket
+crypto : 
+	cd crypto & $(MAKE) & $(MAKE) install 
 
-wbml:
-	cd def & $(MAKE) wbml
+crypto_opt : 
+	cd crypto & $(MAKE) opt & $(MAKE) install 
 
-#*************************************************************#
+tk :
+	$(MAKE_BASE) -f Makefile.top.nt tk
+
+tk_opt :
+	$(MAKE_BASE) -f Makefile.top.nt OPT=yes tk
+
+# build a tar file containing the source only.
+#
+src:
+	nmake -f Makefile.nt realclean
+	nmake -f Makefile.nt depend
+	tools\ntify.sh
+	cd tar& tarcr 1_33
+	cd doc& nmake -f Makefile.nt build
+
+# build a tar file containing executables and sources.
+#
+dist : 
+	nmake -f Makefile.nt realclean
+	nmake -f Makefile.nt depend
+	tools\ntify.sh
+	nmake -f Makefile.nt opt
+	nmake -f Makefile.nt clean
+	cd tar& tarcr 1_33
+	mv ..\ensemble-1_33.tar.gz ..\ensemble-$(PLATFORM)-1_33.tar.gz
+	cd doc& nmake -f Makefile.nt build
+
+# On NT we don't want to 'nmake -f Makefile.nt depend'
+#
+dist_nt : 
+	nmake -f Makefile.nt realclean
+	nmake -f Makefile.nt opt
+	nmake -f Makefile.nt clean
+	cd tar& tarcr 1_33
+	mv ..\ensemble-1_33.tar.gz ..\ensemble-$(PLATFORM)-1_33.tar.gz
+	cd doc& nmake -f Makefile.nt build
+
 
 depend:
-	cd def	& $(TOUCH) $(DEPEND) & $(MAKE) depend
-	cd opt	& $(TOUCH) $(DEPEND) & $(MAKE) depend
-	cd demo	& $(TOUCH) $(DEPEND) & $(MAKE) depend
-	cd demo\life & $(TOUCH) $(DEPEND) & $(MAKE) depend
-	cd demo\dbm  & $(TOUCH) $(DEPEND) & $(MAKE) depend
-	cd demo\tk	& $(TOUCH) $(DEPEND) & $(MAKE) depend
-	cd maestro	& $(TOUCH) $(DEPEND) & $(MAKE) depend
+	ocamldep $(INCLUDE) -I crypto\OpenSSL -I crypto\isaac\
+	*\*.{ml,mli} *\*\*.{ml,mli} *\*\*\*.{ml,mli} > .depend
 
 
-# HACK. This gets around a difference between NMAKE and MAKE. 
-# Get the clean_all rule.
+# This gets around a difference between NMAKE and MAKE. 
 #
-!include mk\clean_all.nmk
+!if "$(PLATFORM)" == "nt"
+CLEANALL = for %%d in ($(SUBDIRS)) do (cd %%d & $(MAKE) clean & cd $(ENS_ABSROOT))
+!else
+CLEANALL = for d in $(SUBDIRS)& do (cd $$d& $(MAKE) -k clean)& done
+!endif
+
 
 # MH: note 'nmake -f Makefile.nt clean' should clean the def and opt
 # directories.  It only leaves libraries, executables, 
 # and postscript documents. 
 clean: 
 	$(CLEANALL)
-	$(RM) *.cm* *.ppo *.aux .err a.out *.o *.a *.lib *.asm *.obj *~ .*~ .#?*
-	cd def &	$(MAKE) clean
-	cd opt &	$(MAKE) clean
-	cd ce&		$(MAKE) clean
-	cd ejava&	$(MAKE) clean
-	cd maestro&	$(MAKE) clean
-	cd doc& 	$(MAKE) clean 
+	$(CLEANDIR)
+	$(RM) ensemble.ml ensemble.mli emrg* 
+	$(RM) socket\s\socket.mli socket\u\socket.mli
+	$(RM) .unknown
 
 # realclean clean
 #
 realclean: clean 
-	cd def &	$(MAKE) realclean
-	cd opt &	$(MAKE) realclean
-	cd lib&		$(MAKE) realclean
-	cd demo&	$(MAKE) realclean
-	cd ce&		$(MAKE) realclean
-	cd maestro&	$(MAKE) realclean
-	cd doc& 	$(MAKE) realclean 
+	$(RMDIR) bin
+	$(RMDIR) lib
+	cd maestro &	$(MAKE) realclean
+	cd doc & 	$(MAKE) realclean 
 
-tags:
-	ls $(SRCS)
-	etags $(SRCS)
-
-ltags:
-	etags layers\*\*.ml
-
-tagall:
-	etags $(SRCS) README mk\* Makefile *\Makefile *\*\Makefile *\README *\*\README
-
-#*************************************************************#
-# Some filters of various aspects of the sources
-
-bugs:
-	grep BUG $(SRCS)
-
-heads:
-	head -6 $(SRCS)
-
-opens:
-	grep "^open" $(SRCS)
-
-opensu:
-	grep -h "^open" $(SRCS) | sort -u
-
-author:
-	attrib hayden $(SRCS)
-
-rvr:
-	attrib renesse $(SRCS)
-
-srcs:
-	echo $(SRCS) >.srcs
-
-
-#*************************************************************#
-# Create a large enscript file with all the layers
-
-layers.ps:
-	cd layers & ..\tools\pagecat *\*.ml *\*.mli | enscript -2Gr -p ..\layers.ps
-
-#*************************************************************#
-# Make everything from scratch
-
-build:
-	cd def	& $(MAKE) depend & $(MAKE) & $(MAKE) hot 
-	cd opt	& $(MAKE) depend & $(MAKE) & $(MAKE) hot
-	cd ce   & $(MAKE)
-	$(CHMODR) lib\$(PLATFORM)\*.mli
-	nmake -f Makefile.nt clean 
-	cd ..& tar -cf ensemble-$(PLATFORM).tar ensemble& gzip ensemble-$(PLATFORM).tar
-
-#	cd demo	& $(MAKE) clean & $(MAKE) depend & $(MAKE) -k
-#	cd demo\life & $(MAKE) clean & $(MAKE) depend & $(MAKE) -k
-#	cd demo\tk	& $(MAKE) clean & $(MAKE) depend & $(MAKE) -k
-#	cd execsvr	& $(MAKE) clean & $(MAKE) depend & $(MAKE) -k
-#*************************************************************#
-# Get a breakdown of size of the ML\C\Latex sources
-
-wc:
-	@ echo "Core code:"
-	  cat util\*.ml | wc -
-	  cat buffer\*.ml | wc -
-	  cat type\*.ml | wc -
-	  cat route\*.ml | wc -
-	  cat appl\*.ml | wc -
-	  cat infr\*.ml | wc -
-	  cat trans\*.ml | wc -
-	  cat layers\*\*.ml | wc -
-
-old_wc:
-	@ wc\
-	  util\*.ml\
-	  buffer\*.ml\
-	  type\*.ml\
-	  appl\*.ml\
-	  infr\*.ml\
-	  route\*.ml\
-	  trans\*.ml\
-	  layers\vsync\*.ml\
-	  layers\trans\*.ml\
-	  layers\other\*.ml
-	@ echo "ML code:"
-	@ wc\
-	  util\*.ml	util\*.mli\
-	  buffer\*.ml	buffer\*.mli\
-	  buffer\*.ml	buffer\*.mli\
-	  type\*.ml	type\*.mli\
-	  appl\*.ml	appl\*.mli\
-	  groupd\*.ml   groupd\*.mli\
-	  layers\*\*.ml	layers\*\*.mli\
-	  socket\*.ml	socket\*.mli\
-	  trans\*.ml	trans\*.mli\
-	  rpc\*.ml	rpc\*.mli\
-	  hsys\*.ml	hsys\*.mli\
-	  demo\*.ml\
-	  demo\tk\*.ml\
-	  execsvr\*.ml\
-	  demo\life\*.ml demo\life\*.mli\
-	  atm\*.ml
-	@ echo
-	@ echo "C code:"
-	@ wc\
-	  atm\*.[ch]\
-	  socket\*.[ch]
-	@ echo
-	@ echo "Latex Documentation"
-	@ wc doc\*.tex layers\*\*.tex
-
-
-nfiles:
-	@ ls $(SRCS) mk\* | wc
 
 #*************************************************************#

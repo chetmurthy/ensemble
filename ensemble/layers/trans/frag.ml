@@ -60,7 +60,6 @@ let init _ (ls,vs) =
   }
 
 let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out=dnnm} =
-(*let ack = make_acker name dnnm in*)
   let log = Trace.log2 name ls.name in
 
   (* Handle the fragments as they arrive.
@@ -112,10 +111,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     match abv with
     | None ->
 	if i = pred n then failwith sanity ;
-      	(*ack ev ;*) free_noIov name ev
+      	free_noIov name ev
     | Some abv ->
     	if i <> pred n then failwith sanity ;
-        let iov = Iovecl.concata name (Arrayf.of_array frag.iov) in
+        let iov = Iovecl.concata (Arrayf.of_array frag.iov) in
       	frag.iov <- [||] ;
       	frag.i <- 0 ;
       	up (set name ev [Iov iov]) abv
@@ -141,7 +140,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
        *)
       let free_frag_array fa =
 	Array.iter (fun f ->
-	  Array.iter (fun i -> Iovecl.free name i) f.iov ;
+	  Array.iter (fun i -> Iovecl.free i) f.iov ;
           f.iov <- [||]
 	) fa
       in
@@ -160,23 +159,25 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
        * 3) All their destinations are within this process.
        *)
       let iovl = getIov ev in
-      let lenl = Iovecl.len name iovl in
+      let lenl = Iovecl.len iovl in
       if lenl <=|| s.max_len
       || (getType ev = ECast && s.all_local)
       || (getType ev = ESend && Arrayf.get s.local (getPeer ev))
       then (
 	(* Common case: no fragmentation.
 	 *)
+        log (fun () -> sprintf "not-fragmenting") ;
       	dn ev abv NoHdr
       ) else (
-	let iovl = Iovecl.copy name iovl in
-(*
         log (fun () -> sprintf "fragmenting") ;
-*)
+
 	(* Fragment the message.
 	 *)
-	let frags = Iovecl.fragment name s.max_len iovl in
-	Iovecl.free name iovl ;
+	let frags = Iovecl.fragment s.max_len iovl in
+	log (fun () -> sprintf "total_len=%d frags=%s" 
+	  (int_of_len lenl)
+	  (Arrayf.to_string 
+	    (fun x -> string_of_int (int_of_len (Iovecl.len x))) frags));
 
 	let nfrags = Arrayf.length frags in
 	assert (nfrags >= 2) ;
@@ -187,7 +188,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	(* The last fragment has the header above us.
          *)
 	dn (setIovFragment name ev (Arrayf.get frags (pred nfrags))) abv (Last(nfrags)) ;
-	free name ev
+
+	(* Here the iovecl will be freed. 
+	 *)
+	free name ev ;
       )
   | _ -> dn ev abv NoHdr
 
@@ -199,9 +203,9 @@ let l args vs = Layer.hdr init hdlrs None (FullNoHdr NoHdr) args vs
 let l2 args vs = Layer.hdr_noopt init hdlrs args vs
 
 let _ = 
-  let frag_len = Hsys.max_msg_len () - 2000 in
+  let frag_len = int_of_len (Buf.max_msg_len) - 2000 in
   Param.default "frag_max_len" (Param.Int frag_len) ;
   Param.default "frag_local_frag" (Param.Bool false) ;
-  Elink.layer_install name l
+  Layer.install name l
     
 (**************************************************************)

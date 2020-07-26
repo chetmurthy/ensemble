@@ -187,3 +187,21 @@ val tag : 'a -> int
 val sample : int -> 'a array -> 'a array
 
 (**************************************************************)
+
+(* Generate a string representation of an exception.
+ *)
+val error : exn -> string
+
+(* Same as Printexc.catch.
+ *)
+val catch : ('a -> 'b) -> 'a -> 'b
+
+
+(* Called to set a function for logging information about
+ * this module.
+ *)
+val set_error_log : ((unit -> string) -> unit) -> unit
+
+val install_error : (exn -> string) -> unit
+(**************************************************************)
+

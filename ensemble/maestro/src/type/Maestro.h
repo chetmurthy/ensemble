@@ -1,4 +1,4 @@
-/* $Header: /cvsroot/ensemble/maestro/src/type/Maestro.h,v 1.1 1998/02/16 19:11:27 tclark Exp $
+/* $Header: /cvsroot/ensemble/maestro/src/type/Maestro.h,v 1.2 2001/11/06 10:09:46 orodeh Exp $
  *
  * Contents: Standard header file for Maestro/Ensemble applications.
  *
@@ -23,4 +23,4 @@
 #include "Maestro_ES_ReplicatedUpdates.h"
 #include "Maestro_ES_Simple.h"
 
-#endif __MAESTRO_H__
+#endif //__MAESTRO_H__

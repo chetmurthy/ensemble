@@ -44,7 +44,7 @@ val name 	: t -> string		(* name of domain *)
 val addr	: t -> Addr.id -> Addr.t (* create a local addresss *)
 val enable 	: t -> Addr.id -> Group.id -> Addr.set -> View.t -> handle
 val disable 	: handle -> unit
-val xmit 	: handle -> dest -> Route.xmits option (* how to xmit *)
+val xmit 	: handle -> dest -> Route.xmitf option (* how to xmit *)
 
 (**************************************************************)
 
@@ -58,9 +58,15 @@ val create :
 
 val handle :
   (unit -> unit) -> (* disable transport *)
-  (dest -> Route.xmits option) ->  (* xmit *)
+  (dest -> Route.xmitf option) ->  (* xmit *)
   handle
 
 val string_of_dest : dest -> string
 
+(**************************************************************)
+(* Domain management.
+ *)
+
+val of_mode : Alarm.t -> Addr.id -> t
+val install : Addr.id -> (Alarm.t -> t) -> unit
 (**************************************************************)

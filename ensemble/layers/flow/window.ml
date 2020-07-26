@@ -90,6 +90,6 @@ let l args vf = Layer.hdr init hdlrs None (FullNoHdr ()) args vf
 
 let _ = 
   Param.default "window_window" (Param.Int 100) ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)

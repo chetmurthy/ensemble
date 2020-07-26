@@ -221,7 +221,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	    | Iq.GData(iov,Msg(_, abv)) ->
 		incr serviced ;
 	      	dn (sendPeerIov name origin iov) abv (Data(rank,seqno,true)) ;
-	      	sent := !sent + succ (int_of_len (Iovecl.len name iov)) + s.msg_overhead ;
+	      	sent := !sent + succ (int_of_len (Iovecl.len iov)) + s.msg_overhead ;
                 s.acct_sent <- succ s.acct_sent ;
 	    | _ -> ()
 	    end ;
@@ -361,7 +361,7 @@ let _ =
   Param.default "pbcast_wait" (Param.Int 2) ;
   Param.default "pbcast_disseminate" (Param.Bool true) ;
   Param.default "pbcast_max_entropy" (Param.Int 30000) ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)
 

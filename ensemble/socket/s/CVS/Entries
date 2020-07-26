@@ -1,0 +1,20 @@
+/.cvsignore/1.2/Wed Dec  5 14:01:07 2001//
+/Makefile/1.1/Thu Dec  6 10:28:52 2001//
+/e_iovec.h/1.1/Thu Dec  6 10:28:52 2001//
+/gettimeofday.c/1.1/Thu Dec  6 10:28:52 2001//
+/heapc.c/1.1/Thu Dec  6 10:28:52 2001//
+/md5c.c/1.1/Thu Dec  6 10:28:52 2001//
+/miscsupp.c/1.1/Thu Dec  6 10:28:52 2001//
+/mm.c/1.1/Thu Dec  6 10:28:52 2001//
+/mm.h/1.1/Thu Dec  6 10:28:52 2001//
+/multicasts.c/1.1/Thu Dec  6 10:28:52 2001//
+/select.c/1.2/Thu Dec  6 10:28:52 2001//
+/sendrecv.c/1.2/Thu Dec  6 10:28:52 2001//
+/skt.h/1.1/Thu Dec  6 10:28:52 2001//
+/socket.ml/1.1/Thu Dec  6 10:28:52 2001//
+/sockfd.c/1.1/Thu Dec  6 10:28:52 2001//
+/sockfd.h/1.1/Thu Dec  6 10:28:52 2001//
+/sockopt.c/1.1/Thu Dec  6 10:28:52 2001//
+/socksupp.mli/1.1/Thu Dec  6 10:28:52 2001//
+/stdin.c/1.1/Thu Dec  6 10:28:52 2001//
+D

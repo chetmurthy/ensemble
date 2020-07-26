@@ -2,6 +2,7 @@
 (* BYPASSR: Optimized bypass router *)
 (* Author: Mark Hayden, 3/97 *)
 (**************************************************************)
+(*
 open Trans
 open Buf
 open Util
@@ -57,10 +58,10 @@ let blast mbuf (_,_,xmitvs) _ pack _ =
     Buf.write_net_int suffix len4 mi ;
     xmitvs mv suffix
   in xmit
+*)
 
 let f mbuf =
-  Route.create name false false const pack_of_conn merge (blast mbuf)
-
-let _ = Elink.put Elink.bypassr_f f
+  failwith "bypass needs to be reimplemented"
+(*  Route.create name false false const pack_of_conn merge (blast mbuf)*)
 
 (**************************************************************)

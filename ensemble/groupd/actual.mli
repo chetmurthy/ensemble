@@ -9,7 +9,7 @@ open Mutil
 
 type ('m,'g) t
 
-val create : Alarm.t -> View.full -> (('m,'g) t * View.full * Appl_intf.Old.t)
+val create : Alarm.t -> View.full -> (('m,'g) t * View.full * Appl_intf.New.t)
 
 val join : ('m,'g) t -> group -> endpt -> ltime ->
   (coord_msg -> unit) -> (member_msg -> unit)

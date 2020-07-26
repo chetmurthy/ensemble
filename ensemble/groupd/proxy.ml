@@ -6,6 +6,7 @@
 open Trans
 open Util
 open Mutil
+open Buf
 (**************************************************************)
 let name = Trace.file "PROXY"
 let failwith s = failwith (name^":"^s)
@@ -34,7 +35,7 @@ let write_group = Marsh.write_buf
 let read_endpt = Marsh.read_buf
 let read_group = Marsh.read_buf
 
-let make_marsh mbuf =
+let make_marsh () =
   let coord_view = 0
   and coord_sync = 1
   and coord_failed = 2
@@ -46,7 +47,7 @@ let make_marsh mbuf =
   in
 
   let marsh msg =
-    let m = Marsh.marsh_init mbuf in
+    let m = Marsh.marsh_init () in
     let common group endpt =
       write_group m group ;
       write_endpt m endpt
@@ -140,9 +141,9 @@ let make_marsh mbuf =
     )
   ] in
   
-  let unmarsh iovl =
+  let unmarsh buf =
     try
-      let m = Marsh.unmarsh_init mbuf iovl in
+      let m = Marsh.unmarsh_init buf Buf.len0 in
       let tag = Marsh.read_int m in
       begin try
       	(List.assoc tag map) m
@@ -166,13 +167,13 @@ type t = {
 (**************************************************************)
 
 let create alarm sock =
-  let marsh,unmarsh = make_marsh (Alarm.mbuf alarm) in
+  let marsh,unmarsh = make_marsh () in
   let verbose = ref true in
   
-  (Elink.get_hsyssupp_client name) name alarm sock (fun info send ->
+  Hsyssupp.client name alarm sock (fun info send ->
     let send msg =
-      let msg = marsh msg in
-      send msg ;
+      let buf = marsh msg in
+      send buf len0 (Buf.length buf) Iovecl.empty
     in
 
     send (Version("ENSEMBLE:groupd",(Version.string_of_id Version.id))) ;
@@ -188,7 +189,7 @@ let create alarm sock =
       members = Hashtbl.create 100
     } in 
 
-    let recv msg = 
+    let recv msg _ = 
       let msg = unmarsh msg in
       log (fun () -> sprintf "recv:%s (%d)" (string_of_msg msg) (hashtbl_size s.members)) ;
       match msg with
@@ -236,7 +237,7 @@ let conns = ref 0
 (**************************************************************)
 
 let server alarm port join =
-  let marsh,unmarsh = make_marsh (Alarm.mbuf alarm) in
+  let marsh,unmarsh = make_marsh () in
  
   let client_init info send =
     let clients = Hashtbl.create 10 in
@@ -245,15 +246,15 @@ let server alarm port join =
 
     let disable () =
       decr conns ;
-      logc (fun () -> sprintf "#connections=%d" !conns) ;
+      logc (fun () -> sprintf "disable, #connections=%d" !conns) ;
       Hashtbl.iter (fun (_,endpt) to_server ->
 	to_server (Fail([endpt]))	(*PERF*)
       ) clients
     in
 
     let send msg =
-      let msg = marsh msg in
-      send msg
+      let buf = marsh msg in
+      send buf Buf.len0 (Buf.length buf) Iovecl.empty
     in
 
     let sendmsg group endpt msg =
@@ -269,7 +270,8 @@ let server alarm port join =
       send (Coord(group,endpt,msg))
     in
 
-    let recv msg =
+    let recv msg iovl =
+      assert (Iovecl.len iovl =|| len0);
       let msg = unmarsh msg in
       log (fun () -> string_of_msg msg) ;
       match msg with 
@@ -308,6 +310,6 @@ let server alarm port join =
     recv,disable,()
   in
   
-  (Elink.get name Elink.hsyssupp_server) name alarm port client_init
+  Hsyssupp.server name alarm port client_init
 
 (**************************************************************)

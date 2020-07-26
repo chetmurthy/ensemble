@@ -1,4 +1,0 @@
-ce_inboard.cmo: ce_util.cmi 
-ce_inboard.cmx: ce_util.cmx 
-ce_util.cmo: ce_util.cmi 
-ce_util.cmx: ce_util.cmi 

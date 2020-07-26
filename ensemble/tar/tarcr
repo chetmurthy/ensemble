@@ -1,13 +1,27 @@
 #!/bin/tcsh
 
-if ( $#argv <> 2 ) then 
-  echo "usage: $0 version tardir
+if ( $#argv <> 1 ) then 
+  echo "usage: $0 version"
   exit -1
 endif
 
 set version     = "$argv[1]"
 set year	= `date +%Y`
-set tardir      = "$argv[2]"
+set root        = "$ENS_ABSROOT"
+set tardir      = $root/../tmp
+
+
+# Create the target directory, and copy the 
+# distribution over there. 
+echo "preparing target"
+rm -rf $tardir
+mkdir $tardir
+cp -r $root $tardir
+
+echo "Removing some files"
+rm -f $tardir/TODO
+rm -f $tardir/doc
+
 set tmp         = /tmp/tarcr$$
 /bin/rm -f .unknown
 touch .unknown
@@ -64,7 +78,6 @@ foreach i ( $files )
     case .path:
     case .depend:
     case depend.nt:
-    case license.txt:
     case BUGS:
     case TODO:
     case LOG:
@@ -109,3 +122,9 @@ end
 echo "Unknown files:"
 cat .unknown
 /bin/rm -f .unknown
+
+echo "Creating a tar file"
+cd $tardir/..
+tar -cf ensemble-$version.tar ensemble
+gzip ensemble-$version.tar
+rm -rf $tardir

@@ -59,13 +59,6 @@ val exec :
 
 (* Configure a stack.  Supports normal/groupd/protos stacks.
  *)
-val config :
-  Appl_intf.Old.t ->			(* application *)
-  View.full ->				(* view state *)
-  unit
-
-(* Configure a stack.  Supports normal/groupd/protos stacks.
- *)
 val config_new :
   Appl_intf.New.t ->			(* application *)
   View.full ->				(* view state *)
@@ -87,20 +80,13 @@ val async :
 (**************************************************************)
 
 val main_loop_opt : unit -> unit
-val init_groupd : unit -> Elink.manage_t (* for perf tests *)
+val init_groupd : unit -> Manage.t2 (* for perf tests *)
 
 (* This starts a "thread" that can be used to monitor
  * various resources in the system.  It should only be
  * called once.
  *)
 val start_monitor : unit -> unit
-
-(**************************************************************)
-
-(* Do whatever is necessary to create and initialize a UDP
- * socket.
- *)
-val udp_socket : unit -> Hsys.socket
 
 (**************************************************************)
 
@@ -116,7 +102,4 @@ type cast_info = {
 
 val cast_info : cast_info
 
-(**************************************************************)
-val mpi_info : View.full option ref
-val install_port : Trans.port -> unit
 (**************************************************************)

@@ -14,7 +14,7 @@
 #include <sys/types.h>
 #include <time.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 void Perror(char *s);
 #include <winsock2.h>
 #include <process.h>
@@ -136,47 +136,52 @@ hot_err_t ens_tcp_init(void *env, char * argv[], /*OUT*/ int *fd) {
     char  my_host[64];
     struct sockaddr_in sin;
 
+    trace("ens_tcp_init");
     /* Get my host name in preparation for connect */
     result = gethostname(my_host, 64);
     if (result < 0) {
-	hot_sys_Panic("gethostname");
+      hot_sys_Panic("gethostname");
     }
-    
+      
     /* Use my host name to get hostent in preparation for connect */
+
+    memset(&sin, 0, sizeof(sin)) ;
     hep = gethostbyname(my_host);
     if (hep == (struct hostent *)NULL) {
-	hot_sys_Panic("gethostbyname");
-    }
-    
+      // try localhost
+      inet_aton("127.0.0.1",&(sin.sin_addr));
+      //hot_sys_Panic("gethostbyname");
+    } else {
     /* Copy hostent's addr into sin_addr.
      */
-    memset(&sin, 0, sizeof(sin)) ;
-    memcpy(&(sin.sin_addr),hep->h_addr,hep->h_length);
+      memcpy(&(sin.sin_addr),hep->h_addr,hep->h_length);
+    }
+
     sin.sin_family = AF_INET;
     sin.sin_port = ntohs(OUTBOARD_TCP_PORT);
     sinlen = sizeof(sin);  
-
-    trace("TCP connect to %s port %d", inet_ntoa(sin.sin_addr), ntohs(sin.sin_port));
+    
+    trace("TCP connect to %s port %d", inet_ntoa(sin.sin_addr), ntohs(sin.sin_port)); fflush(stdout);
     
     /* Now call connect in a loop, waiting for accept */
-
+    
     {
-	int sock ;
-
-	/* Create our socket.
-	 */
-	sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (sock < 0) {
-	    hot_sys_Panic("socket");
-	}
-
-	result = connect(sock, (struct sockaddr *)&sin, sinlen) ;
-	if (result == -1) {
-	    Perror("connect") ;
-	    hot_sys_Panic("connect") ;
-	}
-
-	*fd = (int)sock;
+      int sock ;
+      
+      /* Create our socket.
+       */
+      sock = socket(AF_INET, SOCK_STREAM, 0);
+      if (sock < 0) {
+	hot_sys_Panic("socket");
+      }
+      
+      result = connect(sock, (struct sockaddr *)&sin, sinlen) ;
+      if (result == -1) {
+	Perror("connect") ;
+	hot_sys_Panic("connect") ;
+      }
+      
+      *fd = (int)sock;
     }
     
     trace("TCP connected");
@@ -196,21 +201,21 @@ static hot_io_t hot_io_tcp = {
   (hot_io_read) tcp_recv,
   (hot_io_write) tcp_send,
 };
-#endif WIN32
+#endif /*WIN32*/
 
 #ifndef WIN32
 
-hot_err_t ens_pipe_init(void *env, char * argv[], int*) ;
+hot_err_t ens_fork_tcp_init(void *env, char * argv[], int*) ;
 
 /* Communication with Ensemble through a pipe.  
  * Ensemble is forked in a separate process.
  */
-static hot_io_t hot_io_pipe = { 
+static hot_io_t hot_io_tcp_fork = { 
   "FORK",
-  ens_pipe_init,
+  ens_fork_tcp_init,
   (hot_io_read) tcp_recv,
   (hot_io_write) tcp_send, 
-};
+} ;
 
 #endif
 
@@ -227,13 +232,14 @@ static hot_io_t hot_io_tcp_spawn = {
 
 static hot_io_t *hot_io_conf[10] = {
 #ifndef WIN32
-  /* To use TCP instead of pipes, replace this with &hot_io_tcp
-   * and modify hot_test to use "TCP" instead of "FORK" as outboard.
-   * This also requires starting outboard manually with the -tcp
-   * options, e.g.:
-   * ./outboard -tcp_channel -tcp_port 5002
+  /* The normal configuration is to fork an outboard process that
+   * uses TCP to talk with hot_outboard_c.c. If you want to create
+   * outboard by hand, modify hot_test to use "TCP" instead of
+   * "FORK" as outboard. This also requires starting outboard manually
+   * with the -tcp options, e.g.:
+   *    ./outboard -tcp_port 5002
    */
-  &hot_io_pipe,
+  &hot_io_tcp_fork,
   &hot_io_tcp,
 #endif
 #ifdef WIN32
@@ -276,25 +282,29 @@ struct hot_gctx {
 /* Global state.
  */
 static struct {
-    hot_lock_t mutex;		/* global mutex lock  */
-    int in_critical;		/* Set when mutex is locked */
-    int initialized;		/* Set when initialized. */
-    hot_context_t g_alive ;	/* allocated group contexts */
-    int fd;			/* fd for communication w/ Ensemble */
-    hot_io_t *io;		/* Outboard configuration */
-
-    hot_lock_t r_mutex;		/* global mutex for reading */
-    int in_r_critical;		/* Set when mutex is locked */
-    char *read_buf ;
-    int read_size ;
-    int read_pos ;
-    unsigned read_act_size ;
-
-    hot_lock_t w_mutex;		/* global mutex for writing */
-    int in_w_critical;		/* Set when mutex is locked */
-    char *write_buf;		/* Buffer where we are writing to */
-    int write_size;		/* Buffer size */
-    int write_pos;		/* Current position in buffer */
+  hot_lock_t mutex;		/* global mutex lock  */
+  int in_critical;		/* Set when mutex is locked */
+  int initialized;		/* Set when initialized. */
+  hot_context_t g_alive ;	/* allocated group contexts */
+  int fd;			/* fd for communication w/ Ensemble */
+  hot_io_t *io;		/* Outboard configuration */
+  
+  hot_lock_t r_mutex;		/* global mutex for reading */
+  int in_r_critical;		/* Set when mutex is locked */
+  char *read_buf ;
+  int read_size ;
+  int read_pos ;
+  int read_hdr_len ;
+  int read_iov_len ;
+  unsigned read_act_size ;
+  
+  hot_lock_t w_mutex;		/* global mutex for writing */
+  int in_w_critical;		/* Set when mutex is locked */
+  char *write_buf;		/* Buffer where we are writing to */
+  int write_size;		/* Buffer size */
+  int write_pos;		/* Current position in buffer */
+  int write_hdr_len  ;
+  int write_iov_len  ;
 } g ;
 
 /*************************** Mutexes ***************************************/
@@ -332,6 +342,8 @@ static void begin_write(void) {
     hot_sys_Panic(hot_err_ErrString(err)) ;
   assert(!g.in_w_critical) ;
   g.in_w_critical = 1 ;
+  g.write_hdr_len = 0 ;
+  g.write_iov_len = 0 ;
 }
 
 #ifdef INLINE_PRAGMA
@@ -356,6 +368,9 @@ static void do_write(void *buf,int len) {
   g.write_pos += len ;
 }
 
+/* Take note to first write the ML length, and then
+ * the iovec length. 
+ */
 #ifdef INLINE_PRAGMA
 #pragma inline end_write
 #endif
@@ -365,11 +380,32 @@ static void end_write(void) {
   hot_uint32 size ;
   int ret ;
 
-  assert(g.write_pos % 4 == 0) ;
   assert(g.in_w_critical) ;
   g.in_w_critical = 0 ;
 
-  size = htonl(g.write_pos) ;
+  /* Compute header length, and ML header length.
+   * In case these arguments have not been set, then
+   * this must be a case where send_msg has not been
+   * called. Hence, the iovec length is zero, and the
+   * ML header length is equal to our current position
+   * in the write buffer. 
+   */
+  if (g.write_hdr_len == 0 && g.write_iov_len == 0) {
+    g.write_hdr_len = g.write_pos;
+    g.write_iov_len = 0;
+  }
+  trace("  **** write_hdr_len=%d write_iov_len=%d  ****",
+	g.write_hdr_len, g.write_iov_len);
+  
+  /* Write header length
+   */
+  size = htonl(g.write_hdr_len) ;
+  ret = (*g.io->write)(g.fd, &size, sizeof(size)) ;
+  assert(ret == sizeof(size));
+
+  /* Write iovec length
+   */
+  size = htonl(g.write_iov_len) ;
   ret = (*g.io->write)(g.fd, &size, sizeof(size)) ;
   assert(ret == sizeof(size));
   
@@ -377,7 +413,7 @@ static void end_write(void) {
   assert(ret == g.write_pos);
   
   g.write_pos = 0 ;
-
+  
   /* Shrink the buffer if it is >64K.
    */
   if (g.write_size > 1<<16) {
@@ -404,12 +440,17 @@ static void begin_read(void) {
   assert(!g.in_r_critical) ;
   g.in_r_critical = 1 ;
 
-  /* Read the length.
+  /* Read the length, this is the total ML and iovec length.
+   * A total of 8 bytes should be read. 
    */
   ret = (*g.io->read)(g.fd, &net_size, sizeof(net_size)) ;
   assert(ret == sizeof(net_size));
-  size = ntohl(net_size) ;
-
+  g.read_hdr_len = ntohl(net_size) ;
+  ret = (*g.io->read)(g.fd, &net_size, sizeof(net_size)) ;
+  assert(ret == sizeof(net_size));
+  g.read_iov_len = ntohl(net_size);
+  size = g.read_hdr_len + g.read_iov_len;
+  
   /* Ensure there is enough room in the read buffer.
    */
   if (size > g.read_act_size) {
@@ -603,22 +644,15 @@ static void write_buffer(
     void *body,
     unsigned size
 ) {
-    hot_uint32 pad, u32 = htonl(size);
-    char buf[INT_SIZE];
+    hot_uint32 u32 = htonl(size);
 
     assert(body);
 
     do_write(&u32, INT_SIZE) ;
     do_write(body, size) ;
 
-    pad = size % INT_SIZE ;
-    if (pad != 0) 
-      do_write(buf, INT_SIZE - pad) ;
-
-    trace("write_int: %d", u32);
+    trace("write_buf_len: %d", size);
     trace("write_buffer: %s", (char*) body);
-    if (pad)
-      trace("write_buffer: padding %d bytes", INT_SIZE - pad);
 }
 
 #ifdef INLINE_PRAGMA
@@ -665,12 +699,10 @@ static void write_hdr(
     do_write(&h,sizeof(h)) ;
 }
 
-/* This is kind of hacked because the ML side of things only like to
- * see messages that are rouned to 4 byte boundaries.  What we do is
- * wrap the message inside another message that is padded out to the
- * right size.  So, on the wire, the first 4 bytes is the size of the
- * message.  Next comes the message.  Finally, there are 0-3 bytes
- * for padding.
+/* write_msg is the last call before a message is packaged and
+ * sent. Therefore, we record the iovec length, and the header
+ * length, so that end_write will write this on the outgoing
+ * packet. 
  */
 #ifdef INLINE_PRAGMA
 #pragma inline write_msg
@@ -682,7 +714,6 @@ static void write_msg(
     void *body;
     unsigned size;
     hot_err_t err;
-    char pad[HOT_MSG_PADDING];
 
     err = hot_msg_GetPos(msg, &size);
     if (err != HOT_OK)
@@ -694,14 +725,12 @@ static void write_msg(
 
     /* Put the actual size on the message.
      */
-    write_int(size) ;
-    
-    /* Write the body, plus the padding.
+    g.write_hdr_len  = g.write_pos;
+    g.write_iov_len  = size;
+   
+    /* Write the body.
      */
     do_write(body, size);
-    if (size % HOT_MSG_PADDING) {
-      do_write(pad, HOT_MSG_PADDING - size % HOT_MSG_PADDING);
-    }
 
     trace("write_msg: size = %d", size);
     trace("write_msg: body = %s", (char*) body);
@@ -758,8 +787,7 @@ static void read_buffer_prealloc(
     unsigned *size,
     void *body
 ) {
-    hot_uint32 pad, tmp;
-    char buf[INT_SIZE];
+    hot_uint32 tmp;
 
     assert(size);
     assert(body);
@@ -769,14 +797,6 @@ static void read_buffer_prealloc(
     trace("read_buffer_prealloc: size = %08x", *size);
 
     do_read(body, *size);
-    pad = *size % INT_SIZE;
-    assert(pad >=0 && pad <= 4) ;
-    if (pad != 0)
-      do_read(buf, INT_SIZE - pad);
-
-    /*trace("read_buffer_prealloc: body = %s", (char*) body);*/
-    if (pad)
-      trace("read_buffer_prealloc: padding %d bytes", INT_SIZE - pad);
 }
 
 #ifdef INLINE_PRAGMA
@@ -825,24 +845,17 @@ static void read_msg(
 ) {
     void *body;
     hot_uint32 size;
-    char pad[INT_SIZE];
 
     assert(msg);
     *msg = NULL ;
 
     /* Get the real size.
      */
-    read_int(&size) ;
+    size = g.read_iov_len;
     trace("read_msg: size = %d", size);
 
     body = hot_mem_Alloc(ch_read_message, size);
     do_read(body,size);
-
-    /* Read the rest of padding.
-     */
-    if (size % INT_SIZE) {
-      do_read(pad, INT_SIZE - size % INT_SIZE) ;
-    }
 
     trace("read_msg: body = %s", (char*) body);
 
@@ -1027,6 +1040,7 @@ static void cb_Cast(
     void *env;
     hot_ens_ReceiveCast_cback receive_cast;
 
+    trace("cb_Cast");
     read_int(&origin);
     read_msg(&msg);
     
@@ -1039,7 +1053,7 @@ static void cb_Cast(
     } end_critical();
 
     if (receive_cast != NULL) {
-	(*receive_cast)(s, env, &endpt, msg);
+      (*receive_cast)(s, env, &endpt, msg);
     }
 
     err = hot_msg_Release(&msg);
@@ -1063,6 +1077,7 @@ static void cb_Send(
     void *env;
     hot_ens_ReceiveSend_cback receive_send;
 
+    trace("cb_Send");
     read_int(&origin);
     read_msg(&msg);
     
@@ -1075,6 +1090,7 @@ static void cb_Send(
     } end_critical();
 
     if (receive_send != NULL) {
+      trace("receive_send");
 	(*receive_send)(s, env, &endpt, msg);
     }
 
@@ -1216,9 +1232,11 @@ static void ens_died() {
     hot_sys_Panic("(OUTBOARD): Ensemble died, exiting");
 }
 
+/*
 static void broken_pipe() {
   hot_sys_Panic("(OUTBOARD): Broken pipe");
 }
+*/
 
 static void outb_atexit(void) {
   char eof = EOF;
@@ -1236,14 +1254,15 @@ static void outb_atexit(void) {
 }
 
 
-/* Spawn Ensemble in a separate process.  
+/* Fork Ensemble in a separate process.  
  * arg:  the file name of Ensemble outboard process.
  * Returns file descriptor to be used for communication w/ Ensemble.
  */ 
-hot_err_t ens_pipe_init(void *env, char * argv[], /*OUT*/ int *fd) {
+hot_err_t ens_fork_tcp_init(void *env, char * argv[], /*OUT*/ int *fd) {
     
     char *outboard = getenv("ENS_OUTBOARD");
 
+    trace("ens_pipe_init");
     if (outboard == NULL)
 	  return hot_err_Create(0,
              "ens_pipe_init: environment variable ENS_OUTBOARD must be set");
@@ -1252,33 +1271,28 @@ hot_err_t ens_pipe_init(void *env, char * argv[], /*OUT*/ int *fd) {
 
     /* Start Ensemble in a separate process.
      */ 
-    if (socketpair(PF_UNIX, SOCK_STREAM, 0, sock) < 0)
-	 hot_err_Create(0, "ens_pipe_init: socketpair");
-
     cid = fork();		/* on solaris this should be fork1() */
     if (cid < 0) {
-	return hot_err_Create(0, "ens_pipe_init: fork");
+	return hot_err_Create(0, "ens_tcp_fork_init: fork");
     }
     else if (cid == 0) {
-	close(sock[0]);
-	if (dup2(sock[1], STDIN_FILENO) != STDIN_FILENO)
-		hot_sys_Panic("dup2 STDIN");	    
-	if (dup2(sock[1], STDOUT_FILENO) != STDOUT_FILENO)
-	    hot_sys_Panic("dup2 STDOUT");	
-	/*for (i = 0; i < 256; i++) {
-	    if (i != STDIN_FILENO && i != STDOUT_FILENO)
-		close(i);
-	}
-	*/
 	argv[0] = outboard;
 	if (execvp(outboard, argv) < 0)
 	    hot_sys_Panic("ens_pipe_init: execvp(%s)", (char*) outboard);
 	assert(0);
     }
-    *fd = sock[0];
+
+    /* Give outboard time to start.
+     */
+    printf("Waiting for the outboard process to start\n");
+    sleep(3);
+
+    /* Connect to outboard using TCP.
+     */
+    ens_tcp_init(NULL, NULL, fd);
 
     signal(SIGCHLD, ens_died);
-    signal(SIGPIPE, broken_pipe);
+    //signal(SIGPIPE, broken_pipe);
 #if !(defined(sun))
     atexit(outb_atexit);
 #endif
@@ -1324,18 +1338,17 @@ hot_err_t ens_spawn_tcp_init(void *env, char *argv[], /*OUT*/ int *fd) {
          */
         sprintf(portstring, "%d", OUTBOARD_TCP_PORT);
         newargv[0] = outboard;
-        newargv[1] = "-tcp_channel";
-        newargv[2] = "-tcp_port";
-        newargv[3] = portstring;
-        newargv[4] = 0x0;
+        newargv[1] = "-tcp_port";
+        newargv[2] = portstring;
+        newargv[3] = 0x0;
 
         /* copy the app supplied args */
         for (i=1; i < 64; i++) {
             if (argv[i] == NULL) {
-                newargv[3+i] = NULL;
+                newargv[2+i] = NULL;
                 break;
             }
-            newargv[4+i] = argv[i];
+            newargv[3+i] = argv[i];
         }
 
         /* Spawn outboard, then set up a socket to connect to it */
@@ -1425,7 +1438,7 @@ static hot_err_t hot_ens_Init(char *outb_name, char *argv[]) {
 
 	g.initialized = 1;
 	g.g_alive = NULL ;
-
+	
 	err = hot_lck_Create(&g.w_mutex);
 	if (err != HOT_OK)  {
 	    end_critical();

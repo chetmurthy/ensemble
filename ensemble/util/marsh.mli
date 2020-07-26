@@ -1,6 +1,11 @@
 (**************************************************************)
 (* MARSH.MLI *)
 (* Author: Mark Hayden, 12/96 *)
+(* Modified by Ohad Rodeh, 10/2001 *)
+(**************************************************************)
+(* This now provides by hand marshaling for strings and integers.
+ * The usage is for C applications that need to communicate
+ * through an agreed protocol with ML. *)
 (**************************************************************)
 open Trans
 open Buf
@@ -12,11 +17,11 @@ type marsh
 
 (* Initialize a marshaller.
  *)
-val marsh_init : Mbuf.t -> marsh
+val marsh_init : unit -> marsh
 
-(* Convert a marshaller into a iovecl.
+(* Convert a marshaller into a buffer.
  *)
-val marsh_done : marsh -> Iovecl.t
+val marsh_done : marsh -> Buf.t
 
 (* Functions for adding data to a string.
  *)
@@ -27,8 +32,6 @@ val write_buf    : marsh -> Buf.t -> unit
 val write_list   : marsh -> ('a -> unit) -> 'a list -> unit
 val write_array  : marsh -> ('a -> unit) -> 'a array -> unit
 val write_option : marsh -> ('a -> unit) -> 'a option -> unit
-val write_iovl   : marsh -> Iovecl.t -> unit
-val write_iovl_len : marsh -> Iovecl.t -> unit
 
 (**************************************************************)
 
@@ -41,14 +44,11 @@ type unmarsh
  *)
 exception Error of string
 
-(* Convert a iovecl into an unmarsh object.
+(* Convert a buffer into an unmarsh object.
  *)
-val unmarsh_init : Mbuf.t -> Iovecl.t -> unmarsh
+val unmarsh_init : Buf.t -> Buf.ofs -> unmarsh
 
-(* Signal that we are done marshalling.
- *)
-val unmarsh_done : unmarsh -> unit
-val unmarsh_done_all : unmarsh -> unit	(* & we should have read it all *)
+val unmarsh_check_done_all : unmarsh -> unit (* we should have read it all *)
 
 (* Functions for reading from marshalled objects.
  *)
@@ -58,7 +58,5 @@ val read_string : unmarsh -> string
 val read_buf    : unmarsh -> Buf.t
 val read_list   : unmarsh -> (unit -> 'a) -> 'a list
 val read_option : unmarsh -> (unit -> 'a) -> 'a option
-val read_iovl   : unmarsh -> len -> Iovecl.t
-val read_iovl_len : unmarsh -> Iovecl.t
 
 (**************************************************************)

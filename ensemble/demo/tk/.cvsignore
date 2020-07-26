@@ -1,5 +1,7 @@
-.depend
-depend.nt
-Makefile.nt
+*.exe
 *.cm*
+*.a
+*.o*
+.depend*
+Makefile.nt
 wbml

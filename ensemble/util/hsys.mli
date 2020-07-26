@@ -2,11 +2,9 @@
 (* HSYS.MLI *)
 (* Author: Mark Hayden, 5/95 *)
 (**************************************************************)
-
+open Buf
+(**************************************************************)
 type debug = string
-type buf = string
-type ofs = int
-type len = int
 type port = int
 type inet = Unix.inet_addr
 type socket = Socket.socket
@@ -35,10 +33,8 @@ val gettimeofday : unit -> timeval
 val inet_any : unit -> inet
 val inet_of_string : string -> inet
 val listen : socket -> int -> unit
-val read : socket -> buf -> ofs -> len -> int
-val recv : socket -> buf -> ofs -> len -> int
-val recvfrom : socket -> buf -> int -> int -> int * inet * port
-val send : socket -> buf -> ofs -> len -> int
+val read : socket -> string -> int (*ofs*) -> int (*len*) -> int
+val recvfrom : socket -> string -> int -> int -> int * inet * port
 val string_of_inet : inet -> string	(* i.e. gethostbyname *)
 val string_of_inet_nums : inet -> string
 val getenv : string -> string option
@@ -65,16 +61,6 @@ val deering_addr : int -> inet
 
 (**************************************************************)
 
-(* Generate a string representation of an exception.
- *)
-val error : exn -> string
-
-(* Same as Printexc.catch.
- *)
-val catch : ('a -> 'b) -> 'a -> 'b
-
-(**************************************************************)
-
 (* Same as Unix.gettimeofday, except that a timeval record
  * is passed in and the return value is written there.  See
  * ensemble/socket/socket.mli for an explanation.  
@@ -96,12 +82,6 @@ val has_ip_multicast : unit -> bool
  * Unix file descriptors.  
  *)
 val int_of_socket : socket -> int
-
-(**************************************************************)
-
-(* The maximum length of messages on the network. 
- *)
-val max_msg_len : unit -> int
 
 (**************************************************************)
 
@@ -133,19 +113,6 @@ type handler =
   | Handler0 of (unit -> unit)
   | Handler1
 
-(**************************************************************)
-(*
-(* Read/write an integer to a string in network byte
- * order.
- *)
-val pop_nint : buf -> ofs -> int
-val push_nint : buf -> ofs -> int -> unit
-
-(* INT_OF_SUBSTRING: read a 4-byte integer in host
- * byte order.
- *)
-val int_of_substring : buf -> ofs -> int
-*)
 (**************************************************************)
 
 (* This is an optimized version of the select function.  You
@@ -179,29 +146,28 @@ val poll : select_info -> int
  * sendtov functions do not check for errors.
  *)
 type sendto_info
+
+val tcp_info : socket -> sendto_info
 val sendto_info : socket -> (inet * port) array -> sendto_info
-val sendto : sendto_info -> buf -> ofs -> len -> unit
 
-type send_info
-val send_info : socket -> send_info
-val sendp : send_info -> buf -> ofs -> len -> int
+val sendto : sendto_info -> Buf.t -> ofs -> len -> unit
+val sendtov : sendto_info -> Iovecl.t -> unit
+val sendtosv : sendto_info -> Buf.t -> ofs -> len -> Iovecl.t -> unit
+val udp_recv_packet : socket -> Buf.t * Iovec.t
 
-(**************************************************************)
+val recv : socket -> Buf.t -> ofs -> len -> len
 
-type 'a refcnt = { mutable count : int ; obj : 'a } 
-type 'a iovec = { rbuf : 'a ; ofs : ofs ; len : len }
+(* In the TCP functions, exceptions are caught, logged, and len0 
+ * is returned instead.
+*)
+val tcp_recv : socket -> Buf.t -> ofs -> len -> len
+val tcp_recv_iov : socket -> Iovec.t -> ofs -> len -> len
+val tcp_recv_packet : socket -> Buf.t -> ofs -> len -> Iovec.t -> len
 
-val sendv : send_info -> string refcnt iovec array -> int
-val sendtov : sendto_info -> string refcnt iovec array -> unit
-val sendtosv : sendto_info -> string -> string refcnt iovec array -> unit
-val sendtovs : sendto_info -> string refcnt iovec array -> string -> unit
-
-(**************************************************************)
-
-(* Called to set a function for logging information about
- * this module.
- *)
-val set_error_log : ((unit -> string) -> unit) -> unit
+val send_p : socket -> Buf.t -> ofs -> len -> len
+val sendv_p : socket -> Iovecl.t -> len
+val sendsv_p : socket -> Buf.t -> ofs -> len -> Iovecl.t -> len
+val sends2v_p : socket -> Buf.t -> Buf.t -> ofs -> len -> Iovecl.t -> len
 
 (**************************************************************)
 
@@ -228,17 +194,13 @@ val setsockopt : socket -> socket_option -> unit
  *)
 val socket_dgram : unit -> socket
 val socket_stream : unit -> socket
+val socket_mcast : unit -> socket
 
 (**************************************************************)
 
-(* Allocate or free a string outside of the ML heap.
- *)
-val static_string : len -> string
-val static_string_free : string -> unit
-
 (* Check if portions of two strings are equal.
  *)
-val substring_eq : string -> ofs -> string -> ofs -> len -> bool
+val substring_eq : Buf.t -> ofs -> Buf.t -> ofs -> len -> bool
 
 (**************************************************************)
 
@@ -247,28 +209,17 @@ val substring_eq : string -> ofs -> string -> ofs -> len -> bool
 type md5_ctx
 val md5_init : unit -> md5_ctx
 val md5_init_full : string -> md5_ctx
-val md5_update : md5_ctx -> buf -> ofs -> len -> unit
+val md5_update : md5_ctx -> Buf.t -> ofs -> len -> unit
 val md5_final : md5_ctx -> Digest.t
 
+val md5_update_iovl : md5_ctx -> Iovecl.t -> unit
 (**************************************************************)
+
 (* Create a socket connected to the standard input.
  * See ensemble/socket/stdin.c for an explanation of
  * why this is necessary.
  *)
 val stdin : unit -> socket
-
-(**************************************************************)
-
-type recv_info
-val recv_info : socket -> recv_info
-
-(* Receive on a datagram socket.  Some errors cause a 0 to
- * be returned instead of generating an exception.  Also,
- * the size & offset values should be 4-byte aligned and the
- * return value is guaranteed to be aligned as well
- * (non-aligned packets will be dropped!).  
- *)
-val udp_recv :  recv_info -> buf -> ofs -> len -> int
 
 (**************************************************************)
 
@@ -286,5 +237,17 @@ val simple_string_of_inet  : inet -> string
 val simple_inet_of_string  : string -> inet 
 
 (**************************************************************)
-val install_error : (exn -> string) -> unit
+
+(* Do whatever is necessary to create and initialize a UDP
+ * socket.
+ * 
+ * The [int] argument is the size of the socket buffers to
+ * ask the kernel to reserve. This can be gotten by using
+ * Arge.get Arge.sock_buf. 
+ * 
+ * This can't be done here, because Hsys is below Arge.
+ *)
+val udp_socket : int  -> socket
+val multicast_socket : int -> socket
 (**************************************************************)
+

@@ -159,7 +159,7 @@ let intf endpt alarm sync =
 	  eprintf "  migrate <address>    : migrate to a new address\n" ;
 	  eprintf "  timeout <time>       : request a timeout\n" ;
 	  eprintf "  block   <true/false> : block (yes/no)\n" ;
-	  exit 1 ;
+	  ()
     ) lines
   in
   Alarm.add_sock_recv alarm name (Hsys.stdin()) (Handler0 get_input) ;
@@ -223,6 +223,8 @@ let intf endpt alarm sync =
     in
 
     let heartbeat _ =
+      let num,lens = Iovec.debug () in
+      printf "refcounts = %d,%d\n" num lens;
       check_actions ()
     in
 
@@ -238,7 +240,7 @@ let intf endpt alarm sync =
     in
     
     let handlers = { 
-			flow_block = (fun _ -> ());
+      flow_block = (fun _ -> ());
       receive = receive ;
       block = block ;
       heartbeat = heartbeat ;
@@ -256,7 +258,7 @@ let intf endpt alarm sync =
   in
 
   full { 
-    heartbeat_rate      = Time.of_int 10 ;
+    heartbeat_rate      = Time.of_int 3 ;
     install             = install ;
     exit                = exit 
   }
@@ -289,15 +291,8 @@ let run () =
     if not !nice then vs else 
       View.set vs [
         Vs_params [
-	  "pr_stable_sweep",Param.Time(Time.of_int 3) ;
-	  "pr_stable_fanout",Param.Int(5) ;
-	  "pr_suspect_sweep",Param.Time(Time.of_int 3) ;
-	  "pr_suspect_max_idle",Param.Int(20) ;
-	  "pr_suspect_fanout",Param.Int(5) ;
-	  "heal_wait_stable",Param.Bool(true) ;
-	  "merge_sweep",Param.Time(Time.of_int 3) ;
-	  "merge_timeout",Param.Time(Time.of_int 150) ;
-	  "top_sweep",Param.Time(Time.of_int 10)
+	  "suspect_sweep",Param.Time(Time.of_int 1) ;
+	  "suspect_max_idle",Param.Int(5)
         ]
       ]
   in
@@ -315,7 +310,7 @@ let run () =
 	(ls,vs)
   in
 
-  let alarm = Elink.alarm_get_hack () in
+  let alarm = Appl.alarm "ensemble" in
 
   (*
    * Initialize the application interface.

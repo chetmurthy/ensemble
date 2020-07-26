@@ -34,7 +34,7 @@ type 'abv state = {
 
 (**************************************************************)
 
-let msg_len s ev = (int_of_len (Iovecl.len name (getIov ev))) + s.overhead
+let msg_len s ev = (int_of_len (Iovecl.len (getIov ev))) + s.overhead
 
 let string_of_queue_len q = string_of_int (Queuee.length q)
 let string_of_queue_bytes s q = 
@@ -198,6 +198,6 @@ let _ =
   Param.default "pt2ptw_ack_thresh" (Param.Int 25000) ;
   Param.default "pt2ptw_hi_wmark"    (Param.Int 100) ;
   Param.default "pt2ptw_overhead" (Param.Int 100) ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)

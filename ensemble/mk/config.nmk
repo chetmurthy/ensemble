@@ -6,7 +6,7 @@
 # compilation parameters.  For NT.
 #
 # Authors: Mark Hayden, Robbert vanRenesse, 4/96
-# Changes: Ohad Rodeh, 8/2001
+# Changes: Ohad Rodeh, 11/2001 
 #
 #*************************************************************#
 # C Compilation macros.  Used for compiling Socket library
@@ -41,19 +41,11 @@ CRYPTO_LINK = # no crypto by default
 #*************************************************************#
 
 # MSDEV: points to the MSDEV directory
-MSDEV	= c:MSDEV\bin
+MSDEV_INCLUDE	= /I"C:\Program Files\Microsoft Visual Studio\VC98\Include"
 
 # CFLAGS: used for compilation of C files
-CFLAGS	= /Ox /MT /W3 /DWIN32 \
-	/I$(ENSROOT)\socket\include	\
-	/I$(ENSROOT)\hot\include	\
-	/I$(OCAML_LIB)			\
-	/I$(MSDEV)\include		\
-	$(HOT_CFLAGS_nt)		\
-	$(ETH_CFLAGS)			\
-	/DOSTYPE=nt	  		\
-	/DMACHTYPE=i386			\
-	/DHAS_IP_MULTICAST		
+CFLAGS	= /Ox /MT /W3 $(MSDEV_INCLUDE) /I$(OCAML_LIB)
+
 
 #	$(OPENSSL_INC)
 
@@ -70,14 +62,14 @@ LIBSYS	= $(NODEFAULTLIB) \
 	-cclib LIBCMT$(ARCS)	\
 	-cclib OLDNAMES$(ARCS)	\
 	-cclib KERNEL32$(ARCS)	\
-	-cclib WSOCK32$(ARCS)
+	-cclib 	WS2_32$(ARCS)
 
 LIBSYSCL = -link /NODEFAULTLIB \
 	ADVAPI32$(ARCS)	\
 	LIBCMT$(ARCS)	\
 	OLDNAMES$(ARCS)	\
 	KERNEL32$(ARCS)	\
-	WSOCK32$(ARCS)
+	WS2_32$(ARCS)
 
 #*************************************************************#
 # Arguments to use for linking with CamlTk.  You may need to
@@ -106,7 +98,12 @@ TKLIBS = # not supported for NT
 # ENS_MACHTYPE = # unneeded
 # ENS_OSTYPE = # unnneeded
 # !NOTE! make sure there are no trailing spaces on the next line
-PLATFORM = nt
+PLATFORM	= nt
+
+# The binary and library directories
+#
+ENSLIB = $(ENSROOT)\lib\$(PLATFORM)
+ENSBIN = $(ENSROOT)\bin\$(PLATFORM)
 
 #*************************************************************#
 
@@ -123,24 +120,6 @@ PLATFORM = nt
 #*************************************************************#
 
 #*************************************************************#
-# Decide whether or not to use dynamic linking.  The default
-# is 'no'.  Setting this to 'yes' only has an impact with the
-# bytecode version of Ensemble.
-
-# 'yes' or 'no'
-# !NOTE! make sure there are no trailing spaces on the next line
-USE_DYNLINK = no
-
-DYNLINKSTUFF_yes_opt  = $(ENSLIB)/_nulldynlink$(CMO)
-DYNLINKSTUFF_no_byte  = $(ENSLIB)/_nulldynlink$(CMO)
-DYNLINKSTUFF_no_opt   = $(ENSLIB)/_nulldynlink$(CMO)
-DYNLINKSTUFF_yes_byte = $(LIBDYNLINK)
-
-# embedded macros don't work on NT
-#DYNLINKSTUFF = $(DYNLINKSTUFF_$(USE_DYNLINK)_$(COMPTYPE))
-DYNLINKSTUFF = DYNLINKSTUFF_no_byte
-
-#*************************************************************#
 # There are 3 levels of libraries to use.  The core library
 # contains the minimal Ensemble library.  There is not enough
 # included to run any protocol stacks, so additional modules
@@ -155,51 +134,36 @@ DYNLINKSTUFF = DYNLINKSTUFF_no_byte
 # value is "full", which is the safest (although largest)
 # version.
 
-# 'core' or 'min' or 'full'
+# 'min' or 'full'
 # !NOTE! make sure there are no trailing spaces on the next line
-ENSLIBS_TYPE = full
 
-ENSLIBS_core_byte = $(ENSCORELIB)
-ENSLIBS_core_opt  = $(ENSLIBS_min_opt) # override, because native code does not have dynamic linking
-
-ENSLIBS_min_byte  = $(ENSLIBS_core_byte) $(ENSMINLIB)
-ENSLIBS_min_opt   = $(ENSMINLIB_min_byte)
-
-ENSLIBS_full_byte = $(ENSLIBS_min_byte) $(ENSRESTLIB)
-ENSLIBS_full_opt  = $(ENSLIBS_full_byte)
+ENSLIBS_min  = $(ENSCORELIB) $(ENSMINLIB)
+ENSLIBS_full = $(ENSLIBS_min) $(ENSRESTLIB)
 
 # embedded macros don't work on NT
 #ENSLIBS_DEP	= $(ENSLIBS_$(ENSLIBS_TYPE)_$(COMPTYPE))
 #ENSLIBS	= $(DYNLINKSTUFF) $(ENSLIBS_DEP)
-ENSLIBS_DEP     = ENSLIBS_full_byte
-ENSLIBS         = $(ENSLIB)\_nulldynlink$(CMO) $(ENSCORELIB) $(ENSMINLIB) $(ENSRESTLIB)
+ENSLIBS_DEP     = ENSLIBS_full
+ENSLIBS         = $(ENSCORELIB) $(ENSMINLIB) $(ENSRESTLIB)
 
 #*************************************************************#
-# There are three different configurations of Ensemble.  For
-# Unix, the default is to use the Unix library.  For NT,
-# only the socket library is supported.  HSYS_BUILD
-# determines which configurations should be built.
-# ENSCONFDEP is the set of Ensemble system modules being
-# used.  ENSCONF also includes O'caml modules and specifies
-# whether -custom flag should be used.
+# There are two different configurations of Ensemble.  For
+# Unix, the default is to use the Unix library.  
+# which configurations should be built.  ENSCONFDEP is the set
+# of Ensemble system modules being used.  ENSCONF also
+# includes O'caml modules and specifies whether -custom flag
+# should be used.
 
 # Socket library
-HSYS_BUILD	= socket
-ENSCONFDEP	= $(LIBSOCKDEP) $(ENSLIBS)
-ENSCONF		= $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS)
-ENSCONF_skt = $(ENSCONF)
+ENSCONFDEP_skt	= $(LINKTHR) $(LIBSOCKDEP) $(ENSLIBS)
+ENSCONF_skt	= $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS)
 
+# Unix library
+ENSCONFDEP_unix	= $(LINKTHR) $(LIBUSOCK) $(ENSLIBS_DEP)
+ENSCONF_unix    = $(CUSTOM) $(LIBUNIX) $(LIBUSOCK) $(LINK_THR) $(ENSLIBS) $(CRYPTO_LINK)
 
-
-
-
-
-
-
-
-
-
-
+ENSCONF		= $(ENSCONF_skt) 
+ENSCONFDEP      = $(ENSCONFDEP_skt)
 
 
 
@@ -219,13 +183,6 @@ ENSCONF_skt = $(ENSCONF)
 OCAML_LIB	= $(CAMLLIB)
 
 #*************************************************************#
-# Uncomment this definition if you want to use the raw ethernet
-# transport.  This is only supported on Linux platforms which
-# are configured with the packet sockets (CONFIG_PACKET).
-
-ETH_CFLAGS	=# -DRAW_ETH
-
-#*************************************************************#
 # A bunch of configuration macros to support both NT and Unix
 
 EXE	= .exe
@@ -236,8 +193,9 @@ ARC	= $(ARCS)
 CP	= copy
 MV	= move
 LN	= copy			# use copy instead
-RM      = -del /Q
+RM      = -del /Q /F
 MAKE	= nmake -f Makefile.nt
+MAKE_BASE = nmake               #sometimes we need the basic command
 MKLIB	= lib /nologo /debugtype:CV
 MKLIBO  = /out:
 RANLIB  = echo			# not needed on NT
@@ -245,28 +203,24 @@ SUBMAKE = & $(MAKE)           #SUBMAKE = "& echo"
 DEPEND  = .depend.nt
 PARTIALLD = lib /nologo /debugtype:cv
 PARTIALLDO  = /out:
+OBJRULE = /Fo
 ECHO	= echo
 STRIP   = echo
-MKDIR   = mkdir
+MKDIR   = -mkdir
 RMDIR   = -rmdir /S /Q
 CHMODR  = attrib +R
-#*************************************************************#
-NTRULE	=
-UNIXRULE = #-nt
 #*************************************************************#
 # How to link various Ocaml libraries.  Should not require
 # modification.
 LIBCUNIX	= $(OCAML_LIB)\libunix$(ARCS)
 LIBMLUNIX	= unix$(CMAS)
-LIBCSOCK	= $(ENSLIB)\libsock$(ARC)
-LIBMLSOCK	= $(ENSLIB)\socket$(CMA)
+LIBCSOCK	= $(ENSLIB)\libsock$(ARC) 
+LIBMLSOCK	= $(ENSLIB)\ssocket$(CMA)
+LIBSOCK		= $(LIBMLSOCK) -cclib $(LIBCSOCK) #-cclib WS2_32$(ARCS)
 LIBCTHREADS	= $(OCAML_LIB)\libthreads$(ARCS)
 LIBMLTHREADS	= threads$(CMAS)
-LIBCSTR		= $(OCAML_LIB)\libstr$(ARCS)
-LIBMLSTR	= str$(CMAS)
-LIBMLSTRBC	= str.cma
-LIBDYNLINK	= dynlink$(CMAS)
-LIBTK		= # not supported
+
+LIBTK		= $(OCAML_LIB)\labltk\labltk$(CMAS) 
 #*************************************************************#
 # Select whether or not to use Ocaml threads.  Ocaml threads
 # only work with bytecode interpreter.  Default is no
@@ -285,26 +239,6 @@ LINK_THR	= # no threads
 #LINK_THR	= -thread $(LIBTHREADS)
 
 #*************************************************************#
-# Root of the Ensemble distribution.  Used to find source files
-# when using dynamicly linked ML files.
-
-ENSROOT_ABS	= C:\nt1314\profiles\rvr\desktop\ens
-
-#*************************************************************#
-# Where to find ATM/UNET header files and libraries.  By
-# default, these are not compiled with the distribution, so 
-# you shouldn't need to adjust them.
-
-# for Cornell CS Dept
-#LIBUNET	= \usr\u\sww\sun4\lib\libunet-2.a
-#INCUNET	= -I\usr\u\sww\sun4\include\unet-2
-
-#*************************************************************#
-# MPI header files
-
-INCMPI		= -I/localhome/hayden/mpich/include
-
-#*************************************************************#
 
 HOT_THREAD_OBJ	= ntthread$(OBJ)
 HOT_CFLAGS	= -DTHREADED_SELECT
@@ -312,50 +246,11 @@ HOT_MLLINK	= #?
 HOT_LINK	= $(LIBSYSCL)
 
 #*************************************************************#
+# Clean this directory
+#
+CLEANDIR = \
+    $(RM) .nfs* *.cm* *.ppo .err a.out *.o *.obj *.a *.lib *.asm *~ .*~ core *.pdb core gmon.out
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#*************************************************************#
 
 

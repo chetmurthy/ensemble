@@ -1,1 +1,7 @@
-.err
+*.cm*
+*.a
+*.o*
+.depend*
+Makefile.nt
+*.lib
+outboard hot_testo hot_test

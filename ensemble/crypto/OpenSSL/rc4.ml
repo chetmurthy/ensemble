@@ -2,10 +2,11 @@
 (* RC4.ML *)
 (* Author: Ohad Rodeh, 4/2000 *)
 (**************************************************************)
+open Ensemble
 open Trans
 open Util
 open Shared
-
+open Buf
 (**************************************************************)
 let name = Trace.file "RC4"
 let failwith s = failwith (name^":"^s)
@@ -21,14 +22,18 @@ type src = string
 type dst = string
     
 external rc4ml_context_length : unit -> int
-      = "rc4ml_context_length"
+  = "rc4ml_context_length"
     
 external rc4ml_set_key : string -> len -> ctx -> unit
-      = "rc4ml_set_key"
+  = "rc4ml_set_key"
     
 external rc4ml_encrypt : ctx -> src -> ofs -> dst -> ofs -> len -> unit 
-      = "rc4ml_encrypt_bytecode" "rc4ml_encrypt_native" 
+  = "rc4ml_encrypt_bytecode" "rc4ml_encrypt_native" 
     
+external rc4ml_encrypt_iov : ctx -> Iovec.raw -> unit
+  = "rc4ml_encrypt_iov"
+
+
 let key_len = 8
     
 let init key encrypt = 
@@ -48,9 +53,9 @@ let check name buf ofs len =
     invalid_arg ("RC4:"^name^":bad string offsets")
       
 let update ctx_fl sbuf sofs dbuf dofs len =
-  let sbuf = Buf.break sbuf
+  let sbuf = Buf.string_of sbuf
   and sofs = Buf.int_of_len sofs
-  and dbuf = Buf.break dbuf
+  and dbuf = Buf.string_of dbuf
   and dofs = Buf.int_of_len dofs
   and len =  Buf.int_of_len len in
   check name dbuf dofs len ;
@@ -66,6 +71,14 @@ let update ctx_fl sbuf sofs dbuf dofs len =
   let _ = rc4ml_encrypt ctx sbuf sofs dbuf dofs len in 
   ()
 
+let update_iov ctx_fl iov = 
+  let ctx = match ctx_fl with
+    | Cipher.Encrypt (c,_) -> c
+    | Cipher.Decrypt (c,_) -> c
+  in
+  log (fun () -> sprintf "encrypt_iov, len=%d" (int_of_len (Iovec.len iov)));
+  rc4ml_encrypt_iov ctx (Iovec.raw_of iov);
+  ()
 
 open Security
     
@@ -74,10 +87,13 @@ let _ =
     
   let init cipher encrypt =
     let key = Security.buf_of_cipher cipher in
-    let key = Buf.break key in
+    let key = Buf.string_of key in
     init key encrypt
   in
   
   let update = update in
+
+  let update_iov = update_iov in
   
-  Cipher.install "OpenSSL/RC4" key_ok init update 
+  log (fun () -> "installing");
+  Cipher.install "OpenSSL/RC4" key_ok init update update_iov

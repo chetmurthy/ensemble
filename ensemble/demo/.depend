@@ -1,2 +1,18 @@
-gossip.cmo: groupd.cmo 
-gossip.cmx: groupd.cmx 
+armadillo.cmo: ../lib/i386-linux/ensemble.cmi 
+armadillo.cmx: ../lib/i386-linux/ensemble.cmi 
+fifo.cmo: ../lib/i386-linux/ensemble.cmi 
+fifo.cmx: ../lib/i386-linux/ensemble.cmi 
+gossip.cmo: ../lib/i386-linux/ensemble.cmi groupd.cmo 
+gossip.cmx: ../lib/i386-linux/ensemble.cmi groupd.cmx 
+groupd.cmo: ../lib/i386-linux/ensemble.cmi 
+groupd.cmx: ../lib/i386-linux/ensemble.cmi 
+lensemble.cmo: ../lib/i386-linux/ensemble.cmi 
+lensemble.cmx: ../lib/i386-linux/ensemble.cmi 
+mtalk.cmo: ../lib/i386-linux/ensemble.cmi 
+mtalk.cmx: ../lib/i386-linux/ensemble.cmi 
+perf.cmo: ../lib/i386-linux/ensemble.cmi 
+perf.cmx: ../lib/i386-linux/ensemble.cmi 
+rand.cmo: ../lib/i386-linux/ensemble.cmi 
+rand.cmx: ../lib/i386-linux/ensemble.cmi 
+socktest.cmo: ../lib/i386-linux/ensemble.cmi 
+socktest.cmx: ../lib/i386-linux/ensemble.cmi 

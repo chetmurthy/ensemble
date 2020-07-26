@@ -24,6 +24,8 @@ type typ =
   | ESendUnrel				(* Unreliable pt2pt message *)
   | EMergeRequest			(* Request a merge *)
   | EMergeGranted			(* Grant a merge request *)
+  | EMergeDenied			(* Deny a merge request *)
+  | EMergeFailed			(* Merge request failed *)
   | EOrphan				(* Message was orphaned *)
 
     (* These types do not have messages. *)
@@ -41,8 +43,6 @@ type typ =
   | EInit				(* First event delivered *)
   | ELeave				(* A member wants to leave *)
   | ELostMessage			(* Member doesn't have a message *)
-  | EMergeDenied			(* Deny a merge request *)
-  | EMergeFailed			(* Merge request failed *)
   | EMigrate				(* Change my location *)
   | EPresent                            (* Members present in this view *)
   | EPrompt				(* Prompt a new view *)

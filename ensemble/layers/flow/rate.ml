@@ -49,6 +49,7 @@ let dump = Layer.layer_dump name (fun (ls,vs) s -> [|
     s.nsent ;
   sprintf "sweep=%f\n"
     (Time.to_float s.sweep)
+|] )
 
 let init (rate_n,rate_t) vs =
   let intermsg	= div rate_t (of_int rate_n) in {

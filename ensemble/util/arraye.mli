@@ -56,9 +56,10 @@ val sort : ('a -> 'a -> int) -> 'a t -> unit
 val exists : (int -> 'a -> bool) -> 'a t -> bool
 
 (**************************************************************)
-(* Hack *)
-val sendv : Hsys.send_info -> Hsys.buf Hsys.refcnt Hsys.iovec t -> int
-val sendtov : Hsys.sendto_info -> Hsys.buf Hsys.refcnt Hsys.iovec t -> unit
-val sendtosv : Hsys.sendto_info -> Hsys.buf -> Hsys.buf Hsys.refcnt Hsys.iovec t -> unit
-val sendtovs : Hsys.sendto_info -> Hsys.buf Hsys.refcnt Hsys.iovec t -> Hsys.buf -> unit
+(* These functions allows converting an 'a array into a 'b Arraye.t 
+ * (and backward) without an intermidiate copy taking place. 
+*)
+
+val of_array_map : ('a -> 'b) -> 'a array -> 'b t
+val to_array_map : ('a -> 'b) -> 'a t -> 'b array
 (**************************************************************)

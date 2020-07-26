@@ -15,7 +15,7 @@ public class Hot_Ensemble extends java.lang.Object implements java.lang.Runnable
     private Hot_IO_Controller hioc;
     private Process ensOutboardProcess;
     private Socket ensOutboardSocket;
-    private static boolean debug;
+    private static boolean debug = true;
     private static boolean use_byteStream;   // flag to use byte stream communic.
 	
     /**
@@ -68,7 +68,7 @@ public class Hot_Ensemble extends java.lang.Object implements java.lang.Runnable
 	use_byteStream = use_BS;
 	ServerSocket s = null;
 	while (port == 0) {
-            port = (int)((Math.random() * 3000) + 5000);
+	    port = (int)((Math.random() * 3000) + 5000);
 	    try {
 		s = new ServerSocket(port);
 	    } catch (Exception e) {
@@ -92,6 +92,7 @@ public class Hot_Ensemble extends java.lang.Object implements java.lang.Runnable
     */
     public Hot_Ensemble(int port) {
 	try {
+	    System.out.println("outboard: starting up client side" + port);
 	    ensOutboardSocket = new Socket(InetAddress.getLocalHost(), port);
 	    hioc = new Hot_IO_Controller(ensOutboardSocket.getInputStream(),
 					 ensOutboardSocket.getOutputStream());
@@ -111,13 +112,13 @@ public class Hot_Ensemble extends java.lang.Object implements java.lang.Runnable
     Sets up child process, creates the new IO Controller from this child process
     */
     private void init(int port) {
-//	String outboard = "outboard -tcp_channel -tcp_port " + Integer.toString(port);
+//	String outboard = "outboard -tcp_port " + Integer.toString(port);
 
-	//String outboard = "outboard -modes DEERING:UDP -deering_port 12222  -tcp_channel -tcp_port " +  Integer.toString(port);
+	//String outboard = "outboard -modes DEERING:UDP -deering_port 12222 -tcp_port " +  Integer.toString(port);
 	
-	String outboard = "outboard -verbose -tcp_channel -tcp_port " + 
+	String outboard = "outboard -verbose -tcp_port " + 
 	  Integer.toString(port) + " -trace HOT_OUTBOARD";
-	//String outboard="outboard -deering_port 77777 -tcp_channel -tcp_port " +
+	//String outboard="outboard -deering_port 77777 -tcp_port " +
 	//  Integer.toString(port);
 
 	debug = false;
@@ -129,7 +130,7 @@ public class Hot_Ensemble extends java.lang.Object implements java.lang.Runnable
 		// Added by TC - wait for forked process to start up.
 		try {
 		    System.out.println("Waiting for the outboard process to start");
-		    Thread.sleep(2500);
+		    Thread.sleep(5000);
 		}
 		catch (InterruptedException e) {
 		    System.out.println(e);
@@ -337,9 +338,6 @@ public class Hot_Ensemble extends java.lang.Object implements java.lang.Runnable
     }
 
 
-    /**
-    NOT SUPPORTED CURRENTLY IN THE ML
-    */
     public Hot_Error Suspect(Hot_GroupContext gc, Hot_Endpoint[] suspects) {
 	if (!outboardValid)
 	    return new Hot_Error(55,"Outboard process is not valid!");
@@ -761,8 +759,8 @@ public class Hot_Ensemble extends java.lang.Object implements java.lang.Runnable
 		case 3:    // cb_Heartbeat
 		    cb_Heartbeat(groupID[0]);
 		    break;
-		case 4:    // cb_Block
-		    cb_Block(groupID[0]);
+		case 4:    // cb_Block	
+	    cb_Block(groupID[0]);
 		    break;
 		case 5:    // cb_Exit
 		    cb_Exit(groupID[0]);

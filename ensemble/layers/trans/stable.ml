@@ -16,6 +16,7 @@ open Event
 open Util
 (**************************************************************)
 let name = Trace.filel "STABLE"
+let log_iov = Trace.log "IOV"
 (**************************************************************)
 
 type header = Gossip of (seqno Arrayf.t) * (bool Arrayf.t)
@@ -136,6 +137,18 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
      *   2. gossip about my row in the stability matrix
      *)
   | ETimer ->
+      (* Log the state of the refcounts.
+       * 
+       * BUG: we should put this inside Appl.monitor
+       *)
+      if Random.int 100 = 0 then
+	log_iov (fun () ->
+	  let num,lens = Iovec.debug () in
+	  sprintf "refcounts = %d,%d\n   GC=%s" num lens 
+	    (Util.string_of_list ident
+	      (Util.string_list_of_gc_stat (Gc.stat ())))
+	);
+
       let time = getTime ev in
       (*if !verbose then dump vf s ;*)
       if Time.Ord.ge time s.next_gossip then (
@@ -192,6 +205,6 @@ let l args vs = Layer.hdr init hdlrs None (FullNoHdr ()) args vs
 let _ = 
   Param.default "stable_sweep" (Param.Time (Time.of_int 1)) ;
   Param.default "stable_explicit_ack" (Param.Bool false) ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)

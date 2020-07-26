@@ -39,9 +39,9 @@ let init alarm =
   (* Initialize the Maestro stack.
    *)
   let vf, interface = 
-    (Elink.get name Elink.manage_create_proxy_server) alarm port (ls,vs)
+    Manage.create_proxy_server alarm port (ls,vs)
   in
-  Appl.config interface vf
+  Appl.config_new interface vf
   (* end of init function *)
 
 

@@ -1,6 +1,7 @@
 (**************************************************************)
 (* SIGNED: MD5 signatures, 16-byte md5 connection ids. *)
 (* Author: Mark Hayden, 3/97 *)
+(* Rewritten by Ohad Rodeh 10/2001 *)
 (**************************************************************)
 open Trans
 open Buf
@@ -12,150 +13,157 @@ let failwith s = Trace.make_failwith name s
 let log = Trace.log name
 (**************************************************************)
 
-let hdr_len = md5len_plus_8 +|| md5len
+(* This is used so that the hash of a connection identifier
+ * will not include specific information on the source. 
+ * Hence, all members of a group will have identical connection
+ * identifiers.
+*)
+let pack_of_conn c =
+  Conn.hash_of_id (snd (Conn.squash_sender c))
 
 let const handler = Route.Signed handler
 
-let f mbuf =
-  let (marshal,_,unmarshal) = Mbuf.make_marsh name mbuf in
+let unmarsh obj ofs = Marshal.from_string (Buf.string_of obj) (int_of_len ofs)
+
+let f () =
+  let zeros = 
+    let s = String.create (int_of_len md5len) in
+    String.fill s 0 (int_of_len md5len) '0';
+    Buf.of_string s
+  in
+  let scribble = Buf.create md5len in
 
   let recv pack key secureh insecureh = 
     let key = match key with 
       | Security.NoKey -> failwith "recv: NoKey"
       | Security.Common key' -> Security.buf_of_mac key'.Security.mac in 
-    let handler rbuf ofs len =
-      if len <|| hdr_len then (
-	Route.drop (fun () -> sprintf "%s:size below minimum:len=%d\n" name (int_of_len len)) ;
-      ) else ( 
-	(* Extract connection info.
-	 *)
-	let buf = Refcnt.read name rbuf in
-	if not (Buf.subeq16 buf (ofs +|| len -|| md5len) pack) then (
-	  Route.drop (fun () -> sprintf "%s:rest of Conn.id did not match" name) ;
-	) else (
-	  (* Calculate the signature for the message
-	   * Use md5_init_full, so as to conform to RFC2104 (HMAC standard).
-	   * This means initialize the MD5 context to a cryptographically
-	   * strong random key. 
-	   *)
-	  (*
-	  let sign_cpt =
-	    let ctx = Hsys.md5_init () in
-	    Buf.md5_update ctx buf ofs (len -|| hdr_len) ;
-	    Buf.md5_update ctx buf (ofs +|| len -|| md5len_plus_8) md5len_plus_8 ;
-	    Buf.md5_update ctx key len0 md5len ;
-	    Buf.md5_final ctx
-	  in
-	    *)
 
-	  let sign_cpt =
-	    let ctx = Hsys.md5_init_full (Buf.break key) in
-	    Buf.md5_update ctx buf ofs (len -|| hdr_len) ;
-	    Buf.md5_update ctx buf (ofs +|| len -|| md5len_plus_8) md5len_plus_8 ;
-	    Buf.md5_final ctx
-	  in
-
-	  (* Get the integer value and length of
-	   * of the marshalled portion of the message.
-	   *)
-	  let mi    = Buf.read_net_int buf (ofs +|| len -|| md5len_plus_8) in
-	  let molen = Buf.read_net_len buf (ofs +|| len -|| md5len_plus_4) in
-
-	  (* Advance past previous fields.
-	   * Also subtract off the signature space at the end.
-	   *)
-	  if Buf.subeq16 buf (ofs +|| len -|| hdr_len) sign_cpt then (
-	    if molen =|| len0 then (
-	      let mv = Iovecl.alloc_noref name rbuf ofs (len -|| hdr_len) in
-	      secureh None mi mv
-	    ) else if len >=|| molen then (
-	      let len = len -|| hdr_len in
-	      let mo = Some(unmarshal buf (ofs +|| len -|| molen) molen) in
-	      let mv = Iovecl.alloc_noref name rbuf ofs (len -|| molen) in
-	      secureh mo mi mv
-	    ) else (
-	      Route.drop (fun () -> sprintf "%s:short message:len=%d:molen=%d\n"
-		name (int_of_len len) (int_of_len molen)) ;
-	    )
-	  ) else (
-	    if len <|| molen +|| hdr_len then (
-	      Route.drop (fun () -> sprintf "%s:(insecure) short message:len=%d:molen=%d\n" 
-		name (int_of_len len) (int_of_len molen)) ;
-	    ) else (
-	      (* Only information passed up is the iovec.
-	       *)
-	      log (fun () -> sprintf "insecure message") ;
-	      let mv = Iovecl.alloc_noref name rbuf ofs (len -|| molen -|| hdr_len) in
-	      insecureh None (-1) mv
-	    )
-	  )
-	)
+    (* Copy the md5 hash to the side [scribble], zero it, and
+     * compute the MD5 hash. If the received has is equal to 
+     * the computed hash, then return true. Otherwise, return 
+     * false.
+     *)
+    let check_md5 hdr ofs len iovl = 
+      let ctx = Hsys.md5_init_full (Buf.string_of key) in
+      Buf.blit hdr (ofs +|| md5len_plus_8) scribble len0 md5len;
+      Buf.blit zeros len0 hdr (ofs +|| md5len_plus_8) md5len;
+      Hsys.md5_update ctx hdr ofs len;
+      Hsys.md5_update_iovl ctx iovl;
+      let d = Buf.of_string (Hsys.md5_final ctx) in
+      let ret = Hsys.substring_eq d len0 scribble len0 md5len in
+      log (fun () -> sprintf "check_md5=%b (mo=%d iov=%d)" ret
+	(int_of_len len) (int_of_len (Iovecl.len iovl)));
+      ret
+    in
+    
+    let upcall hdr ofs len iovl = 
+      if len <|| md5len_plus_8 +|| md5len then (
+	Iovecl.free iovl ;
+	Route.drop (fun () -> sprintf "%s:size below minimum:len=%d\n" name (int_of_len len))
+      ) else if not (Buf.subeq16 hdr ofs pack) then (
+	Iovecl.free iovl ;
+	Route.drop (fun () -> sprintf "%s:rest of Conn.id did not match" name)
+      ) else (
+	let check = check_md5 hdr ofs len iovl in
+	let rank  = Buf.read_int32 hdr (ofs +|| md5len) in
+	let seqno = Buf.read_int32 hdr (ofs +|| md5len_plus_4) in
+	Route.info (fun () -> sprintf "rank=%d seqno=%d" rank seqno);
+	let molen = len -|| (md5len_plus_8 +|| md5len) in
+	if molen =|| len0 then (
+	  log (fun () -> "deliver None");
+	  if check then secureh rank None seqno iovl
+	  else insecureh rank None seqno iovl
+	) else
+	  try 
+	    let mo = unmarsh hdr (ofs +|| md5len_plus_8 +|| md5len) in
+	    log (fun () -> "deliver Some");
+	    if check then secureh rank (Some mo) seqno iovl
+	    else insecureh rank (Some mo) seqno iovl
+	  with _ -> 
+	    Iovecl.free iovl ;
+	    Route.drop (fun () -> sprintf "Bad parsing of ML header")
       )
-    in handler
+    in upcall
   in
-
+    
   let merge info =
     let upcalls = Arrayf.map (function
       | (_,p,k,(Route.Signed h)) -> ((p,k),h)
       | _ -> failwith sanity
-      ) info 
+    ) info 
     in
     let upcalls = Route.group upcalls in
     let upcalls =
       Arrayf.map (fun ((pack,key),upcalls) ->
-	let secure   = Route.merge3iov (Arrayf.map (fun u -> u true ) upcalls) in
-	let insecure = Route.merge3iov (Arrayf.map (fun u -> u false) upcalls) in
+	let secure   = Route.merge4iov (Arrayf.map (fun u -> u true ) upcalls) in
+	let insecure = Route.merge4iov (Arrayf.map (fun u -> u false) upcalls) in
 	recv pack key secure insecure
       ) upcalls
     in
     upcalls
   in
-
-  let blast (_,_,xmitvs) key pack conn =
-    let ints_s = Buf.create len8 in
-    let suffix = Buf.append ints_s pack in
+  
+  
+  (* Here, we use a preallocated buffer from the Buf module.
+   * The idea is to marshal an ml object into a pre-allocated
+   * buffer, and then write the rest of the parameters into
+   * the beginning of the buffer. 
+   *
+   * We pass the [f] function into buf. This saves allocating an
+   * intermediated (buf,ofs,len) structure. 
+   * 
+   * The format of the ML part of the message is:
+   * [16byte connection_id] [4byte sender] [4byte seqno] [16byte digest]
+   * 
+   * The iovec-length and ml-object length, are taken into 
+   * account implicitly, by the digest function. 
+   *)
+  let blast xmit key pack conn _ =
+    
+    let sender =
+      let sender,_ = Conn.squash_sender conn in
+      match sender with
+	| Some rank -> rank
+	| None -> -1			(* hack! *)
+    in
     let key = match key with 
       | Security.NoKey -> failwith "send: NoKey"
       | Security.Common key' -> Security.buf_of_mac key'.Security.mac in 
+    
+    fun mo seqno iovl ->
+      let f hdr ofs len = 
+	Buf.blit pack len0 hdr ofs md5len;
+	Buf.write_int32 hdr (ofs +|| md5len) sender ;
+	Buf.write_int32 hdr (ofs +|| md5len_plus_4) seqno ;
 
-    let xmit mo mi mv =
-      let mo = match mo with
-      | None -> Iovecl.empty
-      | Some(mo) -> marshal mo
+	if Iovecl.len iovl >|| len0 then 
+	  log (fun () -> sprintf "blast: ml_len=%d iovl_len=%d %s %s"
+	    (int_of_len len) (int_of_len (Iovecl.len iovl))
+	    (Util.hex_of_string (Buf.string_of pack ))
+	    (Conn.string_of_id conn)
+	  );
+	
+	(* Handling the md5 hash. 
+	 * 1) Zero the designated area, 2) Comupte the md5
+	 * 3) write the result.
+	 *)
+	Buf.blit zeros len0 hdr (ofs +|| md5len_plus_8) md5len; 
+	let ctx = Hsys.md5_init_full (Buf.string_of key) in
+	Hsys.md5_update ctx hdr ofs len;
+	Hsys.md5_update_iovl ctx iovl;
+	let d = Buf.of_string (Hsys.md5_final ctx) in
+	Buf.blit d len0 hdr (ofs +|| md5len_plus_8) md5len; 
+	
+	xmit hdr ofs len iovl
       in
-      let molen = Iovecl.len name mo in
-
-      Buf.write_net_int suffix len0 mi ;
-      Buf.write_net_len suffix len4 molen ;
-
-      (* Calculate the signature.
-       *)
-      (*
-      let sign =
-	let ctx = Hsys.md5_init () in
-	Iovecl.md5_update name ctx mv ;
-	Iovecl.md5_update name ctx mo ;
-	Buf.md5_update ctx suffix len0 (Buf.length suffix) ;
-	Buf.md5_update ctx key len0 md5len ;
-	let sign = Buf.md5_final ctx in
-	Mbuf.allocl name mbuf sign len0 md5len
-      in
-      *)
-      let sign =
-	let ctx = Hsys.md5_init_full (Buf.break key) in
-	Iovecl.md5_update name ctx mv ;
-	Iovecl.md5_update name ctx mo ;
-	Buf.md5_update ctx suffix len0 (Buf.length suffix) ;
-	let sign = Buf.md5_final ctx in
-	Mbuf.allocl name mbuf sign len0 md5len
-      in
-      let iovl = Iovecl.concat name [mv;mo;sign] in
-      xmitvs iovl suffix
-    in xmit
+      match mo with
+	| None -> 
+	    Buf.prealloc (md5len_plus_8 +|| md5len) f
+	| Some obj -> 
+	    Buf.prealloc_marsh (md5len_plus_8 +|| md5len) obj f
   in
-
-  Route.create name true false const Route.pack_of_conn merge blast
-
-let _ = Elink.put Elink.signed_f f
-
+  
+  Route.create name true const pack_of_conn merge blast
+    
 (**************************************************************)
+  

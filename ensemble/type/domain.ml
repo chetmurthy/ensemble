@@ -18,7 +18,7 @@ type dest =
 | Gossip of Group.id
 
 type handle = {
-  xmit		: dest -> Route.xmits option ;
+  xmit		: dest -> Route.xmitf option ;
   disable 	: unit -> unit
 }
     
@@ -51,5 +51,52 @@ let handle disable xmit = {
   xmit          = xmit ;
   disable       = disable
 } 
+
+(**************************************************************)
+
+(* Domain management.
+ *)
+
+let dormant = ref []
+let activated = ref []
+
+let install id d =
+  dormant := (id,d) :: !dormant
+
+let of_mode alarm mode =
+  (* Use the Udp domain for Deering and Sp2.
+   *)
+  let mode = match mode with
+  | Addr.Deering -> Addr.Udp
+  | _ -> mode
+  in
+
+  (* If in activated list, use that.
+   *)
+  try 
+    List.assoc mode !activated 
+  with Not_found -> (
+    try
+      (* Look up in dormant list.
+       *)
+      let d = List.assoc mode !dormant in
+
+      (* Remove it from dormant list.
+       *)
+      dormant := 
+        List.fold_left (fun o ((i,_) as it) ->
+	  if mode = i then o else it :: o
+        ) [] !dormant ;
+
+      (* Enable the domain and add to activated list.
+       *)
+      let d = d alarm in
+      activated := (mode,d) :: !activated ;
+      d
+    with Not_found ->
+      eprintf "DOMAIN:domain '%s' not installed, exiting\n"
+      (Addr.string_of_id mode) ;
+      exit 1
+  )
 
 (**************************************************************)

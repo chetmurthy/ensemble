@@ -1,1 +1,10 @@
-.err
+*.cm*
+*.a
+*.o*
+.depend*
+*.cm*
+*.a
+*.o*
+.depend*
+Makefile.nt
+

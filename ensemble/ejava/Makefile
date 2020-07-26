@@ -1,4 +1,4 @@
-CC = javac
+ENSROOT = ..
 
 .SUFFIXES: .java .class
 .java.class:
@@ -20,7 +20,9 @@ CLASSFILES= \
 
 all: $(CLASSFILES) EnsDemoOutboard.class
 	chmod +x EnsDemoOutboard.class
-	cp ../../demo/outboard .
+	cp $(ENSROOT)/demo/outboard .
 
 clean:
 	rm -rf ensemble/hot/*.class *.class
+
+

@@ -11,6 +11,8 @@ open Appl_intf
 open Appl_intf.New
 (**************************************************************)
 let name = Trace.filel "TOP_APPL"
+let failwith s = Trace.make_failwith name s
+let log_iov = Trace.log (name^":IOV")
 (**************************************************************)
 
 type header = 
@@ -173,10 +175,25 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       | Cast(msg) ->
 	  assert (unblocked s) ;
 	  s.cast_xmit <- succ s.cast_xmit ;
+	  log_iov (fun () -> sprintf "Cast: iovl=%s,len=%d" 
+	    (Iovecl.sum_refs msg) (Buf.int_of_len (Iovecl.len msg)));
+	  log (fun () -> "cast appl message");
       	  dnlm (castIovAppl name msg) ()
+
+      (* Increment the iovecl count for each destination.
+       *)
       | Send(dest,msg) ->
 	  assert (unblocked s) ;
+	  let len = Array.length dest in
+	  if len =| 0 then (
+	    eprintf "TOP_APPL:dest=[||],rank=%d,nmembers=%d\n" ls.rank ls.nmembers ;
+	    raise (Invalid_argument "Empty send list");
+	  );
 	  for i = 0 to pred (Array.length dest) do
+	    let msg = 
+	      if i>0 then Iovecl.copy msg
+	      else msg
+	    in
 	    let dest = dest.(i) in
 	    if dest =| ls.rank then
 	      log (fun () -> sprintf "send to myself dest=%d" dest) ;
@@ -188,6 +205,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	    dnlm (sendPeerIovAppl name dest msg) ()
 	  done
       | Send1(dest,msg) ->
+	  log_iov (fun () -> sprintf "Send1: iovl=%s,len=%d" 
+	    (Iovecl.sum_refs msg) (Buf.int_of_len (Iovecl.len msg)));
 	  assert (unblocked s) ;
 	  if dest =| ls.rank then
 	    log (fun () -> sprintf "send to myself dest=%d" dest) ;
@@ -222,6 +241,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       if s.got_expect && s.cast_recv.(origin) >| Arrayf.get s.cast_expect origin then
 	failwith ("bad cast:"^(Event.to_string ev)) ;
       let iov = getIov ev in
+      log_iov (fun () -> sprintf "recv Cast: iovl=%s,len=%d" 
+	(Iovecl.sum_refs iov) (Buf.int_of_len (Iovecl.len iov)));
       handle_actions (s.recv_cast.(origin) iov) ;
       if s.blocking = UpBlocking then
 	check_block_ok () ;
@@ -233,6 +254,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       if s.got_expect && s.send_recv.(origin) >| Arrayf.get s.send_expect origin then
 	failwith "bad send" ;
       let iov = getIov ev in
+      log_iov (fun () -> sprintf "recv Send: iovl=%s,len=%d" 
+	(Iovecl.sum_refs iov) (Buf.int_of_len (Iovecl.len iov)));
       handle_actions (s.recv_send.(origin) iov) ;
       if s.blocking = UpBlocking then
 	check_block_ok () ;
@@ -410,6 +433,6 @@ in {up_in=up_hdlr;uplm_in=uplm_hdlr;upnm_in=upnm_hdlr;dn_in=dn_hdlr;dnnm_in=dnnm
 let l args vs = Layer.hdr init hdlrs None (LocalNoHdr ()) args vs
 let l2 args vs = Layer.hdr_noopt init hdlrs args vs
 
-let _ = Elink.layer_install name l
+let _ = Layer.install name l
 
 (**************************************************************)

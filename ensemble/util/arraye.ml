@@ -160,6 +160,29 @@ let map f a =
     r
   end
 
+
+let of_array_map f a = 
+  let l = Array.length a in
+  if l = 0 then [||] else begin
+    let r = create l (f(Array.unsafe_get a 0)) in
+    for i = 1 to l - 1 do
+      unsafe_set r i (f(Array.unsafe_get a i))
+    done;
+    r
+  end
+
+let to_array_map f a = 
+  let l = length a in
+  if l = 0 then [||] else begin
+    let r = Array.create l (f(unsafe_get a 0)) in
+    for i = 1 to l - 1 do
+      Array.unsafe_set r i (f(unsafe_get a i))
+    done;
+    r
+  end
+
+
+
 let iteri f a =
   for i = 0 to length a - 1 do f i (unsafe_get a i) done
 
@@ -382,10 +405,4 @@ let split c =
   let b = map snd c in
   (a,b)
 
-(**************************************************************)
-(* Hack *)
-let sendv = Hsys.sendv
-let sendtov = Hsys.sendtov
-let sendtosv = Hsys.sendtosv
-let sendtovs = Hsys.sendtovs
 (**************************************************************)

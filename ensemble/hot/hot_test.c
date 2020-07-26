@@ -138,19 +138,22 @@ typedef enum {
 
 static action rand_action(int nmembers, int thresh) {
   double p = (rand() % 1000) / 1000.0;
-  if (nmembers >= thresh && p < /*0.90*/0.03) {
+  if (nmembers >= thresh && p < 0.03) {
     stats.nleave_act++;
     return LEAVE;
-  } else if (p < 0.5) {
-    stats.ncast_act++;
-    return CAST;
-  }
-  else if (p <= 1.0) {
-    stats.nsend_act++;
-    return SEND;
-  }
-  else 
-    return NO_OP;
+    } else 
+      if (p < 0.5) {
+	stats.ncast_act++;
+	trace("CAST");
+	return CAST;
+      } else {
+	stats.nsend_act++;
+	trace("SEND");
+	return SEND;
+      }
+
+  trace("NO_OP");
+  return NO_OP;
 }
 
 /* Send a random number of multicast messages->
@@ -421,16 +424,16 @@ static void heartbeat(
 	s->next_sweep = time + s->sweep ;
 	ntrace("heartbeat") ;
 	
-	switch (rand_action(s->vs.nmembers,s->thresh)) { 
+	switch (rand_action(s->vs.nmembers,s->thresh)){
 	case LEAVE:
-	    action_cast(s);
-	    s->status = LEAVING;
-
-	    /*
+	  action_cast(s);
+	  s->status = LEAVING;
+	  
+	  /*
 	    if ((err = hot_ens_Leave(s->gctx)) != HOT_OK)
-	      hot_sys_Panic(hot_err_ErrString(err));
-	      */
-
+	    hot_sys_Panic(hot_err_ErrString(err));
+	  */
+	  
 	    ncr++;
 	    /*printf("************** created %d threads\n", ncr);*/
 	    hot_thread_Create((void*)action_leave_and_rejoin,s,NULL) ;
@@ -453,7 +456,7 @@ static void heartbeat(
 	    break;
 	}
 	
-    }    
+    }
 }
 
 static void exit_cb(
@@ -540,6 +543,7 @@ static void join(
     outboard = "SPAWN" ;
 #else
     outboard = "FORK" ;
+    //    outboard = "TCP" ;
 #endif
   }
   strcpy(s->jops.outboard, outboard);
@@ -573,7 +577,7 @@ int main(int argc, char *argv[]) {
   int nmembers = NMEMBERS;
   int i;
 
-  trace("CDEMO: starting");
+  printf("HOT_TEST: starting thresh=%d n=%d\n", thresh, nmembers);
   
   /* Initialize state data.
    */

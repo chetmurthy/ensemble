@@ -26,6 +26,6 @@ let l _ (ls,vs) = ((),fun {up_lout=up;dn_lout=dn} ->
     dn ev hdr
   in {up_lin=up_hdlr;dn_lin=dn_hdlr})
 
-let _ = Elink.layer_install "DISP" l
+let _ = Layer.install "DISP" l
 
 (**************************************************************)

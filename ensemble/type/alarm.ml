@@ -7,9 +7,10 @@ open Trans
 (**************************************************************)
 let name = Trace.file "ALARM"
 let failwith s = Trace.make_failwith name s
+let log = Trace.log name
 (**************************************************************)
 
-type gorp = Unique.t * Sched.t * Async.t * Route.handlers * Mbuf.t
+type gorp = Unique.t * Sched.t * Async.t * Route.handlers
 
 type alarm = {
   disable : unit -> unit ;
@@ -33,33 +34,19 @@ type t = {
   rmv_poll	: debug -> unit ;
   poll		: poll_type -> unit -> bool ;
   handlers      : Route.handlers ;
-  mbuf          : Mbuf.t ;
   sched         : Sched.t ;
   unique        : Unique.t ;
   async         : Async.t ;
-  local_xmits   : Route.xmits
+  local_xmits   : Route.xmitf
 }
 
 (**************************************************************)
 
-let local_xmits sched handlers mbuf debug =
-  let debug = Refcnt.info2 name "local" debug in
-  let debug1 = Refcnt.info2 name "local(xv)" debug in
-  let debug2 = Refcnt.info2 name "local(xsv)" debug in
-  let x buf ofs len =
-    let iov = Mbuf.alloc debug mbuf buf ofs len in
-    Sched.enqueue_2arg sched debug Route.deliver_iov handlers iov
-  and xv iovl =
-    let iovl = Iovecl.take debug1 iovl in
-    Sched.enqueue_3arg sched debug1 Route.deliver_iovl handlers mbuf iovl
-  and xsv iovl s =
-    let iovl = Iovecl.take debug2 iovl in
-    let slen = Buf.length s in
-    let iovs = Mbuf.alloc debug2 mbuf s Buf.len0 slen in
-    let iovl = Iovecl.appendi debug2 iovl iovs in
-    Sched.enqueue_3arg sched debug2 Route.deliver_iovl handlers mbuf iovl
+let local_xmits sched handlers debug =
+  let x buf ofs len iovl = 
+    Sched.enqueue_5arg sched debug Route.deliver handlers buf ofs len iovl
   in
-  (x,xv,xsv)
+  x
 
 (**************************************************************)
 
@@ -85,7 +72,7 @@ let create
   add_poll
   rmv_poll
   poll
-  (unique,sched,async,handlers,mbuf)
+  (unique,sched,async,handlers)
 = {
     name	= name ;
     gettime     = gettime ;
@@ -102,10 +89,9 @@ let create
     block	= block ;
     handlers    = handlers ;
     sched       = sched ;
-    mbuf        = mbuf ;
     async       = async ;
     unique      = unique ;
-    local_xmits = (local_xmits sched handlers mbuf name)
+    local_xmits = (local_xmits sched handlers name)
   }
 
 (**************************************************************)
@@ -125,7 +111,6 @@ let poll t = t.poll
 let name t = t.name
 let handlers t = t.handlers
 let sched t = t.sched
-let mbuf t = t.mbuf
 let unique t = t.unique
 let async t = t.async
 let local_xmits t = t.local_xmits
@@ -187,5 +172,46 @@ let wrap wrapper alarm =
   let enable callback =
     alarm.alarm (wrapper callback)
   in { alarm with alarm = enable }
+
+(**************************************************************)
+
+(* Management of alarm tables.
+*)
+
+type id = string
+
+let alarms = ref []
+
+let install id a =
+  alarms := (id,a) :: !alarms
+
+let chosen = ref None
+
+let choose alarm gorp =
+  let alarm = string_uppercase alarm in
+  let a = 
+    try List.assoc alarm !alarms with Not_found ->
+      eprintf "ELINK:alarm %s not installed, exiting" alarm ;
+      exit 1
+  in
+  match !chosen with
+  | Some a -> a
+  | None ->
+      let a = a gorp in
+      chosen := Some a ;
+      a
+
+let get_hack () = 
+  match !chosen with
+  | None -> failwith "no alarm chosen"
+  | Some a -> a
+
+(**************************************************************)
+
+let install_port port =
+  log (fun () -> sprintf "setting Unique port to %d" port) ;
+  let alarm = get_hack () in
+  let unique = unique alarm in
+  Unique.set_port unique port
 
 (**************************************************************)

@@ -1,46 +1,91 @@
 #*************************************************************#
+#
+# Main CE Makefile
+#
+# Author: Ohad Rodeh 11/2001
+# Based on code by Mark Hayden
+#
+#*************************************************************#
 ENSROOT = ..
 include $(ENSROOT)/mk/preamble.mk
 include $(ENSROOT)/mk/config.mk
+#*************************************************************#
+# Choose whether to use the optimizing compiler or not.
+#
+
+ifdef OPT
 include $(ENSROOT)/mk/ocamlopt.mk
-include $(ENSROOT)/ce/ce_config.mk
+else
+include $(ENSROOT)/mk/ocaml.mk
+endif
+#*************************************************************#
+
+# NT
+ifeq ("$(PLATFORM)" , "nt")
+MLFLAGS = #-p
+CFLAGS	= #
+CE_LINK_FLAGS	= $(LIBSYSCL)
+else
+
+#i386-linux
+ifeq ("$(PLATFORM)" , "i386-linux")
+MLFLAGS = #-p
+CFLAGS =  -O2 #-g -p
+CE_LINK_FLAGS = -ltermcap -lm #-lefence
+else
+
+# SPARC-SOLARIS
+ifeq ("$(PLATFORM)" , "sparc-solaris")
+MLFLAGS = #-p
+CFLAGS =  -O2 #-g -p
+CE_LINK_FLAGS = -lposix4 -ltermcap -lsocket -lnsl -lm -ldl
+else
+
+ERROR = yes
+endif
+endif
+endif
 
 #*************************************************************#
-.SUFFIXES: .ml .cmo .cmx .mli .cmi .c .o .obj .cmx
+.SUFFIXES: .ml .cmo .cmx .mli .cmi .c .o .obj .obj .cmx
 .mli.cmi:
-	$(MLCOMP) -c $(MLFLAGS) -I $(ENSLIB) $< -o $@
+	ocamlc -c -I $(ENSLIB) $< -o $@
 .ml.cmo:
-	$(MLCOMP) -c $(MLFLAGS) -I $(ENSLIB) $< -o $@
+	ocamlc -c $(MLFLAGS) -I $(ENSLIB) $< -o $@
 .ml.cmx:
-	$(MLCOMP) -c $(MLFLAGS) -I $(ENSLIB) $< -o $@
+	ocamlopt -c $(MLFLAGS) -I $(ENSLIB) $< -o $@
 .c.o : 
-	$(CC) -c -I$(CAMLLIB) $(CFLAGS) $< -o $@
+	$(CC) -c -I$(CAMLLIB) -I $(ENSLIB) $(CFLAGS) $< -o $@
 .c.obj : 
-	$(CC) -c -I$(CAMLLIB) $(CFLAGS) $< -o $@
-
+	$(CC) -c -I$(CAMLLIB) -I $(ENSLIB) $(CFLAGS) $< $(OBJRULE)$@
 
 #*************************************************************#
 
-COBJ = \
-	ce_trace$(OBJ) \
-	ce_convert$(OBJ) \
-	ce_misc$(OBJ) \
-	ce_actions$(OBJ) \
-	ce_inboard_c$(OBJ) 
+COBJ =\
+	ce_trace$(OBJ)\
+	ce_convert$(OBJ)\
+	ce_misc$(OBJ)\
+	ce_actions$(OBJ)\
+	ce_inboard_c$(OBJ) \
+	ce_flat$(OBJ) 
 
-MLOBJ = \
-	ce_util$(CMO) \
+MLOBJ =\
+	ce_util$(CMO)\
 	ce_inboard$(CMO) 
 
-MLIOBJ = \
+MLIOBJ =\
 	ce_util.cmi
 
+DEMOS_CLEAN = ce_perf ce_rand ce_fifo ce_mtalk *.exe
 DEMOS = ce_perf$(EXE) ce_rand$(EXE) ce_fifo$(EXE) ce_mtalk$(EXE) 
 
 all: $(DEMOS) 
 
+opt : 
+	$(MAKE) OPT=yes all
 
-BASIC_ENSCONF_skt = $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS) 
+#BASIC_ENSCONF_skt = $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS) 
+BASIC_ENSCONF_skt = $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS) 
 
 
 
@@ -50,9 +95,9 @@ ce$(OBJ): $(MLIOBJ) $(MLOBJ) $(ENSLIBS)
 # Put all the libraries, ML code, and runtime into one library
 libce$(ARC): $(COBJ) ce$(OBJ)
 	$(RM) ce.c
-	$(PARTIALLD) $(PARTIALLDO) libce$(OBJ) \
+	$(PARTIALLD) $(PARTIALLDO)libce$(OBJ)\
 	  ce$(OBJ)\
-	  $(COBJ) \
+	  $(COBJ)\
 	  ../lib/$(PLATFORM)/libsock$(ARC)\
 	  $(OCAML_LIB)/libunix$(ARCS)\
 	  $(MLRUNTIME)
@@ -60,36 +105,56 @@ libce$(ARC): $(COBJ) ce$(OBJ)
 	$(RANLIB) libce$(ARC)
 
 ce_mtalk$(EXE): $(COBJ) ce_mtalk$(OBJ) libce$(ARC)
-	$(CC) $(CFLAGS) -o ce_mtalk$(EXE) \
-	  ce_mtalk$(OBJ) \
+	$(CC) $(CFLAGS) -o ce_mtalk$(EXE)\
+	  ce_mtalk$(OBJ)\
 	  libce$(ARC) \
 	$(CE_LINK_FLAGS)
 
 ce_fifo$(EXE): $(COBJ) ce_fifo$(OBJ) libce$(ARC)
-	$(CC) $(CFLAGS) -o ce_fifo$(EXE) \
-	  ce_fifo$(OBJ) \
+	$(CC) $(CFLAGS) -o ce_fifo$(EXE)\
+	  ce_fifo$(OBJ)\
 	  libce$(ARC) \
 	$(CE_LINK_FLAGS)
 
 ce_rand$(EXE): $(COBJ) ce_rand$(OBJ) libce$(ARC)
-	$(CC) -o ce_rand$(EXE) \
-	  ce_rand$(OBJ) \
-	  libce$(ARC) \
+	$(CC) $(CFLAGS) -o ce_rand$(EXE)\
+	  ce_rand$(OBJ)\
+	  libce$(ARC)\
 	$(CE_LINK_FLAGS)
 
 ce_perf$(EXE): $(COBJ) ce_perf$(OBJ) libce$(ARC)
-	$(CC) $(CFLAGS) -o ce_perf$(EXE) \
-	  ce_perf$(OBJ) \
-	  libce$(ARC) \
+	$(CC) $(CFLAGS) -o ce_perf$(EXE)\
+	  ce_perf$(OBJ)\
+	  libce$(ARC)\
 	$(CE_LINK_FLAGS)
 
+#*************************************************************#
+# Get's around a difference between forall syntax between
+# WIN32 and Unix.
+#
+ifeq ("$(PLATFORM)" , "nt")
+INSTALL = for %%d in ($(DEMOS)) do ( $(CP) %%d $(ENSBIN) )
+else
+INSTALL = $(CP) $(DEMOS) $(ENSBIN)
+endif
+
+install : 
+	$(CP) libce$(ARC) $(ENSLIB)
+	$(INSTALL)
+
+#*************************************************************#
+
 clean:
-	$(RM) *.obj *.o *.cm* *.pdb core  gmon.out .#* 
+	$(CLEANDIR)
+	$(RM) *.a *.lib *.dll $(DEMOS_CLEAN) 
 
 realclean: clean 
-	$(RM) *.a *.lib *.dll $(DEMOS) 
+
 
 force: clean all
 
 #*************************************************************#
+
+
+
 

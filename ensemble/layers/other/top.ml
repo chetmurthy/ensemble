@@ -387,6 +387,6 @@ let _ =
   Param.default "top_account" (Param.Bool true) ;
   Param.default "top_dump_linger" (Param.Bool false) ;
   Param.default "top_dump_fail" (Param.Bool false) ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)

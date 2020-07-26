@@ -56,38 +56,28 @@ typedef struct ce_action_t {
     } type;
   union {
     struct {
-      ce_len_t len ;
-      ce_data_t data ;
+      int num;
+      ce_iovec_array_t iovl;
     } cast;
     struct {
+      int num_dests;
       ce_rank_array_t dests ;
-      ce_len_t len ;
-      ce_data_t data ;
+      int num;
+      ce_iovec_array_t iovl;
     } send ;
     struct {
       ce_rank_t dest ;
-      ce_len_t len ;
-      ce_data_t data ;
+      int num;
+      ce_iovec_array_t iovl;
     } send1 ;
-    ce_rank_array_t suspects ;
+    struct {
+      ce_rank_array_t members ;
+      int num;
+    } suspect;
     char* proto ;
     char* properties ;
   } u ;
 } ce_action_t ;
-
-ce_action_t *ce_appl_cast(ce_len_t, ce_data_t) ;
-ce_action_t *ce_appl_send(ce_rank_array_t, ce_len_t, ce_data_t);
-ce_action_t *ce_appl_send1(ce_rank_t dest, ce_len_t, ce_data_t) ;
-ce_action_t *ce_appl_leave(void) ;
-ce_action_t *ce_appl_prompt(void) ;
-ce_action_t *ce_appl_suspect(ce_rank_array_t suspects) ;
-ce_action_t *ce_appl_xfer_done(void) ;
-ce_action_t *ce_appl_rekey(void) ;
-ce_action_t *ce_appl_protocol(char *proto) ;
-ce_action_t *ce_appl_properties(char *properties) ;
-	    
-void ce_action_free(ce_action_t*) ;
-
 
 /* The type of message queues. The type is obscured to prevent outside
  * access. The struct itself is defined in ce_actions.c
@@ -97,9 +87,26 @@ typedef struct ce_queue_t ce_queue_t ;
 ce_queue_t* ce_create_queue(void);
 ce_bool_t ce_queue_empty(ce_queue_t*) ;
 int ce_queue_length(ce_queue_t*) ;
-void ce_queue_add(ce_queue_t*, ce_action_t*) ;
+ce_action_t* ce_queue_alloc(ce_queue_t *q);
 void ce_queue_clear(ce_queue_t*) ;
 void ce_queue_free(ce_queue_t*) ;
 value Val_queue(ce_queue_t*);
+
+
+
+ce_action_t *ce_appl_cast(ce_queue_t*, int, ce_iovec_array_t) ;
+ce_action_t *ce_appl_send(ce_queue_t*, int, ce_rank_array_t, int, ce_iovec_array_t);
+ce_action_t *ce_appl_send1(ce_queue_t*, ce_rank_t dest, int, ce_iovec_array_t) ;
+ce_action_t *ce_appl_leave(ce_queue_t*) ;
+ce_action_t *ce_appl_prompt(ce_queue_t*) ;
+ce_action_t *ce_appl_suspect(ce_queue_t*, int, ce_rank_array_t suspects) ;
+ce_action_t *ce_appl_xfer_done(ce_queue_t*) ;
+ce_action_t *ce_appl_rekey(ce_queue_t*) ;
+ce_action_t *ce_appl_protocol(ce_queue_t*, char *proto) ;
+ce_action_t *ce_appl_properties(ce_queue_t*, char *properties) ;
+	    
+void ce_action_free(ce_action_t*) ;
+
+
 
 #endif /* __CE_ACTIONS_H__ */

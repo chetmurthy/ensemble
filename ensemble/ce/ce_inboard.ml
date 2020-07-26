@@ -40,13 +40,18 @@ external cback_flow_block : c_appl -> rank option -> bool -> unit
 external cback_block : c_appl -> c_action array
   = "ce_Block_cbd"
 
-external cback_heartbeat : c_appl -> float -> c_action array
+(*
+external cback_diable : c_appl -> unit
+  = "ce_Disable_cbd"
+*)
+
+external cback_heartbeat : c_appl -> float -> unit
   = "ce_Heartbeat_cbd"
 
-external cback_recv_cast : c_appl -> rank -> Buf.t -> ofs -> len -> c_action array
+external cback_recv_cast : c_appl -> rank -> Iovec.raw array -> c_action array
   = "ce_ReceiveCast_cbd"
 
-external cback_recv_send : c_appl -> rank -> Buf.t -> ofs -> len -> c_action array
+external cback_recv_send : c_appl -> rank -> Iovec.raw array -> c_action array
   = "ce_ReceiveSend_cbd"
 
 (* Retrieve pending downcalls from C application.
@@ -70,19 +75,18 @@ external c_exception_handler : string -> bool
 
 (**************************************************************)
 
-let c_interface mbuf c_appl heartbeat_rate =
+let c_interface c_appl heartbeat_rate =
   (* When is the next heartbeat due 
    *)
   let alarm = Appl.alarm name in
   let now = Time.to_float (Alarm.gettime alarm) in
-  let next_heartbeat = ref (now +. heartbeat_rate) in 
   let hb_requested = ref false in
   let in_handler = ref false in
 
   let install ((ls,vs) as vf) = 
     log (fun () -> "(pre cback_install");
-    let dncall_of_c = dncall_of_c mbuf (ls,vs) in
-    let c_map = Array.map dncall_of_c in
+    let dncall_of_c = dncall_of_c (ls,vs) in
+    let c_map = Array.map dncall_of_c  in
     let (c_ls,c_vs) = c_view_full vf in
     let c_init_acs = c_map (cback_install c_appl c_ls c_vs) in
     log (fun () -> ")");
@@ -91,32 +95,28 @@ let c_interface mbuf c_appl heartbeat_rate =
       let upcall = 
 	match cs with
 	| S ->
-	    fun buf ofs len ->
-	      cback_recv_send c_appl o buf ofs len
+	    fun iovec ->
+	      cback_recv_send c_appl o iovec
 	| C ->
-	    fun buf ofs len ->
-	      cback_recv_cast c_appl o buf ofs len
+	    fun iovec ->
+	      cback_recv_cast c_appl o iovec
       in
       fun iovl ->
-      	let iov = Mbuf.flatten name mbuf iovl in
-	log (fun () -> "recv(");
-      	let c_acs = Iovec.read name iov upcall in
+      	let iovec_a = Iovecl.to_iovec_raw_array iovl in
+      	let c_acs = upcall iovec_a in
+	log (fun () -> "freeing(");
+      	Iovecl.free iovl ;
 	log (fun () -> ")");
-      	Iovec.free name iov ;
 	c_map c_acs
     in
     let heartbeat time = 
       let time = Time.to_float time in
-      if time > !next_heartbeat then (
-	log (fun () -> "heartbeat(");
-	next_heartbeat := !next_heartbeat +. heartbeat_rate;
-	let c_acs = cback_heartbeat c_appl time in
-	log (fun () -> ")");
-	c_map c_acs 
-      ) else (
-	let c_acs = c_get_actions c_appl in
-	c_map c_acs
-      )
+      log (fun () -> "heartbeat(");
+      cback_heartbeat c_appl time;
+      log (fun () -> ")");
+      let c_acs = c_get_actions c_appl in
+      c_map c_acs
+
     in
     let block () = 
       log (fun () -> "block(");
@@ -148,14 +148,14 @@ let c_interface mbuf c_appl heartbeat_rate =
     exit = exit }
 
 
-let c_join mbuf c_appl jops = 
+let c_join c_appl jops = 
   let ls,vs = init_view_full jops in
   log (fun () -> "(Adding asynchronous call");
   let async = Appl.async (vs.group,ls.endpt) in
   Hashtbl.add async_tbl c_appl async;
   let heartbeat_rate = jops.jops_hrtbt_rate in
   log (fun () -> "c_interface(");
-  let interface = c_interface mbuf c_appl heartbeat_rate in
+  let interface = c_interface c_appl heartbeat_rate in
   log (fun () -> ")");
   Appl.config_new interface (ls,vs) 
 
@@ -178,7 +178,7 @@ let run () =
   if Arge.get Arge.modes = [Addr.Netsim] then (
     log(fun () -> "Setting short names");
     Arge.set Arge.short_names true ;
-    Appl.install_port (-2) ;
+    Alarm.install_port (-2) ;
   ) ;
 
   let alarm = Appl.alarm name in
@@ -186,11 +186,7 @@ let run () =
    * a port number to be installed in the 
    * Unique generator.
    *)
-  let _ = Elink.domain_of_mode alarm Addr.Udp in
-  Appl.start_monitor () ;
-
-  let mbuf = Alarm.mbuf alarm in
-  let c_join = c_join mbuf in
+  let _ = Domain.of_mode alarm Addr.Udp in
 
   let c_add_sock_recv sock c_handler c_env = 
     Alarm.add_sock_recv alarm name sock 
@@ -212,6 +208,13 @@ let run () =
 
 let _ =
   log (fun () -> "Starting ML side\n");
+
+  (* HACK. 
+   * This command should startup winsock on WIN32, and do 
+   * nothing on other platforms.
+   *)
+  ignore (Unix.getpid ());
+
   let printer ch s =
     if not (c_printer s) then (
       output_string ch s ;
@@ -220,7 +223,7 @@ let _ =
   in
   Util.fprintf_override printer ;
   try run () with e ->
-    let e = Hsys.error e in
+    let e = Util.error e in
     if not (c_exception_handler e) then
       eprintf "HOT_INBOARD:top:uncaught exception:%s\n" e ;
     exit 1

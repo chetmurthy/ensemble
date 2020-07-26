@@ -319,6 +319,6 @@ let _ =
   Param.default "pr_stable_sweep" (Param.Time (Time.of_string "0.3")) ;
   Param.default "pr_stable_explicit_ack" (Param.Bool false) ;
 (*Param.default "pr_stable_fanout" (Param.Int 3) ;*)
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)

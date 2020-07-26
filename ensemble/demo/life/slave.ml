@@ -1,7 +1,7 @@
 (**************************************************************)
 open Ensemble
 open Appl
-open Appl_intf open Old
+open Appl_intf open New
 open Transport
 open Proto
 open Util
@@ -11,6 +11,7 @@ open Debug
 open View
 (**************************************************************)
 let name = Trace.file "SLAVE"
+let log = Trace.log name
 (**************************************************************)
 
 (* This function returns the interface record that defines
@@ -132,40 +133,47 @@ let life master_endpt rate =
                             processInQueue ();
                             ()
   in
-  let recv_cast x m= queueAndSend x m
-  and recv_send x m= queueAndSend x m
-  and block () = [||]
-  and heartbeat _ =
-    processInQueue ();
-    sendMsgs ()
-  and block_recv_cast = queueAndProcess
-  and block_recv_send = queueAndProcess
-  and block_view (ls,vs) =
-    if ls.rank = 0 then
-      List.map (fun rank -> (rank,())) (Array.to_list (Util.sequence ls.nmembers))
-    else []
-  and block_install_view vs _ = ()
-  and unblock_view (ls,vs) () =
+  let install (ls,vs) =
+    if ls.rank=0 then printf ".";
+    let blocked = ref false in
     view := Arrayf.to_list vs.view ;
-    [||]
-  and exit () =
+
+    let receive origin _ _ m = 
+      if not !blocked then 
+	queueAndSend origin m
+      else (
+	queueAndProcess origin m;
+	[||]
+      )
+
+    and block () = 
+      blocked := true;
+      sendMsgs ()
+
+    and heartbeat _ =
+      processInQueue ();
+      if not !blocked then
+	sendMsgs ()
+      else
+	[||]
+
+    in (sendMsgs ()), {
+      flow_block = (fun _ -> ());
+      receive = receive;
+      block  = block ;
+      heartbeat = heartbeat ;
+      disable = (fun _ -> ());
+    }
+      
+  and exit () = 
     eprintf "(lifeslave:got exit)\n" ;
     exit 0
-  in Elink.get_appl_old_full name {
-    recv_cast           = recv_cast ;
-    recv_send           = recv_send ;
-    
-    heartbeat           = heartbeat ;
-    heartbeat_rate      = rate ;
-    block               = block ;
-    block_recv_cast     = block_recv_cast ;
-    block_recv_send     = block_recv_send ;
-    block_view          = block_view ;
-    block_install_view  = block_install_view ;
-    unblock_view        = unblock_view ;
-    exit                = exit
-  } 
 
+  in full {
+    heartbeat_rate = rate ;
+    install = install ;
+    exit = exit
+  }
 (**************************************************************)
 
 let initSlave master_endpt rate = 

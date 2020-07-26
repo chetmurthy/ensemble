@@ -19,14 +19,12 @@ COMPTYPE	= byte
 MLWARN		=
 MLFAST		=# -unsafe
 PROFILE         =# -profile
-DEBUGGER        =# -g
+DEBUGGER        =# -g -ccopt -lefence
 MLFLAGS		= $(DEBUGGER) $(MLFAST) $(COMP_THR) $(PROFILE)
 MLLINKFLAGS	= $(DEBUGGER) $(MLWARN) $(MLFAST) $(MLTHREAD)
 DEPFLAGS	= -noopt
-ENSCOMPFLAGS	= $(MLFLAGS)
-ENSCOMP		= $(ECAMLCC) -Io $(OBJD) $(ENSCOMPFLAGS)
+ENSCOMP		= $(MLCOMP) $(MLFLAGS)
 MLRUNTIME	= $(OCAML_LIB)\libcamlrun$(ARCS)
-LIBDYNLINK	= dynlink$(CMAS)
 #*************************************************************#
 CUSTOM		= -custom
 #*************************************************************#

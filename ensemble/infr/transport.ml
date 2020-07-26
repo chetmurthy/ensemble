@@ -167,8 +167,8 @@ let route alarm endpt addr group view addrs handles dest modes =
       let local,dests = Addr.compress addr dests in
       let dests = 
 	if Arrayf.length dests > 1
-	&& (not (is_just_udp modes))
-	&& Arrayf.for_all Addr.has_mcast modes
+	  && (not (is_just_udp modes))
+	  && Arrayf.for_all Addr.has_mcast modes
 	then (
 	  let loopback = true in
 	  Domain.Mcast(group,loopback)
@@ -201,13 +201,9 @@ let route alarm endpt addr group view addrs handles dest modes =
     )
   in
 
-  (* Split them apart and "merge" them.
+  (* merge together all xmit functions. 
    *)
-  let x,xv,xvs = array_split3 xmits in
-  let x   = Route.merge3 x in
-  let xv  = Route.merge1iov xv in
-  let xvs = Route.merge2iovr xvs in
-  (x,xv,xvs)
+  Route.merge4iov xmits
 
 (**************************************************************)
 
@@ -243,7 +239,7 @@ let f2 alarm ranking (ls,vs) stack_id router gen_recv =
   let handles = 
     Arrayf.map (fun mode ->
       if Addr.has_mcast mode || Addr.has_pt2pt mode then
-	let domain = Elink.domain_of_mode alarm mode in
+	let domain = Domain.of_mode alarm mode in
 	let handle = Domain.enable domain mode vs.group ls.addr vs.view in
 	Some(mode,handle)
       else None
@@ -293,7 +289,7 @@ let f2 alarm ranking (ls,vs) stack_id router gen_recv =
       Domain.disable handle
     ) handles ;
     Route.remove router (Alarm.handlers alarm) (Conn.key conns) 
-      (Conn.all_recv conns (Route.scaled router))
+      (Conn.all_recv conns)
   in
 
   let t = {
@@ -308,7 +304,7 @@ let f2 alarm ranking (ls,vs) stack_id router gen_recv =
     Hashtbl.add enabled conns.Conn.id () ;
 *)
   Route.install router (Alarm.handlers alarm) (Conn.key conns) 
-    (Conn.all_recv conns (Route.scaled router)) vs.key handler ;
+    (Conn.all_recv conns) vs.key handler ;
   ret
 
 let f alarm ranking vf i j receive =

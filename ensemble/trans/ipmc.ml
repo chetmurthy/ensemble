@@ -43,14 +43,15 @@ let very_first port () =
     exit 1
   ) ;
 
-  let sock = Appl.udp_socket () in
+  let sock_buf = Arge.get Arge.sock_buf in
+  let sock = Hsys.multicast_socket sock_buf in
 
   (* Make it reusable.
    *)
   begin try
     Hsys.setsockopt sock Hsys.Reuse
   with e ->
-    eprintf "IPMC:error:setsockopt:Reuse:%s\n" (Hsys.error e) ;
+    eprintf "IPMC:error:setsockopt:Reuse:%s\n" (Util.error e) ;
     exit 1
   end ;
 
@@ -60,7 +61,7 @@ let very_first port () =
     Hsys.setsockopt sock (Hsys.Ttl 4) ;
     Hsys.setsockopt sock (Hsys.Loopback true)
   with e ->
-    eprintf "IPMC:error:setsockopt:TTL and LOOPBACK:%s\n" (Hsys.error e) ;
+    eprintf "IPMC:error:setsockopt:TTL and LOOPBACK:%s\n" (Util.error e) ;
     let os_t_v = Socket.os_type_and_version () in
     match os_t_v with 
 	Socket.OS_Unix -> exit 1
@@ -78,7 +79,7 @@ let very_first port () =
   begin try
     Hsys.bind sock (Hsys.inet_any ()) port ;
   with e ->
-    eprintf "IPMC:error:binding to port %d:%s\n" port (Hsys.error e) ;
+    eprintf "IPMC:error:binding to port %d:%s\n" port (Util.error e) ;
     exit 1
   end ;
     
@@ -111,7 +112,7 @@ let first_join (inet,port) () =
     log (fun () -> sprintf "joining:(%s,%d)" (Hsys.string_of_inet inet) port) ;
     Hsys.setsockopt (sock "first_join" port) (Hsys.Join inet)
   with e ->
-    eprintf "IPMC:joining multicast group:%s, exiting\n" (Hsys.error e) ;
+    eprintf "IPMC:joining multicast group:%s, exiting\n" (Util.error e) ;
     eprintf "  (this probably means this host does not support IP multicast)\n" ;
     exit 1
 
@@ -120,7 +121,7 @@ let last_leave (inet,port) _ =
     log (fun () -> sprintf "leaving:(%s,%d)" (Hsys.string_of_inet inet) port) ;
     Hsys.setsockopt (sock "last_leave" port) (Hsys.Leave inet)
   with e ->
-    eprintf "IPMC:leaving multicast group:%s\n" (Hsys.error e) ;
+    eprintf "IPMC:leaving multicast group:%s\n" (Util.error e) ;
     exit 1
 
 (**************************************************************)

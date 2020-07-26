@@ -62,7 +62,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     
   and upnm_hdlr ev = match getType ev with
   | EInit ->
-      let alarm = Elink.alarm_get_hack () in
+      let alarm = Alarm.get_hack () in
       Alarm.add_sock_recv alarm name s.sock (Handler0 (Dtbl.get_input s.sock)) ;
       upnm ev
 	
@@ -98,7 +98,7 @@ let _ =
   Param.default "dbg_port" (Param.Int 2345) ;
   Param.default "dbg_name" (Param.String "") ;
   Param.default "dbg_dropall" (Param.Bool false) ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)
 

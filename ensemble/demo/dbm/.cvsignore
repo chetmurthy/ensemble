@@ -1,6 +1,7 @@
+*.exe
 *.cm*
-db
-.depend
-depend.nt
+*.a
+*.o*
+.depend*
 Makefile.nt
-hot_test
+dbm

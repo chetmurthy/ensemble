@@ -169,6 +169,6 @@ let l args vf = Layer.hdr init hdlrs None NoOpt args vf
 let _ = 
   Param.default "merge_sweep" (Param.Time (Time.of_int 1)) ;
   Param.default "merge_timeout" (Param.Time (Time.of_int 15)) ;
-  Elink.layer_install name l
+  Layer.install name l
 
 (**************************************************************)
