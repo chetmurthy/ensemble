@@ -54,24 +54,21 @@ ENS_SHELL = cmd.exe
 
 #*************************************************************#
 
-# Fix problem with libc.lib, pass "-link /NODEFAULTLIB" option
-# This is a hack.
-NODEFAULTLIB =
-
 # LIBSYS: used for linking executables
-LIBSYS	= $(NODEFAULTLIB) \
+LIBSYS	= \
+	-cclib 	WS2_32$(ARCS) \
 	-cclib ADVAPI32$(ARCS)	\
 	-cclib LIBCMT$(ARCS)	\
 	-cclib OLDNAMES$(ARCS)	\
 	-cclib KERNEL32$(ARCS)	\
-	-cclib 	WS2_32$(ARCS)
 
-LIBSYSCL = -link /NODEFAULTLIB \
+C_LINK  = \
+	WS2_32$(ARCS) \
 	ADVAPI32$(ARCS)	\
 	LIBCMT$(ARCS)	\
 	OLDNAMES$(ARCS)	\
-	KERNEL32$(ARCS)	\
-	WS2_32$(ARCS)
+	KERNEL32$(ARCS)	
+
 
 #*************************************************************#
 # Arguments to use for linking with CamlTk.  You may need to
@@ -250,18 +247,12 @@ LINK_THR	= # no threads
 
 #*************************************************************#
 
-HOT_THREAD_OBJ	= ntthread$(OBJ)
-HOT_CFLAGS	= -DTHREADED_SELECT
-HOT_MLLINK	= #?
-HOT_LINK	= $(LIBSYSCL)
-
-#*************************************************************#
 # Clean this directory
 #
 CLEANDIR = \
     $(RM) .nfs* *.cm* *.ppo .err a.out *.o *.obj *.a *.lib *.asm *~ .*~ core *.pdb core gmon.out camlprim*
 
-VERSION = 1_37
+VERSION = 1_38
 #*************************************************************#
 
 

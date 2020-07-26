@@ -13,7 +13,7 @@
 # files.
 
 ENSEMBLEMLI = \
-	socket/socket.mli	\
+	socket/socket.mli \
 	util/trans.mli	\
 	util/util.mli	\
 	util/queuee.mli	\
@@ -57,7 +57,7 @@ ENSEMBLEMLI = \
 	type/domain.mli	\
 	type/event.mli	\
 	type/property.mli	\
-	type/appl_intf.mli	\
+	type/appl_intf.mli \
 	type/appl_handle.mli \
 	type/layer.mli	\
 	infr/transport.mli	\

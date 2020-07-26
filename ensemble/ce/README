@@ -10,12 +10,8 @@ Author: Ohad Rodeh 9/2001
   In the future, CE will form the major C-interface to the system, 
   where HOT and Maestro are overlaid on top of it.
 
-  The overhead, as measured on Linux, is very low, on the order on 10\%
-  above the cost of direct ML calls. This should be lowered even
-  further in the future. Currently messages are copied between C and ML,
-  we intend to fix this, allowing for zero-copy.
+  The overhead, as measured on Linux, is very low, on the order of 10%
+  above the cost of direct ML calls in the worst cases. This should be
+  lowered even further in the future.
 
-Caveats: 
-  Due to a bug in the current ocaml distribution, the library is a bit
-  flaky on WIN32 platforms. 
 

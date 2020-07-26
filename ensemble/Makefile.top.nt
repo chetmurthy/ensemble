@@ -25,8 +25,8 @@
 #*************************************************************#
 ENSROOT = .
 
-INCLUDE =\
-	-I socket -I util -I mm -I type -I infr -I route -I appl\
+INCLUDE = \
+	-I socket -I util -I mm -I type -I infr -I route -I appl \
 	-I trans -I groupd -I layers\trans -I layers\other 
 
 #*************************************************************#
@@ -45,14 +45,14 @@ INCLUDE =\
 #*************************************************************#
 
 
-LIBS =\
-	usocket$(CMA)\
-	ssocket$(CMA)\
-	libsock$(ARC)\
-	libenscore$(CMA)\
-	libensmin$(CMA)\
-	libensrest$(CMA)\
-	ensemble$(CMI)\
+LIBS = \
+	usocket$(CMA) \
+	ssocket$(CMA) \
+	libsock$(ARC) \
+	libenscore$(CMA) \
+	libensmin$(CMA) \
+	libensrest$(CMA) \
+	ensemble$(CMI) \
 	ensemble.mli 
 
 #*************************************************************#
@@ -162,33 +162,33 @@ ssocket$(CMA) : socket\socket$(CMI) socket\s\socket.mli socket\s\socket$(CMI) $(
 #*************************************************************#
 
 
-DEPENDS =\
-	appl\*.ml	appl\*.mli\
-	crypto\*.ml 	crypto\*.mli\
-	groupd\*.ml 	groupd\*.mli\
-	infr\*.ml 	infr\*.mli\
-	layers\*.ml 	layers\*.mli\
-	layers\bypass\*.ml	layers\bypass\*.mli\
-	layers\debug\*.ml	layers\debug\*.mli\
-	layers\flow\*.ml	layers\flow\*.mli\
-	layers\total\*.ml	layers\total\*.mli\
-	layers\vsync\*.ml	layers\vsync\*.mli\
-	layers\other\*.ml	layers\other\*.mli\
-	layers\trans\*.ml	layers\trans\*.mli\
-	layers\gossip\*.ml	layers\gossip\*.mli\
-	layers\scale\*.ml	layers\scale\*.mli\
-	layers\security\*.ml	layers\security\*.mli\
-	mm\*.ml	mm\*.mli\
-	route\*.ml	route\*.mli\
-	socket\*.ml	socket\*.mli\
-	socket\u\*.ml	socket\u\*.mli\
-	socket\s\*.ml	socket\s\*.mli\
-	trans\*.ml	trans\*.mli\
-	type\*.ml	type\*.mli\
+DEPENDS = \
+	appl\*.ml	appl\*.mli		\
+	crypto\*.ml 	crypto\*.mli	\
+	groupd\*.ml 	groupd\*.mli	\
+	infr\*.ml 	infr\*.mli		\
+	layers\*.ml 	layers\*.mli	\
+	layers\bypass\*.ml	layers\bypass\*.mli	\
+	layers\debug\*.ml	layers\debug\*.mli		\
+	layers\flow\*.ml	layers\flow\*.mli		\
+	layers\total\*.ml	layers\total\*.mli		\
+	layers\vsync\*.ml	layers\vsync\*.mli		\
+	layers\other\*.ml	layers\other\*.mli		\
+	layers\trans\*.ml	layers\trans\*.mli		\
+	layers\gossip\*.ml	layers\gossip\*.mli	\
+	layers\scale\*.ml	layers\scale\*.mli		\
+	layers\security\*.ml	layers\security\*.mli	\
+	mm\*.ml	mm\*.mli			\
+	route\*.ml	route\*.mli	\
+	socket\*.ml	socket\*.mli	\
+	socket\u\*.ml	socket\u\*.mli		\
+	socket\s\*.ml	socket\s\*.mli		\
+	trans\*.ml	trans\*.mli		\
+	type\*.ml	type\*.mli			\
 	util\*.ml	util\*.mli 
 
 depend:
-	ocamldep $(INCLUDE) -I crypto\OpenSSL -I crypto\isaac\
+	ocamldep $(INCLUDE) -I crypto\OpenSSL -I crypto\isaac \
 	$(DEPENDS) > $(DEPEND)
 
 !include $(DEPEND)

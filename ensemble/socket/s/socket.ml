@@ -118,7 +118,6 @@ module Basic_iov = struct
   let raw_of_t t = t.iov
 
 
-
   let t_of_iovec base iovec = {base = base; iov = iovec} 
 
   (* Decrement the refount, and free the cbuf if the count
@@ -131,12 +130,11 @@ module Basic_iov = struct
 	flush stdout;
 	raise (Invalid_argument "bad refcounting");
       );
-      (*printf "free: len=%d\n" t.iov.len; flush stdout;  *)
+      (*log (fun () -> sprintf "free: len=%d" t.iov.len);*)
       t.base.count <- pred t.base.count;
       if t.base.count =|| 0 then (
-	(*printf "freeing base iovec: len=%d(\n" t.base.base_iov.len; flush stdout;*)
+	log (fun () -> sprintf "freeing a buffer (len=%d)" t.base.base_iov.len);
 	free_cbuf t.base.base_iov.cbuf;
-	(*print ")";*)
       )
     )
 
@@ -175,16 +173,16 @@ module Basic_iov = struct
     }
 
   let free_old_chunk () = 
-    log (fun () -> "free_old_chunk");
     s.chunk.base.count <- pred s.chunk.base.count ;
+    (*log (fun () -> sprintf "free_old_chunk, num_refs=%d" s.chunk.base.count);*)
     if s.chunk.base.count =|| 0 then (
-      log (fun () -> "freeing old chunk");
+      log (fun () -> "actually free old-chunk");
       free_cbuf s.chunk.base.base_iov.cbuf;
     )
 
   let alloc len = 
     if s.chunk_size -|| s.pos >=|| len then (
-      log (fun () -> sprintf "simple_alloc %d\n" len);
+      log (fun () -> sprintf "simple_alloc %d" len);
       let iov = mm_sub s.chunk.base.base_iov s.pos len in
       s.chunk.base.count <- succ s.chunk.base.count;
       s.pos <- s.pos +|| len;
@@ -285,7 +283,7 @@ module Basic_iov = struct
   (* Increment the refount, do not really copy. 
    *)
   let copy t = 
-    log (fun () -> "copy");
+    (*log (fun () -> "copy");*)
     t.base.count <- succ t.base.count ;
     t
       
@@ -350,7 +348,8 @@ module Basic_iov = struct
     let tail = sub s.chunk s.pos space_left in
     try 
       let len = mm_marshal obj tail flags in
-      advance len;
+      s.pos <- s.pos +|| len;
+      assert (s.pos <=|| s.chunk_size);
       let res = sub tail 0 len in
       free tail;
       res
@@ -359,6 +358,7 @@ module Basic_iov = struct
        * We waste the end of the cached iovec, and 
        * allocate a new chunk.
        *)
+      free tail ;
       free_old_chunk ();
       let raw = mm_alloc s.chunk_size in
       s.chunk <- {
@@ -368,7 +368,8 @@ module Basic_iov = struct
       s.pos <- 0;
       try 
 	let len = mm_marshal obj s.chunk flags in
-	advance len;
+	s.pos <- s.pos +|| len;
+	assert (s.pos <=|| s.chunk_size);
 	sub s.chunk 0 len
       with Failure _ -> 
 	(* The messgae is larger than a chunk size, hence too long.

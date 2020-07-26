@@ -7,7 +7,12 @@
 
 #ifndef __CE_THREADS_H__
 #define __CE_THREADS_H__
+
 #include "ce_so.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* An opaque value, representing a semaphore.
  */
@@ -54,5 +59,8 @@ LINKDLL void ce_lck_Lock(ce_lck_t *lck);
  */
 LINKDLL void ce_lck_Unlock(ce_lck_t *lck);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif  /* __CE_THREADS_H__*/

@@ -1,6 +1,0 @@
-*.cm*
-*.a
-*.o*
-.depend*
-Makefile.nt
-

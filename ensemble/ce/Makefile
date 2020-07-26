@@ -130,9 +130,6 @@ all: \
 opt : 
 	$(MAKE) OPT=yes all
 
-#BASIC_ENSCONF_skt = $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS) 
-BASIC_ENSCONF_skt = $(LIBUNIX) $(LIBMLSOCK) $(LINK_THR) $(ENSLIBS)
-
 #*************************************************************#
 
 # Need to copy the latest version of mm_basic.c
@@ -148,7 +145,7 @@ mm_basic$(OBJ) : mm_basic.c
 # Create an object file containing Ensemble
 #
 ce$(OBJ): $(MLIOBJ) $(MLOBJ) $(ENSLIBS) 
-	$(MLCOMP) -output-obj $(MLFLAGS) -o ce$(OBJ) $(BASIC_ENSCONF_skt) $(MLOBJ) 
+	$(MLCOMP) -output-obj $(MLFLAGS) -o ce$(OBJ) $(ENSCONF) $(MLOBJ) 
 #*************************************************************#
 
 # Put all the libraries, ML code, and runtime into one library
@@ -159,12 +156,14 @@ libce$(SO): $(INBOARD_OBJ) ce$(OBJ)
 	  $(INBOARD_OBJ)\
 	  ../lib/$(PLATFORM)/libsock$(ARC)\
 	  $(OCAML_LIB)/libunix$(ARCS)\
-	  $(MLRUNTIME)
+	  $(MLRUNTIME)\
+	  $(CE_LINK_FLAGS)
 
 # Put C outboard objects into one library
 libceo$(SO): $(OUTBOARD_OBJ)
 	$(MKSHRLIB) $(MKSHRLIBO)libceo$(SO) \
-	  $(OUTBOARD_OBJ) 
+	  $(OUTBOARD_OBJ)\
+	  $(CE_LINK_FLAGS)
 
 ##
 #  Thread safe version of the above
@@ -178,12 +177,14 @@ libce_mt$(SO): $(INBOARD_MT_OBJ) ce$(OBJ)
 	  $(INBOARD_MT_OBJ)\
 	  ../lib/$(PLATFORM)/libsock$(ARC)\
 	  $(OCAML_LIB)/libunix$(ARCS)\
-	  $(MLRUNTIME) 
+	  $(MLRUNTIME)\
+	  $(CE_LINK_FLAGS)
 
 # Put C outboard objects into one library
 libceo_mt$(SO): $(OUTBOARD_MT_OBJ)
 	$(MKSHRLIB) $(MKSHRLIBO)libceo_mt$(SO)\
-	  $(OUTBOARD_MT_OBJ)
+	  $(OUTBOARD_MT_OBJ)\
+	  $(CE_LINK_FLAGS)
 
 #*************************************************************#
 # static libraries for the above
@@ -324,7 +325,7 @@ endif
 
 clean:
 	$(CLEANDIR)
-	$(RM) ce.c mm_basic.c *.lib *.dll *.exp *.so *.a $(DEMOS_CLEAN) 
+	$(RM) ce.c mm_basic.c *.lib *.dll *.ilk *.pdb *.exp *.so *.a $(DEMOS_CLEAN) 
 
 realclean: clean 
 

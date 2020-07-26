@@ -1,4 +1,4 @@
-// $Header: /cvsroot/ensemble/maestro/src/group/Maestro_Adaptor.h,v 1.1 1998/02/16 17:24:14 tclark Exp $
+// $Header: /cvsroot/ensemble/maestro/src/group/Maestro_Adaptor.h,v 1.2 2002/07/28 13:14:31 orodeh Exp $
 // 
 // Author:  Alexey Vaysburd, October 1997.
 // 

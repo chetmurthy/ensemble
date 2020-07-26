@@ -1,4 +1,4 @@
-// $Header: /cvsroot/ensemble/maestro/src/corba/Maestro_ETC.h,v 1.2 1998/03/02 19:07:10 tclark Exp $
+// $Header: /cvsroot/ensemble/maestro/src/corba/Maestro_ETC.h,v 1.3 2002/07/28 13:14:30 orodeh Exp $
 // 
 // Support for publishing IOR's.
 //

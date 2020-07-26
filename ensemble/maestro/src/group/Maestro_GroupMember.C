@@ -1,4 +1,4 @@
-// $Header: /cvsroot/ensemble/maestro/src/group/Maestro_GroupMember.C,v 1.6 2001/09/25 12:42:11 orodeh Exp $
+// $Header: /cvsroot/ensemble/maestro/src/group/Maestro_GroupMember.C,v 1.7 2002/07/28 13:14:31 orodeh Exp $
 
 /********************************************************************
  *                                                                  *

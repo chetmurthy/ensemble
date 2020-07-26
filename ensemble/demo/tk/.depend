@@ -1,0 +1,2 @@
+wb.cmo: ../../lib/i386-linux/ensemble.cmi ../../lib/i386-linux/htk.cmi 
+wb.cmx: ../../lib/i386-linux/ensemble.cmi ../../lib/i386-linux/htk.cmi 

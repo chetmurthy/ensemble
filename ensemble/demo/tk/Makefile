@@ -24,7 +24,7 @@ include $(ENSROOT)/mk/ocaml.mk
 # The additional -cclib argument was needed so that CAML would
 # find the Tk libraries. This is a CAML bug.
 #
-wbml: wb$(CMO) $(ENSCONFDEP) $(ENSTK)
+wbml: wb$(CMO) $(ENSTK)
 	$(RM) wbml$(EXE)
 	ocamlc -custom -o wbml$(EXE) \
 	$(ENSCONF) $(LIBTK) $(ENSTK) wb$(CMO)

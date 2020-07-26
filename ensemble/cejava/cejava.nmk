@@ -13,4 +13,8 @@ CFLAGS = -DINLINE=__inline /Ox /MT /W3 -DNDEBUG
 CC = cl /nologo 
 LINK = link /nologo /dll
 J2SDK_PLATFORM = win32
+CEJAVA_LINK_FLAGS = \
+    $(JAVA_HOME)\lib\jvm.lib \
+    /NODEFAULTLIB ADVAPI32.lib LIBCMT.lib OLDNAMES.lib KERNEL32.lib WS2_32.lib
+CELIB = .lib
 

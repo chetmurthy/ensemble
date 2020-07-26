@@ -24,6 +24,10 @@
 #endif
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! The type of floats used here. Should be the same as an
  * ML float.
  */
@@ -566,6 +570,10 @@ LINKDLL void ce_flat_Send1(
     ce_len_t len, 
     ce_data_t buf
     ) ;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  /* __CE_H__ */
 

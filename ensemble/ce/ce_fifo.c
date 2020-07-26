@@ -41,7 +41,7 @@ static int nmembers = 5;
 
 typedef struct msg_t{
     enum {
-	TOKEN,
+	TOKEN = 1,
 	SPEW,
 	F_IGNORE
     } type;
@@ -54,6 +54,7 @@ typedef struct msg_t{
 	    char buf[IGNORE_SIZE];
 	} ignore;
     } u ;
+    char opq[1000];
 } msg_t;
 
 void fifo_recv_cast (state_t *s, ce_rank_t rank, msg_t *msg);
@@ -99,25 +100,6 @@ msg_t* ignore(char *buf){
     return msg;
 }
 
-iov_t *marsh (msg_t *msg){
-    iov_t *iov;
-    
-    iov = record_create(iov_t*, iov);
-    iov->len= sizeof(msg_t);
-    iov->data= malloc(iov->len);
-    memcpy(iov->data, (char*)msg, iov->len);
-    return iov;
-}
-
-msg_t *unmarsh(iov_t *iov){
-    msg_t *msg;
-    
-    msg = (msg_t*) malloc(sizeof(msg_t));
-    memcpy((char*)msg,iov->data,iov->len);
-    
-    return msg;
-}
-
 char* string_of_msg(msg_t *msg){
     char* s = NULL;
     
@@ -145,14 +127,8 @@ void send1(
     ce_rank_t dest,
     msg_t *msg
     ){
-    iov_t *iov;
-    
-    iov = marsh(msg);
     TRACE("send1");
-    ce_flat_Send1(c_appl, dest, iov->len, iov->data);
-    
-    free(msg);
-    free(iov);
+    ce_flat_Send1(c_appl, dest, sizeof(msg_t), (char*)msg);
 }
 
 void send2(
@@ -162,18 +138,13 @@ void send2(
     msg_t *msg
     ){
     int *dests;
-    iov_t *iov;
-    
-    iov = marsh(msg);
+
     dests = (int*) malloc(2 * sizeof(int));
     
     TRACE("send2");
     dests[0] = dest1;
     dests[1] = dest2;
-    ce_flat_Send(c_appl, 2, dests, iov->len, iov->data);
-    
-    free(msg);
-    free(iov);
+    ce_flat_Send(c_appl, 2, dests, sizeof(msg_t), (char*)msg);
 }
 
 
@@ -182,39 +153,21 @@ void cast(
     ce_appl_intf_t *c_appl,
     msg_t *msg
     ) {
-    iov_t *iov;
-    
-    iov = marsh(msg);
     TRACE("cast");
-    ce_flat_Cast(c_appl, iov->len, iov->data);
-    free(msg);
-    free(iov);
+    ce_flat_Cast(c_appl, sizeof(msg_t), (char*)msg);
+//    free(msg);
 }
 
 
 void main_recv_cast(void *env, int rank, int len, char* data) {
     state_t *s = (state_t*) env;
-    iov_t iov;
-    msg_t *msg;
     
-    iov.len=len;
-    iov.data=data;
-    msg = unmarsh(&iov);
-    
-    fifo_recv_cast (s, rank, msg);
-    free(msg);
+    fifo_recv_cast (s, rank, (msg_t*)data);
 }
 
 void main_recv_send(void *env, int rank, int len, char* data) {
     state_t *s = (state_t*) env;
-    msg_t *msg ;
-    iov_t iov;
-    
-    iov.len=len;
-    iov.data=data;
-    msg = unmarsh(&iov);
-    fifo_recv_send (s, rank, msg);
-    free(msg);
+    fifo_recv_send (s, rank, (msg_t*)data);
 }
 
 /**************************************************************/
@@ -279,7 +232,6 @@ void main_block(void *env){
 }
 
 void fifo_recv_cast(state_t *s, int rank, msg_t *msg) {
-    char *msg_s = string_of_msg(msg);
     int next ;
     
     TRACE2("fifo_recv_cast(", s->ls->endpt);
@@ -290,8 +242,8 @@ void fifo_recv_cast(state_t *s, int rank, msg_t *msg) {
 	case TOKEN:
 	    TRACE("TOKEN(");
 	    if (msg->u.token.dest == s->ls->rank) {
-		if (float_rand() < 0.1)
-		    cast(s->intf, spew());
+//		if (float_rand() < 0.1)
+//		    cast(s->intf, spew());
 		
 		next = random_member (s->ls);
 		cast(s->intf, token(next,(msg->u.token.seqno) + 1)) ;
@@ -304,13 +256,16 @@ void fifo_recv_cast(state_t *s, int rank, msg_t *msg) {
 	    }
 	    break;
 	    
+
 	case SPEW: 
+/*
 	    if (float_rand() < 0.5) {
 		send1(s->intf, random_member(s->ls), ignore("junk"));
 		send2(s->intf, random_member(s->ls), random_member(s->ls),ignore("junk"));
 	    } else {
 		cast(s->intf, ignore("junk"));
 	    }
+*/
 	    break;
 	    
 	case F_IGNORE:
@@ -321,16 +276,12 @@ void fifo_recv_cast(state_t *s, int rank, msg_t *msg) {
 	    exit(1);
 	}
     
-    free(msg_s);
     TRACE(")");
 }
 
 
 void fifo_recv_send(state_t *s, int rank, msg_t *msg) {
-    char *msg_s = string_of_msg(msg) ;
-    
     TRACE2("fifo_recv_send", s->ls->endpt);
-    free(msg_s);
 }
 
 void main_heartbeat(void *env, double time) {
@@ -353,7 +304,7 @@ void join(void){
     jops->group_name = ce_copy_string("ce_fifo");
     jops->properties = ce_copy_string(CE_DEFAULT_PROPERTIES);
     jops->use_properties = 1;
-    jops->hrtbt_rate = 10.0;
+    jops->hrtbt_rate = 1.0;
     
     s = (state_t*) record_create(state_t*, s);
     record_clear(s);
@@ -384,7 +335,7 @@ void fifo_process_args(int argc, char **argv){
 	    ml_args++ ;
     }
     
-    ret = (char**) malloc ((ml_args+3) * sizeof(char*));
+    ret = (char**) malloc ((ml_args+1) * sizeof(char*));
     
     for(i=0, j=0; i<argc; i++) {
 	if (strcmp(argv[i], "-n") == 0) {
@@ -395,12 +346,12 @@ void fifo_process_args(int argc, char **argv){
 	    j++;
 	}
     }
+    ret[ml_args] = NULL;
+    ce_Init(ml_args, ret); /* Call Arge.parse, and appl_process_args */
+
 //    ret[ml_args] = "-alarm";
 //    ret[ml_args+1] = "Netsim";
 //    ret[ml_args+2] = NULL;
-    ret[ml_args] = NULL;
-    
-    ce_Init(ml_args, ret); /* Call Arge.parse, and appl_process_args */
 //    ce_Init(ml_args+2, ret); /* Call Arge.parse, and appl_process_args */
 }
 

@@ -1,3 +1,14 @@
+Ensemble 1.38
+-------------
+1. First formal release of the JNI for CE.
+2. A major bug effecting applications using flow-control with CE was
+   fixed. 
+3. Minor bugs were fixed
+4. Some cleanups 
+5. C++ compatibility headers were added to the CE .h files. This
+   allows C++ applications to use CE.
+6. The new version of the OCaml compiler, 3.06,  was used.
+
 Ensemble 1.37
 -------------
 1. Many reference count fixes.

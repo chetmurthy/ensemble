@@ -1,9 +1,9 @@
-/.cvsignore/1.2/Fri Jul 12 08:30:13 2002//
-/Makefile/1.2/Fri Jul 12 08:30:13 2002//
-/README/1.2/Fri Jul 12 08:30:13 2002//
-/isaac.ml/1.4/Fri Jul 12 08:30:13 2002//
-/isaac_c.c/1.4/Fri Jul 12 08:30:13 2002//
-/rand.h/1.1/Fri Jul 12 08:30:13 2002//
-/randport.c/1.1/Fri Jul 12 08:30:13 2002//
-/standard.h/1.3/Fri Jul 12 08:30:13 2002//
+/.cvsignore/1.3/Fri Jul 26 04:52:06 2002//
+/Makefile/1.3/Sun Jul 28 10:18:02 2002//
+/README/1.3/Fri Jul 26 04:52:06 2002//
+/isaac.ml/1.5/Fri Jul 26 04:52:06 2002//
+/isaac_c.c/1.5/Fri Jul 26 04:52:06 2002//
+/rand.h/1.2/Fri Jul 26 04:52:06 2002//
+/randport.c/1.2/Fri Jul 26 04:52:06 2002//
+/standard.h/1.4/Fri Jul 26 04:52:06 2002//
 D

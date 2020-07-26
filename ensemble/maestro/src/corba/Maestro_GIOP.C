@@ -1,4 +1,4 @@
-// $Header: /cvsroot/ensemble/maestro/src/corba/Maestro_GIOP.C,v 1.2 1998/03/02 19:07:11 tclark Exp $
+// $Header: /cvsroot/ensemble/maestro/src/corba/Maestro_GIOP.C,v 1.3 2002/07/28 13:14:30 orodeh Exp $
 // 
 // Definitions of IOP + GIOP + IIOP types.
 //

@@ -1,39 +1,35 @@
-     RELEASE_NOTES for Ensemble version 1.37
+     RELEASE_NOTES for Ensemble version 1.38
 
 Author: Ohad Rodeh
-Last updated: 13/05/2002
+Last updated: 25/08/2002
 
 RELEASE_NOTES
 
-  This is mainly a bug fix release for several reference counting
-bugs found in the Local and Total ordering protocols. Also included are 
-a more type-safe way of handling ref-counts and an initial JNI
-interface. 
+  This distribution includes a first release of a Java Native
+Interface (JNI) for Ensemble. It is based on the native C-interface
+(CE), and provides safe access from Java to the raw performance of the
+Ensemble messaging system. Preliminary tests show good performance in
+terms of both latency and througput. Currently, the interface works
+only on Linux, though it *should* work on other Unix like systems as
+well.  If there is interest, it can be ported to windows. An
+overview of the interface was added to the system tutorial, and
+javadoc style documentation is also included.
 
-  The included JNI interface will probably not change in the
-future. It allows a mutli-threaded Java application to join and leave
-groups. In a group context it may perform the standard Ensemble
-actions: send, cast, rekey, etc. The problem with the current
-implementation is that if the application does not adher to some
-"good" programming discipline such as correct locking, it will get
-segmentation faults. While this is good enough for C application
-(e.g., in CE) it is not good enough for Java. In Java one would expect
-to get an exception.
-
-  Aside from the above several Makefiles were fixed, and a more complete set of 
-C header files were copied into the lib directory. 
-
-  As my company's standard practices requires not using its
-E-mail for freeware development, I'm now using my Hebrew University
-account for Ensemble issues. It is orodeh@alum.cs.huji.ac.il, you are
-welcome to use it. 
+A major bug effecting applications using flow-control with CE was
+fixed. Other than that: 
+1. Minor bugs were fixed
+2. Some cleanups 
+3. C++ compatibility headers were added to the CE .h files. This
+   allows C++ applications to use CE.
+4. The new version of the OCaml compiler, 3.06,  was used.
 
 	Ohad.
 
 OCAML COMPILER VERSION
-  We are using version 3.04 for this version. 
+  We are using version 3.06 for this version. 
 
 PORTABILITY
   This version was tested on Linux, and WIN2000. 
+
 
 

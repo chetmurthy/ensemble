@@ -215,98 +215,21 @@ exception Bad_message of string
 
 (* The unmarshalling function frees the iovec according to the flag 
  * [free_iovl].
+ * We can marshal directly into the iovec.
+ * Thanks to Xavier (ocaml 3.04/3.05).
  * 
- * We use a preallocated intermidiate buffer for converting objects
- * into iovec's. If the object is too large, then we allocate a single-
- * use buffer for it. We optimistically hope that objects are small.
- * 
- * This scheme costs (unmarshal): 
- * (1) Flatten an iovl into a buffer: at least one copy
- * (2) unmarshalling from string to object.
- * The same price is paid for marshalling. The problem is that 
- * we cannot marshal/unmarshal directly into/from C iovec's. 
  *)
-
-let blen = len_of_int 10000
-let static_buf = Buf.create blen
-
-let flatten_buf iovl buf = 
-  log (fun () -> sprintf "flatten_buf (iovl=%d,%s), buf=%d" 
-    (int_of_len (len iovl)) (sum_refs iovl) (int_of_len (Buf.length buf)));
-  let _ = 
-    Arrayf.fold_left (fun pos iov -> 
-      Iovec.buf_of_full buf pos iov;
-      pos +|| Iovec.len iov
-    ) len0 iovl in
-  ()
-
 let make_marsh free_iovl = 
   let marsh obj = 
-    (* Fast path, we can marshal directly into the iovec.
-     * Thanks to Xavier (ocaml version 3.04).
-     * 
-     * Still buggy in 3.04, hopefully, will be fixed in 3.05.
-     *)
-
-(*    let iov = Iovec.marshal obj [Marshal.Closures] in
-    of_iovec iov
-*)
-    let iov = 
-      try 
-	let len = Marshal.to_buffer (Buf.string_of static_buf) 0 10000 obj [] in
-	let len = len_of_int len in
-	log (fun () -> sprintf "marsh (len=%d)" (int_of_len len));
-	Iovec.of_buf static_buf len0 len
-      with Failure _ -> 
-	let buf = Buf.of_string (Marshal.to_string obj []) in
-	Iovec.of_buf buf len0 (Buf.length buf) 
-    in
+    let iov = Iovec.marshal obj [Marshal.Closures] in
     of_iovec iov
 
-
-  (* If this is a singleton, unmarshal directly from it.
-   * Otherwise, check if we can flatten into the preallocated buffer.
-   * If not, then allocate a special buffer.
-   *)
   and unmarsh iovl = 
-    (* Fast path, we can unmarshal directly from the iovec.
-     * (ocaml version 3.04).
-     *)
-(*    if is_singleton iovl then (
-      try Iovec.unmarshal (get_singleton iovl)
-      with Failure msg -> raise (Bad_message msg)
-    ) else (
-*)
-    
-    (* Slow path, the iovec is composed of several parts, we need
-     * to combine them. 
-     * The faster path here is to copy into a preallocated buffer.
-     * This can be done if length is below 10000 bytes. Othersize, 
-     * a single use buffer is created. 
-     *)
-    let total_len = len iovl in
-    if total_len =|| len0 then 
-      raise (Invalid_argument "cannot unmarshal an empty iovecl");
-    log (fun () -> sprintf "unmarsh (len=%d)" (int_of_len total_len));
-    let buf = 
-      if total_len <=|| (len_of_int 10000) then (
-	flatten_buf iovl static_buf;
-	static_buf
-      ) else (
-	let buf = Buf.create total_len in
-	flatten_buf iovl buf;
-	buf
-      )
-    in
-    try
-      let obj = Marshal.from_string (Buf.string_of buf) 0 in
-      if free_iovl then free iovl;
-      obj
-    with Failure msg -> 
-      
-      if free_iovl then free iovl;
-      raise (Bad_message msg)
-	(* ) *)
+    let iov = Iovec.flatten (to_iovec_array iovl) in
+    let obj = Iovec.unmarshal iov in
+    Iovec.free iov ;
+    if free_iovl then free iovl;
+    obj
   in
   (marsh,unmarsh) 
   

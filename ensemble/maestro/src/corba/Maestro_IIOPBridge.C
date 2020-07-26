@@ -1,4 +1,4 @@
-// $Header: /cvsroot/ensemble/maestro/src/corba/Maestro_IIOPBridge.C,v 1.2 1998/03/02 19:07:12 tclark Exp $
+// $Header: /cvsroot/ensemble/maestro/src/corba/Maestro_IIOPBridge.C,v 1.3 2002/07/28 13:14:30 orodeh Exp $
 // 
 // Implementation of IIOP Bridge:  Client and Server sides.
 //

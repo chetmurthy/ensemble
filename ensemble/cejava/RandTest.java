@@ -1,8 +1,14 @@
+/**************************************************************/
+/* JavaTest.JAVA: performance test. */
+/* Author: Ohad Rodeh 7/2002 */
+/* Stress tests joins/leave/send/casts/etc. */
+/* Similar to ce/ce_rand and demo/rand */
+/**************************************************************/
 import java.lang.* ;
 import java.io.* ;
 import java.util.* ; 
 import ensemble.*;
-
+/**************************************************************/
 
 public class RandTest
 {
@@ -10,7 +16,7 @@ public class RandTest
     static int thresh = 2;
     static final String groupName = "GroupA";
     static Random rand = new Random ();
-
+    
     static void sleep(int milliseconds) {
 	try {
 	    Thread.sleep(milliseconds);
@@ -27,19 +33,25 @@ public class RandTest
     /* Class variables
      */
     Group g;
-    View v;
+    int my_rank;
+    int my_nmembers;
     Thread test_thread = null;
     
     static RandTest create_endpt() {
+	System.out.println("create_endpt");
+	System.out.flush();
+	
 	JoinOps jops = create_JoinOps();
 	final RandTest x = new RandTest ();
 	final Group group = new Group(new Callbacks() {
 		public void install(View view) {
-		    x.v = view;
+		    x.my_rank = view.rank;
+		    x.my_nmembers = view.nmembers;
 		    System.out.println("RandTest: Install:{");
-
+		    
 		    System.out.println("  version= " + view.version);
 		    System.out.println("  proto= " + view.proto);
+		    System.out.println("  group= " + view.group);
 		    System.out.println("  coord= " + view.coord);
 		    System.out.println("  ltime= " + view.ltime);
 		    System.out.println("  primary= " + view.primary);
@@ -56,15 +68,14 @@ public class RandTest
 		    System.out.println("  name= " + view.name);
 		    System.out.println("  nmembers= " + view.nmembers);
 		    System.out.println("  am_coord= " + view.am_coord);
+		    
 		    System.out.println("}");
 		}
 
 		public void exit() {
 		    System.out.println("RT exit");
-		    x.g = null ;
-		    x.v = null ;
-                    x.test_thread = null ;
-		    
+		    System.out.flush();
+
 		    new Thread() { public void run() {
 			try {
 			    Thread.sleep(1000);
@@ -101,17 +112,18 @@ public class RandTest
 	group.join(jops);
 	System.out.println("******* JOIN " + x.g.nat_env + "**********************");
 	sleep(500);
-
+	
         x.test_thread = new Thread() { public void run() {
 	    try {
 		while(true) {
 		    Thread.sleep(500);
+		    System.out.flush ();
 		    synchronized (x.g) {
-			int status = x.g.getStatus();
+			int status = x.g.getStatus ();
 			if (status == Group.LEFT)
 			    return;
 			if (status == Group.NORMAL
-			    && x.v.nmembers >= thresh)
+			    && x.my_nmembers >= thresh)
 			    x.exec();
 		    }
 		}
@@ -156,34 +168,55 @@ public class RandTest
     void exec() {
 	int p = (Math.abs(rand.nextInt ())) % 100;
         String action = null;
+/*	
+	System.out.println("Prompt");System.out.flush();
+	g.prompt();
+*/
 	
 	System.out.print(g.nat_env + " action = < ");
 	System.out.flush();
-	//System.out.println("status" + status.intValue());
-	/*if (p < 6) {
+	//	System.out.println("status" + status.intValue());
+
+	if (p < 6) {
 	    action = "Leave";
 	    System.out.println("******* LEAVE " + g.nat_env + "**********************");
 	    g.leave();
-	    } else if (p < 9) {
+	} else  if (p < 9) {
 	    action = "Prompt";
+	    System.out.println("Prompt");System.out.flush();
 	    g.prompt();
-	} else if (p < 15) {
+	}  else if (p < 15) {
 	    action = "Suspect";
-	    g.suspect(gen_dests(v.rank, v.nmembers));*/
-	    //	    else if (p < 20)
-	    //		*a= AProtocol;
-	    //	    else if (p < 25)
-	    //		*a= AProperties;
-	/*} else */ if (p < 40) {
+	    g.suspect(gen_dests(my_rank, my_nmembers));
+	    //	} else if (p < 20) {
+	    //	    action = "Protocol";
+        } else if (p < 25) {
+	    action = "Properties";
+	    String vsync = "Gmp:Sync:Heal:Frag:Suspect:Flow:Slander" ;
+	    String props = null;
+	    int i = (Math.abs (rand.nextInt ())) % 5;
+	    switch (i) {
+	    case 0: props = vsync; break;
+	    case 1: props = vsync + ":causal"; break;
+	    case 2: props = vsync + ":total"; break;
+	    case 3: props = vsync + ":scale"; break;
+	    case 4: props = vsync + ":local"; break;
+	    default:
+		System.out.println("bad random value, abort, i=" + i);
+		System.exit(1);
+	    }
+	    g.changeProperties(props);
+	} else if (p < 40) {
 	    action = "Cast";
 	    g.cast(gen_msg());
 	} else if (p < 70) {
 	    action = "Send1";
-	    g.send1(gen_dest(v.rank, v.nmembers), gen_msg());
+	    g.send1(gen_dest(my_rank, my_nmembers), gen_msg());
 	} else {
 	    action = "Send";
-	    g.send(gen_dests(v.rank, v.nmembers), gen_msg());
-	} 
+	    g.send(gen_dests(my_rank, my_nmembers), gen_msg());
+	}  
+    
 	System.out.println(action + ">");
 	System.out.flush();
     }

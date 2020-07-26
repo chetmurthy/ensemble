@@ -1,3 +1,0 @@
-CC = gcc -g #cl /nolog
-LINK = ld -shared #link /nologo /dll
-

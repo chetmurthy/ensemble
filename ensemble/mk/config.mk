@@ -25,7 +25,7 @@ CC	= gcc
 
 # CFLAGS: used for compilation of C files
 CFLAGS	=-DINLINE=inline \
-	-O2 -Wall -Wstrict-prototypes -DNDEBUG \
+	-O2 -Wall -Wno-unused -Wstrict-prototypes -DNDEBUG \
         $(CODEGEN)                      \
 	-I $(OCAML_LIB)			\
 	$(PURIFY_CFLAGS)		\
@@ -163,7 +163,7 @@ ENSCONF		= $(ENSCONF_$(HSYS_TYPE))
 # inconsistent with the installation you are using.
 
 OCAML_LIB	= $(CAMLLIB)
-
+C_LINK = 
 #*************************************************************#
 # A bunch of configuration macros to support both NT and Unix
 
@@ -251,5 +251,5 @@ PURIFY 		= $(PURIFY_$(PLATFORM))
 CLEANDIR = \
     $(RM) .nfs* *.cm* .err a.out *.o* *.a *.lib *.asm *~ .*~ .\#*  core *.pdb core gmon.out camlprim*
 
-VERSION = 1_37
+VERSION = 1_38
 #*************************************************************#

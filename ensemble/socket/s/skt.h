@@ -38,7 +38,7 @@
 
 /* This is for zero-copy marshaling.
  */
-//#include "caml/intext.h"
+#include "caml/intext.h"
 
 /**************************************************************/
 /* Include the memory functions.

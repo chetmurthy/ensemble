@@ -86,19 +86,26 @@ ce_Install_cbd (value c_appl_v, value ls_v, value vs_v) {
 value
 ce_FlowBlock_cbd (value c_appl_v, value rank_opt_v, value onoff_v) {
     ce_appl_intf_t *intf = C_appl_val(c_appl_v);
-    ce_bool_t onoff = Val_bool(onoff_v);
+    ce_bool_t onoff = Bool_val(onoff_v);
     int rank = -1;
     
-    switch (Tag_val(rank_opt_v)) {
-    case 0: /* None */
-	break;
-    case 1: /* Some(rank) */
+    TRACE("ce_FlowBlock_cbd(");
+    if (Int_val(rank_opt_v) == 0) {
+	TRACE("None");
+	rank = -1;
+    } else {
+	TRACE("Some");
 	rank = Int_val (Field(rank_opt_v,0));
     }
+    TRACE(".");
     intf->req_heartbeat = 1;
+    TRACE(".");
+    printf("rank=%d, onoff=%d\n", rank, onoff);
+//    (intf->block) (intf->env);
     (intf->flow_block) (intf->env, rank, onoff);
     intf->req_heartbeat = 0;
     
+    TRACE(")");
     return Val_unit;
 }
 
@@ -152,7 +159,7 @@ ce_ReceiveCast_cbd(value c_appl_v, value origin_v, value iovl_v){
     ce_iovec_array_t iovl = Iovl_val(iovl_v);
     int num = Wosize_val(iovl_v);
     
-//    TRACE("ce_ReceiveCast_cbd");
+    TRACE("ce_ReceiveCast_cbd");
     /* The application does not own the msg.
      */
     intf->req_heartbeat = 1;
@@ -270,7 +277,8 @@ ce_st_Cast(
     ) {
     check_valid(c_appl);
     check_heartbeat(c_appl);
-    ce_appl_cast(c_appl->aq, num,iovl);
+    TRACE("cast");
+    ce_appl_cast(c_appl->aq, num, iovl);
 }
 
 void

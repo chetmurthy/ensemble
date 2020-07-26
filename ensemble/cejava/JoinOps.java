@@ -16,7 +16,7 @@ public class JoinOps {
     /** What is the requested transport layer. At the time of
      * writing the supported list was is [Multicast, UDP, TCP].
      */
-    public String transports = "UDP";
+    public String transports = "DEERING";
 
     /** The group-communication stack to be used. 
      */

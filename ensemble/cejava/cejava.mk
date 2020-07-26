@@ -10,8 +10,10 @@
 #*************************************************************#
 
 ifeq ("$(PLATFORM)", "i386-linux")
-CC = gcc -O2 -DINLINE=inline -Wall -Wstrict-prototypes -DNDEBUG 
+CC = gcc -O2 -DNDEBUG -DINLINE=inline -Wall -Wstrict-prototypes 
 LINK = ld -shared 
 J2SDK_PLATFORM = linux
+CELIB = .so
+CEJAVA_LINK_FLAGS = 
 endif
 

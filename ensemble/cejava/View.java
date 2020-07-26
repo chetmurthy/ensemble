@@ -14,6 +14,10 @@ public class View {
      */
     public String proto;
 
+    /** The group name
+     */
+    public String group;
+
     /** The coordinator's rank
      */
     public int coord;
@@ -85,6 +89,7 @@ public class View {
     //*******************************************************************
 
     View(String version , String proto ,
+	 String group, 
 	 int coord, int ltime, boolean primary,
 	 boolean groupd, boolean xfer_view, 
 	 String params, double uptime,
@@ -95,6 +100,7 @@ public class View {
 	 int nmembers, boolean am_coord){
 	this.version  = version;
 	this.proto = proto;
+	this.group = group;
 	this.coord = coord;
 	this.ltime = ltime;
 	this.primary = primary ;

@@ -93,7 +93,7 @@ create_mt_env(ce_env_t env,
     e->exit = exit;
     e->install = install;
     e->block = block;
-    e->block = block;
+    e->flow_block = flow_block;
     e->cast = cast;
     e->send = send;
     e->heartbeat = heartbeat;
@@ -136,49 +136,49 @@ check_pending(void)
 
 	    switch (a->type){
 	    case MT_CAST:
-		TRACE("MT_CAST");
+//		TRACE("MT_CAST");
 		ce_st_Cast(a->c_appl, a->u.cast.num, a->u.cast.iovl);
 		break;
 	    case MT_SEND:
-		TRACE("MT_SEND");
+//		TRACE("MT_SEND");
 		ce_st_Send(a->c_appl, a->u.send.num_dests, a->u.send.dests,
 			      a->u.send.num, a->u.send.iovl);
 		break;
 	    case MT_SEND1:
-		TRACE("MT_SEND1");
+//		TRACE("MT_SEND1");
 		ce_st_Send1(a->c_appl, a->u.send1.dest, a->u.send1.num, a->u.send1.iovl);
 		break;
 	    case MT_LEAVE:
-		TRACE("MT_LEAVE");
+//		TRACE("MT_LEAVE");
 		ce_st_Leave(a->c_appl);
 		break;
 	    case MT_PROMPT:
-		TRACE("MT_PROMPT");
+//		TRACE("MT_PROMPT");
 		ce_st_Prompt(a->c_appl);
 		break;
 	    case MT_SUSPECT:
-		TRACE("MT_SUSPECT");
+//		TRACE("MT_SUSPECT");
 		ce_st_Suspect(a->c_appl, a->u.suspect.num, a->u.suspect.members);
 		break;
 	    case MT_XFERDONE:
-		TRACE("MT_XFERDONE");
+//		TRACE("MT_XFERDONE");
 		ce_st_XferDone(a->c_appl);
 		break;
 	    case MT_REKEY:
-		TRACE("MT_REKEY");
+//		TRACE("MT_REKEY");
 		ce_st_Rekey(a->c_appl);
 		break;
 	    case MT_PROTOCOL:
-		TRACE("MT_PROTOCOL");
+//		TRACE("MT_PROTOCOL");
 		ce_st_ChangeProtocol(a->c_appl, a->u.proto);
 		break;
 	    case MT_PROPERTIES:
-		TRACE("MT_PROPERITES");
+//		TRACE("MT_PROPERITES");
 		ce_st_ChangeProperties(a->c_appl, a->u.properties);
 		break;
 		
 	    case MT_JOIN:
-		TRACE("MT_JOIN");
+//		TRACE("MT_JOIN");
 		ce_st_Join(a->u.join.ops, a->c_appl);
 		break;
 	    case MT_ADDSOCKRECV:
@@ -241,6 +241,7 @@ mt_flow_block(ce_env_t env, ce_rank_t origin, ce_bool_t onoff)
 {
     mt_env_t *e = (mt_env_t*)env;
     REQ;
+    TRACE("mt_flow_block");
     e->flow_block(e->user_env, origin, onoff);
     check_pending();
 }

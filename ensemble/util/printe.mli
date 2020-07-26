@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: printe.mli,v 1.2 1999/01/10 21:13:07 hayden Exp $ *)
+(* $Id: printe.mli,v 1.3 2002/07/28 13:14:39 orodeh Exp $ *)
 
 (* Module [Printf]: formatting printing functions *)
 

@@ -93,8 +93,7 @@ LINKDLL void ce_view_full_free(ce_local_state_t *ls, ce_view_state_t* vs) {
 	return;
     
     TRACE("ce_view_full_free(");
-    ce_free(vs->version);
-    ce_free(vs->group);
+    ce_free(vs->version);    ce_free(vs->group);
     ce_free(vs->proto);
     ce_free(vs->key);
     ce_view_id_array_free(vs->prev_ids);

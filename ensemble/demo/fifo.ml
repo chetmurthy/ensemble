@@ -13,13 +13,20 @@ open Appl_intf open New
 (**************************************************************)
 let name = "FIFO"
 let failwith = Trace.make_failwith name
+let log = Trace.log name
 (**************************************************************)
 
-type message = NoMsg
+type tree = 
+    Node 
+  | Br of tree * int * tree
+
+type message = 
+  | NoMsg
   | Token of rank * int
   | Spew
   | Ignore of string
-  | Other
+  | Tree of tree
+
 
 (**************************************************************)
 
@@ -27,6 +34,17 @@ let nrecd = ref 0
 and nsent = ref 0
 
 (**************************************************************)
+(* Create a random tree
+*)
+let rec gen_tree () = 
+  log (fun () -> "gen_tree");
+  let i = Random.int 5 in
+  if i < 3 then Node
+  else Br (gen_tree (), i, gen_tree ())
+
+let rec sum_tree = function 
+    Node -> 0
+  | Br (l,x,r) -> sum_tree l + x + sum_tree r
 
 let interface nopt2pt nocast =
   let time     = ref Time.zero in
@@ -68,7 +86,7 @@ let interface nopt2pt nocast =
 	  if next = ls.rank then (
 	    if Random.float 1.0 < 0.1 then (
 	      nsent := !nsent + pred ls.nmembers ;
-	      act := Cast(Spew) :: !act
+	      act := Cast(Tree (gen_tree ())) :: Cast(Spew) :: !act
 	    ) ;
 
 	    let next = random_member ls in
@@ -109,6 +127,10 @@ let interface nopt2pt nocast =
 	  done
 	)
       | Ignore _ -> ()
+      | Tree t -> 
+	  log (fun () -> sprintf "tree=%d" (sum_tree t));
+	  ()
+
       | _ -> ()
       ) ;
       if bk=U then 

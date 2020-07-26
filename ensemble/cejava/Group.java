@@ -1,9 +1,14 @@
+/**************************************************************/
+/* Group.JAVA: the basic Ensemble group. */
+/* Author: Ohad Rodeh 7/2002 */
+/**************************************************************/
 package ensemble;
 
 import java.io.*;
 import java.lang.*;
 import java.util.*;
 
+/**************************************************************/
 /** An Ensemble Process Group.
  *
  * This class provides a Java wrapper to an Ensemble process group.
@@ -119,8 +124,8 @@ public class Group
 		status = JOINING ;
 	    } else
 		abort("Join: trying to join twice");
+	    nat_env = natJoin(jops);
 	}
-	nat_env = natJoin(jops);
     }
     
     /** Leave a group. After performing the call, no other actions are
@@ -130,8 +135,8 @@ public class Group
 	synchronized(this) {
 	    check_normal();
 	    status = LEAVING;
+	    natLeave(nat_env);
 	}
-	natLeave(nat_env);
     }
     
     /** Multicast a message to the group.
@@ -238,10 +243,29 @@ public class Group
     
     /* TODO: add view_ids and security key
      */
-    private void install(View view) {
-	//	if (status == PRE || status == JOINING || status == BLOCKED)
-	//	    status = NORMAL;
-	//	System.out.println("JAVA: install");
+    private void install(
+			 String version, 
+			 String group,
+			 String proto, 
+			 int coord, 
+			 int ltime, 
+			 boolean primary, 
+			 boolean groupd,
+			 boolean xfer_view, 
+			 String params, 
+			 double uptime,
+			 String[] view_mem, 
+			 String[] address, 
+			 String endpt, 
+			 String addr, 
+			 int rank, 
+			 String name, 
+			 int nmembers, 
+			 boolean am_coord){
+	View view = new View (version, group, proto, coord, ltime, primary, 
+				 groupd, xfer_view, params, 
+				 uptime, view_mem, address, 
+				 endpt, addr,  rank, name, nmembers, am_coord);
 	synchronized(this) {
 	    status = NORMAL ;
 	    cb.install(view);
@@ -291,11 +315,6 @@ public class Group
 	cb.heartbeat(time);
     }
     
-    static {
-	System.loadLibrary("cejava");
-    }
-
-
     /** Initialize the low-level Ensemble C-library.
      *
      * @param args  The list of command line arguments
@@ -303,7 +322,14 @@ public class Group
     static public void init(String args []) {
 	//System.out.println("args= " + java.util.Arrays.asList(args));
 	//System.out.flush();
-	natInit(args); 
+	try {
+	    System.loadLibrary("cejava");
+	} catch(Exception e) {
+	    System.out.println("Could not load the cejava C library, exiting.");
+	    e.printStackTrace();
+	    System.exit(1);
+	}
+	natInit(args);
     }
 }
 

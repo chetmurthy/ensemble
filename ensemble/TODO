@@ -1,24 +1,22 @@
-
 --------------------------------------------------------
+BUGS: 
 
 rand
 
-rand -add_prop total
+rand -add_prop total -s 13000
 
---------------------------------------------------------
-TODO for 1.37
+TODO for 1.38
 -------------
-14. Fix the rest of the total-ordering protocols: (Totem, Total, Sequencer?).
+0. Convert the java demos to jar format, should be easy. 
+1. Fix the rest of the total-ordering protocols: (Totem, Total, Sequencer?).
+2. Add -fPIC to the CFLAGS.
+3. Allow CE to work with ENSCONF_unix, not just ENSCONF_skt.
 
-0. Add -fPIC to the CFLAGS.
-
-1. Debug groupd : 
+4. Debug groupd : 
    - bug 1: uncaught exception
-   - bug 2: refcount bug
-2. Add a transport-mode document
-3. Port to solaris.
-4. Check what happens when we move sockets to OVERLAPPED on win32
-5. Performance: 
+5. Complete the transport-mode document
+6. Check what happens when we move sockets to OVERLAPPED on win32
+7. Performance: 
   - 'ce_perf -rpc' spends A LOT of time converting ML sockets to C sockets.
   - Check other cases
   - perhaps write a paper on performance improvements and software experience
@@ -26,16 +24,22 @@ TODO for 1.37
 6. The 32bit counter in ce_outboard, that counts stack ids, can overflow.
 7. Fix the DLL version
 8. Split out security and groupd
-9. port the security-infrastructure to win32 (crypto++)
+9. port the security-infrastructure to win32 (Xavier's library)
 10. write a configure script (in ML)
 11. Use the new Unix setsock calls for Unix part of socket/s
-12. Port to ocaml-3.05 (use the direct marshaling C<->ML)
 13. Convert from C directly to ML actions, instead of going through an intermidiate representation. 
+
+--------------------------------------------------------
+Probably never:
+
+3. Port to solaris.
+--------------------------------------------------------
 
 done:
 -----
-1. Initial work on a JNI port for CE.
+1. Finished work on a JNI port for CE.
 2. Fixed reference counting bugs in total-ordering and Local protocols.
+3. Port to ocaml-3.05 (use the direct marshaling C<->ML)
 
 --------------------------------------------------------
 

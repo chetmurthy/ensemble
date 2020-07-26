@@ -572,6 +572,7 @@ let addinfo s t =
 let string_list_of_gc_stat s =
   [sprintf "live_words=%dK"  (s.Gc.live_words/1024)  ; 
    sprintf "total_words=%dK" (s.Gc.heap_words/1024); 
+   sprintf "heap_chunks=%d"  s.Gc.heap_chunks;
    sprintf "collections: minor=%d, major=%d, compact=%d"
       s.Gc.minor_collections s.Gc.major_collections s.Gc.compactions]
 

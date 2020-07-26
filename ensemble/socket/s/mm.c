@@ -179,7 +179,7 @@ value mm_alloc(value len_v){
 }
 
 /**************************************************************/
-#if 0
+#if 1
 value mm_output_val(value obj_v, value iov_v, value flags_v){
   CAMLparam3(obj_v, iov_v, flags_v);
 
@@ -203,7 +203,7 @@ value mm_input_val(value iov_v){
   SKTTRACE((")\n"));
   CAMLreturn(ret_v);
 }
-#endif
+#else
 
 value mm_output_val(value obj_v, value iov_v, value flags_v){
   invalid_argument("mm_output_val: buggy under 3.04");
@@ -212,5 +212,6 @@ value mm_output_val(value obj_v, value iov_v, value flags_v){
 value mm_input_val(value iov_v){
   invalid_argument("mm_input_val: buggy under 3.04");
 }
+#endif
 
 /**************************************************************/

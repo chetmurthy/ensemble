@@ -15,13 +15,37 @@ J2SDK = $(JAVA_HOME)
 
 CEINCLUDE= -I $(ENSROOT)/lib/$(PLATFORM)
 
-all: compileClasses generateHeader compileJni buildLibrary rand #buildDocumentation
+
+#*************************************************************#
+# Not supported yet on WIN32
+#
+ifeq ("$(PLATFORM)" , "nt")
+opt all depend install demos doc clean: 
+	echo "CEJAVA has not been ported to win32 yet"
+else
+
+#*************************************************************#
+
+opt : all
+
+all: compileClasses generateHeader compileJni buildLibrary demos
+
+
+depend : 
+	echo "cejava depend"
+
+demos :
+	javac -classpath classes RandTest.java PerfTest.java
+
+install : 
+	$(MKDIR) $(ENSBIN)/java_demo
+	$(CP) classes/ensemble.jar $(ENSLIB)/
+	$(CP) lib/* $(ENSLIB)/
+	$(CP) RandTest*.class PerfTest*.class  $(ENSBIN)/java_demo
 
 compileClasses: 
 	javac -d classes View.java JoinOps.java Callbacks.java Group.java 
-
-rand : 
-	javac -classpath classes RandTest.java
+	cd classes ; jar cf ensemble.jar ensemble
 
 generateHeader:
 	javah -classpath classes ensemble.Group
@@ -30,22 +54,32 @@ compileJni:
 	$(CC) -c  -I . -I $(J2SDK)/include -I $(J2SDK)/include/$(J2SDK_PLATFORM) $(CEINCLUDE) ensemble_Ce.c
 
 buildLibrary:
-	$(MKSHRLIB) $(MKSHRLIBO)libcejava$(SO) ensemble_Ce$(OBJS) ../ce/libce_mt.so #$(ARCS)
-	mv -f libcejava.so lib/
+	$(MKSHRLIB) $(MKSHRLIBO)libcejava$(SO) ensemble_Ce$(OBJS) $(ENSLIB)/libce_mt$(CELIB) $(CEJAVA_LINK_FLAGS)
+	$(MV) libcejava.* lib/
 
-buildDocumentation:
-	$(J2SDK)/bin/javadoc -public -classpath classes -d javadoc Callbacks.java JoinOps.java Group.java View.java
+doc :
+	javadoc -public -classpath classes -d docs Callbacks.java JoinOps.java Group.java View.java
 
 clean:
-	rm -fr ensemble_Ce.h ensemble_Ce.o javadoc/* classes/* lib/*
-	rm -f hs_err* core* *class *.o *.obj
-
-demo:
-	$(J2SDK)/bin/java  -Djava.class.path=.:classes -Djava.library.path=lib RandTest  "-n" "5" "-t" "5" 
-
-#"-trace" "CE_INBOARD" "-ctrace" "CE_INBOARD_C" "-ctrace" "CE_INBOARD_MT"
+	$(RM) ensemble_Ce.h hs_err* core* *.class *.o *.obj lib/*
+	$(RMDIR) classes/ensemble 
+	$(RMDIR) docs
 
 
+# 
+# Running the demos
+#
+run_rand:
+	java  -Djava.class.path=.:classes/ensemble.jar -Djava.library.path=lib RandTest  "-n" "5" "-t" "3" 
 
-#	$(J2SDK)/bin/java -Djava.class.path=classes -Djava.library.path=lib ensemble.Group "Group A" "Group B"
+#"-trace" "CE_INBOARD" "-ctrace" "CE_INBOARD_C"
+
+run_perf:
+	java  -Djava.class.path=.:classes/ensemble.jar -Djava.library.path=lib -jar PerfTest.jar "-prog" "rpc" "-s" "1000" "-r" "0.01" 
+
+#"-trace" "CE_INBOARD" "-ctrace" "CE_INBOARD_C" "-ctrace" "CE_INBOARD_MT" 
+
+
+endif
+#*************************************************************#
 

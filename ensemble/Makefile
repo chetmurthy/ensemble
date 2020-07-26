@@ -14,6 +14,7 @@ include mk/config.mk
 SUBDIRS = \
 	appl		\
 	ce		\
+	cejava		\
 	crypto		\
 	demo		\
 	demo/tk		\
@@ -57,6 +58,7 @@ all:
 	$(MAKE_BASE) -f Makefile.top all; $(MAKE_BASE) -f Makefile.top install
 	cd demo ; $(MAKE) ; $(MAKE) install
 	cd ce ; $(MAKE)	  ; $(MAKE) install
+	cd cejava ; $(MAKE) ; $(MAKE) install
 	cd hot ; $(MAKE)  ; $(MAKE) install
 
 just:
@@ -68,6 +70,7 @@ opt:
 	$(MAKE_BASE) -f Makefile.top opt; $(MAKE_BASE) -f Makefile.top install
 	cd demo ; 	$(MAKE) opt ;	$(MAKE) install
 	cd ce ; $(MAKE) opt ; $(MAKE) install
+	cd cejava ; $(MAKE) opt ; $(MAKE) install
 	cd hot ; $(MAKE) opt ; $(MAKE) install
 
 crypto : 
@@ -104,6 +107,7 @@ dist :
 
 depend:
 	cd ce; $(MAKE) depend
+	cd cejava; $(MAKE) depend
 	cd hot; $(MAKE) depend
 	cd demo; $(MAKE) depend
 	cd maestro; $(MAKE) depend

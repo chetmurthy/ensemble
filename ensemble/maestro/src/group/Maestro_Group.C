@@ -1,4 +1,4 @@
-// $Header: /cvsroot/ensemble/maestro/src/group/Maestro_Group.C,v 1.1 1999/03/24 16:43:20 tclark Exp $
+// $Header: /cvsroot/ensemble/maestro/src/group/Maestro_Group.C,v 1.2 2002/07/28 13:14:31 orodeh Exp $
 // 
 // Author:  Alexey Vaysburd, March 1999.
 // 

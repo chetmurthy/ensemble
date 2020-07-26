@@ -11,42 +11,43 @@
 
 !include mk\config.nmk
 
-SUBDIRS =\
-	appl\
-	ce\
-	crypto\
-	demo\
-	demo\tk\
-	demo\life\
-	demo\dbm\
-	doc\
-	ejava\
-	groupd\
-	hot\
-	hot\include\
-	infr\
-	layers\
-	layers\bypass\
-	layers\debug\
-	layers\flow\
-	layers\total\
-	layers\vsync\
-	layers\other\
-	layers\trans\
-	layers\gossip\
-	layers\scale\
-	layers\security\
-	maestro\
-	mk\
-	mm\
-	route\
-	socket\
-	socket\u\
-	socket\s\
-	tar\
-	tools\
-	trans\
-	type\
+SUBDIRS = \
+	appl		\
+	ce		\
+	cejava		\
+	crypto		\
+	demo		\
+	demo\tk		\
+	demo\life	\
+	demo\dbm	\
+	doc		\
+	ejava		\
+	groupd		\
+	hot		\
+	hot\include	\
+	infr		\
+	layers		\
+	layers\bypass	\
+	layers\debug	\
+	layers\flow	\
+	layers\total	\
+	layers\vsync	\
+	layers\other	\
+	layers\trans	\
+	layers\gossip	\
+	layers\scale	\
+	layers\security	\
+	maestro		\
+	mk		\
+	mm		\
+	route		\
+	socket		\
+	socket\u	\
+	socket\s	\
+	tar		\
+	tools		\
+	trans		\
+	type		\
 	util	
 
 
@@ -57,6 +58,7 @@ all:
 	$(MAKE_BASE) -f Makefile.top.nt all& $(MAKE_BASE) -f Makefile.top.nt install
 	cd demo & $(MAKE) & $(MAKE) install
 	cd ce & $(MAKE)	  & $(MAKE) install
+	cd cejava & $(MAKE) & $(MAKE) install
 	cd hot & $(MAKE)  & $(MAKE) install
 
 just:
@@ -68,6 +70,7 @@ opt:
 	$(MAKE_BASE) -f Makefile.top.nt opt& $(MAKE_BASE) -f Makefile.top.nt install
 	cd demo & 	$(MAKE) opt &	$(MAKE) install
 	cd ce & $(MAKE) opt & $(MAKE) install
+	cd cejava & $(MAKE) opt & $(MAKE) install
 	cd hot & $(MAKE) opt & $(MAKE) install
 
 crypto : 
@@ -97,13 +100,14 @@ src:
 #
 dist : 
 	$(MKDIR) ..\build
-	cd bin&\
+	cd bin& \
 	for d in *& do ( mkdir -p ..\..\build\$$d& mkdir -p ..\..\build\$$d\bin& mkdir -p ..\..\build\$$d\lib& 	mv $$d\* ..\..\build\$$d\bin\& mv ..\lib\$$d\* ..\..\build\$$d\lib\)& done
 	cd ..\build& for d in *& do (tar -cf ensemble-$(VERSION)-$$d.tar $$d& gzip ensemble-$(VERSION)-$$d.tar& rm -rf $$d)& done
 
 
 depend:
 	cd ce& $(MAKE) depend
+	cd cejava& $(MAKE) depend
 	cd hot& $(MAKE) depend
 	cd demo& $(MAKE) depend
 	cd maestro& $(MAKE) depend

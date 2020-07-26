@@ -12,4 +12,10 @@ char *mm_Cbuf_val(value);
  */
 value mm_empty(void);
 
+/* Marshaling/unmarshaling from/to C buffers
+ */
+value mm_output_val(value obj_v, value iov_v, value flags_v);
+value mm_input_val(value iov_v);
+
+
 

@@ -12,7 +12,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: printe.ml,v 1.2 1998/12/19 06:41:19 hayden Exp $ *)
+(* $Id: printe.ml,v 1.3 2002/07/28 13:14:39 orodeh Exp $ *)
 
 external format_int: string -> int -> string = "format_int"
 external format_float: string -> float -> string = "format_float"

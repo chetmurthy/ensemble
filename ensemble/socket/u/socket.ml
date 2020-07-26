@@ -437,12 +437,15 @@ let select (a,b,c) timeout =
       | Unix.Unix_error(Unix.EINTR,_,_) -> 
 	  eprintf "USOCKET:select:ignoring EINTR error\n" ;
 	  loop a b c d
-      | Unix.Unix_error(err,s1,s2) ->
-      	  eprintf "USOCKET:select:%s\n" (Unix.error_message err) ;
-          failwith (sprintf "error calling select a=%s b=%s c=%s"
-	    (string_of_fd_list a)
-	    (string_of_fd_list b)
-	    (string_of_fd_list c)
+      | Unix.Unix_error(err,s1,s2) ->(
+	  if a=[] && b = [] && c=[] then [],[],[]
+	  else begin
+      	    eprintf "USOCKET:select:%s\n" (Unix.error_message err) ;
+            failwith (sprintf "error calling select a=%s b=%s c=%s"
+	      (string_of_fd_list a)
+	      (string_of_fd_list b)
+	      (string_of_fd_list c))
+	    end
 	  )
     in loop (snd a) (snd b) (snd c) timeout 
   in

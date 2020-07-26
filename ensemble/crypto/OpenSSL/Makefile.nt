@@ -12,8 +12,8 @@ bench.o : bench.c
 	gcc -c -w -O2 -I$(OPENSSL)\include bench.c  -o bench.o
 
 bench : bench.o
-	gcc -w -O2 -I$(OPENSSL)\include bench.o\
-	-L $(OPENSSL)\lib -lcrypto\
+	gcc -w -O2 -I$(OPENSSL)\include bench.o  \
+	-L $(OPENSSL)\lib -lcrypto \
 	-o bench 
 
 #*************************************************************#

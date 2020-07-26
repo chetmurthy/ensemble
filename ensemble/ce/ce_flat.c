@@ -23,7 +23,7 @@ ce_iovl_wrap(ce_len_t len, ce_data_t data){
     Iov_len(iovl[0]) = len;
     Iov_buf(iovl[0]) = data;
     
-    //  printf("ce_iovl_wrap: len=%d, buf=%s\n", Iov_len(iovl[0]), Iov_buf(iovl[0]));
+//    printf("ce_iovl_wrap: len=%d\n", Iov_len(iovl[0]));
     return iovl;
 }
 
@@ -155,6 +155,7 @@ void
 ce_flat_flow_block(ce_env_t env, ce_rank_t origin, ce_bool_t onoff)
 {
     ce_flat_env_t *e = (ce_flat_env_t*)env;
+    TRACE("ce_flat_flow_block");
     e->flow_block(e->env, origin, onoff);
 }
 
@@ -162,6 +163,7 @@ void
 ce_flat_block(ce_env_t env)
 {
     ce_flat_env_t *e = (ce_flat_env_t*)env;
+    TRACE("ce_flat_block");
     e->block(e->env);
 }
 

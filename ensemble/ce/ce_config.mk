@@ -17,11 +17,11 @@ CE_LNKLIB = .so  #.a
 #i386-linux
 ifeq ("$(PLATFORM)" , "i386-linux")
 CE_LINK_FLAGS = -ltermcap -lm -ldl -lpthread
-CFLAGS = -DINLINE=inline \
-	-O2 -Wall -Wstrict-prototypes \
+CFLAGS = -DINLINE=inline -DNDEBUG \
+	-O2 -Wall -Wno-unused -Wstrict-prototypes \
 	-I $(OCAML_LIB)		
 #-g -p/-pg 
-#-DNDEBUG 
+
 endif
 
 # SPARC-SOLARIS

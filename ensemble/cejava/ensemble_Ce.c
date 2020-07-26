@@ -18,12 +18,6 @@ static jclass glbl_Group, glbl_View, glbl_JoinOps, String;
 
 //jmethodID init_View;
 
-// ViewState
-static jfieldID view_version, view_proto, view_coord, view_ltime, view_primary, view_groupd, view_xfer_view, view_params, view_uptime, view_view, view_address;
-
-// ViewLocal 
-static jfieldID view_endpt, view_addr, view_rank, view_name, view_nmembers, view_am_coord;
-
 // Join Options
 static jfieldID jops_hrtbt_rate, jops_transports, jops_protocol, jops_group_name, jops_properties, jops_use_properties, jops_groupd, jops_params, jops_client, jops_debug, jops_endpt, jops_princ, jops_secure;
 
@@ -100,19 +94,14 @@ cString_of_jString(JNIEnv *env, jstring jstr)
     int len;
     const char *cstr;
 
-//    trace ("cString_of_jString(");
     if (jstr == NULL) return NULL;
     len = (*env) -> GetStringUTFLength(env, jstr);
     if (len == 0) return NULL;
-//    trace("len=%d\n", len);
     cstr = (*env)->GetStringUTFChars(env, jstr, NULL); 
-//    trace (".");
     buf = ce_malloc(len+1);
     strcpy(buf, cstr);
-//    trace (".");
     (*env)->ReleaseStringUTFChars(env, jstr, cstr);
     (*env)-> DeleteLocalRef(env, jstr);
-//    trace (")");
     return buf;
 }
 
@@ -124,19 +113,15 @@ jbyteArray jba_of_iovec(JNIEnv *env, int len, char *data)
     jbyteArray ba;
     char *buf;
     
-//    trace("jba_of_iovec[  (len=%d)", len);
     if ((*env)->EnsureLocalCapacity(env, 2) < 0) {
 	cej_panic("JVM: out of memory error");
     }
     ba = (*env)->NewByteArray(env, len);	
-//    trace(".");
     if (ba == NULL)
 	cej_panic("jba_of_iovec, JVM return NULL array");
     buf = (*env)->GetByteArrayElements(env, ba, NULL);
-//    trace(".");
     memcpy(buf, data, len);
     (*env)->ReleaseByteArrayElements(env, ba, buf, 0);
-//    trace("]");
     return ba;
 }
 
@@ -176,12 +161,7 @@ ia_of_jia(JNIEnv *env, jintArray jia, int *len, int **data)
 static jstring
 jString_of_cString(JNIEnv *env, char *s)
 {
-    jstring name;
-//    trace("jstring_of_c_string, s=%s", s);
-    name = (*env)->NewStringUTF(env, s);
-//    if (name == NULL)
-//	trace("==NULL");
-    return name;
+    return (*env)->NewStringUTF(env, s);
 }
 
 /* Convert a C stringArray into a Java stringArray.
@@ -196,6 +176,7 @@ jStringArray_of_cStringArray(JNIEnv *env, int n, char **a)
     for(i = 0; i < n; i++) {
 	name = (*env)->NewStringUTF(env, a[i]);
 	(*env)->SetObjectArrayElement(env, array, i, name);
+	(*env)->DeleteLocalRef(env,name);
     }
     return array;
 }
@@ -217,9 +198,7 @@ cArgs_of_jArgs(JNIEnv *env, jobject jsa,
     (*a)[0] = "ensemble_Ce";
     
     for(i = 0; i < n-1; i++) {
-	//	trace(".");
 	jstr = (*env)->GetObjectArrayElement(env, jsa, i);
-	//	trace(".");
 	(*a)[i+1] = cString_of_jString(env, jstr);
     }
     trace(")");
@@ -233,114 +212,32 @@ jops_of_j(JNIEnv *env, jobject j_jops)
     jops = record_create(ce_jops_t*, jops);
     record_clear(jops);
 
-    /*
-    jops->hrtbt_rate=10.0;
-    jops->transports = ce_copy_string("UDP");
-    jops->group_name = ce_copy_string("ce_mtalk");
-    jops->properties = ce_copy_string(CE_DEFAULT_PROPERTIES);
-    jops->use_properties = 1;
-    */
-    
-//    trace("jops_of_j(");
-//    trace("hrtbt_rate");
     jops -> hrtbt_rate = (float)
 	(*env)->GetDoubleField(env, j_jops, jops_hrtbt_rate);
-//    trace("transports[");
     jops -> transports = cString_of_jString(
 	 env, (*env)->GetObjectField(env, j_jops, jops_transports));
-//    trace("]");
-//    trace("protocol[");
     jops -> protocol = cString_of_jString(env, (*env) -> GetObjectField(env, j_jops, jops_protocol));
-//    trace("]");
-//    trace("group_name");
     jops -> group_name = cString_of_jString(env, (*env) -> GetObjectField(env, j_jops, jops_group_name));
-//    trace("properties");
     jops -> properties = cString_of_jString(
 	env, (*env) -> GetObjectField(env, j_jops, jops_properties));
-//    trace("use_properties");
     jops -> use_properties =
 	(*env) -> GetIntField(env, j_jops, jops_use_properties);
-//    trace("groupd");
     jops -> groupd = (int)
 	(*env) -> GetBooleanField(env, j_jops, jops_groupd) ;
-//    trace("params");
     jops -> params = cString_of_jString(
 	env, (*env) -> GetObjectField(env, j_jops, jops_params));
-//    trace("client");
     jops -> client = (int)
 	(*env) -> GetBooleanField(env, j_jops, jops_client);
-//    trace("debug");
     jops -> debug = (int)
 	(*env) -> GetBooleanField(env, j_jops, jops_debug);
-//    trace("endpt");
     jops -> endpt = cString_of_jString(
 	env, (*env) -> GetObjectField(env, j_jops, jops_endpt));
-//    trace("princ");
     jops -> princ = cString_of_jString(
 	env, (*env) -> GetObjectField(env, j_jops, jops_princ));
-//    trace("secure");
     jops -> secure = (int)
 	(*env) -> GetBooleanField(env, j_jops, jops_secure);
-//    trace(")");
     
     return jops;
-}
-
-jobject
-jView_of_cView(JNIEnv *env, cej_env_t *cej_env, ce_local_state_t *ls, ce_view_state_t *vs)
-{
-  jobject jView;
-  jstring jstr;
-  
-//  trace("jView_of_cView(");
-  jView = (*env) -> AllocObject(env, glbl_View);
-
-//  trace(".");
-  jstr = jString_of_cString(env, vs->version);
-  (*env) -> SetObjectField(env, jView, view_version, jstr);
-//  trace(".");
-  (*env) -> SetObjectField(env, jView, view_groupd,
-			   jString_of_cString(env, vs->group));
-//  trace(".");
-  (*env) -> SetObjectField(env, jView, view_proto,
-			   jString_of_cString(env, vs->proto));
-//  trace(".");
-  (*env) -> SetBooleanField(env, jView, view_coord,
-			    (jboolean) vs->coord);
-//  trace(".");
-  (*env) -> SetIntField(env, jView, view_ltime,
-			(jint) vs->ltime);
-//  trace(".");
-  (*env) -> SetBooleanField(env, jView, view_primary,
-			    (jboolean) vs->primary);
-//  trace(".");
-  (*env) -> SetBooleanField(env, jView, view_groupd,
-			    (jboolean) vs->groupd);
-//  trace(".");
-  (*env) -> SetBooleanField(env, jView, view_xfer_view,
-			    (jboolean) vs->xfer_view);
-//  trace(".");
-  (*env) -> SetObjectField(env, jView, view_params,
-			   jString_of_cString(env, vs->params));
-//  trace(".");
-  (*env) -> SetDoubleField(env, jView, view_uptime,
-			   (jdouble)vs->uptime);
-//  trace(".");
-  (*env) -> SetObjectField(env, jView, view_view,
-			   jStringArray_of_cStringArray(env, ls->nmembers, vs->view));
-  (*env) -> SetObjectField(env, jView, view_address,
-			   jStringArray_of_cStringArray(env, ls->nmembers, vs->address));
-  (*env) -> SetObjectField(env, jView, view_endpt,
-			   jString_of_cString(env, ls->endpt));
-  (*env) -> SetObjectField(env, jView, view_addr,
-			   jString_of_cString(env, ls->addr));
-  (*env) -> SetIntField(env, jView, view_rank, (jint) ls->rank);
-  (*env) -> SetObjectField(env, jView, view_name, jString_of_cString(env, ls->name));
-  (*env) -> SetIntField(env, jView, view_nmembers, (jint) ls->nmembers);
-  (*env) -> SetBooleanField(env, jView, view_am_coord, (jboolean) ls->am_coord);
-  trace(")");
-
-  return jView;
 }
 
 /**************************************************************/
@@ -359,8 +256,11 @@ create_env(JNIEnv *env, jobject j_group)
 void
 delete_env(JNIEnv *env, cej_env_t *cej_env)
 {
+    trace("delete_env(");
     (*env) -> DeleteGlobalRef(env, cej_env->j_group);
+    trace(".");
     free(cej_env);
+    trace(")");
 }
 
 static void
@@ -423,16 +323,56 @@ check_java_exception(JNIEnv *env)
 
 void cej_install(void *e, ce_local_state_t *ls, ce_view_state_t *vs)
 {
-    jobject jView;
+    jobject j_version, j_group, j_proto, j_params, j_view, j_address, j_endpt, j_addr, j_name;
     cej_env_t *cej_env = (cej_env_t*)e;
     init_cb();
     
     trace("cej_install(");
-    jView = jView_of_cView(ens_env, cej_env, ls, vs);
+    
+    j_version = /*NULL*/ jString_of_cString(ens_env, vs->version);
+    j_group = /*NULL*/ jString_of_cString(ens_env, vs->group);
+    j_proto = /*NULL*/ jString_of_cString(ens_env, vs->proto);
+    j_params = /*NULL*/ jString_of_cString(ens_env, vs->params);
+    j_view = /*NULL*/ jStringArray_of_cStringArray(ens_env, ls->nmembers, vs->view);
+    j_address = /*NULL*/ jStringArray_of_cStringArray(ens_env, ls->nmembers, vs->address);
+    j_endpt = /*NULL*/ jString_of_cString(ens_env, ls->endpt);
+    j_addr = /*NULL*/ jString_of_cString(ens_env, ls->addr);
+    j_name = /*NULL*/ jString_of_cString(ens_env, ls->name);
+    trace("/");
     
     ce_view_full_free(ls, vs);
     (*ens_env)->CallVoidMethod(
-	ens_env, cej_env->j_group, install_cb , jView);
+			       ens_env, cej_env->j_group, install_cb,
+			       j_version ,
+			       j_group ,
+			       j_proto,
+			       (jboolean)vs->coord,
+			       (jint) vs->ltime, 
+			       (jboolean) vs->primary, 
+			       (jboolean) vs->groupd, 
+			       (jboolean) vs->xfer_view, 
+			       j_params ,
+			       (jdouble)vs->uptime, 
+			       j_view ,
+			       j_address ,
+			       j_endpt,
+			       j_addr,
+			       (jint) ls->rank,
+			       j_name ,
+			       (jint) ls->nmembers, 
+			       (jboolean) ls->am_coord
+			       );
+
+    (*ens_env)->DeleteLocalRef(ens_env, j_version);
+    (*ens_env)->DeleteLocalRef(ens_env, j_group);
+    (*ens_env)->DeleteLocalRef(ens_env, j_proto);
+    (*ens_env)->DeleteLocalRef(ens_env, j_params);
+    (*ens_env)->DeleteLocalRef(ens_env, j_view);
+    (*ens_env)->DeleteLocalRef(ens_env, j_address);
+    (*ens_env)->DeleteLocalRef(ens_env, j_endpt);
+    (*ens_env)->DeleteLocalRef(ens_env, j_addr);
+    (*ens_env)->DeleteLocalRef(ens_env, j_name);
+
     check_java_exception(ens_env);
     trace(")");
 }
@@ -516,26 +456,6 @@ JNIEXPORT void JNICALL Java_ensemble_Group_natInit
 	String = cej_NewGlobalRef(env, 
 				  (*env)->FindClass(env, "java/lang/String"));
 	
-	// View
-	view_version = cej_GetFieldID(env, glbl_View, "version",
-				      "Ljava/lang/String;");
-	view_proto = cej_GetFieldID(env, glbl_View, "proto", "Ljava/lang/String;"); 	
-	view_coord = cej_GetFieldID(env, glbl_View, "coord", "I"); 	
-	view_ltime = cej_GetFieldID(env, glbl_View, "ltime", "I"); 	
-	view_primary = cej_GetFieldID(env, glbl_View, "primary", "Z"); 	
-	view_groupd = cej_GetFieldID(env, glbl_View, "groupd", "Z"); 	
-	view_xfer_view = cej_GetFieldID(env, glbl_View, "xfer_view", "Z");
-	view_params = cej_GetFieldID(env, glbl_View, "params",  "Ljava/lang/String;"); 	
-	view_uptime = cej_GetFieldID(env, glbl_View, "uptime", "D"); 	
-	view_view = cej_GetFieldID(env, glbl_View, "view", "[Ljava/lang/String;");
-	view_address = cej_GetFieldID(env, glbl_View, "address", "[Ljava/lang/String;");
-	view_endpt = cej_GetFieldID(env, glbl_View, "endpt", "Ljava/lang/String;"); 	
-	view_addr = cej_GetFieldID(env, glbl_View, "addr", "Ljava/lang/String;"); 	
-	view_ltime = cej_GetFieldID(env, glbl_View, "ltime", "I"); 	
-	view_rank = cej_GetFieldID(env, glbl_View, "rank", "I");
-	view_name = cej_GetFieldID(env, glbl_View, "name", "Ljava/lang/String;");
-	view_nmembers = cej_GetFieldID(env, glbl_View, "nmembers", "I");
-	view_am_coord = cej_GetFieldID(env, glbl_View, "am_coord", "Z"); 
 	
 	// Join Options
 	jops_hrtbt_rate = cej_GetFieldID(env, glbl_JoinOps, "hrtbt_rate", "D");
@@ -556,7 +476,8 @@ JNIEXPORT void JNICALL Java_ensemble_Group_natInit
 
 
 	install_cb = cej_GetMethodID(env, glbl_Group, "install",
-				     "(Lensemble/View;)V" /*"()V"*/);
+					   "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IIZZZLjava/lang/String;D[Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;IZ)V");
+	
 	exit_cb = cej_GetMethodID(env, glbl_Group, "exit", "()V");
 	recv_cast_cb = cej_GetMethodID(env, glbl_Group, "recv_cast", "(I[B)V");
 	recv_send_cb = cej_GetMethodID(env, glbl_Group, "recv_send", "(I[B)V");
@@ -583,11 +504,10 @@ JNIEXPORT jlong JNICALL Java_ensemble_Group_natJoin
     cej_env_t *cej_env;
     ce_appl_intf_t *c_appl;
 
-    trace("nat_Join[");
+    trace("natJoin(");
     jops = jops_of_j(env, j_jops);
     cej_env = create_env(env, j_group);
     
-    trace("ce_create_flat_intf");
     c_appl = ce_create_flat_intf(
 	cej_env,
 	cej_exit,
@@ -598,17 +518,16 @@ JNIEXPORT jlong JNICALL Java_ensemble_Group_natJoin
 	cej_recv_send,
 	cej_heartbeat
 	);
-    trace("ce_Join");
     ce_Join(jops, c_appl);
     cej_env->c_appl = c_appl ;
-    trace("]");
-    return (jlong)cej_env;
+    trace(")");
+    return (jlong)(int)cej_env;
 }
 
 JNIEXPORT void JNICALL Java_ensemble_Group_natLeave
 (JNIEnv *env, jclass Group, jlong group)
 {
-    trace("Leave(");
+    trace("natLeave(");
     ce_Leave(((cej_env_t*)(int)group)->c_appl);
     trace(")");
 }
@@ -646,7 +565,6 @@ JNIEXPORT void JNICALL Java_ensemble_Group_natSend1
     cej_env_t *cej_env = (cej_env_t*)(int)group;
     trace("natSend1(");
     iovec_of_jba(env, msg, &len, &buf);
-//    trace("natSend1: %d rank=%d", dest, cej_env->ls->rank);
     ce_flat_Send1(cej_env->c_appl, dest, len, buf);
     trace(")");
 }

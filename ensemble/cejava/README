@@ -1,0 +1,18 @@
+README: CEJAVA subdirectory
+Author: Ohad Rodeh 8/2002
+
+  The CEJAVA directory interfaces Java with the CE interface. The Java
+  interface is similar to the C interface in nature. The code was
+  inspired by an interface for HOT that Matthias Ernst
+  (matthias.ernst@coremedia.com) sent in.
+
+  Preliminary overhead measurements, as measured on Linux, show low
+  overhead. One major difference between CE and CEJAVA is that
+  messages delivered to the Java application are copied. This costs
+  more but provides more safty, i.e., the application can do anything
+  it wishes with a received message.
+
+
+
+
+
