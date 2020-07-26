@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -45,12 +45,12 @@ let print_defaults () =
   ) defaults ;
   eprintf "PARAM:default values:end\n"
 
-(* We use List.mem first in order to avoid allocation
+(* We use List.mem_assoc first in order to avoid allocation
  * for the exception.
  *)
 let lookup l name =
-  if Util.list_assoc_mem name l then (
-    try List.assoc name l with Not_found -> failwith sanity
+  if List.mem_assoc name l then (
+    List.assoc name l
   ) else (
     try Hashtbl.find defaults name with Not_found ->
       eprintf "PARAM:lookup:%s\n" name ;

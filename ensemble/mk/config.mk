@@ -1,6 +1,6 @@
 #*************************************************************#
 #
-#   Ensemble, (Version 0.70p1)
+#   Ensemble, (Version 1.00)
 #   Copyright 2000 Cornell University
 #   All rights reserved.
 #
@@ -31,9 +31,32 @@ CC	= gcc
 
 # Note: ENS_CFLAGS is taken from the environment variables.
 
+#*************************************************************#
+# The default cryptographic library. We use OpenSSL
+# that compiles and runs on many different platforms. 
+
+CRYPTO_LINK = # no crypto by default
+
+# Where to find the OpenSSL cryptographic library. 
+#OPENSSL = /home/users/orodeh/openssl
+#OPENSSL_INC = -I $(OPENSSL)/include
+#
+#CRYPTOLIB_ML = \
+#	$(ENSLIB)/crypto$(CMA)	
+#CRYPTOLIB_C = \
+#	$(ENSLIB)/libcryptoc$(ARC) \
+#	$(OPENSSL)/lib/libcrypto$(ARC)
+#
+#CRYPTO_LINK = \
+#	-cclib $(ENSLIB)/libcryptoc$(ARC) \
+#	-cclib $(OPENSSL)/lib/libcrypto$(ARC) \
+#	$(CRYPTOLIB_ML) 
+
+
+#*************************************************************#
+
 # CFLAGS: used for compilation of C files
-# -DIDEA32 enables optimizations in idea.c for 32-bit machines #-g
-CFLAGS	= -g \
+CFLAGS	= -O2 \
         $(CODEGEN)                      \
 	-I $(OCAML_LIB)			\
 	-I $(ENSROOT)/hot/include	\
@@ -45,7 +68,7 @@ CFLAGS	= -g \
 	-DMACHTYPE=$(MACHTYPE)		\
 	-DHAS_IP_MULTICAST		\
 	-DHAS_SENDMSG			\
-	-DIDEA32
+	$(OPENSSL_INC)
 
 
 # LIBSYS: used for linking executables
@@ -93,14 +116,6 @@ TKLIBS = \
 # OSTYPE = # os: sunos4, solaris, aix, osf1, linux
 # !NOTE! make sure there are no trailing spaces on the next line
 PLATFORM	= $(MACHTYPE)-$(OSTYPE)
-
-#*************************************************************#
-# Where to find the Crypto stuff
-
-CRYPTO_LINK =# no crypto by default
-#CRYPTO_LINK = \
-#	$(ENSLIB)/crypto$(CMA)	\
-#	-cclib $(ENSLIB)/libcryptoc$(ARC)
 
 #*************************************************************#
 # FOR INITIAL CONFIGURATION, NOTHING BELOW HERE SHOULD NEED TO

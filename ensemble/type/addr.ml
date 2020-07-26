@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -16,6 +16,7 @@ open Trans
 (**************************************************************)
 let name = Trace.file "ADDR"
 let failwith s = Trace.make_failwith name s
+let log = Trace.log name 
 (**************************************************************)
 
 type id =
@@ -293,4 +294,91 @@ example, DEERING:UDP).
     (soms (Arrayf.filter has_mcast all_trans)) ;
   exit 1
 
+(**************************************************************)
+(* Support for safe marshaling. This is needed for the 
+ * Exchange protocol. 
+*)
+
+module SafeMarshal = struct
+  exception Bad_format of string
+
+  let string_split c s = 
+    let l = string_split c s in
+    let l = List.find_all (fun x -> x <> "") l in
+    l 
+
+  let string_of_inet inet = Hsys.simple_string_of_inet inet
+
+  let inet_of_string s = 
+    try Hsys.simple_inet_of_string s
+    with _ -> raise (Bad_format "bad string, can't convert to inet")
+
+  let string_of_inet_port ip = 
+    string_of_pair string_of_inet string_of_int ip
+      
+  let inet_port_of_pair i p = 
+    let p  = try int_of_string p with _ -> 
+      raise (Bad_format "inet_port_of_pair: int_of_string") in
+    (inet_of_string i,p)
+    
+  let string_of_addr = function
+    | NetsimA        -> "Netsim"
+    | TcpA     (i,p) -> sprintf "Tcp(%s)" (string_of_inet_port (i,p))
+    | UdpA     (i,p) -> sprintf "Udp(%s)" (string_of_inet_port (i,p))
+    | DeeringA (i,p) -> sprintf "Deering(%s)" (string_of_inet_port (i,p))
+    | AtmA     i     -> sprintf "Atm(%s)" (string_of_inet i)
+    | Sp2A     (i,p) -> sprintf "Sp2(%s)" (string_of_inet_port (i,p))
+    | PgpA         a -> sprintf "Pgp(%s)" a
+    | Krb5A        a -> sprintf "Krb5(%s)" a
+    | FortezzaA    a -> sprintf "Fortezza(%s)" a
+    | MpiA      rank -> sprintf "Mpi(%d)" rank
+    | EthA     (a,p) -> sprintf "Eth(%s,%d)" (string_of_eth a) p
+	
+  let addr_of_string s = 
+    let l = string_split "(,)" s in
+    match l with 
+      | ["Netsim"] -> 
+	  NetsimA
+      | ["Tcp";i;p] -> 
+	  let i,p = inet_port_of_pair i p in
+	  TcpA(i,p)
+      | ["Udp";i;p] -> 
+	  let i,p = inet_port_of_pair i p in
+	  UdpA(i,p)
+      | ["Deering";i;p] -> 
+	  let i,p = inet_port_of_pair i p in
+	  DeeringA(i,p)
+      | ["Atm";i] -> 
+	  AtmA (inet_of_string i)
+      | ["Sp2";i;p] -> 
+	  let i,p = inet_port_of_pair i p in
+	  Sp2A(i,p)
+      | ["Pgp";a] -> 
+	  PgpA(a)
+      | ["Krb5";a] -> 
+	  Krb5A(a)
+      | ["Fortezza";a] -> 
+	  FortezzaA(a)
+      | ["Mpi";rank] -> 
+	  let rank = try int_of_string rank with _ -> 
+	    raise (Bad_format "Mpi, int_of_string") in
+	  MpiA(rank)
+      | ["Eth";a;p] -> raise (Bad_format "Eth addresses not supported")
+      | _ -> 
+	  log (fun () -> sprintf "l=%s" (string_of_list (fun x -> " <" ^ x ^ "> " )l));
+	  raise (Bad_format "addr_of_string")
+	  
+  let string_of_set a = Arrayf.to_string string_of_addr (Lset.project a)
+    
+  let set_of_string s = 
+    log (fun () -> "set_of_string");
+    let l = string_split "[||]" s in 
+    let l = List.map addr_of_string l in
+    let a = Arrayf.of_array (Array.of_list l) in
+    Lset.inject a
+      
+end
+  
+let safe_string_of_set = SafeMarshal.string_of_set
+let safe_set_of_string = SafeMarshal.set_of_string
 (**************************************************************)

@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -17,7 +17,7 @@ type ('key,'data) t
 (* The 'key arg is the zero value for the keys.
  * The function is a test for greater-or-equal.
  *)
-val create 	: 'key -> 'data -> ('key -> 'key -> bool) -> ('key,'data) t
+val create 	: 'key -> 'data -> ('key -> 'key -> int) -> ('key,'data) t
 
 (* Add an item.
  *)

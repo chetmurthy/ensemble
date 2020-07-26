@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -19,7 +19,7 @@ let atol = Arrayf.to_list
 
 (* Arrayf.sort checks first if the array is ordered.
  *)
-let sorta a = Arrayf.sort (>=) a
+let sorta a = Arrayf.sort compare a
 let sort a = atol (sorta (ltoa a))
 
 (**************************************************************)
@@ -71,7 +71,7 @@ let intersect l1 l2 =
 type 'a t = 'a Arrayf.t
 
 let collapsea a = 
-  assert (Arrayf.ordered (>=) a) ;
+  assert (Arrayf.ordered compare a) ;
   let l = Arrayf.length a in
   
   (* Handle empty case first.
@@ -113,7 +113,7 @@ let collapsea a =
 
 let inject a =
   let a = sorta a in
-  assert (Arrayf.ordered (>=) a) ;
+  assert (Arrayf.ordered compare a) ;
   collapsea a
 
 let project = Util.ident

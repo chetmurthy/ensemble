@@ -1,0 +1,92 @@
+*********************************************************************
+*  PLEASE NOTE!!
+*
+*  The Ensemble public CVS repository is mainly used by Ensemble
+*  developers.  The Ensemble source code here is NOT packaged for
+*  distribution, but is in its "raw" form, which may include partial
+*  or incomplete bug fixes, code still in development, extraneous
+*  subdirectories, etc. and we cannot guarantee that this code will
+*  even compile, as is.
+*
+*  The official, packaged releases are available, pretested and
+*  ready for download from our website:
+*
+*  http://www.cs.cornell.edu/Info/Projects/Ensemble/license.html
+*
+*  If you still prefer to download from the CVS repository, please
+*  read the following instructions under READ-ONLY access, to make
+*  sure you do the "make depend" step before attempting to build.
+*
+*********************************************************************
+
+If you want READ-WRITE access:
+------------------------------	    
+
+0) If you do not have a CVS account set up for you on ensemble01:
+
+a) If you don't have a ssh public key then run ssh-keygen and press
+enter three times.
+
+b) Send your public key (~/.ssh/identity.pub) and your desired login to
+tclark@cs.cornell.edu.
+
+1) Put the following into your ~/.ssh/config file:
+
+Host ensemble01.cs.cornell.edu
+Port 80
+FallBackToRsh no
+ForwardX11 no
+User <username on ensemble machine>
+
+2) Set environment variable CVS_RSH to `which ssh`.
+
+3) Make sure you are using cvs version >=1.9 (cvs -v gets version).
+Note that 1.10 is in /usr/local/gnu/cvs-1.10/bin under Solaris.
+
+4) To create new working copy:
+
+cvs -d :ext:ensemble01.cs.cornell.edu:/cvsroot checkout ensemble
+
+5) To fix old repository:
+
+a) Put the following in the /tmp/fixrep.sh :
+
+#!/bin/sh
+echo :ext:ensemble01.cs.cornell.edu:/cvsroot > $1/Root
+(echo 's|/ensemble|/--ensemble-root-dir--|'; echo 's|^.*/--ensemble-root-dir--|/cvsroot/ensemble|'; echo w; echo q) | ed $1/Repository
+
+b) chmod 755 /tmp/fixrep.sh
+
+c)
+find <old repository directory> -type d -name CVS -exec /tmp/fixrep.sh \{\} \;
+
+
+If you only want READ-ONLY access:
+----------------------------------
+
+0) Log into the server by running 
+
+% cvs -d :pserver:anoncvs@ensemble01.cs.cornell.edu:/cvsroot login
+
+The password is anoncvs. It will be stored on your computer,
+so you only have to run the login command once. 
+
+1) Now you can checkout the distribution by running:
+
+% cvs -d :pserver:anoncvs@ensemble01.cs.cornell.edu:/cvsroot checkout ensemble
+
+2) Once you have checked out the ensemble distribution, you must cd to the 
+   top-level "ensemble" directory and type "make depend".  This will create
+   the required dependency files.  This step is mandatory, or the make process
+   will fail.
+
+3) After "make depend" completes, read the INSTALL.htm (or INSTALL.txt) file
+   for instructions on how to build Ensemble.
+ 
+
+
+
+
+
+
+

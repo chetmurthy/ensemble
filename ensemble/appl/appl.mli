@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -30,6 +30,13 @@ val addr :
  *)
 val default_info :
   debug ->				(* application name *)
+  View.full
+
+(* Take View.full and switch on all the security switches. 
+ *)
+val set_secure : 
+  View.full -> 
+  Property.id list -> 
   View.full
 
 (* Create view state information for singleton groups, but

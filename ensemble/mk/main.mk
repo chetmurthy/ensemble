@@ -1,6 +1,6 @@
 #*************************************************************#
 #
-#   Ensemble, (Version 0.70p1)
+#   Ensemble, (Version 1.00)
 #   Copyright 2000 Cornell University
 #   All rights reserved.
 #
@@ -228,6 +228,8 @@ $(OBJD)/_nulldynlink$(CMO): $(OBJD)/nulldynlink $(ECAMLC) $(EMV) $(ECP) \
 #*************************************************************#
 # Rules for building HOT tools
 
+BASIC_ENSCONF_skt = $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS) 
+
 libhot: hot			# this should be phased out
 
 hotshare: $(OBJD) \
@@ -241,7 +243,7 @@ hoto: hotshare \
 	install \
 	$(ENSLIB)/libhoto$(ARC)	\
 	outboard		\
-	hot_testo
+	hot_testo		
 
 hoti: hotshare \
 	$(ENSLIB)/libhot$(ARC)	\
@@ -258,7 +260,7 @@ hot: hoto hoti hotml
 # uses the socket version of the fd representation.
 $(OBJD)/hot$(OBJ): $(ENSCONFDEP_skt) $(HOT_INBOARDOBJ)
 	$(RM) hot.c
-	$(MLCOMP) -output-obj -o hot$(OBJ) $(ENSCONF_skt) $(HOT_INBOARDOBJ) $(HOT_MLLINK)
+	$(MLCOMP) -output-obj -o hot$(OBJ) $(BASIC_ENSCONF_skt) $(HOT_INBOARDOBJ) $(HOT_MLLINK)
 	$(RM) $(OBJD)/hot$(OBJ)
 	$(MV) hot$(OBJ) $(OBJD)/hot$(OBJ)
 
@@ -280,7 +282,7 @@ $(OBJD)/libhoto$(ARC): $(HOT_OUTBOARDCOBJ)
 
 # Generate the outboard executable
 outboard: $(ENSCONFDEP_skt) $(HOT_OUTBOARDOBJ)
-	$(MLLINK) -o $(ENSROOT)/demo/outboard$(EXE) $(CUSTOM) $(LIBSYS) $(ENSCONF_skt) $(HOT_OUTBOARDOBJ)
+	$(MLLINK) -o $(ENSROOT)/demo/outboard$(EXE) $(CUSTOM) $(LIBSYS) $(BASIC_ENSCONF_skt) $(HOT_OUTBOARDOBJ)
 
 # Generate the outboard executable
 $(OBJD)/libhotml$(CMA): $(ENSCONFDEP) $(HOT_SHAREDOBJ)
@@ -288,17 +290,23 @@ $(OBJD)/libhotml$(CMA): $(ENSCONFDEP) $(HOT_SHAREDOBJ)
 
 #*************************************************************#
 # Building HOT with optional CRYPTO lib
+
+
+CRYPTO_ENSCONF_skt = $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS) $(CRYPTO_LINK)
+
 libhot-crypto: hotc
 
 hotocrypto: hotshare \
 	install \
 	$(ENSLIB)/libhoto-crypto$(ARC)	\
 	outboard-crypto		\
-	hot_testo-crypto
+	hot_testo-crypto 	\
+	hot_sec_testo		
 
 hotcrypto: hotshare \
 	$(ENSLIB)/libhot-crypto$(ARC)	\
-	hot_test-crypto
+	hot_test-crypto 	\
+	hot_sec_test
 
 hotmlcrypto: hotshare \
 	$(OBJD)/libhotml-crypto$(CMA)
@@ -313,7 +321,7 @@ hotc: hotocrypto hotcrypto hotmlcrypto
 # uses the socket version of the fd representation, includes CRYPTO_LINK
 $(OBJD)/hot-crypto$(OBJ): $(ENSCONFDEP_skt) $(HOT_INBOARDOBJ)
 	$(RM) hot-crypto.c
-	$(MLCOMP) -output-obj -o hot-crypto$(OBJ) $(ENSCONF_skt) $(CRYPTO_LINK) $(HOT_INBOARDOBJ) $(HOT_MLLINK)
+	$(MLCOMP) -output-obj -o hot-crypto$(OBJ) $(CRYPTO_ENSCONF_skt) $(HOT_INBOARDOBJ) $(HOT_MLLINK)
 	$(RM) $(OBJD)/hot-crypto$(OBJ)
 	$(MV) hot-crypto$(OBJ) $(OBJD)/hot-crypto$(OBJ)
 
@@ -329,12 +337,12 @@ $(OBJD)/libhot-crypto$(ARC): $(HOT_INBOARDCOBJ) $(OBJD)/hot-crypto$(OBJ) $(OBJD)
 	$(RANLIB) $(OBJD)/libhot-crypto$(ARC)
 
 $(OBJD)/libhoto-crypto$(ARC): $(HOT_OUTBOARDCOBJ)
-	$(MKLIB) $(MKLIBO)$(OBJD)/libhoto-crypto$(ARC) $(HOT_OUTBOARDCOBJ) $(ENSLIB)/libcryptoc$(ARC)
+	$(MKLIB) $(MKLIBO)$(OBJD)/libhoto-crypto$(ARC) $(HOT_OUTBOARDCOBJ) $(CRYPTOLIB_C)
 	$(RANLIB) $(OBJD)/libhoto-crypto$(ARC)
 
 # Generate the outboard executable
 outboard-crypto: $(ENSCONFDEP_skt) $(HOT_OUTBOARDOBJ)
-	$(MLLINK) -o $(ENSROOT)/demo/outboard-crypto$(EXE) $(CUSTOM) $(LIBSYS) $(ENSCONF_skt) $(CRYPTO_LINK) $(HOT_OUTBOARDOBJ)
+	$(MLLINK) -o $(ENSROOT)/demo/outboard-crypto$(EXE) $(CUSTOM) $(LIBSYS) $(CRYPTO_ENSCONF_skt) $(HOT_OUTBOARDOBJ)
 
 # Generate the outboard executable
 $(OBJD)/libhotml-crypto$(CMA): $(ENSCONFDEP) $(HOT_SHAREDOBJ)
@@ -345,15 +353,29 @@ hot_test-crypto$(UNIXRULE): $(OBJD)/libhot-crypto$(ARC) $(OBJD)/hot_test$(OBJ)
 	  $(OBJD)/hot_test$(OBJ) \
 	  $(OBJD)/libhot-crypto$(ARC) \
 	  $(HOT_LINK) \
-	  $(ENSLIB)/libcryptoc.a
+	  $(CRYPTOLIB_C)
 
 hot_testo-crypto$(UNIXRULE): $(OBJD)/libhoto-crypto$(ARC) $(OBJD)/hot_test$(OBJ)
 	$(CC) -g -o $(ENSROOT)/demo/hot_testo-crypto$(EXE) \
 	  $(OBJD)/hot_test$(OBJ) \
 	  $(OBJD)/libhoto-crypto$(ARC) \
 	  $(HOT_LINK) \
-	  $(ENSLIB)/libcryptoc.a
+	  $(CRYPTOLIB_C)
 
+
+hot_sec_test$(UNIXRULE): $(OBJD)/libhot-crypto$(ARC) $(OBJD)/hot_sec_test$(OBJ)
+	$(CC) -g -o $(ENSROOT)/demo/hot_sec_test$(EXE) \
+	  $(OBJD)/hot_sec_test$(OBJ) \
+	  $(OBJD)/libhot-crypto$(ARC) \
+	  $(HOT_LINK) \
+	  $(CRYPTOLIB_C)
+
+hot_sec_testo$(UNIXRULE): $(OBJD)/libhoto-crypto$(ARC) $(OBJD)/hot_sec_test$(OBJ)
+	$(CC) -g -o $(ENSROOT)/demo/hot_sec_testo$(EXE) \
+	  $(OBJD)/hot_sec_test$(OBJ) \
+	  $(OBJD)/libhoto-crypto$(ARC) \
+	  $(HOT_LINK) \
+	  $(CRYPTOLIB_C)
 #*************************************************************#
 
 # Generate the hot_test executable
@@ -522,7 +544,7 @@ SRCDIRS = util appl route infr trans type buffer \
   layers/trans layers/other layers/flow layers/bypass	 \
   layers/total layers/gossip layers/debug layers/vsync	 \
   layers/scale layers/security \
-  crypto crypto/isaac
+  crypto crypto/isaac crypto/OpenSSL
 
 depend: $(OBJD) $(ECAMLDEP)
 	$(ECAMLDEPC) $(DEPFLAGS)	\

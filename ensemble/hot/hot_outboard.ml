@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -71,7 +71,8 @@ let marsh_upcall mbuf id msg =
   	write_string m v.c_params ;
   	write_bool m v.c_xfer_view ;
   	write_bool m v.c_primary ;
-  	write_bool_array m v.c_clients
+  	write_bool_array m v.c_clients;
+  	write_string m v.c_key
     | UReceive(origin,cs,iovl) -> (
 	let typ = 
 	  match cs with
@@ -135,6 +136,9 @@ let dncall_unmarsh mbuf iovl =
 	(* This is currently unsupported for outboard mode.
 	 *)
 	let endpt = "" in
+	let princ = read_string () in
+	let key   = read_string () in
+	let secure = read_bool () in
 
 	let jops = {
 	  jops_hrtbt_rate = rate;
@@ -148,6 +152,9 @@ let dncall_unmarsh mbuf iovl =
 	  jops_client = client;
 	  jops_debug = debug;
 	  jops_endpt = endpt;
+	  jops_princ  = princ;
+	  jops_key    = key;
+	  jops_secure = secure
 	} in
 	let _,vs = init_view_state jops in
 	let heartbeat_rate = Time.of_float (float jops.jops_hrtbt_rate /. 1000.0) in
@@ -169,10 +176,12 @@ let dncall_unmarsh mbuf iovl =
 	done;
 	let suspects = List.rev !susp in
 	SuspectEndpts(id,ltime,suspects)
-    | 4 ->				(* Protocol *)
+    | 4 ->                              (* XferDone *)
+	Dncall(id,ltime,Control XferDone)
+    | 5 ->				(* Protocol *)
 	let proto = read_string () in
 	Dncall(id,ltime,Control(Protocol(Proto.id_of_string proto)))
-    | 5 ->				(* Property *)
+    | 6 ->				(* Property *)
 	let props = read_string () in
 	let protocol =
 	  let props = 
@@ -183,13 +192,15 @@ let dncall_unmarsh mbuf iovl =
 	  Property.choose props
 	in
 	Dncall(id,ltime,Control(Protocol protocol))
-    | 6 ->				(* Leave *)
+    | 7 ->				(* Leave *)
 	Dncall(id,ltime,Control Leave)
-    | 7 ->				(* Prompt *)
+    | 8 ->				(* Prompt *)
 	Dncall(id,ltime,Control Prompt)
-    | 8 ->				(* Block *)
+    | 9 ->				(* Rekey *)
+	Dncall(id,ltime,Control (Rekey false))
+    | 10 ->				(* Block *)
 	Dncall(id,ltime,Control(Block true))
-    | 9 ->
+    | 11 ->
 	let dest = read_int () in
 	let iovl = read_iovl () in
 	Dncall(id,ltime,Send([|dest|],iovl))
@@ -269,6 +280,6 @@ let run () =
 (* Run the application, with exception handlers to catch any
  * problems that might occur.
  *)
-let _ = Appl.exec ["outboard"] run
+let _ = Appl.exec ["outboard";"outboard-crypto"] run
 
 (**************************************************************)

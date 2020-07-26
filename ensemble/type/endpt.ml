@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -36,6 +36,7 @@ let string_of_id = function
       sprintf "{Endpt:%s:%s}" debug (Unique.string_of_id_short id)
   | External unique_string ->
       unique_string
+
 
 let string_of_id_short = function
   | Anon id -> 

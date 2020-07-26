@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -147,12 +147,35 @@ let gt a b =
   else 
     a.sec10 > b.sec10
 
+(* Check that subtracting two integers
+ * does not cause overflow.
+ *)
+let check_overflow i j =
+  assert (
+    let diff = i - j in
+    if (i > j) then
+      diff > 0
+    else if i < j then
+      diff < 0
+    else true
+  )
+
+let cmp a b =
+  if a.sec10 = b.sec10 then (
+    check_overflow a.usec b.usec ;
+    a.usec - b.usec
+  ) else (
+    check_overflow a.sec10 b.sec10 ;
+    a.sec10 - b.sec10
+  )
+
 module Ord =
   struct
     type time = t
     type t = time
     let zero = zero
     let ge = ge
+    let cmp = cmp
   end
 
 let gettimeofday = Hsys.gettimeofday

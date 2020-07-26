@@ -1,6 +1,6 @@
 #*************************************************************#
 #
-#   Ensemble, (Version 0.70p1)
+#   Ensemble, (Version 1.00)
 #   Copyright 2000 Cornell University
 #   All rights reserved.
 #
@@ -90,17 +90,21 @@ $(OBJD)\rvr_intf$(OBJ): ..\hot\rvr_intf.c ..\socket\skt.h
 $(OBJD)\solaris_thread$(OBJ): ..\hot\solaris_thread.c ..\socket\skt.h
 	$(CC) /Fo$(OBJD)\solaris_thread$(OBJ)  $(CFLAGS) -c ..\hot\solaris_thread.c
 
-$(OBJD)\des_c$(OBJ): ..\crypto\des_c.c ..\socket\skt.h
-	$(CC) /Fo$(OBJD)\des_c$(OBJ)  $(CFLAGS) -c ..\crypto\des_c.c
 
-$(OBJD)\idea_c$(OBJ): ..\crypto\idea_c.c ..\socket\skt.h
-	$(CC) /Fo$(OBJD)\idea_c$(OBJ)  $(CFLAGS) -c ..\crypto\idea_c.c
+$(OBJD)\bench$(OBJ): ..\crypto\OpenSSL\bench.c ..\socket\skt.h
+	$(CC) /Fo$(OBJD)\bench$(OBJ)  $(CFLAGS) -c ..\crypto\OpenSSL\bench.c
 
-$(OBJD)\rc4$(OBJ): ..\crypto\rc4.c ..\socket\skt.h
-	$(CC) /Fo$(OBJD)\rc4$(OBJ)  $(CFLAGS) -c ..\crypto\rc4.c
+$(OBJD)\des_c$(OBJ): ..\crypto\OpenSSL\des_c.c ..\socket\skt.h
+	$(CC) /Fo$(OBJD)\des_c$(OBJ)  $(CFLAGS) -c ..\crypto\OpenSSL\des_c.c
 
-$(OBJD)\rc4_c$(OBJ): ..\crypto\rc4_c.c ..\socket\skt.h
-	$(CC) /Fo$(OBJD)\rc4_c$(OBJ)  $(CFLAGS) -c ..\crypto\rc4_c.c
+$(OBJD)\dha_c$(OBJ): ..\crypto\OpenSSL\dha_c.c ..\socket\skt.h
+	$(CC) /Fo$(OBJD)\dha_c$(OBJ)  $(CFLAGS) -c ..\crypto\OpenSSL\dha_c.c
+
+$(OBJD)\idea_c$(OBJ): ..\crypto\OpenSSL\idea_c.c ..\socket\skt.h
+	$(CC) /Fo$(OBJD)\idea_c$(OBJ)  $(CFLAGS) -c ..\crypto\OpenSSL\idea_c.c
+
+$(OBJD)\rc4_c$(OBJ): ..\crypto\OpenSSL\rc4_c.c ..\socket\skt.h
+	$(CC) /Fo$(OBJD)\rc4_c$(OBJ)  $(CFLAGS) -c ..\crypto\OpenSSL\rc4_c.c
 
 $(OBJD)\isaac_c$(OBJ): ..\crypto\isaac\isaac_c.c ..\socket\skt.h
 	$(CC) /Fo$(OBJD)\isaac_c$(OBJ)  $(CFLAGS) -c ..\crypto\isaac\isaac_c.c
@@ -118,6 +122,9 @@ $(OBJD)\arrayf$(CMI) : ..\util\arrayf.mli $(ECAMLC) $(OBJD)\arraye$(CMO)\
 
 $(OBJD)\arrayop$(CMI) : ..\util\arrayop.mli $(ECAMLC) $(OBJD)\arrayf$(CMO) 
 	$(ENSCOMP) ..\util\arrayop.mli
+
+$(OBJD)\diamond$(CMI) : ..\util\diamond.mli $(ECAMLC) $(OBJD)\trans$(CMO) 
+	$(ENSCOMP) ..\util\diamond.mli
 
 $(OBJD)\dtbl$(CMI) : ..\util\dtbl.mli $(ECAMLC) $(OBJD)\hsys$(CMO) 
 	$(ENSCOMP) ..\util\dtbl.mli
@@ -150,9 +157,13 @@ $(OBJD)\mcausal$(CMI) : ..\util\mcausal.mli $(ECAMLC) $(OBJD)\trans$(CMO)
 $(OBJD)\mcredit$(CMI) : ..\util\mcredit.mli $(ECAMLC) $(OBJD)\trans$(CMO) 
 	$(ENSCOMP) ..\util\mcredit.mli
 
-$(OBJD)\msecchan$(CMI) : ..\util\msecchan.mli $(ECAMLC)\
-    $(OBJD)\arrayf$(CMO) $(OBJD)\time$(CMO) $(OBJD)\trans$(CMO) 
-	$(ENSCOMP) ..\util\msecchan.mli
+$(OBJD)\mexchange$(CMI) : ..\util\mexchange.mli $(ECAMLC)\
+    $(OBJD)\addr$(CMO) $(OBJD)\auth$(CMO) $(OBJD)\buf$(CMO) 
+	$(ENSCOMP) ..\util\mexchange.mli
+
+$(OBJD)\mrekey_dt$(CMI) : ..\util\mrekey_dt.mli $(ECAMLC)\
+    $(OBJD)\trans$(CMO) 
+	$(ENSCOMP) ..\util\mrekey_dt.mli
 
 $(OBJD)\once$(CMI) : ..\util\once.mli $(ECAMLC) 
 	$(ENSCOMP) ..\util\once.mli
@@ -194,8 +205,8 @@ $(OBJD)\util$(CMI) : ..\util\util.mli $(ECAMLC) $(OBJD)\trans$(CMO)
 $(OBJD)\appl$(CMI) : ..\appl\appl.mli $(ECAMLC) $(OBJD)\addr$(CMO)\
     $(OBJD)\alarm$(CMO) $(OBJD)\appl_intf$(CMO) $(OBJD)\elink$(CMO)\
     $(OBJD)\endpt$(CMO) $(OBJD)\group$(CMO) $(OBJD)\hsys$(CMO)\
-    $(OBJD)\layer$(CMO) $(OBJD)\proto$(CMO) $(OBJD)\security$(CMO)\
-    $(OBJD)\trans$(CMO) $(OBJD)\view$(CMO) 
+    $(OBJD)\layer$(CMO) $(OBJD)\property$(CMO) $(OBJD)\proto$(CMO)\
+    $(OBJD)\security$(CMO) $(OBJD)\trans$(CMO) $(OBJD)\view$(CMO) 
 	$(ENSCOMP) ..\appl\appl.mli
 
 $(OBJD)\appl_aggr$(CMI) : ..\appl\appl_aggr.mli $(ECAMLC)\
@@ -252,8 +263,7 @@ $(OBJD)\partition$(CMI) : ..\appl\partition.mli $(ECAMLC)\
     $(OBJD)\endpt$(CMO) 
 	$(ENSCOMP) ..\appl\partition.mli
 
-$(OBJD)\pgp$(CMI) : ..\appl\pgp.mli $(ECAMLC) $(OBJD)\alarm$(CMO)\
-    $(OBJD)\buf$(CMO) 
+$(OBJD)\pgp$(CMI) : ..\appl\pgp.mli $(ECAMLC) $(OBJD)\alarm$(CMO) 
 	$(ENSCOMP) ..\appl\pgp.mli
 
 $(OBJD)\protos$(CMI) : ..\appl\protos.mli $(ECAMLC) $(OBJD)\addr$(CMO)\
@@ -329,8 +339,8 @@ $(OBJD)\stacke$(CMI) : ..\infr\stacke.mli $(ECAMLC) $(OBJD)\addr$(CMO)\
 
 $(OBJD)\transport$(CMI) : ..\infr\transport.mli $(ECAMLC)\
     $(OBJD)\addr$(CMO) $(OBJD)\alarm$(CMO) $(OBJD)\conn$(CMO)\
-    $(OBJD)\endpt$(CMO) $(OBJD)\route$(CMO) $(OBJD)\stack_id$(CMO)\
-    $(OBJD)\trans$(CMO) $(OBJD)\view$(CMO) 
+    $(OBJD)\route$(CMO) $(OBJD)\stack_id$(CMO) $(OBJD)\trans$(CMO)\
+    $(OBJD)\view$(CMO) 
 	$(ENSCOMP) ..\infr\transport.mli
 
 $(OBJD)\htk$(CMI) : ..\trans\htk.mli $(ECAMLC) $(OBJD)\alarm$(CMO) 
@@ -379,13 +389,13 @@ $(OBJD)\appl_intf$(CMI) : ..\type\appl_intf.mli $(ECAMLC)\
 	$(ENSCOMP) ..\type\appl_intf.mli
 
 $(OBJD)\auth$(CMI) : ..\type\auth.mli $(ECAMLC) $(OBJD)\addr$(CMO)\
-    $(OBJD)\alarm$(CMO) $(OBJD)\buf$(CMO) $(OBJD)\trans$(CMO) 
+    $(OBJD)\alarm$(CMO) $(OBJD)\trans$(CMO) 
 	$(ENSCOMP) ..\type\auth.mli
 
 $(OBJD)\conn$(CMI) : ..\type\conn.mli $(ECAMLC) $(OBJD)\arrayf$(CMO)\
-    $(OBJD)\buf$(CMO) $(OBJD)\endpt$(CMO) $(OBJD)\group$(CMO)\
-    $(OBJD)\proto$(CMO) $(OBJD)\stack_id$(CMO) $(OBJD)\trans$(CMO)\
-    $(OBJD)\version$(CMO) $(OBJD)\view$(CMO) 
+    $(OBJD)\buf$(CMO) $(OBJD)\group$(CMO) $(OBJD)\proto$(CMO)\
+    $(OBJD)\stack_id$(CMO) $(OBJD)\trans$(CMO) $(OBJD)\version$(CMO)\
+    $(OBJD)\view$(CMO) 
 	$(ENSCOMP) ..\type\conn.mli
 
 $(OBJD)\domain$(CMI) : ..\type\domain.mli $(ECAMLC) $(OBJD)\addr$(CMO)\
@@ -409,10 +419,10 @@ $(OBJD)\group$(CMI) : ..\type\group.mli $(ECAMLC) $(OBJD)\unique$(CMO)
 	$(ENSCOMP) ..\type\group.mli
 
 $(OBJD)\layer$(CMI) : ..\type\layer.mli $(ECAMLC) $(OBJD)\addr$(CMO)\
-    $(OBJD)\appl_intf$(CMO) $(OBJD)\endpt$(CMO) $(OBJD)\event$(CMO)\
-    $(OBJD)\msecchan$(CMO) $(OBJD)\security$(CMO) $(OBJD)\tdefs$(CMO)\
-    $(OBJD)\time$(CMO) $(OBJD)\trans$(CMO) $(OBJD)\tree$(CMO)\
-    $(OBJD)\view$(CMO) 
+    $(OBJD)\appl_intf$(CMO) $(OBJD)\diamond$(CMO) $(OBJD)\endpt$(CMO)\
+    $(OBJD)\event$(CMO) $(OBJD)\mrekey_dt$(CMO) $(OBJD)\security$(CMO)\
+    $(OBJD)\shared$(CMO) $(OBJD)\tdefs$(CMO) $(OBJD)\time$(CMO)\
+    $(OBJD)\trans$(CMO) $(OBJD)\tree$(CMO) $(OBJD)\view$(CMO) 
 	$(ENSCOMP) ..\type\layer.mli
 
 $(OBJD)\param$(CMI) : ..\type\param.mli $(ECAMLC) $(OBJD)\time$(CMO)\
@@ -565,14 +575,6 @@ $(OBJD)\proxy$(CMI) : ..\groupd\proxy.mli $(ECAMLC) $(OBJD)\alarm$(CMO)\
 
 
 
-$(OBJD)\des$(CMI) : ..\crypto\des.mli $(ECAMLC) $(OBJD)\trans$(CMO) 
-	$(ENSCOMP) ..\crypto\des.mli
-
-$(OBJD)\idea$(CMI) : ..\crypto\idea.mli $(ECAMLC) $(OBJD)\trans$(CMO) 
-	$(ENSCOMP) ..\crypto\idea.mli
-
-$(OBJD)\md5$(CMI) : ..\crypto\md5.mli $(ECAMLC) 
-	$(ENSCOMP) ..\crypto\md5.mli
 
 
 
@@ -587,6 +589,14 @@ $(OBJD)\arrayf$(CMO) : ..\util\arrayf.ml $(ECAMLC) $(OBJD)\arraye$(CMO)\
 $(OBJD)\arrayop$(CMO) : ..\util\arrayop.ml $(ECAMLC) $(OBJD)\arrayf$(CMO)\
     $(OBJD)\util$(CMO) $(OBJD)\arrayop$(CMI) 
 	$(ENSCOMP) ..\util\arrayop.ml
+
+$(OBJD)\diamond$(CMO) : ..\util\diamond.ml $(ECAMLC) $(OBJD)\trace$(CMO)\
+    $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO) $(OBJD)\diamond$(CMI) 
+	$(ENSCOMP) ..\util\diamond.ml
+
+$(OBJD)\diamond_aux$(CMO) : ..\util\diamond_aux.ml $(ECAMLC)\
+    $(OBJD)\diamond$(CMO) $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO) 
+	$(ENSCOMP) ..\util\diamond_aux.ml
 
 $(OBJD)\dtbl$(CMO) : ..\util\dtbl.ml $(ECAMLC) $(OBJD)\hsys$(CMO)\
     $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO)\
@@ -634,10 +644,16 @@ $(OBJD)\mcredit$(CMO) : ..\util\mcredit.ml $(ECAMLC) $(OBJD)\queuee$(CMO)\
     $(OBJD)\mcredit$(CMI) 
 	$(ENSCOMP) ..\util\mcredit.ml
 
-$(OBJD)\msecchan$(CMO) : ..\util\msecchan.ml $(ECAMLC) $(OBJD)\lset$(CMO)\
-    $(OBJD)\time$(CMO) $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO)\
-    $(OBJD)\util$(CMO) $(OBJD)\msecchan$(CMI) 
-	$(ENSCOMP) ..\util\msecchan.ml
+$(OBJD)\mexchange$(CMO) : ..\util\mexchange.ml $(ECAMLC) $(OBJD)\addr$(CMO)\
+    $(OBJD)\auth$(CMO) $(OBJD)\buf$(CMO) $(OBJD)\shared$(CMO)\
+    $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO)\
+    $(OBJD)\mexchange$(CMI) 
+	$(ENSCOMP) ..\util\mexchange.ml
+
+$(OBJD)\mrekey_dt$(CMO) : ..\util\mrekey_dt.ml $(ECAMLC)\
+    $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO)\
+    $(OBJD)\mrekey_dt$(CMI) 
+	$(ENSCOMP) ..\util\mrekey_dt.ml
 
 $(OBJD)\nulldynlink$(CMO) : ..\util\nulldynlink.ml $(ECAMLC) 
 	$(ENSCOMP) ..\util\nulldynlink.ml
@@ -694,12 +710,13 @@ $(OBJD)\appl$(CMO) : ..\appl\appl.ml $(ECAMLC) $(OBJD)\addr$(CMO)\
     $(OBJD)\arrayf$(CMO) $(OBJD)\async$(CMO) $(OBJD)\auth$(CMO)\
     $(OBJD)\buf$(CMO) $(OBJD)\domain$(CMO) $(OBJD)\elink$(CMO)\
     $(OBJD)\endpt$(CMO) $(OBJD)\group$(CMO) $(OBJD)\hsys$(CMO)\
-    $(OBJD)\layer$(CMO) $(OBJD)\mbuf$(CMO) $(OBJD)\pool$(CMO)\
-    $(OBJD)\property$(CMO) $(OBJD)\queuee$(CMO) $(OBJD)\route$(CMO)\
-    $(OBJD)\sched$(CMO) $(OBJD)\security$(CMO) $(OBJD)\stacke$(CMO)\
-    $(OBJD)\time$(CMO) $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO)\
-    $(OBJD)\unique$(CMO) $(OBJD)\util$(CMO) $(OBJD)\version$(CMO)\
-    $(OBJD)\view$(CMO) $(OBJD)\appl$(CMI) 
+    $(OBJD)\layer$(CMO) $(OBJD)\mbuf$(CMO) $(OBJD)\param$(CMO)\
+    $(OBJD)\pool$(CMO) $(OBJD)\property$(CMO) $(OBJD)\queuee$(CMO)\
+    $(OBJD)\route$(CMO) $(OBJD)\sched$(CMO) $(OBJD)\security$(CMO)\
+    $(OBJD)\shared$(CMO) $(OBJD)\stacke$(CMO) $(OBJD)\time$(CMO)\
+    $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO) $(OBJD)\unique$(CMO)\
+    $(OBJD)\util$(CMO) $(OBJD)\version$(CMO) $(OBJD)\view$(CMO)\
+    $(OBJD)\appl$(CMI) 
 	$(ENSCOMP) ..\appl\appl.ml
 
 $(OBJD)\appl_aggr$(CMO) : ..\appl\appl_aggr.ml $(ECAMLC)\
@@ -786,8 +803,8 @@ $(OBJD)\partition$(CMO) : ..\appl\partition.ml $(ECAMLC)\
 
 $(OBJD)\pgp$(CMO) : ..\appl\pgp.ml $(ECAMLC) $(OBJD)\addr$(CMO)\
     $(OBJD)\alarm$(CMO) $(OBJD)\arge$(CMO) $(OBJD)\auth$(CMO)\
-    $(OBJD)\buf$(CMO) $(OBJD)\hsys$(CMO) $(OBJD)\trace$(CMO)\
-    $(OBJD)\util$(CMO) $(OBJD)\pgp$(CMI) 
+    $(OBJD)\hsys$(CMO) $(OBJD)\trace$(CMO) $(OBJD)\util$(CMO)\
+    $(OBJD)\pgp$(CMI) 
 	$(ENSCOMP) ..\appl\pgp.ml
 
 $(OBJD)\protos$(CMO) : ..\appl\protos.ml $(ECAMLC) $(OBJD)\addr$(CMO)\
@@ -1031,11 +1048,11 @@ $(OBJD)\group$(CMO) : ..\type\group.ml $(ECAMLC) $(OBJD)\trace$(CMO)\
 	$(ENSCOMP) ..\type\group.ml
 
 $(OBJD)\layer$(CMO) : ..\type\layer.ml $(ECAMLC) $(OBJD)\addr$(CMO)\
-    $(OBJD)\appl_intf$(CMO) $(OBJD)\endpt$(CMO) $(OBJD)\event$(CMO)\
-    $(OBJD)\msecchan$(CMO) $(OBJD)\security$(CMO) $(OBJD)\tdefs$(CMO)\
-    $(OBJD)\time$(CMO) $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO)\
-    $(OBJD)\tree$(CMO) $(OBJD)\util$(CMO) $(OBJD)\view$(CMO)\
-    $(OBJD)\layer$(CMI) 
+    $(OBJD)\appl_intf$(CMO) $(OBJD)\diamond$(CMO) $(OBJD)\endpt$(CMO)\
+    $(OBJD)\event$(CMO) $(OBJD)\mrekey_dt$(CMO) $(OBJD)\security$(CMO)\
+    $(OBJD)\shared$(CMO) $(OBJD)\tdefs$(CMO) $(OBJD)\time$(CMO)\
+    $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO) $(OBJD)\tree$(CMO)\
+    $(OBJD)\util$(CMO) $(OBJD)\view$(CMO) $(OBJD)\layer$(CMI) 
 	$(ENSCOMP) ..\type\layer.ml
 
 $(OBJD)\param$(CMO) : ..\type\param.ml $(ECAMLC) $(OBJD)\time$(CMO)\
@@ -1057,8 +1074,8 @@ $(OBJD)\proto$(CMO) : ..\type\proto.ml $(ECAMLC) $(OBJD)\util$(CMO)\
 	$(ENSCOMP) ..\type\proto.ml
 
 $(OBJD)\security$(CMO) : ..\type\security.ml $(ECAMLC) $(OBJD)\buf$(CMO)\
-    $(OBJD)\time$(CMO) $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO)\
-    $(OBJD)\util$(CMO) $(OBJD)\security$(CMI) 
+    $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO)\
+    $(OBJD)\security$(CMI) 
 	$(ENSCOMP) ..\type\security.ml
 
 $(OBJD)\shared$(CMO) : ..\type\shared.ml $(ECAMLC) $(OBJD)\buf$(CMO)\
@@ -1124,9 +1141,9 @@ $(OBJD)\mbuf$(CMO) : ..\buffer\mbuf.ml $(ECAMLC) $(OBJD)\buf$(CMO)\
     $(OBJD)\mbuf$(CMI) 
 	$(ENSCOMP) ..\buffer\mbuf.ml
 
-$(OBJD)\pool$(CMO) : ..\buffer\pool.ml $(ECAMLC) $(OBJD)\hsys$(CMO)\
-    $(OBJD)\queuee$(CMO) $(OBJD)\refcnt$(CMO) $(OBJD)\trace$(CMO)\
-    $(OBJD)\util$(CMO) $(OBJD)\pool$(CMI) 
+$(OBJD)\pool$(CMO) : ..\buffer\pool.ml $(ECAMLC) $(OBJD)\queuee$(CMO)\
+    $(OBJD)\refcnt$(CMO) $(OBJD)\trace$(CMO) $(OBJD)\util$(CMO)\
+    $(OBJD)\pool$(CMI) 
 	$(ENSCOMP) ..\buffer\pool.ml
 
 $(OBJD)\powermarsh$(CMO) : ..\buffer\powermarsh.ml $(ECAMLC)\
@@ -1356,11 +1373,10 @@ $(OBJD)\subcast$(CMO) : ..\layers\other\subcast.ml $(ECAMLC)\
 	$(ENSCOMP) ..\layers\other\subcast.ml
 
 $(OBJD)\top$(CMO) : ..\layers\other\top.ml $(ECAMLC) $(OBJD)\addr$(CMO)\
-    $(OBJD)\arrayf$(CMO) $(OBJD)\elink$(CMO) $(OBJD)\endpt$(CMO)\
-    $(OBJD)\event$(CMO) $(OBJD)\layer$(CMO) $(OBJD)\lset$(CMO)\
-    $(OBJD)\once$(CMO) $(OBJD)\param$(CMO) $(OBJD)\time$(CMO)\
-    $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO)\
-    $(OBJD)\view$(CMO) 
+    $(OBJD)\arrayf$(CMO) $(OBJD)\elink$(CMO) $(OBJD)\event$(CMO)\
+    $(OBJD)\layer$(CMO) $(OBJD)\lset$(CMO) $(OBJD)\once$(CMO)\
+    $(OBJD)\param$(CMO) $(OBJD)\time$(CMO) $(OBJD)\trace$(CMO)\
+    $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO) $(OBJD)\view$(CMO) 
 	$(ENSCOMP) ..\layers\other\top.ml
 
 $(OBJD)\top_appl$(CMO) : ..\layers\other\top_appl.ml $(ECAMLC)\
@@ -1626,7 +1642,8 @@ $(OBJD)\leave$(CMO) : ..\layers\vsync\leave.ml $(ECAMLC)\
 $(OBJD)\merge$(CMO) : ..\layers\vsync\merge.ml $(ECAMLC) $(OBJD)\addr$(CMO)\
     $(OBJD)\elink$(CMO) $(OBJD)\endpt$(CMO) $(OBJD)\event$(CMO)\
     $(OBJD)\layer$(CMO) $(OBJD)\param$(CMO) $(OBJD)\time$(CMO)\
-    $(OBJD)\trace$(CMO) $(OBJD)\util$(CMO) $(OBJD)\view$(CMO) 
+    $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO)\
+    $(OBJD)\view$(CMO) 
 	$(ENSCOMP) ..\layers\vsync\merge.ml
 
 $(OBJD)\present$(CMO) : ..\layers\vsync\present.ml $(ECAMLC)\
@@ -1708,16 +1725,17 @@ $(OBJD)\encrypt$(CMO) : ..\layers\security\encrypt.ml $(ECAMLC)\
     $(OBJD)\alarm$(CMO) $(OBJD)\buf$(CMO) $(OBJD)\elink$(CMO)\
     $(OBJD)\event$(CMO) $(OBJD)\iovec$(CMO) $(OBJD)\iovecl$(CMO)\
     $(OBJD)\layer$(CMO) $(OBJD)\mbuf$(CMO) $(OBJD)\param$(CMO)\
-    $(OBJD)\shared$(CMO) $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO)\
-    $(OBJD)\util$(CMO) $(OBJD)\view$(CMO) 
+    $(OBJD)\security$(CMO) $(OBJD)\shared$(CMO) $(OBJD)\trace$(CMO)\
+    $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO) $(OBJD)\view$(CMO) 
 	$(ENSCOMP) ..\layers\security\encrypt.ml
 
 $(OBJD)\exchange$(CMO) : ..\layers\security\exchange.ml $(ECAMLC)\
     $(OBJD)\addr$(CMO) $(OBJD)\auth$(CMO) $(OBJD)\buf$(CMO)\
     $(OBJD)\elink$(CMO) $(OBJD)\endpt$(CMO) $(OBJD)\event$(CMO)\
-    $(OBJD)\layer$(CMO) $(OBJD)\param$(CMO) $(OBJD)\security$(CMO)\
-    $(OBJD)\shared$(CMO) $(OBJD)\time$(CMO) $(OBJD)\trace$(CMO)\
-    $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO) $(OBJD)\view$(CMO) 
+    $(OBJD)\layer$(CMO) $(OBJD)\mexchange$(CMO) $(OBJD)\param$(CMO)\
+    $(OBJD)\security$(CMO) $(OBJD)\shared$(CMO) $(OBJD)\time$(CMO)\
+    $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO)\
+    $(OBJD)\view$(CMO) 
 	$(ENSCOMP) ..\layers\security\exchange.ml
 
 $(OBJD)\optrekey$(CMO) : ..\layers\security\optrekey.ml $(ECAMLC)\
@@ -1729,10 +1747,11 @@ $(OBJD)\optrekey$(CMO) : ..\layers\security\optrekey.ml $(ECAMLC)\
 	$(ENSCOMP) ..\layers\security\optrekey.ml
 
 $(OBJD)\perfrekey$(CMO) : ..\layers\security\perfrekey.ml $(ECAMLC)\
-    $(OBJD)\elink$(CMO) $(OBJD)\event$(CMO) $(OBJD)\layer$(CMO)\
-    $(OBJD)\once$(CMO) $(OBJD)\param$(CMO) $(OBJD)\security$(CMO)\
-    $(OBJD)\shared$(CMO) $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO)\
-    $(OBJD)\util$(CMO) $(OBJD)\view$(CMO) 
+    $(OBJD)\alarm$(CMO) $(OBJD)\elink$(CMO) $(OBJD)\event$(CMO)\
+    $(OBJD)\layer$(CMO) $(OBJD)\once$(CMO) $(OBJD)\param$(CMO)\
+    $(OBJD)\security$(CMO) $(OBJD)\shared$(CMO) $(OBJD)\time$(CMO)\
+    $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO)\
+    $(OBJD)\view$(CMO) 
 	$(ENSCOMP) ..\layers\security\perfrekey.ml
 
 $(OBJD)\realkeys$(CMO) : ..\layers\security\realkeys.ml $(ECAMLC)\
@@ -1750,38 +1769,49 @@ $(OBJD)\rekey$(CMO) : ..\layers\security\rekey.ml $(ECAMLC)\
     $(OBJD)\util$(CMO) $(OBJD)\view$(CMO) 
 	$(ENSCOMP) ..\layers\security\rekey.ml
 
+$(OBJD)\rekey_diam$(CMO) : ..\layers\security\rekey_diam.ml $(ECAMLC)\
+    $(OBJD)\alarm$(CMO) $(OBJD)\arrayf$(CMO) $(OBJD)\buf$(CMO)\
+    $(OBJD)\elink$(CMO) $(OBJD)\event$(CMO) $(OBJD)\layer$(CMO)\
+    $(OBJD)\lset$(CMO) $(OBJD)\queuee$(CMO) $(OBJD)\security$(CMO)\
+    $(OBJD)\shared$(CMO) $(OBJD)\time$(CMO) $(OBJD)\trace$(CMO)\
+    $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO) $(OBJD)\view$(CMO) 
+	$(ENSCOMP) ..\layers\security\rekey_diam.ml
+
+$(OBJD)\rekey_dt$(CMO) : ..\layers\security\rekey_dt.ml $(ECAMLC)\
+    $(OBJD)\arrayf$(CMO) $(OBJD)\elink$(CMO) $(OBJD)\event$(CMO)\
+    $(OBJD)\layer$(CMO) $(OBJD)\lset$(CMO) $(OBJD)\mrekey_dt$(CMO)\
+    $(OBJD)\security$(CMO) $(OBJD)\shared$(CMO) $(OBJD)\trace$(CMO)\
+    $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO) $(OBJD)\view$(CMO) 
+	$(ENSCOMP) ..\layers\security\rekey_dt.ml
+
 $(OBJD)\secchan$(CMO) : ..\layers\security\secchan.ml $(ECAMLC)\
-    $(OBJD)\arrayf$(CMO) $(OBJD)\auth$(CMO) $(OBJD)\buf$(CMO)\
-    $(OBJD)\elink$(CMO) $(OBJD)\endpt$(CMO) $(OBJD)\event$(CMO)\
-    $(OBJD)\layer$(CMO) $(OBJD)\msecchan$(CMO) $(OBJD)\param$(CMO)\
-    $(OBJD)\queuee$(CMO) $(OBJD)\security$(CMO) $(OBJD)\shared$(CMO)\
-    $(OBJD)\time$(CMO) $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO)\
+    $(OBJD)\arrayf$(CMO) $(OBJD)\buf$(CMO) $(OBJD)\elink$(CMO)\
+    $(OBJD)\endpt$(CMO) $(OBJD)\event$(CMO) $(OBJD)\layer$(CMO)\
+    $(OBJD)\lset$(CMO) $(OBJD)\param$(CMO) $(OBJD)\security$(CMO)\
+    $(OBJD)\shared$(CMO) $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO)\
     $(OBJD)\util$(CMO) $(OBJD)\view$(CMO) 
 	$(ENSCOMP) ..\layers\security\secchan.ml
 
-$(OBJD)\des$(CMO) : ..\crypto\des.ml $(ECAMLC) $(OBJD)\security$(CMO)\
-    $(OBJD)\shared$(CMO) $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO)\
-    $(OBJD)\util$(CMO) $(OBJD)\des$(CMI) 
-	$(ENSCOMP) ..\crypto\des.ml
-
-$(OBJD)\idea$(CMO) : ..\crypto\idea.ml $(ECAMLC) $(OBJD)\security$(CMO)\
-    $(OBJD)\shared$(CMO) $(OBJD)\trace$(CMO) $(OBJD)\trans$(CMO)\
-    $(OBJD)\util$(CMO) $(OBJD)\idea$(CMI) 
-	$(ENSCOMP) ..\crypto\idea.ml
-
-$(OBJD)\md5$(CMO) : ..\crypto\md5.ml $(ECAMLC) $(OBJD)\shared$(CMO)\
-    $(OBJD)\md5$(CMI) 
-	$(ENSCOMP) ..\crypto\md5.ml
-
-$(OBJD)\rc4$(CMO) : ..\crypto\rc4.ml $(ECAMLC) $(OBJD)\buf$(CMO)\
-    $(OBJD)\security$(CMO) $(OBJD)\shared$(CMO) $(OBJD)\trace$(CMO)\
-    $(OBJD)\util$(CMO) 
-	$(ENSCOMP) ..\crypto\rc4.ml
 
 $(OBJD)\isaac$(CMO) : ..\crypto\isaac\isaac.ml $(ECAMLC) $(OBJD)\buf$(CMO)\
     $(OBJD)\shared$(CMO) 
 	$(ENSCOMP) ..\crypto\isaac\isaac.ml
 
-$(OBJD)\issac$(CMO) : ..\crypto\isaac\issac.ml $(ECAMLC) 
-	$(ENSCOMP) ..\crypto\isaac\issac.ml
+$(OBJD)\des$(CMO) : ..\crypto\OpenSSL\des.ml $(ECAMLC) $(OBJD)\buf$(CMO)\
+    $(OBJD)\security$(CMO) $(OBJD)\shared$(CMO) $(OBJD)\trace$(CMO)\
+    $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO) 
+	$(ENSCOMP) ..\crypto\OpenSSL\des.ml
 
+$(OBJD)\dha$(CMO) : ..\crypto\OpenSSL\dha.ml $(ECAMLC) $(OBJD)\shared$(CMO)\
+    $(OBJD)\trace$(CMO) 
+	$(ENSCOMP) ..\crypto\OpenSSL\dha.ml
+
+$(OBJD)\idea$(CMO) : ..\crypto\OpenSSL\idea.ml $(ECAMLC) $(OBJD)\buf$(CMO)\
+    $(OBJD)\security$(CMO) $(OBJD)\shared$(CMO) $(OBJD)\trace$(CMO)\
+    $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO) 
+	$(ENSCOMP) ..\crypto\OpenSSL\idea.ml
+
+$(OBJD)\rc4$(CMO) : ..\crypto\OpenSSL\rc4.ml $(ECAMLC) $(OBJD)\buf$(CMO)\
+    $(OBJD)\security$(CMO) $(OBJD)\shared$(CMO) $(OBJD)\trace$(CMO)\
+    $(OBJD)\trans$(CMO) $(OBJD)\util$(CMO) 
+	$(ENSCOMP) ..\crypto\OpenSSL\rc4.ml

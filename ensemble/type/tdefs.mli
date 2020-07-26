@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -21,21 +21,21 @@ module type RealKeyType = sig
   type set 
 
   val empty : set 
-  val create : Key.t -> Security.key -> t
+  val create : Key.t -> Security.cipher option -> t
   val tag : t -> Key.t
-  val real : t -> Security.key 
+  val real : t -> Security.cipher option
   val string_of_t : t -> string
-  val add : set -> Key.t -> Security.key -> unit
+  val add : set -> Key.t -> Security.cipher option -> unit
   val decrypt : Shared.Cipher.t -> set -> ((Key.t * Buf.t) list * Key.t) list -> unit
-  val assoc : Key.t -> set -> Security.key
+  val assoc : Key.t -> set -> Security.cipher option
   val translate : set -> (Key.t * Key.t) list -> set
   val purge  : Tree.z -> set -> int -> set 
   val inflate : Tree.z -> set -> int -> set
   val check_all : set -> bool
-  val pairs_of : set -> (Key.t * Security.key) list
-  val from_pair : (Key.t * Security.key) -> t
+  val pairs_of : set -> (Key.t * Security.cipher option) list
+  val from_pair : Key.t * Security.cipher option -> t
   val from_list : t list -> set
-  val hd        : set -> Key.t * Security.key
+  val hd        : set -> Key.t * Security.cipher option
   val tl        : set -> set
 end
 

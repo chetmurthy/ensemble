@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -39,6 +39,7 @@ val is_zero     : t -> bool
 val is_invalid  : t -> bool
 val ge          : t -> t -> bool
 val gt          : t -> t -> bool
+val cmp         : t -> t -> int
 
 module Ord : (Trans.OrderedType with type t = t)
 

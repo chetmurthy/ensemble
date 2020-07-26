@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -25,6 +25,7 @@ open Hot_util
 (**************************************************************)
 let name = Trace.file "HOT_INBOARD"
 let failwith s = Trace.make_failwith name s
+let log = Trace.log name
 (**************************************************************)
 (* External C functions.
  *)
@@ -75,6 +76,7 @@ let interface mbuf id heartbeat_rate =
     let cvs = c_view_state vf in
     cback_install_view id cvs ;
 
+    log (fun () -> "after cback_install_view");
     let receive o blk cs =
       let origin = Endpt.string_of_id (Arrayf.get vs.view o) in
       let upcall = 
@@ -92,7 +94,10 @@ let interface mbuf id heartbeat_rate =
       	Iovec.free name iov ;
       	[||]
     in
-    let heartbeat time = cback_heartbeat id (milli_of_time time) ; [||] in
+    let heartbeat time = 
+      cback_heartbeat id (milli_of_time time) ; 
+      log (fun () -> "after cback_heartbeat");
+      [||] in
     let disable = ident in
     let block () = cback_block id ; [||] in
     [||],{
@@ -129,12 +134,14 @@ let rec dispatch_dncalls mbuf ctxt () =
      *)
     match dncall with
     | Hot_appl.C_Join jops -> 
+	log (fun () -> "C_Join");
 	let vf = init_view_state jops in
 	let heartbeat_rate = Time.of_float (float jops.jops_hrtbt_rate /. 1000.0) in
 	join mbuf ctxt gctx vf heartbeat_rate (dispatch_dncalls mbuf ctxt)
     | _ ->
         (* Add request to the list of pending dncalls for the given gctx.
          *)
+	log (fun () -> "Hot_appl.get");
  	(Hot_appl.get ctxt gctx) dncall 
   ) dn_arr ;
   
@@ -162,6 +169,7 @@ let poll ctxt alarm =
 
       (* Check for application downcalls.
        *)
+      log (fun () -> "dispatch_dncalls");
       let got_dncalls = dispatch_dncalls mbuf ctxt () in
 
       (* Schedule some events in the layers.
@@ -170,6 +178,7 @@ let poll ctxt alarm =
 
       (* Check for timers.
        *)
+      log (fun () -> "check_timeouts");
       let got_alarms = check_timeouts () in
 
 (*

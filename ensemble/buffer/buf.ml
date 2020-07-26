@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -158,7 +158,11 @@ let read_net_int s ofs =
   (Char.code s.[ofs + 2] lsl  8) +
   (Char.code s.[ofs + 3]       ) 
 
-let read_net_len = read_net_int
+let read_net_len s ofs =
+  let ret = read_net_int s ofs in
+  assert (is_len ret) ;
+  ret
+
 let write_net_len = write_net_int
 
 let int_of_substring = read_net_int

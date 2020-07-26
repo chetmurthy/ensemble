@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -322,24 +322,6 @@ let log_attach alarm host =
 *)
 (**************************************************************)
 
-let seedval s = 
-  let s = Digest.string s in
-  let len = String.length s in
-  let seed = Array.create len 0 in
-  for i = 0 to pred len do
-    seed.(i) <- Char.code s.[i]
-  done ;
-  Random.full_init seed
-
-(* Seed the random number generator with the current time.
- *)
-let seed () = 
-  let time = Time.gettimeofday () in
-  let time = Time.to_string_full time in
-  seedval time
-
-(**************************************************************)
-
 let timestamps = ref []
 
 let timestamp_use n = timestamps := n :: !timestamps
@@ -426,6 +408,17 @@ let gc_compact pct =
 
 (**************************************************************)
 
+let seedval s = 
+  let s = Digest.string s in
+  let len = String.length s in
+  let seed = Array.create len 0 in
+  for i = 0 to pred len do
+    seed.(i) <- Char.code s.[i]
+  done ;
+  Random.full_init seed
+
+(**************************************************************)
+
 let args () = 
   (* We "zero" the args after the first use to eliminate
    * clutter in the major heap.
@@ -454,7 +447,7 @@ let args () =
     "-remove_prop",     Arg.String(remove_properties), ": remove protocol properties" ;
     "-scale",           Arg.Unit add_scale, ": add scalable property" ;
     "-secure",		Arg.Unit Route.set_secure, ": prevent insecure communication" ;
-    "-seed",		Arg.Unit(seed), ": seed the random number generator" ;
+    "-seed",		Arg.Unit(Random.self_init), ": seed the random number generator" ;
     "-seedval",		Arg.String(seedval), ": seed the random number generator" ;
     "-test",		Arg.String(Trace.test_exec), ": run named test (-print_config lists available tests)" ;
     "-thread",          Arg.Unit(set_thread), ": use threaded layers" ;
@@ -468,7 +461,7 @@ let args () =
     "-gc_compact",      Arg.Int gc_compact, ": set the compaction rate for Ocaml"
   |] in
   let args = (Array.to_list addtl_args) @ param_args in
-  let args = Sort.list (fun (a,_,_) (b,_,_) -> a < b) args in
+  let args = List.sort (fun (a,_,_) (b,_,_) -> compare a b) args in
   args
 
 (**************************************************************)
@@ -558,7 +551,7 @@ let parse app_args badarg doc =
     eprintf "ARGE:parse:%s set\n" no_command_line_args
   with Not_found ->
     let args = app_args @ (args ()) in
-    let args = Sort.list (fun (a,_,_) (b,_,_) -> a < b) args in
+    let args = List.sort (fun (a,_,_) (b,_,_) -> compare a b) args in
     parse (app_args @ args) badarg doc (!filter Sys.argv) ;
 
     begin

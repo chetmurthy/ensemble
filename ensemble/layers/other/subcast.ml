@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -40,7 +40,7 @@ let hdlrs () (ls,vs) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out=d
   | _, NoHdr -> up ev abv
   | _, _     -> failwith bad_up_event
 
-  and uplm_hdlr ev hdr = failwith "bad uplm event"
+  and uplm_hdlr ev hdr = failwith unknown_local
   and upnm_hdlr = upnm
 
   and dn_hdlr ev abv = match getType ev with

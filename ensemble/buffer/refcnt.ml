@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -138,14 +138,14 @@ let weak o =
   let my_cur = !cur in
   incr idx ;
   Weak.set my_cur my_idx (Some o) ;
-  fun () -> Hsys.weak_check my_cur my_idx
+  fun () -> Weak.check my_cur my_idx
 
 (* Major returns true if a major GC has occured.
  *)
 let major =
   let weak = Weak.create 1 in
   fun () ->
-    if Hsys.weak_check weak 0 then
+    if Weak.check weak 0 then
       false
     else (
       Weak.set weak 0 (Some(ref 0)) ;

@@ -1,6 +1,6 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -72,6 +72,8 @@ typedef struct {
 
 #define HOT_ENS_MAX_PROTO_NAME_LENGTH 256
 #define HOT_ENS_MAX_PARAMS_LENGTH 256
+#define HOT_ENS_MAX_PRINCIPAL_NAME_LENGTH 64
+#define HOT_ENS_MAX_KEY_LEGNTH     40
 #define HOT_ENS_MAX_PROPERTIES_LENGTH 256
 #define HOT_ENS_MAX_VERSION_LENGTH 128
 #define HOT_ENS_MAX_GROUP_NAME_LENGTH 128
@@ -100,6 +102,7 @@ typedef struct {
   hot_bool_t xfer_view ;
   hot_bool_t primary ;
   hot_bool_t *clients;
+  char key[HOT_ENS_MAX_KEY_LEGNTH];
 } hot_view_state_t ;
 
 /*##########################################################################*/
@@ -187,6 +190,12 @@ typedef struct {
      * information.
      */
     hot_endpt_t endpt ;
+
+    /* [OR] Security options. 
+     */
+    char princ[HOT_ENS_MAX_PRINCIPAL_NAME_LENGTH]; /* Principal name */
+    char key[HOT_ENS_MAX_KEY_LEGNTH];             /* key length */
+    hot_bool_t secure;                      /* Secure group. */
 } hot_ens_JoinOps_t;
 
 /* Messages can be sent in the current view, in the next view, etc.  */
@@ -254,6 +263,13 @@ hot_err_t hot_ens_Suspect(
 	int nsuspects
 ) ;
 
+
+/* Inform Ensemble that the state-transfer is complete. 
+ */
+hot_err_t hot_ens_XferDone(
+        hot_gctx_t gctx
+) ;
+
 /* Request a protocol change.
  */
 hot_err_t hot_ens_ChangeProtocol(
@@ -274,7 +290,13 @@ hot_err_t hot_ens_RequestNewView(
         hot_gctx_t gctx
 ) ;
 
-hot_err_t hot_ens_MLPrintOverride(
+/* Request a rekey operation. 
+ */
+hot_err_t hot_ens_Rekey(
+        hot_gctx_t gctx
+) ;
+
+  hot_err_t hot_ens_MLPrintOverride(
 	void (*handler)(char *msg)
 ) ;
 

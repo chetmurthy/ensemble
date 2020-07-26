@@ -1,6 +1,6 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -198,7 +198,6 @@ value skt_wait_process(value skt){
   struct event ev ;
   int status ;
   value result ;
-  /*  value tmp_v ;*/
   CAMLparam0() ;
   CAMLlocal1(tmp_v) ;
   

@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -90,7 +90,6 @@ val fprintf_override    : (out_channel -> string -> unit) -> unit
 val sequence		: int -> int array
 val index               : 'a -> 'a list -> int
 val except              : 'a -> 'a list -> 'a list
-val list_assoc_mem      : 'a -> ('a * 'b) list -> bool
 val array_is_empty	: 'a array -> bool
 val array_filter	: ('a -> bool) -> 'a array -> 'a array
 val array_index 	: 'a -> 'a array -> int
@@ -107,7 +106,6 @@ val matrix_incr 	: int array array -> int -> int -> unit
 val do_once		: (unit -> 'a) -> (unit -> 'a)
 val hashtbl_size	: ('a,'b) Hashtbl.t -> int
 val hashtbl_to_list     : ('a,'b) Hashtbl.t -> ('a * 'b) list
-val hashtbl_clean       : ('a,'b) Hashtbl.t -> unit
 val string_check        : debug -> string -> int(*ofs*) -> int(*len*) -> unit
 val deepcopy            : 'a -> 'a
 

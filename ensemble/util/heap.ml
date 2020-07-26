@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -150,7 +150,7 @@ let do_strings heap =
       l := (info,code) :: !l
     )		  
   ) strings ;
-  let strings = Sort.list (>) !l in
+  let strings = List.sort compare !l in
   List.iter (fun (info,string) ->
     eprintf "String:nitems=%d nwords=%d:'%s'\n"
       info.nitems info.nwords (String.escaped string) ;
@@ -184,7 +184,7 @@ let do_closures heap =
       l := (info,code) :: !l
     )		  
   ) closures ;
-  let closures = Sort.list (>) !l in
+  let closures = List.sort compare !l in
   List.iter (fun (info,code) ->
     eprintf "%s:nitems=%d nwords=%d\n"
       (string_of_code code) info.nitems info.nwords ;
@@ -198,7 +198,7 @@ let do_biggies heap =
       biggies := ((succ size),obj) :: !biggies
   ) heap ;
 
-  let biggies = Sort.list (fun (a,_) (b,_) -> a > b) !biggies in
+  let biggies = List.sort (fun (a,_) (b,_) -> compare a b) !biggies in
   List.iter (fun (size,obj) ->
     let tag = Obj.tag obj in
     eprintf "%3d:%s:nwords=%d\n"
@@ -277,7 +277,7 @@ let _ =
       let al = Array.sub a 0 2 in
       let ar = Array.sub a 2 (Array.length a - 2) in
       let ar = Arraye.of_array ar in
-      Arraye.sort (>=) ar ;
+      Arraye.sort compare ar ;
       let ar = Arraye.to_array ar in
       let a = Array.append al ar in
       (*if (a <> b) then failwith sanity ;*)
@@ -289,7 +289,7 @@ let _ =
     let cframes = Array.map fst (Array.of_list (hashtbl_to_list t)) in
     let csize = Array.fold_left (fun i a -> i + frame_desc_size a) 0 cframes in
     let cframes = Arraye.of_array cframes in
-    Arraye.sort (>=) cframes ;
+    Arraye.sort compare cframes ;
     Arraye.iteri (fun i a -> printf "%08x %s\n" i (string_of_int_array a)) cframes ;
     printf "ndescr(compr)=%d\n" (hashtbl_size t) ;
     printf "size(compr)=%d\n"  (csize + Array.length frames * 8 - Arraye.length cframes * 4)

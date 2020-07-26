@@ -1,108 +1,35 @@
 
-     RELEASE_NOTES for Ensemble version 0.70p1 
+     RELEASE_NOTES for Ensemble version 1.00
 
-   **** Version 0.70, Special Patch Release 1 ****
+   **** Final Cornell University Supported Release ****
 
 Author: Tim Clark
-Last updated: 5/02/2000
+Last updated: 8/16/2000
 
-PATCH RELEASE NOTICE
+FINAL RELEASE NOTICE
 
-This release, 0.70p1, is a special patch release, which fixes
-several problems:
-
-1) Ensemble version 0.70 did not compile with the latest compiler
-   release from Ocaml, ocaml-3.00.  This patch release fixes this
-   problem, and is also backward compatible with the ocaml-2.04
-   compiler.
-
-2) A bug was discovered in the ensemble/util/lset.ml code which
-   broke the "groupd" application.  This has been fixed.
-
-3) The version number for Ensemble 0.70 was inadvertently left
-   as 0.61.  This version contains the version number 0.70p1.
-
-4) A bug in the Maestro "group" application was discovered which
-   caused a segmentation fault when starting two applications as
-   servers (with the "-s" parameter).  This has been fixed.
-
-The rest of the release notes correspond to the release notes for
-the Ensemble 0.70 release.
-
-
-CONTENTS UPDATE
-
-This distribution of Ensemble contains only the Ensemble "core"
-toolkit code.  This includes all the protocols and the HOT C,
-Maestro C++, and EJava interfaces.  The contributed add-on code, 
-such as an ADA interface, rvr_threads, and the Dynamic Virtually
-Private Network code will be available separately by request.
-
-
-INTERFACE CHANGES
-
-In Ensemble version 0.70, some interface changes were made within the 
-Ocaml (ML) code and the "C" code in relation to the HOT "C" interface.
-The changes made may prevent HOT "C", Maestro, and EJava applications 
-linked with pre-version-0.70 libraries from interoperating with version
-0.70 applications.  These changes were necessary in order to allow HOT
-"C" and EJava applications to interoperate.  To use the new versions, 
-just recompile and relink with the new libraries.  Also the Hot "outboard" 
-mode includes the "outboard" executable, which acts as a server for 
-outboard-enable application processes (including all EJava apps).  Be 
-sure to switch to using the 0.70 version of outboard.  
+This release, 1.00, is the final release from Cornell University.
+We believe Ensemble has become stable and robust enough that it 
+no longer needs full-time support.  As a result, Cornell will no
+longer provide support for Ensemble.  Support will, however, be
+continued via the Ensemble developers' listsrv, HORUS-L@cornell.edu.
 
 
 OCAML COMPILER VERSION
 
-This distribution of Ensemble can be compiled with EITHER the Ocaml 2.04
-compiler or the Ocaml 3.00 compiler.  See INSTALL.htm for instructions on 
-downloading this version of Ocaml.
+This distribution of Ensemble should be compiled with the Ocaml 3.00 
+compiler.  See INSTALL.htm for instructions on downloading this version 
+of Ocaml.
 
 
 ADDED FUNCTIONALITY
 
 * Updated security features have been added to this release.  The
   security protocols are documented in the ensemble/doc/ref.ps file.
-  A distributed version of the WGL protocol was added, the rekey
-  protocol was optimized, some bugs in the PGP code were fixed, the
-  code now allows an interface to PGP versions 2.6.3 or 5.0, and some 
-  new security tests were added.
+  Support for security has been added to the HOT and Ejava interfaces.
+  With this release, we believe the security work is complete.
 
-* Added interoperability between EJava and Hot "C"/Maestro programs.
-  Ejava, by default, sends class HotObjectMessage objects to other 
-  EJava apps, which allows for the serialization of EJava objects.  
-  Hot "C" does not understand HotObjectMessages, so a new interface 
-  was added to EJava, receiveCastByteStream(), and handleCastByteStream(), 
-  which send simple byte streams and allow interoperability with HOT "C"
-  programs.  When mixing EJava and HOT "C"/Maestro applications in a 
-  group, the EJava programs need to use this new interface.
-
-
-BUG FIXES
-
-* A bug related to multi-mode transports was fixed.
-
-* Refcount problem in ensemble/route/signed.ml has been fixed.
-
-* The Time module was updated so that Ensemble continues to work 
-  properly until the year 2300 (it was due to rollover at 2004).
-
-* Modifications were made so that Ensemble can bind to a specific 
-  port (instead of the kernel-assigned port), and to allow dynamic 
-  updates to the gossip hosts (fixed a partition merge problem on 
-  linux).
-
-* Bug in demo/ensemble was fixed, relating to reading long input 
-  lines from stdin.
-
-* Some miscellaneous code cleanup was done and numerous small bugs, 
-  were fixed.
-
-* Added EJava documentation (the API linke in ensemble/ejava/readme.html 
-  now correctly points to ensemble/ejava/docs/ html documentation)
-
-* Much of the documentation was updated.
+* The security documentation has been updated.
 
 
 KNOWN PROBLEMS/BUGS
@@ -133,20 +60,5 @@ NT:
   be available in the near future.  If this is a problem for your 
   application, and you would like more information, please contact 
   Tim Clark at (tclark@cs.cornell.edu).
-
-
-CONTRIBUTED CODE AVAILABLE SEPARATELY
-
-Available separately by request:
-
-Mark Swick of Computer Sciences Corporation (mswick@kgo.csc.com)
-has contributed Ada95 bindings for GNAT on Solaris and Irix 
-along with an Ada version of the hot_test program.  
-
-David the Programmer <davidws@csmctmto.interpoint.net> has built
-a Python/Ensemble interface.  His alpha version code is available
-at the following URL (both source code and a Linux binary version):
-
-http://www.didx.com/python-ensemble.html
 
 

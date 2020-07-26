@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -286,6 +286,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       assert (ls.rank=0);
       init_rekey ()
 	
+  (* Rekey completed, commit the new tree.
+   *)
+  | ERekeyCommit -> ()
+
   (* Cleanup the layer. pass up to REALKEYS.
    *)
   | ERekeyCleanup -> 

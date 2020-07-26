@@ -1,6 +1,6 @@
 //**************************************************************
 //*
-//*  Ensemble, (Version 0.70p1)
+//*  Ensemble, (Version 1.00)
 //*  Copyright 2000 Cornell University
 //*  All rights reserved.
 //*
@@ -23,6 +23,10 @@ public class Hot_JoinOps {
     public String[] argv;
     public boolean debug;
     public boolean client;
+    public String princ;
+    public String key;
+    public boolean secure;
+
     public String outboard;
 
     public Hot_JoinOps() {
@@ -37,6 +41,9 @@ public class Hot_JoinOps {
 	argv = null;
 	env = null;
 	client = false;
+	princ = "";
+	key = "";
+	secure = false;
     }
 
 // End class Hot_JoinOps

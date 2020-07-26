@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -293,7 +293,28 @@ let filter f a =
   )
 
 (**************************************************************)
+(*
+let ordered ge a =
+  let len = length a in
+  let ret = ref true in
+  for i = 1 to pred len do
+    if not (ge (get a i) (get a (pred i))) then (
+      ret := false
+    )
+  done ;
+  !ret
+*)
+let ordered cmp a =
+  let len = length a in
+  let ret = ref true in
+  for i = 1 to pred len do
+    if cmp (get a (pred i)) (get a i) > 0  then (
+      ret := false
+    )
+  done ;
+  !ret
 
+(*
 let array_rev_inplace a =
   let l = length a in
   for i = 0 to pred (l / 2) do
@@ -305,17 +326,6 @@ let array_rev_inplace a =
     set a j ai
   done
 
-let ordered ge a =
-  let len = length a in
-  let ret = ref true in
-  for i = 1 to pred len do
-    if not (ge (get a i) (get a (pred i))) then (
-      ret := false
-    )
-  done ;
-  !ret
-
-(*
 let array_rev a =
   let a = copy a in
   array_rev_inplace a
@@ -354,7 +364,6 @@ let sort ge a =
     let b = array_rev b in
     blit b 0 a 0 len
   )
-*)
 
 (* Use the Ocaml sort routine.  Note that it
  * wants an "less than or equal" comparison
@@ -364,6 +373,10 @@ let sort ge a =
   Sort.array ge a ;
   array_rev_inplace a ;
   assert (ordered ge a)
+*)
+let sort cmp a =
+  Array.sort cmp a ;
+  assert (ordered cmp a)
 
 (**************************************************************)
 

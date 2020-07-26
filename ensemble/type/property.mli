@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -34,6 +34,7 @@ type id =
   | Privacy				(* encryption of application data *)
   | Rekey				(* support for rekeying the group *)
   | OptRekey				(* optimized rekeying protocol *)
+  | DiamRekey                           (* Diamond rekey algorithm *)
   | Primary				(* primary partition detection *)
   | Local				(* local delivery of messages *)
   | Slander				(* members share failure suspiciions *)

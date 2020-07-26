@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -152,21 +152,20 @@ let print () =
       last_msg := msg ;
       last_word := word ;
     done ;
-    let targ = Queuee.to_list targ in
-    let targ = Sort.list (>) targ in
+    let targ = Queuee.to_array targ in
+    Array.sort compare targ;
     let median = 
       try 
-	List.nth targ (List.length targ / 2)
+	targ.(Array.length targ / 2)
       with _ -> (-1.0)
     in
     let minimum = 
       try 
-	List.nth targ (List.length targ - 1)
+	targ.(0)
       with _ -> (-1.0)
     in
     
     begin
-      let targ = Array.of_list targ in
       let tenths = sample 10 targ in
       let tenths = Array.map (fun f -> f *. 1000000.0) tenths in
       let tenths = string_of_array (sprintf "%0.1f") tenths in

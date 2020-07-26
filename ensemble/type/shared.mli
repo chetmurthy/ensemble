@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -18,9 +18,12 @@ module Cipher : sig
   type src = Buf.t
   type dst = Buf.t
 
-  type context =
-    | Encrypt of Buf.t
-    | Decrypt of Buf.t
+  type ctx = string
+  type iv  = string
+
+  type context = 
+    | Encrypt of ctx * iv
+    | Decrypt of ctx * iv
 
   (* The type of a shared key manager.
    *)
@@ -36,29 +39,37 @@ module Cipher : sig
 
   (* Create a new context from the key.
    *)
-  val init : t -> Security.key -> bool -> context
+  val init : t -> Security.cipher -> bool -> context
 
   (* Encrypt/decrypt 
    *)
-  val encrypt : t -> context -> Buf.t -> Buf.ofs -> Buf.len -> Buf.t 
+  val encrypt : t -> context -> src -> Buf.ofs -> Buf.len -> dst
 
   (* Encrypt/decrypt inplace 
    *)
-  val encrypt_inplace : t -> context -> Buf.t -> Buf.ofs -> Buf.len -> unit
-(*
-  val final : t -> context -> unit
-*)
+  val encrypt_inplace : t -> context -> src -> Buf.ofs -> Buf.len -> unit
 
-  val single_use : t -> Security.key -> bool -> Buf.t -> Buf.t
+  val single_use : t -> Security.cipher -> bool -> src -> dst
+
+
+  (* Encrypt and decrypt a Security.key
+   *)
+  val encrypt_key : t -> Security.cipher -> Security.key -> Security.key
+  val decrypt_key : t -> Security.cipher -> Security.key -> Security.key
+
 
   (* Install a new encryption mechanism.
    *)
   val install : 
     string ->  (* NAME *)
-    (Security.key -> bool -> context) ->	(* init *)
-    (context -> Buf.t -> ofs -> len -> Buf.t) -> (* encrypt *)
-    (context -> Buf.t -> ofs -> len -> unit) -> (* encrypt_inplace *)
-    unit
+    (Security.cipher -> bool) -> (* key_ok *) 
+    (Security.cipher -> bool -> context) -> (* init *)
+    (context -> Buf.t -> ofs -> Buf.t -> ofs -> len -> unit) (* update *) -> unit
+
+  (* [check_sanity name snt_loops perf_loops] Check that an algorithm 
+   * actually works. Also measure its performance. 
+   *)
+  val sanity_check : string -> int -> int -> unit
 end 
 
 (**************************************************************)
@@ -108,8 +119,8 @@ module Sign : sig
   (* Sign a portion of a buffer with a key. The hack version takes
    * a preallocated string.
    *)
-  val sign : t -> Security.key -> Buf.t -> Buf.ofs -> Buf.len -> Buf.t
-  val sign_hack : t -> Security.key -> Buf.t -> Buf.ofs -> Buf.len -> Buf.t -> 
+  val sign : t -> Security.mac -> Buf.t -> Buf.ofs -> Buf.len -> Buf.t
+  val sign_hack : t -> Security.mac -> Buf.t -> Buf.ofs -> Buf.len -> Buf.t -> 
     Buf.ofs -> unit
 end	    
 	    
@@ -119,6 +130,7 @@ module Prng : sig
   type t
     
   type context
+  type full_context
     
   val namea : t -> string 
   val init : t -> Buf.t -> context
@@ -131,10 +143,114 @@ module Prng : sig
     (context -> Buf.t) -> (* rand *)
       unit
 	    
-  (* Create a new pseudo-random key
+  (* Create a fresh security key/mac/cipher. 
    *)
-  val create : unit -> Security.key 
-      
+  val create_key : unit -> Security.key 
+  val create_mac : unit -> Security.mac
+  val create_cipher : unit -> Security.cipher
+  val create_buf : Buf.len -> Buf.t
+
 end    
   
 (**************************************************************)
+module DH : sig
+  type t 
+
+  (* The type of a long integer (arbitrary length). It is implemented
+   * efficiently * by the OpenSSL library.
+   *)
+  type bignum
+    
+  (* A key contains four bignums: p,g,x,y. Where p is the modulo, g is
+   * a generator for the group of integers modulo p, x is the private key, 
+   * and y is the public key. y = p^x mod p.
+   *)
+  type key
+    
+  (* Find the signature algorithm. 
+   *)
+  val lookup : string (* NAME *) -> t
+
+  (* print the parameters of a key.
+   *)
+  val show_params : t -> key -> unit
+      
+  (* get a key of a specific length from the standard file list.
+   *)
+  val fromFile : t -> int -> key 
+
+  val namea : t -> string 
+
+  val init : t -> unit -> unit 
+      
+  (* generate p and g.
+   *)
+  val generate_parameters : t -> int -> key
+      
+  (* Create a new key with the same p and g.
+   *)
+  val copy_params : t -> key -> key
+      
+  (* create new x and y, where the p and g already exist.
+   *)
+  val generate_key : t -> key -> unit
+      
+  val get_p : t -> key -> bignum
+      
+  val get_g : t -> key -> bignum 
+      
+  val get_pub : t -> key -> bignum 
+      
+  val get_prv : t -> key -> bignum 
+      
+  (* Convert a string into a DH key.
+   *)
+  val key_of_string : t -> string -> key
+      
+      
+  (* Convert a DH key into a key.
+   *)
+  val string_of_key : t -> key -> string
+      
+      
+  val string_of_bignum : t -> bignum -> string
+      
+  val bignum_of_string : t -> string -> bignum
+      
+  (* [compute_key Key(x) g^z] returns g^(zx) mod p 
+   *)
+  val compute_key : t -> key -> bignum -> string
+
+
+  (* Install a DH mechanism
+   *)
+  val install : 
+    string -> 
+    ( unit -> unit ) ->       (* init *)
+    ( int -> key ) ->       (* generate_parameters *)
+    ( key -> key ) ->       (* copy_params *)
+    ( key -> unit ) ->      (* generate_key *)
+    ( key -> bignum ) ->    (* get_p *)
+    ( key -> bignum ) ->    (* get_g *)
+    ( key -> bignum ) ->    (* get_pub *)
+    ( key -> bignum ) ->    (* get_prv *)
+    ( string -> key ) ->    (* key_of_string *)
+    ( key -> string ) ->    (* string_of_key *)
+    ( bignum -> string ) -> (* string_of_bignum *)
+    ( string -> bignum ) -> (* bignum_of_string *)
+    ( key -> bignum -> string ) -> (* compute_key *)
+      unit
+
+  (* [check_sanity name snt_loops perf_loops] Check that an algorithm 
+   * actually works. Also measure its performance. 
+   *)
+  val sanity_check : string -> int -> int -> unit
+
+  (* [generate_key t len] Generate new key parameters of size [len]
+   *)
+  val generate_new_parameters : t -> int -> unit
+end
+  
+(**************************************************************)
+  
+  

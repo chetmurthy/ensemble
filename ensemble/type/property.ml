@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -39,6 +39,7 @@ type id =
   | Privacy		        	(* encryption of application data *)
   | Rekey				(* support for rekeying the group *)
   | OptRekey				(* optimized rekeying protocol *)
+  | DiamRekey                           (* Diamond rekey algorithm *)
   | Primary			        (* primary partition detection *)
   | Local				(* local delivery of messages *)
   | Slander			        (* members share failure suspiciions *)
@@ -81,6 +82,7 @@ let mapping = [|
   "PRIVACY", Privacy ;
   "REKEY", Rekey ;
   "OPTREKEY", OptRekey ;
+  "DIAMREKEY", DiamRekey ;
   "PRIMARY", Primary ;
   "LOCAL", Local ;
   "SLANDER", Slander ;
@@ -122,6 +124,7 @@ type r = {
     mutable privacy : bool ;
     mutable rekey : bool ;
     mutable optrekey : bool ;
+    mutable diamrekey : bool ;
     mutable primary : bool ;
     mutable local : bool ;
     mutable slander : bool ;
@@ -160,6 +163,7 @@ let flatten props =
     privacy = false ;
     rekey = false ;
     optrekey = false ;
+    diamrekey = false ;
     primary = false ;
     local = false ;
     slander = false ;
@@ -194,6 +198,7 @@ let flatten props =
   | Privacy     -> r.privacy <- true
   | Rekey       -> r.rekey <- true
   | OptRekey    -> r.optrekey <- true
+  | DiamRekey   -> r.diamrekey <- true
   | Primary     -> r.primary <- true
   | Local       -> r.local <- true
   | Slander     -> r.slander <- true
@@ -257,8 +262,9 @@ let choose props =
 	 * Exchange must be above GMP 
 	 *)
 	(if p.rekey && p.debug then ["Chk_secchan:Chk_rekey"] else []) :: 
-	(if p.rekey then ["Rekey:PerfRekey:Secchan"] else []) :: 
+	(if p.rekey then ["Rekey_dt:PerfRekey:Secchan"] else []) :: 
 	(if p.optrekey then ["RealKeys:OptRekey:PerfRekey:Secchan"] else []) ::
+	(if p.diamrekey then ["Rekey_diam:PerfRekey:Secchan"] else []) ::
 	(if p.auth then ["Exchange"] else []) :: 
 
 	(if p.gmp then ["Leave:Inter:Intra:Elect:Merge"] else []) ::

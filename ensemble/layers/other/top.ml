@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -47,7 +47,7 @@ type states =
   | NextView
 
 type state = {
-  policy                : (Endpt.id * Addr.set -> bool) option ; (* Authorization policy *)
+  policy                : (Addr.set -> bool) option ; (* Authorization policy *)
   sweep			: Time.t ;	(* gossip sweep interval (if any) *)
   gossip                : bool ;	(* initiate EGossipExt events? *)
   account               : bool ;	(* initiate EAccount events? *)
@@ -157,25 +157,6 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let up_hdlr ev abv hdr = failwith "up_hdlr"
 
   and uplm_hdlr ev hdr = match getType ev with
-
-  | EMergeRequest ->
-      if s.state <> NextView then (
-	let mergers = getMergers ev in
-	let mview = Lset.inject mergers.view in
-	let check_disjoint = 
-	  List.for_all (fun vs ->
-	    let view = Lset.inject vs.view in
-	    Lset.disjointa view mview
-	  ) s.mergers
-	in
-	if not check_disjoint then
-	  failwith "repeating mergers" ;
-	s.mergers <- mergers :: s.mergers ;
-	log (fun () -> Event.to_string ev) ;
-	do_block () 
-      ) ;
-      free name ev
-
   | _ -> failwith unknown_local
 
   and upnm_hdlr ev = (match getType ev with
@@ -201,6 +182,24 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       log (fun () -> Event.to_string ev) ;
       s.failed   <- Arrayf.map2 (||) s.failed (getFailures ev) ;
       s.suspects <- Arrayf.map2 (||) s.suspects s.failed ;
+
+  | EMergeRequest ->
+      if s.state <> NextView then (
+	let mergers = getViewState ev in
+	let mview = Lset.inject mergers.view in
+	let check_disjoint = 
+	  List.for_all (fun vs ->
+	    let view = Lset.inject vs.view in
+	    Lset.disjointa view mview
+	  ) s.mergers
+	in
+	if not check_disjoint then
+	  failwith "repeating mergers" ;
+	s.mergers <- mergers :: s.mergers ;
+	log (fun () -> Event.to_string ev) ;
+	do_block () 
+      ) ;
+      free name ev
 
   | EMergeFailed | EMergeDenied ->
       (* Should do this only if it was the coordinator,
@@ -241,9 +240,9 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	    match view_id, (Arrayf.to_ranks s.failed), s.mergers with
 	    | Some(view_id), [], [] ->
 		log (fun () -> sprintf "sending MergeRequest") ;
-	      	dnlm (create name EMergeRequest[
+	      	dnnm (create name EMergeRequest[
 		  Contact(contact,Some view_id)
-		]) NoHdr ;
+		]) ;
 	      	s.state <- Merging
 	    | _ -> raise (Failure "escape out")
 	  with _ ->
@@ -316,7 +315,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
        * Return true if this is the case --- we remove them.
        *)
       let suspicions =
-	Arrayf.map2 (fun e addr -> not (check_policy s (e,addr))) 
+	Arrayf.map2 (fun e addr -> not (check_policy s addr)) 
 	  vs.view vs.address
       in
       if Arrayf.exists (fun i x -> x) suspicions then (

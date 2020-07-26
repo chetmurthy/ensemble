@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -161,7 +161,7 @@ let security_check router =
  * merged into a single entry in the return value.  
  *)
 
-let group_cmp i j = fst i >= fst j
+let group_cmp i j = compare (fst i) (fst j)
 
 let group a =
   let len = Arrayf.length a in
@@ -270,10 +270,10 @@ let _ = Trace.test_declare "group" (fun () ->
     let b = group_simple a in
     let c = group a in
 
-    let a = Arrayf.sort (>=) a in
-    let b = Arrayf.map (fun (i,a) -> (i,(Arrayf.sort (>=) a))) b in
-    let c = Arrayf.map (fun (i,a) -> (i,(Arrayf.sort (>=) a))) c in
-    let d = Arrayf.sort (>=) (expand c) in
+    let a = Arrayf.sort compare a in
+    let b = Arrayf.map (fun (i,a) -> (i,(Arrayf.sort compare a))) b in
+    let c = Arrayf.map (fun (i,a) -> (i,(Arrayf.sort compare a))) c in
+    let d = Arrayf.sort compare (expand c) in
 
     if b <> c || a <> d then (
       eprintf "inp=%s\n" ((Arrayf.to_string (string_of_pair string_of_int string_of_int)) a) ;

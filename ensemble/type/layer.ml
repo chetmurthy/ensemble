@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -82,10 +82,14 @@ let option_of_local_seqno = function
 type state = {
   interface        : Appl_intf.New.t ;
   switch	   : Time.t saved ;
-  exchange         : (Endpt.id * Addr.set -> bool) option ;
-  secchan          : (Endpt.id * Time.t * Time.t * Security.key * Msecchan.status) list ref ;
-  tree             : Tree.z ref ; (* Stored state for the OPTREKEY layer *)
-  key_list         : (Key.t * Security.key) list ref 
+  exchange         : (Addr.set -> bool) option ;
+  secchan          : (Endpt.id * Security.cipher) list ref ; (* State for SECCHAN *)
+  tree             : Tree.z ref ;          (* State for OPTREKEY *)
+  key_list         : (Key.t * Security.cipher option) list ref ; (* State for REALKEYS *)
+  dyn_tree         : Mrekey_dt.t ref ;   (* State for REKEY_DT *)
+  diam             : Diamond.appl_state option ref ; (* State for REKEY_DIAM *)
+  dh_key           : Shared.DH.key option ref ;
+  next_cleanup     : Time.t ref
 }
 	       
 let new_state interface = {
@@ -94,7 +98,11 @@ let new_state interface = {
   switch	= ref None ;
   secchan       = ref [] ;
   tree          = ref Tree.zempty ;
-  key_list      = ref []
+  key_list      = ref [] ;
+  dyn_tree      = ref Mrekey_dt.empty ;
+  diam          = ref None ;
+  dh_key        = ref None ;
+  next_cleanup  = ref Time.zero
 }
 			    
 let set_exchange exchange s = {
@@ -103,7 +111,11 @@ let set_exchange exchange s = {
   switch	= s.switch ;
   secchan       = s.secchan ;
   tree          = s.tree ;
-  key_list      = s.key_list 
+  key_list      = s.key_list ;
+  dyn_tree      = s.dyn_tree ;
+  diam          = s.diam ;
+  dh_key        = s.dh_key ;
+  next_cleanup  = s.next_cleanup
 }
 
 let reset_state s =

@@ -1,6 +1,6 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -523,6 +523,7 @@ static void join(
 
   strcpy(s->jops.transports, "UDP");
   strcpy(s->jops.group_name, "HOT_test");
+  //strcpy(s->jops.properties, "Gmp:Sync:Heal:Frag:Suspect:Flow:Slander:Rekey:Auth");
   strcpy(s->jops.properties, "Gmp:Sync:Heal:Frag:Suspect:Primary:Debug");
   s->jops.use_properties = 1;
 

@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -29,7 +29,6 @@ let log2 = Trace.log (name^"2")
 (* Things are lazy here so as not to disturb the non-secure stack with
  * computation of environment variables that may not be set.
 *)
-
 let home = 
   try Unix.getenv "HOME" 
   with Not_found -> failwith "Environment variable HOME does not exist"
@@ -39,7 +38,18 @@ let path =
   with Not_found -> failwith "Environment variable PATH does not exist"
 
 let pgppass =  lazy (Arge.check name Arge.pgp_pass)
-let version = ref (*"5.0"*) "2.6"
+let version =  lazy (
+  try 
+    let version = Unix.getenv "ENS_PGP_VERSION" in
+    log (fun () -> sprintf "request PGP version is %s" version);
+    version
+  with Not_found -> 
+    log (fun () -> 
+      "ENS_PGP_VERSION environmet variable is not set. Default is 2.6" );
+    "2.6"
+)
+
+
 
 type comm = 
   | Error of string
@@ -51,17 +61,19 @@ let env_array = lazy (
   [|"PGPPASS="^pgppass;("HOME="^home);("PATH="^path)|]  
 )
 
-let decrypt_cmd sender receiver = 
-  match !version with 
+let verify_cmd sender receiver = 
+  match Lazy.force version with 
     | "2.6" -> "pgp -f " ^ receiver ^" -u "^ sender 
     | "5.0" -> "pgpv -f +batch" 
-    | _ -> failwith "non-supported PGP version"
+    | "6.5" -> "pgp +COMPATIBLE -f " ^ receiver ^" -u "^ sender 
+    | s -> failwith (sprintf "non-supported PGP version (%s)" s)
 
-let encrypt_cmd sender receiver =
-  match !version with 
+let sign_cmd sender receiver =
+  match Lazy.force version with 
     | "2.6" -> "pgp -feas +batch "^receiver^" -u "^ sender 
     | "5.0" -> "pgpe -fast +batchmode=1 -r "^receiver^" -u "^ sender 
-    | _ -> failwith "non-supported PGP version"
+    | "6.5" -> "pgp +COMPATIBLE -fas +batch "^receiver^" -u "^ sender 
+    | s -> failwith (sprintf "non-supported PGP version (%s)" s)
 
 
 let read_sock debug alarm sock f =
@@ -106,30 +118,27 @@ let select_process alarm notify cmd input =
 type principal   = string
 type sender      = principal 
 type receiver    = principal 
-type cipher_text = Buf.t
-type clear_text  = Buf.t
+type cipher_text = string 
+type clear_text  = string 
 
 let flatten_error s =
   string_map (fun c ->
     if c = '\n' then '|' else c
   ) s
 
-(* sign the clear_text with the sender's secret key and encrypt it
- * with receiver's public key into ASCII format. The sender's pass
+(* sign the clear_text with the sender's secret key. The sender's pass
  * phrase, "pass", is needed to sign the message.
- * 
  *)
-let encrypt sender receiver clear_text = 
-  let clear_text = Buf.to_string clear_text in
+let sign sender receiver clear_text = 
   let clear_text = (hex_of_string clear_text) in 
-  let command = encrypt_cmd sender receiver in
+  let command = sign_cmd sender receiver in
   log1 (fun () -> command);
   let (exit0,cipher,error) = Hsys.open_process command (Lazy.force env_array) clear_text in
   if exit0 then (
-    log (fun () -> "encrypt succeeded") ;
-    Some(Buf.pad_string cipher)
+    log (fun () -> "sign succeeded") ;
+    Some(cipher)
   ) else (
-    log (fun () -> sprintf "encrypt failed") ;
+    log (fun () -> sprintf "sign failed") ;
     log (fun () -> sprintf "pgp info=%s" (flatten_error error)) ;
     None
   )
@@ -137,47 +146,41 @@ let encrypt sender receiver clear_text =
 
 (* The same -- in the background
  *)
-let bckgr_encrypt sender receiver clear_text alarm rep_fun =
-  let clear_text = Buf.to_string clear_text in
+let bckgr_sign sender receiver clear_text alarm rep_fun =
   let clear_text = (hex_of_string clear_text) in 
-  let command = encrypt_cmd sender receiver in
+  log (fun () -> sprintf "sender=%s, receiver=%s text=%s" sender receiver clear_text);
+  let command = sign_cmd sender receiver in
   log1 (fun () -> command);
   select_process alarm (function
     | Error e -> 
 	log2 (fun () -> sprintf "PGP Error = <%s>" (flatten_error e))
     | Reply cipher -> 
 	if cipher="" then (
-	  log (fun () -> "[bckground] encrypt failed") ;
+	  log (fun () -> "[bckground] sign failed") ;
 	  rep_fun None
 	) else (
-	  log (fun () -> "[background] encrypt succeded");
-	  rep_fun (Some(Buf.pad_string cipher))
+	  log (fun () -> "[background] sign succeded");
+	  rep_fun (Some cipher)
 	)
   ) command clear_text
   
 
-(* decrypt the cipher_text with my secret key. My pass phrase, "pass"
- * is needed to decrypt the message. 
- *)
-
-(* Open: Neither "sender" nor "receiver" is actually needed. First,
- * "sender" is not needed because it doesn't matter who sent the
- * cipher_text as long as decryption is concerned. Second, "receiver"
- * is not needed because the decryption is always done using the
- * user's pass phrase.  
+(* verify that the cipher_text comes from the [sender].
 *)
-
-let decrypt sender receiver cipher_text = 
-  let cipher_text = Buf.to_string cipher_text in
-  let command = decrypt_cmd sender receiver in
+let verify sender receiver cipher_text = 
+  let command = verify_cmd sender receiver in
   log1 (fun () -> command);
   let (exit0,clear,error) = Hsys.open_process command (Lazy.force env_array) cipher_text in
   if exit0 then (
-    log (fun () -> "decrypt succeeded") ;
-    let clear = hex_to_string clear in
-    Some(Buf.pad_string clear)
+    log (fun () -> "verify succeeded") ;
+    try 
+      let clear = hex_to_string clear in
+      Some clear
+    with _ -> 
+      log (fun () -> "String is not in hex format");
+      None
   ) else (
-    log (fun () -> "decrypt failed") ;
+    log (fun () -> "verify failed") ;
     log (fun () -> sprintf "pgp info=%s" (flatten_error error)) ;
     None
   )
@@ -185,22 +188,25 @@ let decrypt sender receiver cipher_text =
 
 (* The same -- in the background
  *)
-let bckgr_decrypt sender receiver cipher_text alarm rep_fun =
-  let cipher_text = Buf.to_string cipher_text in
-  let command = decrypt_cmd sender receiver in
+let bckgr_verify sender receiver cipher_text alarm rep_fun =
+  let command = verify_cmd sender receiver in
   log1 (fun () -> command);
   select_process alarm (function
     | Error e -> 
 	log2 (fun () -> sprintf "PGP Error = <%s>" (flatten_error e))
     | Reply clear -> 
 	if clear="" then (
-	  log (fun () -> "[bckground] decrypt failed") ;
+	  log (fun () -> "[bckground] verify failed") ;
 	  rep_fun None
 	) else (
-	  log (fun () -> "[background] decrypt succeded");
-	  log1 (fun () -> sprintf "before hex_to_String %s" clear);
-	  let clear = hex_to_string clear in
-	  rep_fun (Some(Buf.pad_string clear))
+	  log (fun () -> "[background] verify succeded");
+	  log1 (fun () -> sprintf "before hex_to_string %s" clear);
+	  try 
+	    let clear = hex_to_string clear in
+	    rep_fun (Some clear)
+	  with _ ->
+	    log (fun () -> "String is not in hex format");
+	    rep_fun None
 	)
   ) command cipher_text
 
@@ -212,39 +218,39 @@ let _ =
     Addr.PgpA(nm)
   in
 
-  let seal id src dst clear =
+  let sign id src dst clear =
     let src = Addr.project src id in
     let dst = Addr.project dst id in
     match src,dst with
     | Addr.PgpA(src),Addr.PgpA(dst) ->
-	encrypt src dst clear
+	sign src dst clear
     | _,_ -> None
   in
 
-  let bckgr_seal id src dst clear alarm rep_fun = 
+  let bckgr_sign id src dst clear alarm rep_fun = 
     let src = Addr.project src id in
     let dst = Addr.project dst id in
     match src,dst with
     | Addr.PgpA(src),Addr.PgpA(dst) ->
-	bckgr_encrypt src dst clear alarm rep_fun 
+	bckgr_sign src dst clear alarm rep_fun 
     | _,_ -> rep_fun None
   in
 
-  let unseal id src dst cipher =
+  let verify id src dst cipher =
     let src = Addr.project src id in
     let dst = Addr.project dst id in
     match src,dst with
     | Addr.PgpA(src),Addr.PgpA(dst) ->
-	decrypt src dst cipher
+	verify src dst cipher
     | _,_ -> None
   in
 
-  let bckgr_unseal id src dst cipher alarm rep_fun = 
+  let bckgr_verify id src dst cipher alarm rep_fun = 
     let src = Addr.project src id in
     let dst = Addr.project dst id in
     match src,dst with
     | Addr.PgpA(src),Addr.PgpA(dst) ->
-	bckgr_decrypt src dst cipher alarm rep_fun 
+	bckgr_verify src dst cipher alarm rep_fun 
     | _,_ -> rep_fun None
   in
 
@@ -252,10 +258,10 @@ let _ =
     Auth.create
       name
       princ
-      seal
-      bckgr_seal
-      unseal
-      bckgr_unseal
+      sign
+      bckgr_sign
+      verify
+      bckgr_verify
   in
   
   Auth.install Addr.Pgp auth

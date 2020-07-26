@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -98,7 +98,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   in
 
   let init_rekey () =
-    let key = Prng.create () in
+    let key = Prng.create_key () in
     s.key_sug <- key;
     log (fun () -> sprintf "init_rekey, generating a new key %s" (Security.string_of_key_short key));
     enter_rekey ()
@@ -112,7 +112,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
      *)
   | ESecureMsg,NoHdr ->
       let key = getSecureMsg ev in
-      s.key_sug <- Security.Common key ;
+      s.key_sug <- Security.key_of_buf key ;
       enter_rekey () ;
       free name ev
 	
@@ -125,6 +125,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | ERekeyPrcl -> 
       assert (ls.rank = 0);
       init_rekey ()
+
+  (* Nothing to commit in this layer. 
+   *)
+  | ERekeyCommit -> ()
 
   (* Cleanup the layer. This is an empty call for this layer. 
    * It is bounced down to PERFREKEY. 

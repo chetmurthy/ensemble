@@ -1,6 +1,6 @@
 //**************************************************************
 //*
-//*  Ensemble, (Version 0.70p1)
+//*  Ensemble, (Version 1.00)
 //*  Copyright 2000 Cornell University
 //*  All rights reserved.
 //*
@@ -42,12 +42,14 @@ class Hot_IO_Controller {
     public final int DN_CAST = 1;
     public final int DN_SEND_BLOCKED = 2;
     public final int DN_SUSPECT = 3;
-    public final int DN_PROTOCOL = 4;
-    public final int DN_PROPERTIES = 5;
-    public final int DN_LEAVE = 6;
-    public final int DN_PROMPT = 7;
-    public final int DN_BLOCK_ON = 8;
-    public final int DN_SEND = 9;
+    public final int DN_XFERDONE = 4;
+    public final int DN_PROTOCOL = 5;
+    public final int DN_PROPERTIES = 6;
+    public final int DN_LEAVE = 7;
+    public final int DN_PROMPT = 8;
+    public final int DN_REKEY = 9;
+    public final int DN_BLOCK_ON = 10;
+    public final int DN_SEND = 11;
 
     public final int CB_VIEW = 0;
     public final int CB_CAST = 1;

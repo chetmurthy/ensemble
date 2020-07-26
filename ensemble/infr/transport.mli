@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -43,7 +43,6 @@ val f2 :
 val disable	: 'msg t -> unit	(* disable the transport*)
 val send	: 'msg t -> rank -> 'msg (* send on the transport *)
 val cast	: 'msg t -> 'msg	(* cast on the transport *)
-val gossip	: 'msg t -> 'msg	(* gossip on the transport *)
-val merge	: 'msg t -> View.id option -> Endpt.full -> 'msg
+val gossip	: 'msg t -> Addr.set option -> 'msg (* gossip on the transport *)
 
 (**************************************************************)

@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -49,27 +49,27 @@ module type RealKeyType = sig
   type set 
 
   val empty : set 
-  val create : Key.t -> Security.key -> t
+  val create : Key.t -> Security.cipher option -> t
   val tag : t -> Key.t
-  val real : t -> Security.key 
+  val real : t -> Security.cipher option
   val string_of_t : t -> string
-  val add : set -> Key.t -> Security.key -> unit
+  val add : set -> Key.t -> Security.cipher option -> unit
   val decrypt : Shared.Cipher.t -> set -> ((Key.t * Buf.t) list * Key.t) list -> unit
-  val assoc : Key.t -> set -> Security.key
+  val assoc : Key.t -> set -> Security.cipher option
   val translate : set -> (Key.t * Key.t) list -> set
   val purge  : Tree.z -> set -> int -> set 
   val inflate : Tree.z -> set -> int -> set
   val check_all : set -> bool
-  val pairs_of : set -> (Key.t * Security.key) list
-  val from_pair : Key.t * Security.key -> t
+  val pairs_of : set -> (Key.t * Security.cipher option) list
+  val from_pair : Key.t * Security.cipher option -> t
   val from_list : t list -> set
-  val hd        : set -> Key.t * Security.key
+  val hd        : set -> Key.t * Security.cipher option
   val tl        : set -> set
 end
 
 
 module RealKey = struct
-  type t = Key.t * Security.key ref 
+  type t = Key.t * Security.cipher option ref 
   type set = t  list
 
   let empty = []
@@ -79,7 +79,10 @@ module RealKey = struct
     
   let real (_,s_r) = !s_r
 
-  let string_of_t (k,s_r) = (Key.string_of_t k) ^ " " ^ (Security.string_of_key !s_r)
+  let string_of_t (k,s_r) = match !s_r with 
+    | None -> (Key.string_of_t k) ^ " None"
+    | Some cipher -> 
+	(Key.string_of_t k) ^ " " ^ (Buf.to_string (Security.buf_of_cipher cipher))
 
   let add  r_k_l tag key = 
     let s_r = List.assoc tag r_k_l in
@@ -90,7 +93,7 @@ module RealKey = struct
    * Then, decrypt it from bottom-up.
    *)
   let decrypt shared set mcl = 
-    let dcr key = Shared.Cipher.single_use shared key false in
+    let dcr cipher = Shared.Cipher.single_use shared cipher false in
     let mcl' = List.map (fun (x,y) -> (y,x)) mcl in
     let strange = List.map (fun (tag,s_r) -> 
       try 
@@ -101,12 +104,13 @@ module RealKey = struct
     List.iter (function 
       | _,_,None -> ()
       | tag,s_r,Some l -> 
-	  if !s_r <> Security.NoKey then 
-	    List.iter (fun (tag',key') -> 
-	      let key' = dcr !s_r key' in
-	      add set tag' (Security.Common key')
-	    ) l 
-	  else failwith "Error in decrypt"
+	  match !s_r with
+	    | None -> failwith "Error in decrypt"
+	    | Some cipher -> 
+		List.iter (fun (tag',key') -> 
+		  let key' = dcr cipher key' in
+		  add set tag' (Some (Security.cipher_of_buf key'))
+		) l 
     ) strange
 	  
 	  
@@ -121,7 +125,7 @@ module RealKey = struct
    *)
   let translate r_k_l bad_set = 
     List.map (fun r_k -> 
-      let tag,s_r  = r_k in
+      let tag,(s_r : Security.cipher option ref)  = r_k in
       try 
 	let tag' = List.assoc tag bad_set in
 	create tag' !s_r
@@ -148,13 +152,13 @@ module RealKey = struct
       try 
 	let s_r = List.assoc k r_k_l in
 	create k !s_r
-      with Not_found -> create k Security.NoKey
+      with Not_found -> create k None
     ) keys
 
   (* Check if all keys are different to Security.NoKey
    *)
   let check_all r_k_l = 
-    List.for_all (fun (tag,s_r) -> !s_r <> Security.NoKey) r_k_l
+    List.for_all (fun (tag,s_r) -> !s_r <> None) r_k_l
 
   let pairs_of r_k_l = 
     List.map (fun (tag,s_r) -> tag,!s_r) r_k_l

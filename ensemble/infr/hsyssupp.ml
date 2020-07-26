@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -326,11 +326,7 @@ let tcp debug alarm sock deliver disable =
 
 (**************************************************************)
 
-type 'a conn_gen =
-  (Hsys.inet -> Hsys.port -> (Iovecl.t -> unit) ->
-  ((Iovecl.t -> unit) * (unit -> unit) * 'a))
-
-let server_gen debug alarm port client =
+let server debug alarm port client =
   let sock = Hsys.socket_stream () in
   Hsys.setsockopt sock Hsys.Reuse ;
 
@@ -351,7 +347,11 @@ let server_gen debug alarm port client =
   if not !quiet then
     eprintf "%s:server installed\n" debug ;
 
-  let client_init sock inet port =
+  let svr_handler () =
+    let sock,inet,port = Hsys.accept sock in
+    let info = sprintf "{inet=%s;port=%d}"
+	(Hsys.string_of_inet_nums inet) port
+    in
     let connected = ref true in
 
     let recv_r = ref (fun _ -> failwith sanity) in
@@ -361,28 +361,14 @@ let server_gen debug alarm port client =
 
     let send = tcp debug alarm sock recv disable in
 
-    let recv,disable,() = client inet port send in
+    let recv,disable,() = client info send in
 
     recv_r := recv ;
     disable_r := disable
   in
-
-  let svr_handler () =
-    let client,inet,port = Hsys.accept sock in
-    (client_init client inet port)
-  in
   
   let debug = sprintf "%s(server)" debug in
   Alarm.add_sock_recv alarm debug sock (Hsys.Handler0 svr_handler)
-
-let server debug alarm port client =
-  let client inet port =
-    let info = sprintf "{inet=%s;port=%d}"
-	(Hsys.string_of_inet_nums inet) port
-    in
-    client info
-  in
-  server_gen debug alarm port client
 
 (**************************************************************)
 

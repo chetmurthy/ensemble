@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -22,23 +22,23 @@ open Util
 open Layer
 open Event
 open View
-(*module Hashtbl = Hashtble*)
+open Trans
 (**************************************************************)
 let name = Trace.filel "MERGE"
 let failwith = Trace.make_failwith name
 (**************************************************************)
 
-type header = NoHdr | Merge of Addr.set * Endpt.id * int
+type header = NoHdr
 
 type ('abv) state = {
-  policy                : (Endpt.id * Addr.set -> bool) option ; (* Authorization policy *)
+  policy                : (Addr.set -> bool) option ; (* Authorization policy *)
   mutable merging	: bool ;
   mutable next_sweep	: Time.t ;
   mutable new_view	: bool ;
   mutable seqno 	: int ;
-  mutable merge_dn 	: (Time.t * dn * 'abv * header) list ;
-  merge_up 		: ((Addr.set * Endpt.id),int) Hashtbl.t ;
-  mutable buf		: (dn * 'abv * header) list ;
+  mutable merge_dn 	: (Time.t * dn) list ;
+  merge_up 		: ((Addr.set * Endpt.id),(ltime * seqno)) Hashtbl.t ;
+  mutable buf		: dn list ;
   sweep			: Time.t ;
   timeout		: Time.t
 }
@@ -56,41 +56,54 @@ let init s (ls,vs) = {
   new_view      = false ;	        (* set on EView *)
   seqno      	= 0 ;			(* seqno for messages sent *)
   merge_dn   	= [] ;			(* messages sent *)
-  merge_up   	= Hashtbl.create (*name*) 10 ; (* messages recd *)
+  merge_up   	= Hashtbl.create 10 ;   (* messages recd *)
   buf        	= [] ;			(* temporary buffer *)
   next_sweep 	= Time.zero
 }
 let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnnm_out=dnnm} =
   let log = Trace.log2 name ls.name in
-  let up_hdlr ev abv hdr = match getType ev, hdr with
-  | (EMergeRequest|EMergeGranted|EMergeDenied), Merge(saddr,from,seqno) ->
-      if not (check_policy s (from,saddr)) then
-	free name ev
-      else (
-	let last_seqno =
-          try Hashtbl.find s.merge_up (saddr,from)
-          with Not_found -> -1
-	in
-	if last_seqno < seqno then (
-      	(* Remove old entry.
-         *)
-	  begin
-	    try Hashtbl.remove s.merge_up (saddr,from)
-	    with Not_found -> ()
-	  end ;
-	  
-  	  Hashtbl.add s.merge_up (saddr,from) seqno ;
-	  up ev abv
-	) else (
-	  free name ev
-	)
-      )
-  | _, NoHdr -> up ev abv
-  | _, _     -> failwith bad_up_event
-	
+  let up_hdlr ev abv NoHdr = up ev abv
   and uplm_hdlr ev hdr = failwith unknown_local
 			   
   and upnm_hdlr ev = match getType ev with
+  | EGossipExtDir -> failwith "sanity"
+  | EGossipExt ->
+      let merge = Event.getExtender
+	(function Event.MergeGos(a,b,c,d) -> (Some (Some (a,b,c,d))) | _ -> None)
+	None ev
+      in
+      begin match merge with 
+      |	None -> ()
+      |	Some(contact,seqno,kind,merge_vs) ->
+	  if fst (fst contact) = ls.endpt 
+	  && merge_vs.proto_id = vs.proto_id
+	  then (
+	    log (fun () -> "got merge gossip") ;
+	    let (from,saddr),_ = contact in
+	    if not (check_policy s saddr) then (
+	      free name ev
+	    ) else (
+	      let last_ltime,last_seqno =
+		try Hashtbl.find s.merge_up (saddr,from)
+		with Not_found -> -1,-1
+	      in
+	      if (last_ltime,last_seqno) < (merge_vs.ltime,seqno) then (
+		(* Remove old entry.
+		 *)
+		begin
+		  try Hashtbl.remove s.merge_up (saddr,from)
+		  with Not_found -> ()
+		end ;
+
+		Hashtbl.add s.merge_up (saddr,from) (merge_vs.ltime,seqno) ;
+		upnm (create name kind [ViewState merge_vs])
+	      ) else (
+		free name ev
+	      )
+	    )
+	  )
+      end ;
+      upnm ev
   | EView ->
       s.new_view <- true ;
       upnm ev
@@ -100,21 +113,21 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       if s.merging then (
 	(* Copy from temporary buffer into merge_dn.
 	 *)
-	List.iter (fun (ev,abv,hdr) ->
-	  dn ev abv hdr ;
+	List.iter (fun ev ->
+	  dnnm ev ;
 	  let ev = copy name ev in
-	  s.merge_dn <- (Time.add time s.timeout,ev,abv,hdr) :: s.merge_dn
+	  s.merge_dn <- (Time.add time s.timeout,ev) :: s.merge_dn
 	) s.buf ;
 	s.buf <- [] ;
 
 	if Time.ge time s.next_sweep then (
 	  s.next_sweep <- Time.add s.next_sweep s.sweep ;
 
-	  List.iter (fun (timeout,ev,abv,hdr) ->
-	    let typ = getType ev in
+	  List.iter (fun (timeout,ev) ->
+	    let typ = getExtendFail (function MergeGos(a,b,c,d) -> Some c | _ -> None) "MergeGos" ev in
 	    if Time.gt timeout time then (
 	      let ev = copy name ev in
-	      dn ev abv hdr
+	      dnnm ev
 	     ) else if typ = EMergeRequest
 		    && not s.new_view
 	     then (
@@ -128,7 +141,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       upnm ev
 
   | EExit ->
-      List.iter (fun (_,dn,_,_) ->
+      List.iter (fun (_,dn) ->
       	free name dn
       ) s.merge_dn ;
       s.merge_dn <- [] ;
@@ -137,18 +150,25 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | _ -> upnm ev
 
   and dn_hdlr ev abv = match getType ev with
+  | _ -> dn ev abv NoHdr
+
+  and dnnm_hdlr ev = match getType ev with
+
   | EMergeRequest | EMergeGranted | EMergeDenied ->
+      let contact = getContact ev in
       log (fun () -> Event.to_string ev) ;
       s.merging <- true ;
       s.seqno 	<- succ s.seqno ;
-      let hdr = Merge(ls.addr,ls.endpt,s.seqno) in
-      s.buf 	<- (ev,abv,hdr) :: s.buf ;
-      dnnm (timerAlarm name Time.zero) ;
-      dn ev abv hdr
+      let merge_ev = create name EGossipExtDir [
+	Address(snd(fst contact)) ;
+	MergeGos(contact,s.seqno,(getType ev),(getViewState ev))
+      ] in
+      s.buf 	<- merge_ev :: s.buf ;
+      dnnm merge_ev ;
+      dnnm (timerAlarm name Time.zero)
+	
+  | _ -> dnnm ev
 
-  | _ -> dn ev abv NoHdr
-
-  and dnnm_hdlr = dnnm
 
 in {up_in=up_hdlr;uplm_in=uplm_hdlr;upnm_in=upnm_hdlr;dn_in=dn_hdlr;dnnm_in=dnnm_hdlr}
 

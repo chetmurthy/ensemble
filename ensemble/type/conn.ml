@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -54,7 +54,7 @@ type t = {
   nmembers      : Trans.nmembers
 }
 
-type kind = Cast | Send | Other
+type kind = Cast | Send (*| Other*)
 
 type recv_info = id * kind * Trans.rank
 
@@ -63,7 +63,7 @@ type recv_info = id * kind * Trans.rank
 let string_of_kind = function
 | Cast -> "Cast"
 | Send -> "Send"
-| Other -> "Other"
+(*| Other -> "Other"*)
 
 (**************************************************************)
 
@@ -93,10 +93,15 @@ let no_sharing = [Marshal.No_sharing]
 (* When digesting the marshalled object, we can skip
  * the marshalling header.
  *)
-let hash_of_id id =
+let hash_of_obj id =
   let id = Marshal.to_string id no_sharing in
   let len = String.length id in
   Buf.digest_substring id Marshal.header_size (len - Marshal.header_size)
+
+let hash_of_id = hash_of_obj
+
+let hash_of_key version group proto = 
+  hash_of_obj (version,group,proto)
 
 (**************************************************************)
 
@@ -107,7 +112,6 @@ let string_of_id = Trace.debug "" (fun id ->
   let kind = match id.view_id,mbr_of_int id.sndr_mbr,mbr_of_int id.dest_mbr,id.dest_endpt with
     | Some _, Some _, Some _, None   -> "Pt2pt"
     | Some _, Some _, None  , None   -> "Cast"
-    | Some _, None  , None  , Some _ -> "Merge"
     | None  , None  , None  , None   -> "Gossip"
     | _ -> "?" 
   in
@@ -176,8 +180,6 @@ let idgen t a b c d e =
   let i = t.key in
   id i.key_version i.key_group i.key_stack a b c d e 
 
-let merge_recv t =
-  idgen t (Some t.key.key_proto) (Some t.key.key_view_id) None None (Some t.key.key_endpt)
 let multi_recv t rank =
   idgen t (Some t.key.key_proto) (Some t.key.key_view_id) (Some rank) None None
 let pt2pt_recv t rank =
@@ -188,17 +190,13 @@ let multi_send t =
   idgen t (Some t.key.key_proto) (Some t.key.key_view_id) (Some t.my_rank) None None
 let pt2pt_send t rank =
   idgen t (Some t.key.key_proto) (Some t.key.key_view_id) (Some t.my_rank) (Some rank) None
-let merge_send t view_id dest =
-  idgen t (Some t.key.key_proto) view_id None None (Some dest)
 
 let key t = t.key
 
 let all_recv t scaled =
   if t.key.key_stack = Stack_id.Gossip then (
-    Arrayf.singleton ((gossip t),Other,(-1))
+    Arrayf.singleton ((gossip t),Cast,(-1))
   ) else (
-    let merges = Arrayf.singleton ((merge_recv t),Other,(-1)) in
-
     let sends =
       if scaled then
 	Arrayf.singleton ((pt2pt_recv t (-2)),Send,-2)
@@ -213,7 +211,7 @@ let all_recv t scaled =
 	Arrayf.init t.nmembers (fun rank -> ((multi_recv t rank),Cast,rank)) 
     in
 
-    let all_recv = Arrayf.concat [merges;sends;casts] in
+    let all_recv = Arrayf.concat [sends;casts] in
     let all_recv = Arrayf.filter (fun (_,_,rank) -> rank <> t.my_rank) all_recv in
     all_recv
   )

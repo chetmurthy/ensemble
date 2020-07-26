@@ -1,6 +1,6 @@
 #*************************************************************#
 #
-#   Ensemble, (Version 0.70p1)
+#   Ensemble, (Version 1.00)
 #   Copyright 2000 Cornell University
 #   All rights reserved.
 #
@@ -207,9 +207,10 @@ ENSCOREOBJ = \
 	$(OBJD)/property$(CMO)	\
 	$(OBJD)/appl_intf$(CMO)	\
 	$(OBJD)/appl_handle$(CMO) \
-	$(OBJD)/msecchan$(CMO)	\
 	$(OBJD)/tree$(CMO)	\
 	$(OBJD)/tdefs$(CMO)	\
+	$(OBJD)/mrekey_dt$(CMO)	\
+	$(OBJD)/diamond$(CMO)	\
 	$(OBJD)/layer$(CMO)	\
 \
 	$(OBJD)/async$(CMO)	\
@@ -303,8 +304,11 @@ ENSRESTOBJ = \
 	$(OBJD)/tcp$(CMO)	\
 \
 	$(OBJD)/switch$(CMO)	\
+	$(OBJD)/mexchange$(CMO)	\
 	$(OBJD)/exchange$(CMO)	\
 	$(OBJD)/rekey$(CMO)	\
+	$(OBJD)/rekey_dt$(CMO)	\
+	$(OBJD)/rekey_diam$(CMO)\
 	$(OBJD)/secchan$(CMO)	\
 \
 	$(OBJD)/local$(CMO)	\
@@ -344,6 +348,7 @@ ENSRESTOBJ = \
 	$(OBJD)/zbcast$(CMO)	\
 	$(OBJD)/chk_causal$(CMO) \
 	$(OBJD)/mcausal$(CMO)	\
+	$(OBJD)/diamond_aux$(CMO) \
 	$(OBJD)/causal$(CMO)	\
 \
 	$(OBJD)/dtbl$(CMO)	\
@@ -412,12 +417,18 @@ MPICOBJ = \
 
 CRYPTOOBJ = \
         $(OBJD)/isaac$(CMO)     \
-	$(OBJD)/rc4$(CMO)
+	$(OBJD)/rc4$(CMO)	\
+	$(OBJD)/des$(CMO)	\
+	$(OBJD)/idea$(CMO)	\
+	$(OBJD)/dha$(CMO)
 
 CRYPTOCOBJ = \
         $(OBJD)/isaac_c$(OBJ)   \
         $(OBJD)/randport$(OBJ)  \
-	$(OBJD)/rc4_c$(OBJ)	
+	$(OBJD)/rc4_c$(OBJ)	\
+	$(OBJD)/des_c$(OBJ)	\
+	$(OBJD)/idea_c$(OBJ)	\
+	$(OBJD)/dha_c$(OBJ)
 
 #*************************************************************#
 # HOT files

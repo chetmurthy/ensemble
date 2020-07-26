@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -222,7 +222,6 @@ val eth_recv : recv_info -> buf -> ofs -> len -> len
 val heap : unit -> Obj.t array
 val addr_of_obj : Obj.t -> string
 val minor_words : unit -> int
-val weak_check : 'a Weak.t -> int -> bool
 val frames : unit -> int array array
 
 (**************************************************************)

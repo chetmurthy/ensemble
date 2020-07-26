@@ -1,18 +1,15 @@
 #*************************************************************#
 #
-#   Ensemble, (Version 0.70p1)
+#   Ensemble, (Version 1.00)
 #   Copyright 2000 Cornell University
 #   All rights reserved.
 #
 #   See ensemble/doc/license.txt for further information.
 #
 #*************************************************************#
-# To build with security code, comment out LIBHOT and
-# LIBCRYPTO, and uncomment their crypto equivalents
-# 
+
 ENSLIB = ..\..\lib\nt
 LIBHOT = libhot-nt.lib
-#LIBHOT = libhot-crypto-nt.lib
 LIBMAE = libmae-nt.lib
 LIBCRYPTO =
 #LIBCRYPTO = $(ENSLIB)\libcryptoc-nt.lib

@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -35,19 +35,3 @@ val client :
   Hsys.socket ->
   'a conn ->
   'a
-
-
-(* These are the same as above, except that the inet & port
- * of the client to the server instead of just a debugging
- * string.  
- *)
-type 'a conn_gen =
-  (Hsys.inet -> Hsys.port -> (Iovecl.t -> unit) ->
-  ((Iovecl.t -> unit) * (unit -> unit) * 'a))
-
-val server_gen : 
-  debug -> 
-  Alarm.t ->
-  port ->
-  unit conn_gen ->
-  unit

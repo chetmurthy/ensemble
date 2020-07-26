@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -38,22 +38,57 @@ let string_of_addrs addrs =
   let addrs = Array.map (function set -> Addr.project set Addr.Pgp) addrs in
   let addrs = Array.map Addr.string_of_addr addrs in
   string_of_array ident addrs
-    
+
+(*    
+let string_of_addrs addrs = 
+  let addrs = Arrayf.to_array addrs in
+  let addrs = 
+    (*Array.map (function set -> Addr.project set Addr.Udp) addrs *)
+    Array.map (function set -> Addr.project set Addr.Deering) addrs 
+  in
+  let addrs = Array.map (function 
+    | Addr.DeeringA (inet,p) -> 
+	let s = Hsys.string_of_inet inet in
+	let i = String.index s '.' in
+	String.sub s 0 i 
+    | Addr.UdpA (inet,p) -> 
+	let s = Hsys.string_of_inet inet in
+	let i = String.index s '.' in
+	String.sub s 0 i 
+    | _ -> failwith "Sanity"
+  ) addrs in
+  (* Sort.array (<=) addrs;*)
+  string_of_array ident addrs
+    (*"[||]"*)
+*)
 (**************************************************************)
-let limit    = ref 100
-let real_pgp = ref false
-let net      = ref false
-let pa       = ref false
-let nmembers = ref 5
-let prog     = ref "armadilo"
-let group    = ref "pref"
-let times    = ref 1000
-let time_limit = ref (Time.of_int 20)
-let tests_doc = Hashtbl.create 10
-let scale    = ref false
-let htb_rate = ref 3
-let debug    = ref false
-let opt_rekey = ref false
+let limit         = ref 100
+let real_pgp      = ref false
+let net           = ref false
+let pa            = ref false
+let nmembers      = ref 5
+let prog          = ref "rekey"
+let group         = ref "pref"
+let times         = ref 1000
+let time_limit    = ref (Time.of_int 20)
+let tests_doc     = Hashtbl.create 10
+let scale         = ref false
+let htb_rate      = ref 3
+let debug         = ref false
+let opt_rekey     = ref ""
+let num_enc_loops = ref 1000
+let init_key      = ref None
+(**************************************************************)
+
+(* Create an initial key, if one has not been inserted by hand. 
+*)
+let create_init_key () = 
+  match !init_key with
+    | None -> Prng.create_key () 
+    | Some k -> 
+	if String.length k >= 32 then 
+	  Security.key_of_buf (Buf.of_string name k)
+	else failwith "Manual Key is not of the correct size (32)"
 
 (* Sum the parameters so as to check if everyone has the same
  *)
@@ -64,11 +99,10 @@ let sum_params () =
  * principal name [pname] parameters [param] and with the optimized rekeying 
  * layers or not [opt].
 *)
-let perf_default principal_name param opt= 
+let perf_default principal_name param opt = 
   let default () = 
     let props = match param with 
-      | None -> 
-	  let layers = [
+      | None -> [
 	    Property.Gmp ;
    	    Property.Sync ; 
    	    Property.Heal ; 
@@ -79,12 +113,21 @@ let perf_default principal_name param opt=
    	    Property.Slander ;
    	    Property.Auth ;
 	    Property.Privacy
-	  ] in
-	  if !debug then Property.Debug :: layers
-	  else layers
+	  ] 
       |	Some props -> props
     in
-    let props = if opt then Property.OptRekey :: props else Property.Rekey :: props in
+    let props = 
+      if !debug then Property.Debug :: props
+      else props
+    in
+    let props = 
+      match opt with 
+	| "opt" -> 
+	    Property.OptRekey :: props 
+	| "diamond" -> 
+	    Property.DiamRekey :: props
+	| _ -> 
+	    Property.Rekey :: props in
     let props = if !scale then Property.Scale :: props else props in
     let (ls,vs) = Appl.default_info !group in 
     let vs = 
@@ -196,7 +239,7 @@ let create_intf htb rate viewfun =
 (* Policy test
  *)
 let counter = ref 0
-let policy me (e,a) = 
+let policy me a = 
   let addr = Addr.arrayf_of_set a in
   let addr = Arrayf.to_list addr in
   let result = 
@@ -260,10 +303,10 @@ let create_stack_policy prompt i =
    	Property.Suspect ; 
    	Property.Flow ; 
    	Property.Slander 
-	]) false
+	]) ""
     else
-      let (ls,vs) = perf_default principal None false in
-      let key = Prng.create () in
+      let (ls,vs) = perf_default principal None "" in
+      let key = create_init_key () in
       let vs = View.set vs [Vs_key key] in
       (ls,vs)
   in
@@ -344,10 +387,11 @@ let create_stack_encrypt_sanity i =
    	Property.Suspect ; 
    	Property.Flow ; 
    	Property.Slander ;
-	Property.Privacy
-	]) false
+	Property.Privacy ;
+	Property.Auth 
+	]) ""
   in
-  let vs = View.set vs [Vs_key (Security.Common (Buf.pad_string "0123456701234567"))] in
+  let vs = View.set vs [Vs_key (Security.key_of_buf (Buf.pad_string "01234567012345670123456701234567"))] in
   Appl.config_new interface (ls,vs)
 
 (**************************************************************)
@@ -360,7 +404,7 @@ let _ = Hashtbl.add tests_doc "prompt" "changing views using the Prompt action"
 let create_stack_rekey opt prompt i = 
   let action = 
     if prompt then Prompt
-    else Rekey true
+    else Rekey false
   in
   let (ls,vs) = perf_default ("o"^(string_of_int i)) None opt in 
   let alarm = Elink.alarm_get_hack () in
@@ -389,9 +433,9 @@ let create_stack_rekey opt prompt i =
     if ls.am_coord && ls.nmembers = !nmembers then (
       let time2 = Time.to_float (Alarm.gettime alarm) in
       let diff = time2 -. !time in
-      eprintf "[%d] view=%d %b %f key=%s.\n" 
+      eprintf "[%d] view=%d %f key=%s.\n" 
 	!num_view ls.nmembers (*(string_of_addrs vs.address) *)
-	vs.new_key diff (Security.string_of_key vs.key);
+	diff (Security.string_of_key vs.key);
       if ls.nmembers = !nmembers then incr num_view;
       first_time := true;
       rekeying := false;
@@ -405,7 +449,7 @@ let create_stack_rekey opt prompt i =
   in
   eprintf "RUN\n";
   let interface = create_intf htb (float_of_int !htb_rate) viewfun in
-  let vs = View.set vs [Vs_key (Prng.create ())] in
+  let vs = View.set vs [Vs_key (create_init_key ())] in
   Appl.config_new interface (ls,vs)
     
 (**************************************************************)
@@ -419,14 +463,25 @@ let create_stack_exchange i =
   and viewfun (ls,vs) = 
     if ls.am_coord then
       eprintf "nmembers=%d view=%s key=%s.\n" 
-	ls.nmembers (*(string_of_addrs vs.address)*) 
-	(string_of_list Endpt.string_of_id (Arrayf.to_list vs.view))
+	ls.nmembers 
+	(string_of_addrs vs.address)
+	(*(string_of_list Endpt.string_of_id (Arrayf.to_list vs.view))*)
 	(Security.string_of_key vs.key);
     [||]
   in 
   let interface = create_intf htb 10.0 viewfun in
-  let (ls,vs) = perf_default ("o"^(string_of_int i)) None false in
-  let vs = View.set vs [Vs_key (Prng.create ())] in
+  let (ls,vs) = perf_default ("o"^(string_of_int i)) (Some
+	[Property.Gmp ;
+   	Property.Sync ; 
+   	Property.Heal ; 
+   	Property.Migrate ; 
+   	Property.Frag ; 
+   	Property.Suspect ; 
+   	Property.Flow ; 
+   	Property.Slander ;
+	Property.Auth
+	]) "" in
+  let vs = View.set vs [Vs_key (create_init_key ())] in
   Appl.config_new interface (ls,vs)
     
 (**************************************************************)
@@ -449,7 +504,7 @@ let create_stack_reg i =
     Property.Suspect ; 
     Property.Flow ; 
     Property.Slander ;
-  ])  false in
+  ])  "" in
   Appl.config_new interface (ls,vs)
     
 (**************************************************************)
@@ -470,6 +525,21 @@ let create_stack_quit _ =
   let (ls,vs) = Appl.default_info "armadilo" in
   Appl.config_new interface (ls,vs)
     
+
+(**************************************************************)
+(* Generate a new key.
+ *)
+
+let _ = Hashtbl.add tests_doc "DH_key" "Create new Diffie-Hellman parameters key"
+
+let dh_key () = 
+  eprintf "Createing a new Diffie-Hellman key, size=\n" ;
+  let s = read_line () in
+  let len = int_of_string s in
+  let dh = Shared.DH.lookup "OpenSSL/DH" in 
+  Shared.DH.generate_new_parameters dh len;
+  ()
+
 (**************************************************************)
 (* PGP test
  *)
@@ -478,13 +548,44 @@ let _ = Hashtbl.add tests_doc "pgp" "Test the pgp interface"
 
 
 let pgp () = 
-  let principal_name = "Tim Clark" in
+  print_string "PGP test\n"; flush stdout;
+  let principal_name = "o1" in
   let pgp = Addr.PgpA(principal_name) in
   let pgp = Arrayf.singleton pgp in
   let addr = Addr.set_of_arrayf pgp in
-  let original = (Buf.pad_string "0123456701234567") in
-  
-  let check_background () = 
+  let original = "0123456701234567" in
+
+  (* Measure how long function f takes to complete.
+     *)
+  let measure () = 
+    let time0 = Time.gettimeofday () in
+    let alarm = Elink.alarm_get_hack () in
+    let rec check i f = 
+      if i<=0 then f ()
+      else (
+	Auth.bckgr_ticket false addr addr original alarm (function
+	  | None -> failwith "could not background encrypt"
+	  | Some ticket -> 
+	      Auth.bckgr_check false addr addr ticket alarm (function
+		| None -> failwith "could not background decrypt"
+		| Some clear -> 
+		    check (i-1) f
+	      )
+	) 
+      )
+    in
+    let f () = 
+      let time1 = Time.gettimeofday () in
+      let diff = Time.sub time1 time0 in
+      eprintf "Time for 10*sign + 10*verify with PGP= %s\n" 
+	(Time.to_string diff); 
+      exit 0;
+      ()
+    in
+    check 10 f ;
+    ()
+    
+  and check_background () = 
     let alarm = Elink.alarm_get_hack () in
     Auth.bckgr_ticket false addr addr original alarm (function
       | None -> failwith "could not background encrypt"
@@ -496,7 +597,6 @@ let pgp () =
 		failwith "background clear<>original"
 	      else (
 		printf "background PGP works\n" ;
-		exit 0
 	      )
 	  )
     ) 
@@ -517,10 +617,11 @@ let pgp () =
 
   let intf () = 
     let install (ls,vs) = 
-      check_foreground () ;
+      (*check_foreground () ;*)
       printf "check_background\n";
       check_background () ;
-      
+      measure ();
+
       let handlers = {
 	flow_block =  (fun _ -> ()) ;
 	block      =  (fun () -> [||]) ;
@@ -546,41 +647,10 @@ let pgp () =
 let _ = Hashtbl.add tests_doc "perf" "performace and simple test of the crypto library."
 	  
 let perf () = 
-  log (fun () -> "Cipher.lookup RC4");
-  let shared = Cipher.lookup "RC4" in
-  let key = Security.Common (Buf.pad_string "0123456701234567") in
-  let len = 100  in
-  let buf0 = String.create len in
-  let buf = Buf.of_string name (String.copy buf0) in 
-  let len = Buf.len_of_int len in
-  
-  eprintf "Testing Encrypt sanity.\n";
-  for i=1 to 10 do
-    let context = Cipher.init shared (Common(Buf.pad_string "0123456701234567")) true in
-    let res = Cipher.encrypt shared context buf Buf.len0 len in
-    let context = Cipher.init shared (Common(Buf.pad_string "0123456701234567")) true in
-    let res = Cipher.encrypt shared context res Buf.len0 len in
-    if res <> buf then
-      failwith ("Bad encryption " ^ (Buf.to_string res) ^ " <> " ^ 
-      (Buf.to_string buf))
-  done;
-  eprintf "OK.\n";
-
-  eprintf "Testing Encrypt_inplace sanity.\n";
-  for i=1 to 10 do
-    let context = Cipher.init shared key true in
-    Cipher.encrypt_inplace shared context buf Buf.len0 len;
-    let context = Cipher.init shared key true in
-    Cipher.encrypt_inplace shared context buf Buf.len0 len;
-    if  buf <> (Buf.of_string name buf0) then
-      failwith ("Bad encryption " ^ (Buf.to_string buf) ^ " <> " ^ buf0)
-  done;
-  eprintf "OK.\n";
-
   eprintf "Testing PRNG, creating random keys.\n";
   for i=1 to 10 do
-    let s = Prng.create () in 
-    let s = Security.str_of_key s in
+    let s = Prng.create_key () in 
+    let s = Buf.to_string (Security.buf_of_key s) in
     printf "\t";
     for j=0 to (String.length s -1) do
       printf "%d " (Char.code (s.[j]));
@@ -588,22 +658,22 @@ let perf () =
     printf "\n" 
   done;
 
-  eprintf "Testing encryption performance.\n";
-  let time0 = Time.gettimeofday () in
-  let len = 1000  in
-  let buf = Buf.of_string name (String.create len ) in 
-  let len = Buf.len_of_int len in
-  for i=1 to !times do
-    let context = Cipher.init shared key true in
-    Cipher.encrypt_inplace shared context buf Buf.len0 len;
-  done;
-  let time1 = Time.gettimeofday () in
-  let diff = Time.sub time1 time0 in
-  let diff = Time.to_string diff in
-  printf "time for encryption (%d * %d) bytes = %s\n" !times (Buf.int_of_len len)
-    diff;
-  ()
+  eprintf "**************************************\n";
+  eprintf "<IDEA>\n";
+  Shared.Cipher.sanity_check "OpenSSL/IDEA" !num_enc_loops 1000;
+  eprintf "**************************************\n";
+  eprintf "<DES>\n";
+  Shared.Cipher.sanity_check "OpenSSL/DES"  !num_enc_loops 1000;
+  eprintf "**************************************\n";
+  eprintf "<RC4>\n";
+  Shared.Cipher.sanity_check "OpenSSL/RC4"  !num_enc_loops 1000;
+  eprintf "**************************************\n";
+  eprintf "<Diffie-Hellman>\n";
+  Shared.DH.sanity_check "OpenSSL/DH" !num_enc_loops 1024;
+  eprintf "**************************************\n";
 
+  ()
+    
 (**************************************************************)
 (* Encrypt test
  *)
@@ -630,8 +700,8 @@ let create_stack_debug i =
     Property.Rekey ;
     Property.Privacy ;
     Property.Debug 
-  ]) false in  
-  let vs = View.set vs [Vs_key (Prng.create ())] in
+  ]) "" in  
+  let vs = View.set vs [Vs_key (create_init_key ())] in
   Appl.config_new interface (ls,vs)
 
 
@@ -662,7 +732,10 @@ let run ()  =
     "-scale", Arg.Set(scale), "scaleable protocols" ;
     "-htb_rate", Arg.Int(fun i -> htb_rate := i), "heartbeart rate" ;
     "-debug", Arg.Set(debug), "debugging layers" ;
-    "-opt", Arg.Set(opt_rekey), "optimized rekey stack" ;
+    "-opt", Arg.Unit(fun () -> opt_rekey := "opt"), "optimized rekey stack" ;
+    "-key", Arg.String(fun s -> init_key:=Some s), "Optional key, inserted by hand";
+    "-diamond", Arg.Unit(fun () -> opt_rekey := "diamond"), "diamond rekey protocol" ;
+    "-num_enc_loops", Arg.Int(fun i -> num_enc_loops:=i), "Number of encryption loops";
     "-help",Arg.Unit(fun () -> print_string (
       "-n          nmembers\n" ^
       "-terminate_time   Time to run\n" ^
@@ -680,11 +753,27 @@ let run ()  =
   ] (Arge.badarg name) "armadilo";
   
 
+  (* Install handler to get input from stdin.
+   * This obscure function allows killing the process using 
+   * Unix.close_process commands
+   *)
+  let stdin = Hsys.stdin () in
+  let get_input () =
+    let buf = String.create 1 in
+    let len = Hsys.read stdin buf 0 1 in
+    if len = 0 then (
+      exit 0
+    ) else ()
+  in
+  Alarm.add_sock_recv (Appl.alarm name) name stdin (Hsys.Handler0 get_input) ;
+
+
   (* Exchange_stack will not work properly if n>100
    *)
   if (!nmembers > 100) then
     failwith "Too many members";
   
+  if !prog = "pgp" then real_pgp := true;
   if !pa then 
     printf "Using partitions\n";
   if not !net && not !real_pgp then (
@@ -692,7 +781,7 @@ let run ()  =
     Arge.set alarm "Netsim" ;
     Arge.set modes [Addr.Netsim]
   );
-  if !prog <> "perf" && !prog <> "pgp" then (
+  if !prog <> "perf" && !prog <> "pgp" && !prog <> "DH_key" then (
     let f = match !prog with
       | "policy" -> 
 	  create_stack_policy false
@@ -705,7 +794,7 @@ let run ()  =
       | "reg" -> 
 	  create_stack_reg
       | "prompt" -> 
-	  create_stack_rekey false true
+	  create_stack_rekey "" true
       | "quit" -> 
 	  create_stack_quit
       | "encrypt_sanity" -> 
@@ -728,10 +817,12 @@ let run ()  =
 	  exit 0
       | "pgp" -> 
 	  pgp ()
+      | "DH_key" -> 
+	  dh_key ();
+	  exit 0
       | _ -> failwith "unknown security test"
   );
   
-  log (fun () -> "2");
   Appl.main_loop ()
     
 let _ = Appl.exec ["armadillo"] run

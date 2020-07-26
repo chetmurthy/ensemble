@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -46,6 +46,7 @@ type typ =
   | EExit				(* Disable this stack *)
   | EFail				(* Fail some members *)
   | EGossipExt				(* Gossip message *)
+  | EGossipExtDir			(* Gossip message directed at particular address *)
   | EInit				(* First event delivered *)
   | ELeave				(* A member wants to leave *)
   | ELostMessage			(* Member doesn't have a message *)
@@ -69,14 +70,13 @@ type typ =
   | ESecureMsg				(* Private Secure messaging *)
   | EChannelList			(* passing a list of secure-channels *)
   | EFlowBlock				(* Blocking/unblocking the application for flow control*)
-      (* Encryption/Decryption with PGP *)
-  | EPrivateEnc                         
-  | EPrivateEncrypted                         
-  | EPrivateDec
-  | EPrivateDecrypted
+(* Signature/Verification with PGP *)
+  | EAuth
 
   | ESecChannelList                     (* The channel list held by the SECCHAN layer *)
   | ERekeyCleanup
+  | ERekeyCommit 
+
 (**************************************************************)
 
 type field =
@@ -94,11 +94,11 @@ type field =
   | SuspectReason of string		(* reasons for suspicion *)
   | Stability	of seqno Arrayf.t	(* stability vector *)
   | NumCasts	of seqno Arrayf.t	(* number of casts seen *)
-  | Mergers	of View.state		(* list of merging members *)
   | Contact	of Endpt.full * View.id option (* contact for a merge *)
   | HealGos	of Proto.id * View.id * Endpt.full * View.t * Hsys.inet list (* HEAL gossip *)  
   | SwitchGos	of Proto.id * View.id * Time.t  (* SWITCH gossip *)
   | ExchangeGos	of string		(* EXCHANGE gossip *)
+  | MergeGos	of (Endpt.full * View.id option) * seqno * typ * View.state (* INTER gossip *)
   | ViewState	of View.state		(* state of next view *)
   | ProtoId	of Proto.id		(* protocol id (only for down events) *)
   | Time        of Time.t		(* current time *)
@@ -125,11 +125,8 @@ type field =
       (* Ohad -- interaction between Mflow, Pt2ptw, Pt2ptwp and the application*)
   | FlowBlock of rank option * bool
 
-      (* Encryption/Decryption with PGP *)
-  | PrivateEnc of Addr.set * Auth.clear
-  | PrivateEncrypted of Auth.ticket option
-  | PrivateDec of Addr.set * Auth.ticket
-  | PrivateDecrypted of Auth.clear option
+  (* Signature/Verification with Auth *)
+  | AuthData of Addr.set * Auth.data
 
   (* Information passing between optimized rekey layers
    *)
@@ -138,7 +135,7 @@ type field =
   | AgreedKey of Security.key
 
   | SecChannelList of Trans.rank list  (* The channel list held by the SECCHAN layer *)
-  | SecStat of int * int               (* PERF figures for SECCHAN layer *)
+  | SecStat of int                      (* PERF figures for SECCHAN layer *)
   | RekeyFlag of bool                   (* Do a cleanup or not *)
 
 (**************************************************************)
@@ -215,12 +212,12 @@ val getApplSends  	: t -> seqno Arrayf.t
 val getClientOnly	: t -> bool
 val getContact		: t -> Endpt.full * View.id option
 val getExtend     	: t -> field list
+val getExtendFail     	: (field -> 'a option) -> debug -> t -> 'a
 val getExtender     	: (field -> 'a option) -> 'a -> t -> 'a
 val getExtendOpt	: t -> (field -> bool) -> unit
 val getFailures		: t -> bool Arrayf.t
 val getFragment		: t -> bool
 val getIov		: t -> Iovecl.t
-val getMergers		: t -> View.state
 val getNoTotal		: t -> bool
 val getNoVsync          : t -> bool
 val getForceVsync       : t -> bool 
@@ -239,12 +236,9 @@ val getViewState	: t -> View.state
 val getSecureMsg        : t -> Buf.t
 val getChannelList      : t -> (Trans.rank * Security.key) list
 val getFlowBlock        : t -> rank option * bool	
-val getPrivateEnc       : t -> Addr.set * Auth.clear
-val getPrivateEncrypted : t -> Auth.ticket option
-val getPrivateDec       : t -> Addr.set * Auth.ticket 
-val getPrivateDecrypted : t -> Auth.clear option
+val getAuthData         : t -> Addr.set * Auth.data
 val getSecChannelList   : t -> Trans.rank list
-val getSecStat          : t -> int * int 
+val getSecStat          : t -> int 
 val getRekeyFlag        : t -> bool 
 
 val setIovFragment	: debug -> t -> Iovecl.t -> t

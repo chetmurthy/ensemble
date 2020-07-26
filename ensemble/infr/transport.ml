@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -31,14 +31,12 @@ let array_split3 abc =
 type dest =
   | XSend of rank
   | XCast
-  | XGossip
-  | XMerge of View.id option * Endpt.full
+  | XGossip of Addr.set option
 
 let string_of_dest = function
   | XSend rank -> sprintf "Send(%d)" rank
   | XCast -> "Cast"
-  | XGossip -> "Gossip"
-  | XMerge _ -> "Merge(...)"
+  | XGossip _ -> "Gossip"
 
 (**************************************************************)
 
@@ -49,48 +47,54 @@ type 'msg t = {
 
 (**************************************************************)
 
-let disable m 	= m.disable ()
-let send m rank = m.xmit (XSend rank)
-let cast m 	= m.xmit XCast
-let gossip m 	= m.xmit XGossip
-let merge m v e = m.xmit (XMerge(v,e))
+let disable m 	  = m.disable ()
+let send m rank   = m.xmit (XSend rank)
+let cast m 	  = m.xmit XCast
+let gossip m dest = m.xmit (XGossip dest)
 
 (**************************************************************)
+
+let send_modes ranking addr addrs dest =
+  log (fun () -> sprintf "src=%s dst=%s" 
+    (Addr.string_of_set addr) (Addr.string_of_set dest)) ;
+  
+  let modes = Addr.modes_of_view (Arrayf.doubleton addr dest) in
+  
+  log (fun () -> sprintf "modes.123=%s" 
+    (Arrayf.to_string Addr.string_of_id modes)) ;
+  
+  let modes = Arrayf.filter Addr.has_pt2pt modes in
+  if Arrayf.is_empty modes then
+    failwith "route:Send:no pt2pt modes in address" ;
+  Arrayf.singleton (Addr.prefer ranking modes)
+
 
 let find_modes ranking addr addrs = function
   | XSend dest ->
       let dest = Arrayf.get addrs dest in
-
-      log (fun () -> sprintf "src=%s dst=%s" 
-	  (Addr.string_of_set addr) (Addr.string_of_set dest)) ;
-
-      let modes = Addr.modes_of_view (Arrayf.doubleton addr dest) in
-
-      log (fun () -> sprintf "modes.123=%s" 
-	  (Arrayf.to_string Addr.string_of_id modes)) ;
-
-      let modes = Arrayf.filter Addr.has_pt2pt modes in
-      if Arrayf.is_empty modes then
-        failwith "route:Send:no pt2pt modes in address" ;
-      Arrayf.singleton (Addr.prefer ranking modes)
+      send_modes ranking addr addrs dest 
   | XCast ->
       let modes = Addr.modes_of_view addrs in
       let modes = Arrayf.filter Addr.has_pt2pt modes in
       if Arrayf.is_empty modes then
         failwith "route:Cast:no pt2pt modes in address" ;
       Arrayf.singleton (Addr.prefer ranking modes)
-  | XGossip ->                (* all available cast modes *)
+  | XGossip None ->                (* all available cast modes *)
       let modes = Addr.modes_of_view (Arrayf.singleton addr) in
       let modes = Arrayf.filter Addr.has_mcast modes in
       if Arrayf.is_empty modes then
         failwith "route:Gossip:no mcast modes in address" ;
       modes
+  | XGossip(Some dest) ->
+      send_modes ranking addr addrs dest 
+(*
   | XMerge(_,dest) ->
       let modes = Addr.modes_of_view (Arrayf.doubleton addr (snd dest)) in
       let modes = Arrayf.filter Addr.has_pt2pt modes in
       if Arrayf.is_empty modes then
         failwith "route:Merge:no pt2pt modes in address" ;
       Arrayf.singleton (Addr.prefer ranking modes)
+*)
 
 (**************************************************************)
 
@@ -107,8 +111,12 @@ let find_dests endpt group addrs view = function
       let addrs = Arrayf.filter (fun (e,a) -> e <> endpt) addrs in
       let addrs = Arrayf.map snd addrs in
       Domain.Pt2pt(addrs)
-  | XGossip -> Domain.Gossip(group)
+  | XGossip None -> Domain.Gossip(group)
+  | XGossip(Some dest) ->
+      Domain.Pt2pt(Arrayf.singleton dest)
+(*
   | XMerge(_,dest) -> Domain.Pt2pt(Arrayf.singleton (snd dest))
+*)
 
 (**************************************************************)
 
@@ -260,10 +268,8 @@ let f2 alarm ranking (ls,vs) stack_id router gen_recv =
 	Conn.multi_send conns
     | XSend dest -> 
         Conn.pt2pt_send conns dest
-    | XGossip -> 
+    | XGossip _ ->			(* Same either way *)
 	Conn.gossip conns
-    | XMerge(view_id,dest) ->
-	Conn.merge_send conns view_id (fst dest)
     in
 
     log (fun () -> sprintf "conn=%s" (Conn.string_of_id conn)) ;

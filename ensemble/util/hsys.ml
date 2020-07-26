@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -177,7 +177,6 @@ let stdin 		= Socket.stdin
 let string_of_inet_nums = Unix.string_of_inet_addr
 let substring_eq        = Socket.substring_eq
 let udp_recv            = Socket.udp_recv
-let weak_check          = Socket.weak_check
 let md5_init            = Socket.md5_init
 let md5_update          = Socket.md5_update
 let md5_final           = Socket.md5_final
@@ -413,6 +412,12 @@ let file_descr_of_socket = fos
  *)
 let inet_of_unix_inet_addr inet = inet
 let unix_inet_addr_of_inet inet = inet
+
+(* These simply returns the text readable value the
+ * inet (XXX.YYY.ZZZ.TTT). Used for safe marshaling routines.
+*)
+let simple_string_of_inet inet = Unix.string_of_inet_addr inet
+let simple_inet_of_string inet = Unix.inet_addr_of_string inet 
 
 (**************************************************************)
 

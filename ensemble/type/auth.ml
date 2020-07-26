@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -12,7 +12,10 @@
 (* Authors: Mark Hayden, Ohad Rodeh, 8/96 *)
 (**************************************************************)
 (* This file gives a generic interface to authentication
- * services. *)
+ * services. We assume that the ticket is in base64 format. 
+ * The Exchange protocol assumes this property when it does
+ * secure marshaling. 
+*)
 (**************************************************************)
 open Util
 open Trans
@@ -24,8 +27,8 @@ let log = Trace.log name
 (**************************************************************)
 
 type credentials = string
-type clear = Buf.t
-type cipher = Buf.t
+type clear = string 
+type cipher = string 
 
 type t = {
   name   : name ;
@@ -63,7 +66,7 @@ let lookup id =
   try 
     List.assoc id !handlers
   with Not_found ->
-    eprintf "AUTH:did not find id\n" ;
+    eprintf "AUTH:did not find id(%s)\n" (Addr.string_of_id id);
     raise Not_found
 	
 
@@ -75,7 +78,16 @@ let bckgr_unseal t = t.bckgr_unseal
 
 (**************************************************************)
 
+(* This is assumed to be in base64. 
+*)
 type ticket = cipher
+
+let string_of_ticket = ident 
+let ticket_of_string = ident 
+
+type data = 
+  | Clear of clear option
+  | Ticket  of ticket option
 
   (* Find intersection of modes.
    *)
@@ -87,6 +99,7 @@ let common_mode src dst =
   match m with
   | [] -> None
   | _ -> Some (List.hd m)
+
 
 let ticket src dst clear = 
   let id = common_mode src dst in
@@ -106,7 +119,7 @@ let bckgr_ticket sim src dst clear alarm rep_fun =
    *)
   if sim then (
     log (fun () -> "simulation");
-    rep_fun (Some clear)
+    rep_fun (Some (hex_of_string clear))
   ) else (
     let id = common_mode src dst in
     match id with 
@@ -136,7 +149,7 @@ let bckgr_check sim dst src cipher alarm rep_fun =
      *)
   if sim then (
     log (fun () -> "simulation");
-    rep_fun (Some cipher)
+    rep_fun (Some (hex_to_string cipher))
   ) else
     let id = common_mode src dst in
     match id with

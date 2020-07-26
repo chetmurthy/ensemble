@@ -33,11 +33,7 @@ AR		= ar r
 PLATFORM	= $(MACHTYPE)-$(OSTYPE)
 OBJDIR		= $(ROOT)/conf/$(PLATFORM)
 
-# uncomment HOTLIB with crypto and CRYPTOLIB to build
-# Maestro with the security code included
-
 HOTLIB		= $(ENS)/lib/$(PLATFORM)/libhot.a
-#HOTLIB		= $(ENS)/lib/$(PLATFORM)/libhot-crypto.a
 
 CRYPTOLIB	=
 #CRYPTOLIB	= $(ENS)/lib/$(PLATFORM)/libcryptoc.a
@@ -95,6 +91,7 @@ LIB		= $(MAELIB) $(HOTLIB) $(CRYPTOLIB) $(SYSLIB)
 all: 	libmae.a	\
 	newkey	\
 	read_ior
+
 
 ############################################################################
 

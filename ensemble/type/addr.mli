@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -94,3 +94,11 @@ val prefer : (id -> int) -> id Arrayf.t -> id
 val error : id Arrayf.t -> unit
 
 val modes_of_view : set Arrayf.t -> id Arrayf.t
+
+(**************************************************************)
+(* Support for safe marshaling
+ *)
+val safe_string_of_set : set -> string
+val safe_set_of_string : string -> set 
+(**************************************************************)
+      

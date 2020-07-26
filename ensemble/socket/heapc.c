@@ -1,6 +1,6 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -159,11 +159,6 @@ value skt_minor_words(void) {
   ret = stat_minor_words + Wsize_bsize (young_end - young_ptr) ;
   return Val_long(ret) ;
 }  
-
-value skt_weak_check(value w_v, value i_v) {
-  long i = Int_val(i_v) ;
-  return Val_bool(Field (w_v, i+1) != 0) ;
-}
 
 #if 0 /*defined(NATIVE_CODE)*/
 /* From asmrun/roots.c */

@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -98,7 +98,7 @@ let info p =
  * add to the free list.  
  *)
 let is_live p s =
-  if not (Hsys.weak_check s 0) then (
+  if not (Weak.check s 0) then (
     false 
   ) else if not p.actually_use_counts then (
     true

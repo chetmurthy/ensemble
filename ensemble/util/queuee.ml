@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -109,3 +109,8 @@ let rec clean f q =
   | None -> ()
   | Some v -> f v ; clean f q
 
+let transfer q0 q1 =
+  while not (empty q1) do
+    let v = take q1 in
+    add v q0
+  done

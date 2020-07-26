@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -58,8 +58,10 @@ val for_all2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
 val fold : ('a -> 'a -> 'a) -> 'a t -> 'a
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
 val fold_right : ('b -> 'a -> 'a) -> 'b t -> 'a -> 'a
-val ordered : ('a -> 'a -> bool) -> 'a t -> bool
-val sort : ('a -> 'a -> bool) -> 'a t -> unit
+(*val ordered : ('a -> 'a -> bool) -> 'a t -> bool*)
+(*val sort : ('a -> 'a -> bool) -> 'a t -> unit*)
+val ordered : ('a -> 'a -> int) -> 'a t -> bool
+val sort : ('a -> 'a -> int) -> 'a t -> unit
 val exists : (int -> 'a -> bool) -> 'a t -> bool
 
 (**************************************************************)

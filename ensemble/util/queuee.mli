@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -48,3 +48,4 @@ val takeopt : 'a t -> 'a option
 val to_list : 'a t -> 'a list
 val to_array : 'a t -> 'a array
 val clean : ('a -> unit) -> 'a t -> unit
+val transfer : 'a t -> 'a t -> unit

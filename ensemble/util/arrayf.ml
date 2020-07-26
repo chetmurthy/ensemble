@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -62,10 +62,10 @@ let exists = Arraye.exists
 
 (* If already ordered, then return input array.
  *)
-let sort ge a =
-  if ordered ge a then a else (
+let sort cmp a =
+  if ordered cmp a then a else (
     let a = Arraye.copy a in
-    Arraye.sort ge a ;
+    Arraye.sort cmp a ;
     a
   )
 
@@ -77,6 +77,17 @@ let fset a i x =
   a
 
 (**************************************************************)
+
+let max a =
+  let len = length a in
+  assert (len > 0) ;
+  let max = ref (get a 0) in
+  for i = 1 to pred len do
+    let v = get a i in
+    if v > !max then
+      max := v
+  done ;
+  !max
 
 let to_ranks a =
   let r = ref [] in

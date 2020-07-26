@@ -1,10 +1,10 @@
 Summary: toolkit for building reliable distributed applications
 Name: ensemble
-Version: 0.61
+Version: 0.70
 Release: 1
 Copyright: distributable
 Group: Development/Libraries
-Source: ftp.cornell.edu:/pub/ensemble/ensemble-0.61.tar.gz
+Source: ftp.cornell.edu:/pub/ensemble/ensemble-0.70.tar.gz
 %description
 
 Ensemble is a toolkit for building reliable distributed applications.

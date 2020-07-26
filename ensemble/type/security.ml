@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -10,7 +10,7 @@
 (**************************************************************)
 (* SECURITY *)
 (* Author: Mark Hayden, 6/95 *)
-(* Refinements: Ohad Rodeh 10/98 *)
+(* Refinements: Ohad Rodeh 10/98 7/2000 *)
 (**************************************************************)
 open Trans
 open Buf
@@ -18,24 +18,62 @@ open Util
 (**************************************************************)
 let name = Trace.file "SECURITY"
 let log = Trace.log name
-let failwith = Trace.make_failwith name
+let failwith s = Trace.make_failwith name s
 (**************************************************************)
 
 (* Type of keys in Ensemble.
+ * A key has two parts: 
+ * 1. mac-key, used for keyed-hashing. 
+ * 2. encyrption key, used for encryption functions.
+ * Each of the subkeys are 16 bytes long. 
  *)
+type mac = Buf.t
+type cipher = Buf.t
+
+type inner_key = {
+  mac    : mac ; 
+  cipher : cipher
+}
+    
 type key = 
   | NoKey
-  | Common of Buf.t
+  | Common of inner_key
 
+let mac_len = len16
+let cipher_len = len16
+let key_len =  mac_len +|| cipher_len
+
+
+let buf_of_cipher = ident
+
+let cipher_of_buf buf = 
+  if (Buf.length buf) < cipher_len then 
+    failwith "cipher_of_buf: buf is too short";
+  Buf.sub name buf len0 cipher_len
+
+let buf_of_mac = ident
+
+let mac_of_buf buf = 
+  if (Buf.length buf) < mac_len then 
+    failwith "mac_of_buf: buf is too short";
+  Buf.sub name buf len0 mac_len
+
+let get_cipher = function
+  | NoKey -> failwith "get_cipher:NoKey"
+  | Common key -> key.cipher
+
+let get_mac = function
+  | NoKey -> failwith "get_cipher:NoKey"
+  | Common key -> key.mac
+      
 let buf_of_key = function
   | NoKey -> raise (Failure "Key=NoKey")
-  | Common s -> s
+  | Common s -> Buf.append s.mac s.cipher
 
-let str_of_key k = Buf.to_string (buf_of_key k)
-      
 let string_of_key_short = function
   | NoKey -> "None"
   | Common key -> 
+      let key = Buf.append key.mac key.cipher in
       let key = Buf.to_string key in
       let key = Digest.string key in
       let key = Util.hex_of_string key in
@@ -47,34 +85,20 @@ let string_of_key_short = function
 let string_of_key = function
   | NoKey -> "{Key:None}"
   | Common key -> 
+      let key = Buf.append key.mac key.cipher in
       let key = Buf.to_string key in
       let key = Digest.string key in
       let key = Util.hex_of_string key in
       sprintf "{Key:Shared:%s(sig)}" key
 
-(*      
-let sign key buf ofs len =
-  let key = match key with
-  | NoKey -> failwith "sign:NoKey"
-  | Common s -> s
-  in
-  let ctx = Md5.init key in
-  Md5.update ctx (Buf.break buf) (int_of_len ofs) (int_of_len len);
-  let sign = Md5.final ctx in
-  Buf.of_string sign
-
-let sign_hack key buf ofs len dst ofs = 
-  let key = match key with
-  | NoKey -> failwith "sign:NoKey"
-  | Common s -> s
-  in
-  let ctx = Md5.init key in
-  Md5.update ctx (Buf.break buf) (int_of_len ofs) (int_of_len len);
-  Md5.final_hack ctx (Buf.break dst) (int_of_len ofs)
-*)
-
-(* Make a short-lived nonce: e.g., t + 5 seconds
- *)
-let make_nonce t = Time.add (Time.of_int 5) t
+let key_of_buf s = 
+  if Buf.length s < key_len then 
+    failwith "Key is too short. must be (at least) 32 bytes long";
+  let mac = Buf.sub name s len0 mac_len in
+  let cipher = Buf.sub name s mac_len cipher_len in
+  Common ({
+    mac = mac ;
+    cipher = cipher
+  })
 
 (**************************************************************)

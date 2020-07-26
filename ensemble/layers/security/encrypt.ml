@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -24,10 +24,10 @@ let log = Trace.log name
 let failwith = Trace.make_failwith name
 (**************************************************************)
 
-type header = NoHdr | Encrypted
+type header = NoHdr | Encrypted of len
 
 type state ={
-  in_place      : bool ;
+  inplace       : bool ;
   shared        : Cipher.t ;
   x_cast	: Cipher.context ;
   x_send        : Cipher.context array ;
@@ -35,15 +35,15 @@ type state ={
   r_send	: Cipher.context array 
 }
 
-let dump = Layer.layer_dump name (fun (ls,vs) (s:state) -> [|
+let dump = Layer.layer_dump name (fun (ls,vs) (s : state) -> [|
 |])
 
 let init _ (ls,vs) = 
-  let shared = Cipher.lookup "RC4" in
-  let chan e = Cipher.init shared vs.key e in
+  let shared = Cipher.lookup "OpenSSL/RC4" in
+  let chan e = Cipher.init shared (Security.get_cipher vs.key) e in
 
   { 
-    in_place = Param.bool vs.params "encrypt_in_place";
+    inplace = Param.bool vs.params "encrypt_inplace" ;
     shared = shared; 
     x_cast = chan true ;
     r_cast = Array.init ls.nmembers (fun _ -> chan false ) ;
@@ -55,69 +55,95 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let log = Trace.log2 name ls.name in
   let mbuf = Alarm.mbuf (Elink.alarm_get_hack ()) in
 
-  let encrypt ev ctx =
-    let iov = getIov ev in
-    let len = Iovecl.len name iov in
-      
-    let iov =
+  (* Choice of encryption function. Encrypt in-place, or first copy, 
+   * and then encrypt.
+   *)
+  let choose_impl flag iov len ctx = 
       if len <=|| Mbuf.max_len mbuf then (
-	let iov,_ =
-	  Mbuf.alloc_fun name mbuf (fun buf ofs _ ->
-            let len' = Iovecl.flatten_buf name iov buf ofs len in
-	    assert (len' =|| len) ;
-	    Cipher.encrypt_inplace s.shared ctx buf ofs len ;
-	    len,()
-	  )
-	in iov
+	(* Encryption inplace, causes no unnecessary allocations. 
+	 *)
+	if flag then (
+	  let iov = Iovecl.flatten name iov in
+	  let _ = Iovec.read name iov (fun buf ofs len -> 
+	    Cipher.encrypt_inplace s.shared ctx buf ofs len;
+	    ()
+	  ) in
+	  Iovecl.of_iovec name iov
+	) else (
+	  (* Safe version (default). First, copy the buffer to a new
+	   * location, then encrypt it. 
+	   *)
+	  let iov,_ =
+	    Mbuf.alloc_fun name mbuf (fun buf ofs _ ->
+              let len' = Iovecl.flatten_buf name iov buf ofs len in
+	      assert (len' =|| len) ;
+	      Cipher.encrypt_inplace s.shared ctx buf ofs len ;
+	      len,()
+	    )
+	  in iov
+	)
       ) else (
 	let buf = Buf.create len in
 	ignore (Iovecl.flatten_buf name iov buf len0 len) ;
 	Cipher.encrypt_inplace s.shared ctx buf len0 len ;
 	Iovecl.alloc name (Iovec.heap name buf) len0 len
       )
-    in
-
-(*
-    let iov = 
-      let iov = Mbuf.flatten name mbuf iov in
-    (* We are encrypting the iovec in-place here.
-     *)
-(*
-      if s.in_place then ( 
-	log (fun () -> "inplace");
-	Iovec.read name iov (fun buf ofs len ->
-	  Cipher.encrypt_inplace s.shared ctx buf ofs len
-	); 
-	iov
-      ) else *)(
-       (* We are allocating a new iovec here.
-	*)
-	let buf =
-	  Iovec.read name iov (fun buf ofs len ->
-	    Cipher.encrypt s.shared ctx buf ofs len
-	  )
+  in
+	
+  let core = choose_impl s.inplace in
+  
+  (* Encrypt the iovec.  Note that most encryption algorithms requires that the
+   * payload size be a multiple of 8.
+   *)
+  let encrypt ev chan =
+      let iov = getIov ev in
+      let len = Iovecl.len name iov in
+      if len =|| len0 then ev,len else (
+	let fill = len8 -|| (Buf.len_of_int ((Buf.int_of_len len) mod 8)) in
+	let fill = if fill =|| len8 then len0 else fill in
+	let iov =
+	  if fill =|| len0 then
+            iov
+	  else 
+	    (* Add some random filler data to the end.
+	     *)
+            Iovecl.append name iov (Iovecl.of_iovec name 
+	      (Iovec.create name fill))
 	in
-	let len = Buf.length buf in
-	let iov = Iovecl.alloc name (Iovec.heap name buf) len0 len in
-	iov
-      ) 
-    in
-*)
-    let ev = set name ev [Iov iov] in
-    ev
+	let iov = core iov (fill +|| len) chan in
+	let ev = set name ev [Iov iov] in
+	ev,len
+      )
   in
   
+  (* Decrypt the iovector and chop of excess iovec data.
+   *)
+  let decrypt ev chan actual =
+    let iov = getIov ev in
+    let len = Iovecl.len name iov in
+    if len =||len0 then ev else (
+      assert ((int_of_len len) mod 8 = 0);
+      let iov = core iov len chan in
+      let iov = Iovecl.sub name iov len0 actual in
+      let ev = set name ev [Iov iov] in
+      ev
+    )
+  in
+
+  
   let up_hdlr ev abv hdr = match getType ev, hdr with
-  | ECast, Encrypted -> 
-      log (fun () -> "decrypting");
+  | ECast, Encrypted actual -> 
+      log (fun () -> sprintf "[decrypting len=%d" (Buf.int_of_len actual));
       let src = getPeer ev in
-      let ev = encrypt ev s.r_cast.(src) in
+      log (fun () -> "]");
+      let ev = decrypt ev s.r_cast.(src) actual in
       up ev abv
 	
-  | ESend, Encrypted -> 
-      log (fun () -> "decrypting");
+  | ESend, Encrypted actual -> 
+      log (fun () -> sprintf "[decrypting len=%d" (Buf.int_of_len actual));
       let src = getPeer ev in
-      let ev = encrypt ev s.r_send.(src) in
+      let ev = decrypt ev s.r_send.(src) actual in
+      log (fun () -> "]");
       up ev abv
 	
   | _, NoHdr -> up ev abv
@@ -128,15 +154,17 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   
   and dn_hdlr ev abv = match getType ev with
   | ECast when getApplMsg ev -> 
-      log (fun () -> "encrypting");
-      let ev = encrypt ev s.x_cast in
-      dn ev abv Encrypted
+      log (fun () -> "[encrypting");
+      let ev,len = encrypt ev s.x_cast in
+      log (fun () -> "]");
+      dn ev abv (Encrypted len)
 
   | ESend when getApplMsg ev -> 
-      log (fun () -> "encrypting");
+      log (fun () -> "[encrypting");
       let dst = getPeer ev in
-      let ev = encrypt ev s.x_send.(dst) in
-      dn ev abv Encrypted
+      let ev,len = encrypt ev s.x_send.(dst) in
+      log (fun () -> "]");
+      dn ev abv (Encrypted len)
 
   | _ -> dn ev abv NoHdr
 
@@ -147,7 +175,7 @@ in {up_in=up_hdlr;uplm_in=uplm_hdlr;upnm_in=upnm_hdlr;dn_in=dn_hdlr;dnnm_in=dnnm
 let l args vs = Layer.hdr init hdlrs None (FullNoHdr NoHdr) args vs
 
 let _ = 
-  Param.default "encrypt_in_place" (Param.Bool false) ;
+  Param.default "encrypt_inplace" (Param.Bool false) ;
   Elink.layer_install name l
     
 (**************************************************************)

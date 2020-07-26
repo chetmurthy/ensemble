@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -21,9 +21,6 @@ let name = Trace.filel "INTER"
 (**************************************************************)
 
 type header = NoHdr
-  | Request of View.state
-  | Granted of View.state
-  | Denied  of View.state
 	
 type states =
   | Normal
@@ -63,14 +60,28 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let failwith   = layer_fail dump vf s name in
   let log        = Trace.log2 name ls.name in
   let assertions l = Array.iter (fun (v,s) -> if not v then failwith s) l in
-(*let ack 	 = make_acker name dnnm in*)
 
-  let up_hdlr ev abv hdr = match getType ev,hdr with
+  let up_hdlr ev abv NoHdr = up ev abv
+  and uplm_hdlr _ _ = failwith unknown_local
+
+  and upnm_hdlr ev = match getType ev with
+  | EView ->
+      s.state <- InstalledView ;
+      upnm ev
+
+    (* EBlockOk: mark state and pass on.
+     *)
+  | EBlockOk -> 
+      s.blocked <- true ; 
+      upnm ev
+
     (* EMergeRequest (Coordinator): merge request from remote
      * coordinator.
      *)
-  | EMergeRequest, Request(merge_vs) ->
+  | EMergeRequest ->
+      let merge_vs = getViewState ev in
       let merge_view = Lset.inject merge_vs.view in
+      assert (merge_vs = getViewState ev) ;
 
       if ls.am_coord			(* I'm coord *)
       && not s.blocked			(* haven't blocked yet *)
@@ -83,7 +94,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	log (fun () -> sprintf "EMergeRequest:accepted:%s" (View.to_string merge_vs.view)) ;
 	s.endpts_seen <- Lset.uniona s.endpts_seen merge_view ;
         s.mergers     <- merge_vs :: s.mergers ;
-	up (set name ev [Mergers merge_vs]) abv
+	upnm (set name ev [ViewState merge_vs])
       ) else (
       	(* Deny request.
 	 *)
@@ -95,22 +106,21 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	
 	let merge_con = View.coord_full merge_vs in
 	let merge_vid = View.id_of_state merge_vs in
-      	dnlm (create name EMergeDenied[
-      	  Contact(merge_con,Some merge_vid)
-      	]) (Denied merge_vs) ;
+      	dnnm (create name EMergeDenied[
+      	  Contact(merge_con,Some merge_vid) ;
+	  MergeGos((merge_con,Some merge_vid),0,EMergeDenied,merge_vs) ;
+	  ViewState merge_vs
+      	]) ;
       	free name ev
       )
-
-  | _, NoHdr -> up ev abv
-  | _ -> failwith bad_up_event
-
-  and uplm_hdlr ev hdr = match getType ev,hdr with
 
     (* EMergeGranted(Coordinator): Remote merging
      * coordinator: new view arrived from coordinator.
      * bounce off bottom.  
      *)
-  | EMergeGranted, Granted(new_vs) ->
+  | EMergeGranted ->
+      let new_vs = getViewState ev in
+      assert (new_vs = getViewState ev) ;
       if ls.am_coord
       && s.state = Merging 
       && List.mem ls.view_id new_vs.prev_ids
@@ -131,7 +141,9 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
     (* EMergeDenied: if the view state matches mine,
      * then pass up an EMergeFailed event.
      *)
-  | EMergeDenied, Denied(merge_vs) ->
+  | EMergeDenied ->
+      let merge_vs = getViewState ev in
+      assert (merge_vs = getViewState ev) ;
       if ls.am_coord
       && s.state = Merging 
       && vs = merge_vs
@@ -141,19 +153,6 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	upnm (create name EMergeFailed[])
       ) ;
       free name ev
-
-  | _ -> failwith unknown_local
-
-  and upnm_hdlr ev = match getType ev with
-  | EView ->
-      s.state <- InstalledView ;
-      upnm ev
-
-    (* EBlockOk: mark state and pass on.
-     *)
-  | EBlockOk -> 
-      s.blocked <- true ; 
-      upnm ev
 
     (* EMergeFailed: my EMerge timed out.  If the merge
      * was still in progress, send it on up.
@@ -170,23 +169,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | EDump -> ( dump vf s ; upnm ev )
   | _ -> upnm ev
 
-  and dn_hdlr ev abv = match getType ev with
-    (* EMergeRequest. Sends merge request.  Note that EMerge
-     * should only be done after zero failures and by the
-     * original coordinator of the group.  
-     *)
-  | EMergeRequest ->
-      (* Check a bunch of assertions. *)
-      let contact,contact_vid = getContact ev in
-      assert ls.am_coord ;
-      assert (not (Arrayf.mem (fst contact) vs.view)) ;
-      assert (s.state = Normal) ;
-
-      log (fun () -> sprintf "EMergeRequest:with:%s" (Endpt.string_of_full contact)) ;
-      s.state <- Merging ;
-      dn ev abv (Request vs)
-
-  | _   -> dn ev abv NoHdr
+  and dn_hdlr ev abv = dn ev abv NoHdr
 
   and dnnm_hdlr ev = match getType ev with
     (* EView: Forward view to merging groups.
@@ -207,13 +190,31 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	let contact = View.coord_full merge_vs in
  	let view_id = View.id_of_state merge_vs in
         log (fun () -> sprintf "EView:with:%s" (Endpt.string_of_full contact)) ;
-        dnlm (create name EMergeGranted[
-          Contact(contact,Some view_id)
-        ]) (Granted new_vs)
+        dnnm (create name EMergeGranted[
+          Contact(contact,Some view_id) ;
+	  MergeGos((contact,Some view_id),0,EMergeGranted,new_vs) ;
+	  ViewState new_vs
+        ])
       ) s.mergers ;
 
       (* Pass view to my partition.
        *)
+      dnnm ev
+
+    (* EMergeRequest. Sends merge request.  Note that EMerge
+     * should only be done after zero failures and by the
+     * original coordinator of the group.  
+     *)
+  | EMergeRequest ->
+      (* Check a bunch of assertions. *)
+      let contact,contact_vid = getContact ev in
+      assert ls.am_coord ;
+      assert (not (Arrayf.mem (fst contact) vs.view)) ;
+      assert (s.state = Normal) ;
+
+      log (fun () -> sprintf "EMergeRequest:with:%s" (Endpt.string_of_full contact)) ;
+      s.state <- Merging ;
+      let ev = set name ev [ViewState vs;MergeGos((getContact ev),0,EMergeRequest,vs)] in
       dnnm ev
 
   | _ -> dnnm ev

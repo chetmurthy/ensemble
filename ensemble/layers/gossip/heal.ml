@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -152,7 +152,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       then (
 	s.bcasted <- true ;
 	log (fun () -> "bcasting(recv)") ;
-	dnnm (create name EGossipExt[(gossip_send ())])
+	dnnm (create name EGossipExtDir[Address(snd bc_con) ; gossip_send ()])
       )
     ) else (
       log (fun () -> sprintf "gossip dropped from %s" (Endpt.string_of_id bc_coord)) ;

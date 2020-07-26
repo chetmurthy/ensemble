@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -78,15 +78,19 @@ val no_msg : unit -> ('local,'hdr,'abv) msg
 type state = {
   interface        : Appl_intf.New.t ;
   switch	   : Time.t saved ;
-  exchange         : (Endpt.id * Addr.set -> bool) option ;
-  secchan          : (Endpt.id * Time.t * Time.t * Security.key * Msecchan.status) list ref ;
-  tree             : Tree.z ref ; (* Stored state for the OPTREKEY layer *)
-  key_list         : (Key.t * Security.key) list ref 
+  exchange         : (Addr.set -> bool) option ;
+  secchan          : (Endpt.id * Security.cipher) list ref ; (* State for SECCHAN *)
+  tree             : Tree.z ref ;          (* State for OPTREKEY *)
+  key_list         : (Key.t * Security.cipher option) list ref ; (* State for REALKEYS *)
+  dyn_tree         : Mrekey_dt.t ref ;   (* State for REKEY_DT *)
+  diam             : Diamond.appl_state option ref ; (* State for REKEY_DIAM *)
+  dh_key           : Shared.DH.key option ref ;
+  next_cleanup     : Time.t ref
 }
 
 val new_state : Appl_intf.New.t -> state
 
-val set_exchange : (Endpt.id * Addr.set -> bool) option -> state -> state
+val set_exchange : (Addr.set -> bool) option -> state -> state
 
 val reset_state : state -> unit
 

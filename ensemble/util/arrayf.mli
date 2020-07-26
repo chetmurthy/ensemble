@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -35,6 +35,7 @@ val gossip : bool t -> int -> int t
 val index : 'a -> 'a t -> int
 val init : int -> (int -> 'a) -> 'a t
 val int_to_string : int t -> string
+val max : 'a t -> 'a
 val is_empty : 'a t -> bool
 val iter : ('a -> unit) -> 'a t -> unit
 val iteri : (int -> 'a -> unit) -> 'a t -> unit
@@ -62,8 +63,10 @@ val choose : 'a t -> int -> 'a list
 val fold : ('a -> 'a -> 'a) -> 'a t -> 'a
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
 val fold_right : ('b -> 'a -> 'a) -> 'b t -> 'a -> 'a
-val ordered : ('a -> 'a -> bool) -> 'a t -> bool
-val sort : ('a -> 'a -> bool) -> 'a t -> 'a t
+(*val ordered : ('a -> 'a -> bool) -> 'a t -> bool*)
+(*val sort : ('a -> 'a -> bool) -> 'a t -> 'a t*)
+val ordered : ('a -> 'a -> int) -> 'a t -> bool
+val sort : ('a -> 'a -> int) -> 'a t -> 'a t
 val exists : (int -> 'a -> bool) -> 'a t -> bool
 
 (**************************************************************)

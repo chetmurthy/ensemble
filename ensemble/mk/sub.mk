@@ -1,6 +1,6 @@
 #*************************************************************#
 #
-#   Ensemble, (Version 0.70p1)
+#   Ensemble, (Version 1.00)
 #   Copyright 2000 Cornell University
 #   All rights reserved.
 #
@@ -54,6 +54,9 @@ wbml:
 
 hot:
 	$(MAKE_DEF) hot
+
+libhot-crypto:
+	$(MAKE_DEF) libhot-crypto
 
 hoto:
 	$(MAKE_DEF) hoto

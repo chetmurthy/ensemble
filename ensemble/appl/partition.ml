@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -90,8 +90,8 @@ let connected link_drop_rate e1 e2 =
   add_endpt e1 ;
   add_endpt e2 ;
   update link_drop_rate () ;
-  if hashtbl_mem failed (e1, e2)
-  || hashtbl_mem failed (e2, e1) && (Hashtbl.find failed (e2, e1))
+  if Hashtbl.mem failed (e1, e2)
+  || Hashtbl.mem failed (e2, e1) && (Hashtbl.find failed (e2, e1))
   then (
     incr dropped ;
     info () ;

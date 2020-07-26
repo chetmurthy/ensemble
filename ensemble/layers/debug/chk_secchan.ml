@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -21,7 +21,10 @@ open Event
 let name = Trace.filel "CHK_SECCHAN"
 (**************************************************************)
 
-type header = ChanList of rank list | NoHdr
+type header = 
+  | ChanList of rank list 
+  | Len of Buf.len
+  | NoHdr
 
 type state = {
   nonce               : int ;
@@ -51,6 +54,29 @@ let log ls = Trace.log2 name (string_of_int ls.rank)
 let log1 ls = Trace.log2 (name^"1") (string_of_int ls.rank)
   
 (**************************************************************)
+  (* Pad a message to be a multiply of 8 bytes. return the new 
+   * message, and the actual length of the message.
+   *)
+let pad_msg m = 
+  let len = Buf.length m in 
+  let len = Buf.int_of_len len in
+  if len mod 8 <> 0 then 
+    let ceil  = ((len /8 ) + 1 ) * 8 in
+    let fill = ceil - len in
+    let m = Buf.append m (Buf.create (Buf.len_of_int fill)) in
+    m,(Buf.len_of_int len)
+  else
+    m,(Buf.len_of_int len)
+
+(* Strip the padding from the message. 
+ *)
+let strip_pad m actual = Buf.sub name m Buf.len0 actual 
+
+
+let sendSecureMsg dnlm peer m = 
+  let m,actual = pad_msg (marshal m) in
+  dnlm (create name ESecureMsg [Peer peer; SecureMsg m]) (Len actual)
+
 module type TEST = sig
   val timer : state -> View.full -> (Event.t -> header -> unit) -> Time.t -> unit
   val handle_secure_msg : state -> View.full -> (Event.t -> header -> unit) ->  msg -> rank -> unit
@@ -60,10 +86,9 @@ module N_to_n : TEST = struct
   let send_all s (ls,vs) dnlm  = 
     if not s.blocked then (
       log ls (fun () -> sprintf "sending %d" s.nonce);
-      let rnd = marshal (Out s.nonce) in
       for i=0 to (pred ls.nmembers) do 
 	if ls.rank <> i then 
-	  dnlm (create name ESecureMsg [Peer i; SecureMsg rnd]) NoHdr
+	  sendSecureMsg dnlm i (Out s.nonce)
       done;
     )
 
@@ -79,8 +104,7 @@ module N_to_n : TEST = struct
     match m with 
     | Out r -> 
 	log1 ls (fun () -> sprintf "Got [%d] msg=%d" src r);
-	let reply = marshal (In r) in
-	dnlm (create name ESecureMsg [Peer src; SecureMsg reply]) NoHdr
+	sendSecureMsg dnlm src (In r)
     | In r -> 
 	if r = s.nonce then (
 	  log1 ls (fun () -> sprintf "Echo from %d -- OK" src);
@@ -100,9 +124,8 @@ module One_to_n : TEST = struct
   let send_all s (ls,vs) dnlm  = 
     assert(ls.rank=0);
     log ls (fun () -> sprintf "sending %d" s.nonce);
-    let rnd = marshal (Out s.nonce) in
     for i=1 to (pred ls.nmembers) do 
-      dnlm (create name ESecureMsg [Peer i; SecureMsg rnd]) NoHdr
+      sendSecureMsg dnlm i (Out s.nonce) 
     done;
     ()
 
@@ -118,8 +141,7 @@ module One_to_n : TEST = struct
     match m with 
     | Out r -> 
 	log1 ls (fun () -> sprintf "Got [%d] msg=%d" src r);
-	let reply = marshal (In r) in
-	dnlm (create name ESecureMsg [Peer src; SecureMsg reply]) NoHdr
+	sendSecureMsg dnlm src (In r) 
     | In r -> 
 	if r = s.nonce then (
 	  log1 ls (fun () -> sprintf "Echo from %d -- OK" src);
@@ -136,21 +158,22 @@ module One_to_n : TEST = struct
 end
 
 module Ping : TEST = struct
-  let hello = marshal (String "hello world")
+  let hello = String "hello world"
 
   let timer s (ls,vs) dnlm t = 
     if s.first_time && ls.nmembers > 1 then (
+      log ls (fun () -> "ping");
       s.first_time <- false;
       match ls.rank with 
-	| 0 -> dnlm (create name ESecureMsg [Peer 1; SecureMsg hello]) NoHdr
+	| 0 -> sendSecureMsg dnlm 1 hello
 	| _ -> ()
     )
 
   let handle_secure_msg s (ls,vs) dnlm m src = 
-    if m <> (String "hello world") then failwith "bad message";
+    if m <> hello then failwith "bad message";
     match src,ls.rank with 
-      | 1,0 -> dnlm (create name ESecureMsg [Peer 1; SecureMsg hello]) NoHdr
-      | 0,1 -> dnlm (create name ESecureMsg [Peer 0; SecureMsg hello]) NoHdr
+      | 1,0 -> sendSecureMsg dnlm 1 hello
+      | 0,1 -> sendSecureMsg dnlm 0 hello
       | _ -> failwith "Ping, bad message destination"
 end
 
@@ -196,10 +219,11 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   and uplm_hdlr ev hdr = 
     match getType ev,hdr with
       (* Echo received messages *)
-    | ESecureMsg,NoHdr -> 
+    | ESecureMsg,Len actual -> 
 	if not s.blocked then (
 	  let src = getPeer ev in
 	  let m = getSecureMsg ev in
+	  let m = strip_pad m actual in 
 	  let m = unmarshal m Buf.len0 (Buf.length m) in
 	  handle_secure_msg s (ls,vs) dnlm m src
 	);
@@ -218,6 +242,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 		
   and upnm_hdlr ev = match getType ev with
     | ETimer -> 
+	log (fun () -> "timer");
 	timer s (ls,vs) dnlm (getTime ev) ;
 	upnm ev	
 

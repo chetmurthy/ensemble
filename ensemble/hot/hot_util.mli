@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -42,7 +42,8 @@ type c_view_state = {
   c_params	: string ;
   c_xfer_view	: bool ; 
   c_primary	: bool ;
-  c_clients     : bool array
+  c_clients     : bool array;
+  c_key         : string 
 }
 
 
@@ -60,7 +61,10 @@ type join_options = {
   jops_params	        : string ;
   jops_client           : bool ;
   jops_debug            : bool ;
-  jops_endpt            : string
+  jops_endpt            : string ;
+  jops_princ            : string ;
+  jops_key              : string ;
+  jops_secure           : bool
 }
 (*
 val marsh_upcall : Mbuf.t -> View.state option -> Protos.id -> Protos.upcall -> Iovecl.t

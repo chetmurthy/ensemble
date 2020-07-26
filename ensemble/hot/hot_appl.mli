@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -24,10 +24,12 @@ type c_dncall =
   | C_Cast of Buf.t
   | C_Send of endpt * Buf.t
   | C_Suspect of endpt array 
+  | C_XferDone of unit
   | C_Protocol of string
   | C_Properties of string
   | C_Leave of unit
   | C_Prompt of unit
+  | C_Rekey of unit
   | C_BlockOk of unit
   | C_Void of unit
 

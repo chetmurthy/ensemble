@@ -1,6 +1,6 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -44,7 +44,7 @@ extern mlsize_t string_length(value) ;
 #endif 
 MSG_INLINE
 static void trace(const char *s, ...) {
-#if 0
+  //#if 0
   va_list args;
   static int debugging = -1 ;
 
@@ -60,7 +60,7 @@ static void trace(const char *s, ...) {
   vfprintf(stderr, s, args);
   fprintf(stderr, "\n");
   va_end(args);
-#endif
+  //#endif
 }
 
 #if 0
@@ -134,10 +134,12 @@ typedef enum {
   DNCALL_CAST,
   DNCALL_SEND,
   DNCALL_SUSPECT,
+  DNCALL_XFERDONE,
   DNCALL_PROTOCOL,
   DNCALL_PROPERTIES,
   DNCALL_LEAVE,
   DNCALL_PROMPT,
+  DNCALL_REKEY,
   DNCALL_VOID
 } dncall_type ;
 
@@ -751,7 +753,9 @@ static value Val_endpt(
  *   properties:        string;
  *   use_properties:    bool;
  *   groupd:            bool;
- *   params:            string
+ *   params:            string;
+ *   princ:             string;
+ *   key:               string;
  *   debug:             bool;
  * }
  */
@@ -768,6 +772,10 @@ enum join_ops_enum {
     JOPS_DEBUG,
     JOPS_ENDPT,
 
+    JOPS_PRINC,
+    JOPS_KEY,
+    JOPS_SECURE,
+    
     JOPS_NFIELDS
 };
 
@@ -792,6 +800,9 @@ static value Val_of_joinOps(hot_ens_JoinOps_t *ops) {
     rt[JOPS_CLIENT] = Val_bool(ops->client);
     rt[JOPS_DEBUG] = Val_bool(ops->debug);
     rt[JOPS_ENDPT] = hot_ml_copy_string(ops->endpt.name) ;
+    rt[JOPS_PRINC] = hot_ml_copy_string(ops->princ);
+    rt[JOPS_KEY] = hot_ml_copy_string(ops->key);
+    rt[JOPS_SECURE] = Val_bool(ops->secure);
 
     rt[JOPS_V] = alloc_tuple(JOPS_NFIELDS);
 
@@ -806,6 +817,9 @@ static value Val_of_joinOps(hot_ens_JoinOps_t *ops) {
     Field(rt[JOPS_V], JOPS_CLIENT) = rt[JOPS_CLIENT];
     Field(rt[JOPS_V], JOPS_DEBUG) = rt[JOPS_DEBUG] ;
     Field(rt[JOPS_V], JOPS_ENDPT) = rt[JOPS_ENDPT] ;
+    Field(rt[JOPS_V], JOPS_PRINC) = rt[JOPS_PRINC];
+    Field(rt[JOPS_V], JOPS_KEY)   = rt[JOPS_KEY];
+    Field(rt[JOPS_V], JOPS_SECURE) = rt[JOPS_SECURE];
 
     CAMLreturn(rt[JOPS_V]) ;
 }
@@ -997,7 +1011,8 @@ enum ens_view_state_enum {
     HOT_ENS_VIEW_STATE_PARAMS,
     HOT_ENS_VIEW_STATE_XFER_VIEW,
     HOT_ENS_VIEW_STATE_PRIMARY,
-    HOT_ENS_VIEW_STATE_CLIENTS
+    HOT_ENS_VIEW_STATE_CLIENTS,
+    HOT_ENS_VIEW_STATE_KEY
 };
 
 /*
@@ -1015,7 +1030,8 @@ type ens_view_state = {
   c_params	: string ;
   c_xfer_view	: bool ; 
   c_primary	: bool ;
-  c_clients     : bool array
+  c_clients     : bool array ;
+  c_key         : string 
 
 }
 
@@ -1035,6 +1051,7 @@ type ens_view_state = {
  *     int xfer_view;
  *     int primary;
  *     hot_bool_t *clients;
+ *     char key[HOT_ENS_MAX_KEY_LEGNTH];
  * };
  */
 
@@ -1051,7 +1068,7 @@ static void string_of_val_copy(
   len = string_length(s_v) ;
   if (len+1 >= max_len) {
     char msg[1000] ;
-    sprintf(msg,"ViewState_of_val: %s string too long", debug) ;
+    sprintf(msg,"ViewState_of_val: %s string too long (%d,max=%d)", debug, len, max_len) ;
     hot_sys_Panic(msg) ;
   }
   
@@ -1106,6 +1123,11 @@ static void ViewState_of_val(
   Bool_array_val(Field(vs_v, HOT_ENS_VIEW_STATE_CLIENTS),
 			    &nclients, &vs->clients);
   assert(nclients == vs->nmembers);
+
+  string_of_val_copy("key",
+		     Field(vs_v, HOT_ENS_VIEW_STATE_KEY),
+		     vs->key,
+		     HOT_ENS_MAX_KEY_LEGNTH) ;
 }
 
 /* Return a value containing the specified downcall request.
@@ -1157,8 +1179,16 @@ static value Val_of_dn(dncall_t *dn) {
     dn_v = hot_ml_alloc("Val_of_dn:suspect",1, DNCALL_SUSPECT);
     Field(dn_v, 0) = field0;
     break;
+  case DNCALL_XFERDONE:
+    dn_v = hot_ml_alloc("Val_of_dn:xferdone", 1, DNCALL_XFERDONE);
+    Field(dn_v, 0) = Val_unit ;
+    break;
   case DNCALL_PROMPT:
     dn_v = hot_ml_alloc("Val_of_dn:prompt", 1, DNCALL_PROMPT);
+    Field(dn_v, 0) = Val_unit ;
+    break;
+  case DNCALL_REKEY:
+    dn_v = hot_ml_alloc("Val_of_dn:rekey", 1, DNCALL_REKEY);
     Field(dn_v, 0) = Val_unit ;
     break;
   case DNCALL_PROTOCOL:
@@ -1209,6 +1239,8 @@ void hot_ens_InitJoinOps(hot_ens_JoinOps_t *ops) {
   strcpy(ops->properties, HOT_ENS_DEFAULT_PROPERTIES);
   ops->use_properties = 1;
   strcpy(ops->params, "");
+  strcpy(ops->princ, "");
+  strcpy(ops->key, "");
   ops->groupd = 0;
   ops->argv = NULL ;
   ops->env = NULL ;
@@ -1371,6 +1403,23 @@ hot_err_t hot_ens_Suspect(
   return HOT_OK;
 }
 
+/* Inform Ensemble that the state-transfer is complete. 
+ */
+hot_err_t hot_ens_XferDone(
+        hot_gctx_t gctx
+) {
+  dncall_t *dn;
+  begin_critical();
+    
+  /* Enqueue the XferDone request.
+   */
+  dn = alloc_dn(gctx,DNCALL_XFERDONE);
+    
+  end_critical();
+  return HOT_OK;
+}
+
+
 /* Request a protocol change.
  */
 hot_err_t hot_ens_ChangeProtocol(
@@ -1436,6 +1485,21 @@ hot_err_t hot_ens_RequestNewView(
   return HOT_OK;
 }
 
+/* Request a Rekey operation.
+ */
+hot_err_t hot_ens_Rekey(
+        hot_gctx_t gctx
+) {
+  dncall_t *dn;
+  begin_critical();
+    
+  /* Enqueue the Rekey request.
+   */
+  dn = alloc_dn(gctx,DNCALL_REKEY);
+    
+  end_critical();
+  return HOT_OK;
+}
 
 /*######################### Callback Dispatchers ############################*/
 
@@ -1543,6 +1607,7 @@ value hot_ens_AcceptedView_cbd(	/* ML */
   hot_ens_AcceptedView_cback accepted_view;
   
   trace("view") ;
+
   begin_critical();
   env = gc->env;
   accepted_view = gc->conf.accepted_view;

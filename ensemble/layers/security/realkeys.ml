@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -33,6 +33,7 @@ open Event
 open Trans
 open Shared
 open Tdefs
+open Security
 (**************************************************************)
 let name = Trace.filel "REALKEYS"
 let my_assert (flag,s) = assert (if not flag 
@@ -61,9 +62,9 @@ type istate = {
 type state = {
   blocked            : Once.t ;
   got_tree           : Once.t ;
-  mutable dly_shared_key: (origin * Key.t * Security.key) option ;
+  mutable dly_shared_key: (origin * Key.t * Security.cipher option) option ;
   mutable dly_sum_casts : ((Key.t * Buf.t) list * Key.t) list option ;
-  key_list_ref       : (Key.t * Security.key) list ref ;
+  key_list_ref       : (Key.t * Security.cipher option) list ref ;
   mutable key_list   : RealKey.set ;
   mutable is         : istate option
 }
@@ -106,17 +107,21 @@ let dump = Layer.layer_dump name (fun (ls,vs) s -> [|
 (**************************************************************)
   
 let init s (ls,vs) = 
-  try {
-  blocked        = Once.create "blocked" ;
-  got_tree       = Once.create "got_tree" ;
-  dly_shared_key = None ;
-  dly_sum_casts  = None ;
-  key_list_ref   = s.Layer.key_list ;
-  key_list       = RealKey.from_list 
-    (List.map RealKey.from_pair !(s.Layer.key_list)) ;
-  is             = None
-} with _ -> eprintf "REALKEYS Error in init\n"; exit 0
-  
+  try 
+    let key_list = RealKey.from_list (
+      List.map RealKey.from_pair !(s.Layer.key_list)
+    ) in
+    {
+      blocked        = Once.create "blocked" ;
+      got_tree       = Once.create "got_tree" ;
+      dly_shared_key = None ;
+      dly_sum_casts  = None ;
+      key_list_ref   = s.Layer.key_list ;
+      key_list       = key_list ;
+      is             = None
+    } 
+  with _ -> eprintf "REALKEYS Error in init\n"; exit 0
+      
 (**************************************************************)
   
 (* Compute the total set of multicasts that I need to receive
@@ -135,9 +140,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let log3 = Trace.log2 (name^"3") "" in
   let logm = Trace.log2 (" "^name) "" in
 
-  let shared = Cipher.lookup "RC4" in
-  let encrypt key = Cipher.single_use shared key true
-  and decrypt key = Cipher.single_use shared key false in
+  let shared = Cipher.lookup "OpenSSL/RC4" in
+  let encrypt = function
+    | None -> failwith "encrypt: cannot encrypt with an empty key"
+    | Some cipher -> Cipher.single_use shared cipher true in
 
   let get_is () = match s.is with 
     | None -> dump (ls,vs) s; failwith "s.is is empty"
@@ -147,8 +153,16 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let dn_ack () = 
     log (fun () -> "dn_ack");
     let key = try 
-      let tag,skey = RealKey.hd s.key_list in skey
-    with Not_found -> Security.NoKey
+      let tag,skey = RealKey.hd s.key_list in 
+      match skey with 
+	| None -> Security.NoKey
+	| Some skey -> 
+	    Security.Common({
+	      mac = mac_of_buf (buf_of_cipher skey) ;
+	      cipher = skey 
+	    }) 
+    with Not_found -> 
+      Security.NoKey
     in
     dnnm (create name ERekeyPrcl[AgreedKey key]) 
   in
@@ -240,8 +254,8 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       | None -> () 
       | Some memrec -> 
 	  let new_keys = List.map (function (m,tag) -> 
-	    let sk = Shared.Prng.create () in
-	    RealKey.add s.key_list tag sk;
+	    let sk = Shared.Prng.create_cipher () in
+	    RealKey.add s.key_list tag (Some sk);
 	    tag,sk
 	  ) memrec.Tree.send in
 	  
@@ -251,7 +265,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 		let peer = Member.int_of peer in
 		dnlm (create name ESecureMsg[
 		  Peer peer; 
-		  SecureMsg (Security.buf_of_key sk)
+		  SecureMsg (Security.buf_of_cipher sk)
 		]) (SharedKey tag);
 		SharedKey tag
 	      ) memrec.Tree.send new_keys in 
@@ -259,8 +273,11 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 	      List.map (function keyl,tag -> 
 		let enc_skey = RealKey.assoc tag s.key_list in
 		let keyl = List.map (function k -> 
-		  let skey = RealKey.assoc k s.key_list in
-		  k,encrypt enc_skey (Security.buf_of_key skey)
+		  let skey = 
+		    match RealKey.assoc k s.key_list with 
+		      | None -> failwith "proto:actions: None"
+		      | Some skey -> skey in
+		  k,encrypt enc_skey (Security.buf_of_cipher skey)
 		) keyl in
 		castmsg (Cast1Key (keyl,tag));
 		Cast1Key (keyl,tag)
@@ -290,9 +307,12 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
 		if k_recv <> tag then failwith "recived the wrong key";
 		if k_mcast <> tag then 
 		  failwith "cast2=Some(key_mcast,key), key_mcast <> received key";
-		let skey = RealKey.assoc k_mcast s.key_list in
-		let skey = encrypt (RealKey.assoc k_enc s.key_list) 
-		  (Security.buf_of_key skey) in
+		let skey = 
+		  match RealKey.assoc k_mcast s.key_list with 
+		    | None -> failwith "recv_shared_key: skey, RealKey.assoc None"
+		    | Some skey -> skey in
+		let k_enc_key = RealKey.assoc k_enc s.key_list in
+		let skey = encrypt k_enc_key (Security.buf_of_cipher skey) in
 		let msg = Cast2Key((k_mcast,skey), k_enc) in
 		log1 (fun () -> string_of_msg msg );
 		castmsg (msg)
@@ -329,12 +349,12 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   | ESecureMsg, SharedKey new_key_tag -> 
       let origin = getPeer ev
       and real = getSecureMsg ev in
-      let real = Security.Common real in
+      let real = Security.cipher_of_buf real in
       if Once.isset s.got_tree then (
-	recv_shared_key origin new_key_tag real;
+	recv_shared_key origin new_key_tag (Some real);
 	if (proto_complete ()) then handle_delayed ()
       ) else 
-	s.dly_shared_key <- Some (origin,new_key_tag,real)
+	s.dly_shared_key <- Some (origin,new_key_tag,(Some real))
 
   | ESend, (Cast1Key _ | Cast2Key _)  when ls.rank=0 -> 
       bundle hdr

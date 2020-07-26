@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -39,7 +39,10 @@ let nservers vs mask =
     let nservers = ref 0 in
     for i = 0 to pred nmembers do
       if (not (Arrayf.get vs.clients i))
+(*
       && (not (Arrayf.get vs.out_of_date i))
+      && Arrayf.get vs.out_of_date i = vs.ltime
+*)
       && Arrayf.get mask i
       then
 	incr nservers
@@ -91,21 +94,36 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
      * here.  
      *)
   | EInit ->
-      log (fun () -> sprintf "primary partition = %b"  vs.primary) ;
+      log (fun () -> sprintf "primary partition=%b"  vs.primary) ;
       upnm ev ;
 
       (* If we have a quorum, but we are not marked as
        * primary, then prompt a view change.  
        *)
+      log (fun () -> sprintf "am_coord=%b primary=%b quorum=%b"
+	  ls.am_coord vs.primary (s.quorum vs None)) ;
       if ls.am_coord
       && s.quorum vs None
       && not vs.primary 
       then
 	dnnm (create name EPrompt[])
 
-    (* Update the info about which members are currently in view *)
+    (* Update the info about which members are currently in view.
+     *)
   | EPresent ->
       s.in_view <- getPresence ev ;
+
+      (* If we have a quorum, but we are not marked as
+       * primary, then prompt a view change.  
+       *)
+      log (fun () -> sprintf "present am_coord=%b primary=%b quorum=%b"
+	  ls.am_coord vs.primary (s.quorum vs (Some s.in_view))) ;
+      if ls.am_coord
+      && s.quorum vs (Some s.in_view) (*MH:was None*)
+      && not vs.primary 
+      then
+	dnnm (create name EPrompt[]) ;
+
       upnm ev
 
     (* At all members, check that the ltime is one more
@@ -152,7 +170,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
        *)
       let out_of_date =
         if primary && not next_vs.xfer_view then (
-	  Arrayf.create (Arrayf.length next_vs.view) false
+	  Arrayf.create (Arrayf.length next_vs.view) next_vs.ltime
 	) else next_vs.out_of_date
       in
 

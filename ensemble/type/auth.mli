@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -19,15 +19,20 @@ open Trans
 
 type t
 
-type clear = Buf.t			(* cleartext *)
-type cipher = Buf.t			(* ciphertext *)
+type clear = string 			(* cleartext *)
+type cipher = string 			(* ciphertext *)
 
 val lookup : Addr.id -> t
 
 val principal : t -> Addr.id -> string -> Addr.t
 (**************************************************************)
 
+(* This is assumed to be in base64. 
+*)
 type ticket
+
+val string_of_ticket : ticket -> string
+val ticket_of_string : string -> ticket
 
 val ticket : Addr.set(*me*) -> Addr.set(*him*) -> clear -> ticket option
 
@@ -39,6 +44,9 @@ val check : Addr.set(*me*) -> Addr.set (* him *) -> ticket -> clear option
 val bckgr_check : bool (*simulation?*)-> Addr.set(*me*) -> Addr.set (*him*) -> 
 	ticket -> Alarm.t -> (clear option -> unit) -> unit
 
+type data = 
+  | Clear of clear option
+  | Ticket  of ticket option
 (**************************************************************)
 
 val create : 

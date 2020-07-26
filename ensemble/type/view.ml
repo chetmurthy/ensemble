@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -39,7 +39,6 @@ type state = {
   primary       : primary ;		(* primary partition? (only w/some protocols) *)
   groupd        : bool ;		(* using groupd server? *)
   xfer_view	: bool ;		(* is this an XFER view? *)
-  new_key 	: bool ;		(* is this a Rekey view? *)
   key		: Security.key ;	(* keys in use *)
   prev_ids      : id list ;             (* identifiers for prev. views *)
   params        : Param.tl ;		(* parameters of protocols *)
@@ -50,7 +49,7 @@ type state = {
   view 		: t ;			(* members in the view *)
   clients	: bool Arrayf.t ;	(* who are the clients in the group? *)
   address       : Addr.set Arrayf.t ;	(* addresses of members *)
-  out_of_date   : bool Arrayf.t	;	(* who is out of date *)
+  out_of_date   : ltime Arrayf.t ;	(* who is out of date *)
   lwe           : Endpt.id Arrayf.t Arrayf.t ; (* for light-weight endpoints *)
   protos        : bool Arrayf.t 	(* who is using protos server? *)
 }
@@ -147,14 +146,13 @@ let singleton key proto_id group endpt addr uptime =
     view   	= Arrayf.singleton endpt ;
     address     = Arrayf.singleton addr ;
     clients	= Arrayf.singleton false ;
-    out_of_date = Arrayf.singleton false ;
+    out_of_date = Arrayf.singleton 0 ;
     ltime       = 0 ;
     params      = [] ;
     prev_ids    = [] ;
     proto_id 	= proto_id ;
     key		= key ;
     xfer_view 	= false ;
-    new_key     = false ;
     protos      = Arrayf.singleton false ;
     primary     = false ;
     groupd      = false ;
@@ -176,14 +174,13 @@ type fields =
   | Vs_prev_ids     of id list
   | Vs_proto_id	    of Proto.id
   | Vs_xfer_view    of bool
-  | Vs_new_key      of bool
   | Vs_key	    of Security.key
   | Vs_clients	    of bool Arrayf.t
   | Vs_groupd       of bool
   | Vs_protos       of bool Arrayf.t
   | Vs_primary      of primary
   | Vs_address      of Addr.set Arrayf.t
-  | Vs_out_of_date  of bool Arrayf.t
+  | Vs_out_of_date  of ltime Arrayf.t
   | Vs_lwe          of Endpt.id Arrayf.t Arrayf.t
   | Vs_uptime       of Time.t
 
@@ -193,7 +190,7 @@ let string_of_id view_id =
   string_of_pair string_of_int Endpt.string_of_id view_id
 
 let string_of_full (ls,vs) =
-  sprintf "View.full{endpt=%s;group=%s;coord=%d;view=%s;address=%s;rank=%d;nmembers=%d;view_id=%s;prev_ids=%s;proto_id=%s;xfer_view=%b;new_key=%b;key=%s;clients=%s;primary=%b;lwe=%s;uptime=%s}"
+  sprintf "View.full{endpt=%s;group=%s;coord=%d;view=%s;address=%s;rank=%d;nmembers=%d;view_id=%s;prev_ids=%s;proto_id=%s;xfer_view=%b;key=%s;clients=%s;primary=%b;lwe=%s;uptime=%s}"
     (Endpt.string_of_id ls.endpt)
     (Group.string_of_id vs.group)
     vs.coord
@@ -205,7 +202,6 @@ let string_of_full (ls,vs) =
     (string_of_list string_of_id vs.prev_ids)
     (Proto.string_of_id vs.proto_id)
     vs.xfer_view
-    vs.new_key
     (Security.string_of_key vs.key)
     (Arrayf.to_string string_of_bool vs.clients)
     vs.primary
@@ -213,7 +209,7 @@ let string_of_full (ls,vs) =
     (Time.to_string vs.uptime)
 
 let string_of_state vs =
-  sprintf "View.state{group=%s;coord=%d;view=%s;address=%s;ltime=%d;prev_ids=%s;proto_id=%s;xfer_view=%b;new_key=%b;key=%s;clients=%s;primary=%b;lwe=%s;uptime=%s}"
+  sprintf "View.state{group=%s;coord=%d;view=%s;address=%s;ltime=%d;prev_ids=%s;proto_id=%s;xfer_view=%b;key=%s;clients=%s;primary=%b;lwe=%s;uptime=%s}"
     (Group.string_of_id vs.group)
     vs.coord
     (to_string vs.view)
@@ -222,7 +218,6 @@ let string_of_state vs =
     (string_of_list string_of_id vs.prev_ids)
     (Proto.string_of_id vs.proto_id)
     vs.xfer_view
-    vs.new_key
     (Security.string_of_key vs.key)
     (Arrayf.to_string string_of_bool vs.clients)
     vs.primary
@@ -240,7 +235,7 @@ let string_of_state vs =
  *)
 (*
 let rec set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe sec upt pts rku gpd vsl = match vsl with
-  | [] -> {version=ver;group=gro;view=vie;ltime=lti;proto_id=pro;xfer_view=xfe;new_key=nke;key=key;clients=cli;prev_ids=pre;params=par;primary=pri;address=add;coord=coo;out_of_date=ood;lwe=lwe;secchan=sec;uptime=upt;protos=pts;rekey_cleanup=rku;groupd=gpd}
+  | [] -> {version=ver;group=gro;view=vie;ltime=lti;proto_id=pro;xfer_view=xfe;key=key;clients=cli;prev_ids=pre;params=par;primary=pri;address=add;coord=coo;out_of_date=ood;lwe=lwe;secchan=sec;uptime=upt;protos=pts;rekey_cleanup=rku;groupd=gpd}
   | hd :: tl -> match hd with
     | Vs_coord	     coo -> set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe sec upt pts rku gpd tl
     | Vs_group	     gro -> set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe sec upt pts rku gpd tl
@@ -251,7 +246,6 @@ let rec set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe
     | Vs_prev_ids    pre -> set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe sec upt pts rku gpd tl
     | Vs_proto_id    pro -> set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe sec upt pts rku gpd tl
     | Vs_xfer_view   xfe -> set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe sec upt pts rku gpd tl
-    | Vs_new_key     nke -> set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe sec upt pts rku gpd tl
     | Vs_key	     key -> set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe sec upt pts rku gpd tl
     | Vs_clients     cli -> set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe sec upt pts rku gpd tl
     | Vs_protos      pts -> set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe sec upt pts rku gpd tl
@@ -263,7 +257,7 @@ let rec set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe
     | Vs_secchan     sec -> set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe sec upt pts rku gpd tl
     | Vs_rekey_cleanup rku -> set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe sec upt pts rku gpd tl
 
-let set {version=ver;group=gro;view=vie;ltime=lti;proto_id=pro;xfer_view=xfe;new_key=nke;key=key;clients=cli;prev_ids=pre;params=par;primary=pri;address=add;coord=coo;out_of_date=ood;lwe=lwe;secchan=sec;uptime=upt;protos=pts;rekey_cleanup=rku;groupd=gpd} vsl = set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe sec upt pts rku gpd vsl
+let set {version=ver;group=gro;view=vie;ltime=lti;proto_id=pro;xfer_view=xfe;key=key;clients=cli;prev_ids=pre;params=par;primary=pri;address=add;coord=coo;out_of_date=ood;lwe=lwe;secchan=sec;uptime=upt;protos=pts;rekey_cleanup=rku;groupd=gpd} vsl = set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe sec upt pts rku gpd vsl
 *)
 
 (* This is the version we are using now that Ocaml fixed the
@@ -282,7 +276,6 @@ let rec set s = function
       | Vs_prev_ids      v -> set { s with prev_ids = v } tl
       | Vs_proto_id      v -> set { s with proto_id = v } tl
       | Vs_xfer_view     v -> set { s with xfer_view = v } tl
-      | Vs_new_key       v -> set { s with new_key = v } tl
       | Vs_key	         v -> set { s with key = v } tl
       | Vs_clients       v -> set { s with clients = v } tl
       | Vs_protos        v -> set { s with protos = v } tl
@@ -307,7 +300,6 @@ type mut_state = {
   mutable mut_primary       : primary ;
   mutable mut_groupd        : bool ;	
   mutable mut_xfer_view	    : bool ;
-  mutable mut_new_key 	    : bool ;
   mutable mut_key	    : Security.key ;
   mutable mut_prev_ids      : id list ;
   mutable mut_params        : Param.tl ;
@@ -315,7 +307,7 @@ type mut_state = {
   mutable mut_view 	    : t ;
   mutable mut_clients	    : bool Arrayf.t ;
   mutable mut_address       : Addr.set Arrayf.t ;
-  mutable mut_out_of_date   : bool Arrayf.t	;
+  mutable mut_out_of_date   : ltime Arrayf.t ;
   mutable mut_lwe           : Endpt.id Arrayf.t Arrayf.t ;
   mutable mut_protos        : bool Arrayf.t
 }
@@ -334,7 +326,6 @@ let rec set_loop s = function
 	| Vs_prev_ids    v -> s.mut_prev_ids <- v
 	| Vs_proto_id    v -> s.mut_proto_id <- v
 	| Vs_xfer_view   v -> s.mut_xfer_view <- v
-	| Vs_new_key     v -> s.mut_new_key <- v
 	| Vs_key	 v -> s.mut_key <- v
 	| Vs_clients     v -> s.mut_clients <- v
 	| Vs_protos      v -> s.mut_protos <- v
@@ -356,7 +347,6 @@ let set vsf l =
     mut_primary       = vsf.primary ;
     mut_groupd        = vsf.groupd ;
     mut_xfer_view     = vsf.xfer_view ;
-    mut_new_key       = vsf.new_key ;
     mut_key	      = vsf.key ;
     mut_prev_ids      = vsf.prev_ids ;
     mut_params        = vsf.params ;
@@ -378,7 +368,6 @@ let set vsf l =
     primary           = vsm.mut_primary ;
     groupd            = vsm.mut_groupd ;
     xfer_view         = vsm.mut_xfer_view ;
-    new_key           = vsm.mut_new_key ;
     key	              = vsm.mut_key ;
     prev_ids          = vsm.mut_prev_ids ;
     params            = vsm.mut_params ;
@@ -393,7 +382,7 @@ let set vsf l =
   vsf
 *)
 (*
-let set {version=ver;group=gro;view=vie;ltime=lti;proto_id=pro;xfer_view=xfe;new_key=nke;key=key;clients=cli;prev_ids=pre;params=par;primary=pri;address=add;coord=coo;out_of_date=ood;lwe=lwe;uptime=upt;protos=pts;groupd=gpd} vsl = set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe upt pts gpd vsl
+let set {version=ver;group=gro;view=vie;ltime=lti;proto_id=pro;xfer_view=xfe;key=key;clients=cli;prev_ids=pre;params=par;primary=pri;address=add;coord=coo;out_of_date=ood;lwe=lwe;uptime=upt;protos=pts;groupd=gpd} vsl = set_loop ver gro vie lti pro xfe nke key cli pre par pri add coo ood lwe upt pts gpd vsl
 *)
 (**************************************************************)
 

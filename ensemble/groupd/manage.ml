@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -45,7 +45,7 @@ type mendpt = {
   mendpt : Endpt.id ;
   maddr : Addr.set ;
   mclient : bool ;
-  mood : bool ;
+  mood : ltime ;
   mlwe : Endpt.id Arrayf.t
 } 
 

@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -298,12 +298,6 @@ val eth_of_bin_string : string -> eth
 
 (**************************************************************)
 
-(* Check if a weak pointer is still live.
- *)
-val weak_check : 'a Weak.t -> int -> bool
-
-(**************************************************************)
-
 val heap : unit -> Obj.t array
 val addr_of_obj : Obj.t -> string
 val minor_words : unit -> int
@@ -319,6 +313,14 @@ val file_descr_of_socket : socket -> Unix.file_descr
  *)
 val inet_of_unix_inet_addr : Unix.inet_addr -> inet
 val unix_inet_addr_of_inet : inet -> Unix.inet_addr 
+
+
+(* These simply returns the text readable value the
+ * inet (XXX.YYY.ZZZ.TTT). Used for safe marshaling routines.
+*)
+val simple_string_of_inet  : inet -> string 
+val simple_inet_of_string  : string -> inet 
+
 (**************************************************************)
 val install_error : (exn -> string) -> unit
 (**************************************************************)

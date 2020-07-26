@@ -1,4 +1,13 @@
 (**************************************************************)
+(*
+ *  Ensemble, (Version 1.00)
+ *  Copyright 2000 Cornell University
+ *  All rights reserved.
+ *
+ *  See ensemble/doc/license.txt for further information.
+ *)
+(**************************************************************)
+(**************************************************************)
 (* BOTTOM.ML : bottom protocol layer *)
 (* Author: Mark Hayden, 4/95 *)
 (* Based on code by: Robbert vanRenesse *)
@@ -16,16 +25,10 @@ let name = Trace.filel "BOTTOM"
 type header = 
   | NoHdr
   | Unrel
-  | MergeRequest
-  | MergeGranted
-  | MergeDenied
 
 let string_of_header = function
   | NoHdr -> "NoHdr"
   | Unrel -> "Unrel"
-  | MergeRequest -> "MergeRequest"
-  | MergeGranted -> "MergeGranted"
-  | MergeDenied -> "MergeDenied"
 
 (**************************************************************)
 
@@ -56,10 +59,10 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   let failwith = layer_fail dump vf s name in
   let log = Trace.log2 name ls.name in
 
-  let got_merge ev typ abv =
+  let got_merge ev typ vs abv =
     if true || s.enabled then (
       let time = Alarm.gettime s.alarm in
-      up (set name ev[Type typ;Time time]) abv
+      up (set name ev[Type typ;Time time;ViewState vs]) abv
     ) else (
       free name ev
     )
@@ -88,11 +91,7 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
       else
 	up (set name ev[Type ESendUnrel]) abv
 
-  | _, MergeRequest -> got_merge ev EMergeRequest abv
-  | _, MergeGranted -> got_merge ev EMergeGranted abv
-  | _, MergeDenied  -> got_merge ev EMergeDenied abv
-  | EPrivateEncrypted,_ 
-  | EPrivateDecrypted,_ -> 
+  | EAuth,_ -> 
       if s.enabled then up ev abv else free name ev 
   | _ -> eprintf "%s\n" (Event.to_string ev) ; failwith bad_up_event
 
@@ -117,24 +116,23 @@ let hdlrs s ((ls,vs) as vf) {up_out=up;upnm_out=upnm;dn_out=dn;dnlm_out=dnlm;dnn
   and dn_hdlr ev abv =
     if s.enabled then (
       match getType ev with
-      | EPrivateDec   
-      | EPrivateEnc
+      | EAuth
       | ECast
       | ESend ->
 	  dn ev abv NoHdr
       | ECastUnrel
       | ESendUnrel ->
 	  dn ev abv Unrel
-      | EMergeRequest -> dn ev abv MergeRequest
-      | EMergeGranted -> dn ev abv MergeGranted
-      | EMergeDenied  -> dn ev abv MergeDenied
       | _ -> failwith "bad down event[1]"
     ) else (
       free name ev
     )
 	
   and dnnm_hdlr ev = match getType ev with
-  | EGossipExt ->
+  (* EGossipExtDir will be delivered at EGossipExt.
+   *)
+  | EGossipExt
+  | EGossipExtDir ->
       if s.enabled then
       	dnnm ev
       else

@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -183,7 +183,7 @@ let default_info name =
 
   let key = match key with
   | None -> Security.NoKey
-  | Some s -> Security.Common (Buf.pad_string s)
+  | Some s -> Security.key_of_buf (Buf.pad_string s)
   in
 
   (* Force linking of the Udp mode.  This causes
@@ -203,6 +203,27 @@ let default_info name =
 
   let protocol = Property.choose properties in
   full_info name endpt groupd protos protocol modes key
+
+(* Same as above, but set all secure switches. 
+*)
+let set_secure (ls,vs) props = 
+  if vs.groupd then 
+    failwith "Cannot create a secure group that uses the groupd";
+  if Arrayf.get vs.protos ls.rank then 
+    failwith "Cannot create a secure group that uses the protos server";
+  
+  let key = match vs.key with
+    | Security.NoKey -> 
+	Shared.Prng.create_key ()
+    | _ -> vs.key 
+  in
+  let props  = props @ [Property.Auth;Property.Rekey;Property.Privacy] in
+  let proto  = Property.choose props in
+  let vs = View.set vs [Vs_key key; Vs_proto_id proto; 
+                         Vs_params ["sec_sim", (Param.Bool false)]
+  ] in
+  ls,vs
+
 
 (**************************************************************)
 

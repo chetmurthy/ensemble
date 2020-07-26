@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -41,6 +41,7 @@ type typ =
   | EExit				(* Disable this stack *)
   | EFail				(* Fail some members *)
   | EGossipExt				(* Gossip message *)
+  | EGossipExtDir			(* Gossip message directed at particular address *)
   | EInit				(* First event delivered *)
   | ELeave				(* A member wants to leave *)
   | ELostMessage			(* Member doesn't have a message *)
@@ -64,14 +65,13 @@ type typ =
   | ESecureMsg				(* Private Secure messaging *)
   | EChannelList			(* passing a list of secure-channels *)
   | EFlowBlock				(* Blocking/unblocking the application for flow control*)
-(* Encryption/Decryption with PGP *)
-  | EPrivateEnc                         
-  | EPrivateEncrypted                         
-  | EPrivateDec
-  | EPrivateDecrypted
+
+(* Signature/Verification with Auth *)
+  | EAuth
 
   | ESecChannelList                     (* The channel list held by the SECCHAN layer *)
   | ERekeyCleanup
+  | ERekeyCommit 
 
 (**************************************************************)
 
@@ -90,11 +90,11 @@ type field =
   | SuspectReason of string		(* reasons for suspicion *)
   | Stability	of seqno Arrayf.t	(* stability vector *)
   | NumCasts	of seqno Arrayf.t	(* number of casts seen *)
-  | Mergers	of View.state		(* list of merging members *)
   | Contact	of Endpt.full * View.id option (* contact for a merge *)
   | HealGos	of Proto.id * View.id * Endpt.full * View.t * Hsys.inet list (* HEAL gossip *)
   | SwitchGos	of Proto.id * View.id * Time.t  (* SWITCH gossip *)
   | ExchangeGos	of string		(* EXCHANGE gossip *)
+  | MergeGos	of (Endpt.full * View.id option) * seqno * typ * View.state (* INTER gossip *)
   | ViewState	of View.state		(* state of next view *)
   | ProtoId	of Proto.id		(* protocol id *)
   | Time        of Time.t		(* current time *)
@@ -121,11 +121,8 @@ type field =
       (* Ohad -- interaction between Mflow, Pt2ptw, Pt2ptwp and the application*)
   | FlowBlock of rank option * bool
 
-      (* Encryption/Decryption with PGP *)
-  | PrivateEnc of Addr.set * Auth.clear
-  | PrivateEncrypted of Auth.ticket option
-  | PrivateDec of Addr.set * Auth.ticket
-  | PrivateDecrypted of Auth.clear option
+  (* Signature/Verification with Auth *)
+  | AuthData of Addr.set * Auth.data
 
 (* Information passing between optimized rekey layers
 *)
@@ -134,7 +131,7 @@ type field =
   | AgreedKey of Security.key
 
   | SecChannelList of Trans.rank list  (* The channel list held by the SECCHAN layer *)
-  | SecStat of int * int           (* PERF figures for SECCHAN layer *)
+  | SecStat of int                    (* PERF figures for SECCHAN layer *)
   | RekeyFlag of bool                 (* Do a cleanup or not *)
 
 (**************************************************************)
@@ -286,7 +283,6 @@ let getAlarm         = getExtendFail (function Alarm i         -> Some i | _ -> 
 let getContact       = getExtendFail (function Contact(i,j)    -> Some(i,j) | _ -> None) "Contact"
 let getFailures      = getExtendFail (function Failures i      -> Some i | _ -> None) "Failures"
 let getPresence      = getExtendFail (function Presence b      -> Some b | _ -> None) "Presence"
-let getMergers       = getExtendFail (function Mergers i       -> Some i | _ -> None) "Mergers"
 let getAddress       = getExtendFail (function Address i       -> Some i | _ -> None) "Address"
 let getNumCasts      = getExtendFail (function NumCasts i      -> Some i | _ -> None) "NumCasts"
 let getProtoId       = getExtendFail (function ProtoId i       -> Some i | _ -> None) "ProtoId"
@@ -307,15 +303,12 @@ let getNoTotal ev    = match ev.extend with [] -> false | ext -> List.memq NoTot
 let getNoVsync ev    = match ev.extend with [] -> false | ext -> List.memq NoVsync    ext
 let getForceVsync ev = match ev.extend with [] -> false | ext -> List.memq ForceVsync ext
 let getFragment ev   = match ev.extend with [] -> false | ext -> List.memq Fragment   ext
-let getPrivateEnc   = getExtendFail (function (PrivateEnc (a,cl)) -> Some (a,cl) | _ -> None) "PrivateEnc" 
-let getPrivateEncrypted = getExtendFail (function (PrivateEncrypted t) -> Some t | _ -> None) "PrivateEncrypted" 
-let getPrivateDec   = getExtendFail (function (PrivateDec (a,ci)) -> Some (a,ci) | _ -> None) "PrivateDec"
-let getPrivateDecrypted = getExtendFail (function (PrivateDecrypted c) -> Some c | _ -> None) "PrivateDecrypted"
+let getAuthData      = getExtendFail (function (AuthData (a,data)) -> Some (a,data) | _ -> None) "AuthData" 
 let getSecChannelList = getExtendFail (function (SecChannelList l) -> Some l | _ -> None) "SecChannelList"
-let getSecStat = getExtendFail (function (SecStat (i,j)) -> Some (i,j) | _ -> None) "SecStat"
+let getSecStat = getExtendFail (function (SecStat i) -> Some i | _ -> None) "SecStat"
 let getTree = getExtendFail (function Tree (a,b) -> Some (a,b) | _ -> None) "Tree"
 let getTreeAct = getExtendFail (function TreeAct a -> Some a | _ -> None) "TreeAct"
-let getAgreedKey = getExtendFail (function AgreedKey t -> Some t | _ -> None) "AgreedKey"
+let getAgreedKey = getExtendFail (function (AgreedKey a) -> Some a | _ -> None) "AgreedKey"
 let getRekeyFlag = getExtendFail  (function RekeyFlag flg -> Some flg | _ -> None) "RekeyFlag"
 (**************************************************************)
 
@@ -337,6 +330,7 @@ let string_of_type = Trace.debug "" (function
   | EExit	  	-> "EExit"
   | EFail	  	-> "EFail"
   | EGossipExt		-> "EGossipExt"
+  | EGossipExtDir	-> "EGossipExtDir"
   | EInit	  	-> "EInit"
   | ELeave	    	-> "ELeave"
   | ELostMessage 	-> "ELostMessage"
@@ -365,12 +359,10 @@ let string_of_type = Trace.debug "" (function
   | ESecureMsg          -> "ESecureMsg"
   | EChannelList        -> "EChannelList"
   | EFlowBlock          -> "EFlowBlock"
-  | EPrivateEnc         -> "EPrivateEnc"
-  | EPrivateEncrypted   -> "EPrivateEncrypted"
-  | EPrivateDec         -> "EPrivateDec"
-  | EPrivateDecrypted   -> "EPrivateDecrypted"
+  | EAuth               -> "EAuth"
   | ESecChannelList     -> "ESecChannelList"
   | ERekeyCleanup       -> "ERekeyCleanup"
+  | ERekeyCommit        -> "ERekeyCommit"
 )
 
 (**************************************************************)
@@ -393,11 +385,11 @@ let string_of_fields = Trace.debug "" (function
   | NumCasts	e -> ("NumCasts="^(Arrayf.int_to_string e))
   | ApplCasts	e -> ("ApplCasts="^(Arrayf.int_to_string e))
   | ApplSends	e -> ("ApplSends="^(Arrayf.int_to_string e))
-  | Mergers	e -> ("Mergers="^(View.string_of_state e))
   | Contact	(e,f) -> ("Contact="^(Endpt.string_of_full e))
   | HealGos	(e,f,g,h,i) -> ("HealGos")
   | SwitchGos	(e,f,g) -> ("SwitchGos")
   | ExchangeGos	e -> ("ExchangeGos")
+  | MergeGos	(e,f,g,h) -> ("MergeGos")
   | History	e -> ("History="^(e))
   | ViewState	e -> ("ViewState="^(View.string_of_state e))
   | ProtoId	e -> ("ProtoId="^(Proto.string_of_id e))
@@ -416,13 +408,11 @@ let string_of_fields = Trace.debug "" (function
 			    | None -> "multicast"
 			 ) ^
                          (string_of_bool b)
-  | PrivateEnc (a,ci) -> "EPrivateEnc"
-  | PrivateEncrypted t -> "EPrivateEnc"
-  | PrivateDec (a,cl) -> "EPrivateDec" 
-  | PrivateDecrypted a -> "EPrivateDec" 
-  | Tree _             -> "Tree _"
-  | TreeAct _          -> "TreeAct _"
-  | AgreedKey     _ -> "AgreedKey"
+  | AuthData (a,data) -> "EPrivateEnc"
+  | Tree        _ -> "Tree _"
+  | TreeAct     _ -> "TreeAct _"
+  | AgreedKey   _ -> "AgreedKey"
+  | Address     _ -> "Address(_)"
   | _ -> failwith "unknown field"
 )
 

@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -22,14 +22,14 @@ open Format
 open Mkutil
 
 module Junk = struct
-  let exec_magic_number = "Caml1999X004"
-  and cmi_magic_number = "Caml1999I004"
+  let exec_magic_number = "Caml1999X006"
+  and cmi_magic_number = "Caml1999I006"
   and cmo_magic_number = "Caml1999O004"
-  and cma_magic_number = "Caml1999A004"
+  and cma_magic_number = "Caml1999A005"
   and cmx_magic_number = "Caml1999Y006"
-  and cmxa_magic_number = "Caml1999Z006"
-  and ast_impl_magic_number = "Caml1999M005"
-  and ast_intf_magic_number = "Caml1999N005"
+  and cmxa_magic_number = "Caml1999Z007"
+  and ast_impl_magic_number = "Caml1999M008"
+  and ast_intf_magic_number = "Caml1999N007"
   
   type signature
   type module_components
@@ -218,7 +218,7 @@ let print_unit_info filename =
     ) else (
       close_in ic;
       prerr_string buffer ;
-      prerr_endline "Wrong magic number";
+      prerr_endline "Wrong magic number [0]";
       exit 2
     )
   with End_of_file | Failure _ ->
@@ -315,8 +315,11 @@ let descriptor filename =
 	}	
       ) else (
 	close_in ic;
+	prerr_string "Wrong magic number crc='";
 	prerr_string buffer ;
-	prerr_endline "Wrong magic number";
+	prerr_string "' filename='";
+	prerr_string filename ;
+	prerr_endline "'";
 	exit 2
       )
     with End_of_file | Failure _ ->

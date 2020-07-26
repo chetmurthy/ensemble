@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -36,7 +36,7 @@ module type OrderedType =
     type t
     val zero : t
     val ge : t -> t -> bool
+    val cmp : t -> t -> int
   end
-
 
 (**************************************************************)

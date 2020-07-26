@@ -1,6 +1,6 @@
 //**************************************************************
 //*
-//*  Ensemble, (Version 0.70p1)
+//*  Ensemble, (Version 1.00)
 //*  Copyright 2000 Cornell University
 //*  All rights reserved.
 //*
@@ -210,6 +210,9 @@ public class Hot_Ensemble extends java.lang.Object implements java.lang.Runnable
 	    hioc.write_string(jops.params);
 	    hioc.write_bool(jops.client);
 	    hioc.write_bool(jops.debug);
+	    hioc.write_string(jops.princ);
+	    hioc.write_string(jops.key);
+	    hioc.write_bool(jops.secure);
 	    try {
 	        hioc.end_write();
 	    } 
@@ -372,6 +375,33 @@ public class Hot_Ensemble extends java.lang.Object implements java.lang.Runnable
 
 
     /**
+    Infrom Ensemble that state-transfer is complete. 
+    */
+    public Hot_Error XferDone(Hot_GroupContext gc) {
+	if (!outboardValid)
+	    return new Hot_Error(55,"Outboard process is not valid!");
+	Hot_Error err = null;
+	synchronized(WriteMutex) {
+            synchronized(CriticalMutex) {
+		if (gc.leaving) {
+		    Panic("hot_ens_xfer_done: this member is already leaving");
+		}
+		gc.leaving = true;
+            }
+	    // write the downcall.
+	    hioc.begin_write();
+	    hioc.write_hdr(gc, hioc.DN_XFERDONE);
+	    try {
+	        hioc.end_write();
+	    } 
+	    catch (IOException e) {
+		err = new Hot_Error(0, e.toString());
+	    }	        
+	}
+	return err;
+    }
+
+    /**
     Change the protocol used by the group specified by the Hot_GroupContext 
     to the protocol specified by the String
     */
@@ -451,6 +481,33 @@ public class Hot_Ensemble extends java.lang.Object implements java.lang.Runnable
             // write the downcall
 	    hioc.begin_write();
             hioc.write_hdr(gc, hioc.DN_PROMPT);
+	    try {
+	        hioc.end_write();
+            } 
+            catch (IOException e) {
+                err = new Hot_Error(0, e.toString());
+            }	        
+	}
+	return err;
+    }
+
+
+    /**
+    Request Ensmeble to rekey the group. 
+    */
+    public Hot_Error Rekey(Hot_GroupContext gc) {
+	if (!outboardValid)
+	    return new Hot_Error(55,"Outboard process is not valid!");
+	Hot_Error err = null;
+	synchronized(WriteMutex) {
+	    synchronized(CriticalMutex) {
+		if (gc.leaving) {
+		    Panic("hot_ens_Rekey: member is leaving");
+		}
+	    }
+            // write the downcall
+	    hioc.begin_write();
+            hioc.write_hdr(gc, hioc.DN_REKEY);
 	    try {
 	        hioc.end_write();
             } 

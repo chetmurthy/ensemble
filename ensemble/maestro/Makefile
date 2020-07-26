@@ -1,6 +1,6 @@
 #*************************************************************#
 #
-#   Ensemble, (Version 0.70p1)
+#   Ensemble, (Version 1.00)
 #   Copyright 2000 Cornell University
 #   All rights reserved.
 #
@@ -18,8 +18,6 @@ OBJDIR          = $(CONF)/$(PLATFORM)
 all:    $(OBJDIR)
 	(cd $(OBJDIR); $(MAKE))
 
-maestro-crypto:	$(OBJDIR)
-	(cd $(OBJDIR); $(MAKE) maestro-crypto)
 conf:
 	if [ ! -d conf ]; then mkdir conf; fi
 

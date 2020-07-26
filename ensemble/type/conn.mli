@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -16,7 +16,7 @@
  *)
 type id
 
-type kind = Cast | Send | Other
+type kind = Cast | Send (*| Other*)
 
 (* Set of connection identifiers used to communicate
  * with peers.
@@ -40,7 +40,6 @@ val create :
 val key	     	: t -> key
 val pt2pt_send 	: t -> Trans.rank -> id
 val multi_send 	: t -> id
-val merge_send 	: t -> View.id option -> Endpt.id -> id
 val gossip 	: t -> id
 val all_recv    : t -> bool(*scaled?*) -> recv_info Arrayf.t
 
@@ -59,6 +58,8 @@ val string_of_kind : kind -> string
 (* Create a 16-byte MD5 hash of an id.
  *)
 val hash_of_id : id -> Buf.t
+
+val hash_of_key : Version.id -> Group.id -> Proto.id -> Buf.t
 
 (* A hack.  Squashes sender field in id to an illegal value.
  * and return the original field.  Used in Router.scale.

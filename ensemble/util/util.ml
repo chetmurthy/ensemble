@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -192,12 +192,6 @@ let counter () =
 let sequence n = Array.init n ident
 
 (**************************************************************)
-
-let rec list_assoc_mem x = function
-    [] -> false
-  | (a,b)::l -> if a = x then true else list_assoc_mem x l
-
-(**************************************************************)
 (* TransisE addition
  *)
 
@@ -224,6 +218,7 @@ let array_flatten a =
   done ;
   let len = !len in
   if len = 0 then [||] else (
+    assert (!init >= 0) ;
     let b = Array.create len (a.(!init).(0)) in
     let j = ref 0 in
     for i = 0 to pred n do
@@ -231,6 +226,7 @@ let array_flatten a =
       Array.blit a.(i) 0 b !j l ;
       j := !j + l
     done ;
+    assert (!j == len) ;
     b
   )
 
@@ -294,16 +290,6 @@ let hashtbl_to_list h =
     l := (k,d) :: !l
   ) h ;
   !l
-
-(**************************************************************)
-
-let hashtbl_clean h =
-  try
-    Hashtbl.iter (fun k _ ->
-      Hashtbl.remove h k
-    ) h
-  with Not_found -> 
-    failwith "hashtbl_clean:Not_found"
 
 (**************************************************************)
 

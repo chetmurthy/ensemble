@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -24,15 +24,17 @@ type ('a,'b) item = {
 
 type ('key,'data) t = {
   ge             : 'key -> 'key -> bool ;
+  cmp            : 'key -> 'key -> int ;
   mutable table  : ('key,'data) item array ;
   mutable nitems : int
 }
 
 (**************************************************************)
 
-let create zero nodata ge = 
+let create zero nodata cmp = 
   let zero = { key = zero ; data = nodata } in
-  { ge     = ge ;
+  { ge     = (fun a b -> cmp a b >= 0) ;
+    cmp    = cmp ;
     table  = Array.create 14 zero ;
     nitems = 0
   }
@@ -95,7 +97,7 @@ let add pq key data =
   while !i_r > 0 do
     let i = !i_r in
     let j = halve i in
-    if j <=| 0 || pq.ge key (get_key pq j) then (
+    if j <=| 0 || pq.cmp key (get_key pq j) >= 0 then (
       assign pq i key data ;
       i_r := 0				(* break out *)
     ) else (
@@ -120,11 +122,11 @@ let take pq =
     ) else (
       let nxt =
 	if right >=| last
-        || pq.ge (get_key pq right) (get_key pq left) 
+        || pq.cmp (get_key pq right) (get_key pq left) >= 0
 	then left
 	else right
       in
-      if pq.ge (get_key pq nxt) last_key then (
+      if pq.cmp (get_key pq nxt) last_key >= 0 then (
 	set pq !i last ;
 	i := last			(* break out *)
       ) else (
@@ -137,20 +139,20 @@ let take pq =
   data
 
 let get pq f t =
-  if pq.nitems =| 0 || not (pq.ge t (get_key pq 1)) then (
+  if pq.nitems =| 0 || not (pq.cmp t (get_key pq 1) >= 0) then (
     false
   ) else (
-    while pq.nitems >| 0 && pq.ge t (get_key pq 1) do
+    while pq.nitems >| 0 && pq.cmp t (get_key pq 1) >= 0 do
       f (get_key pq 1) (take pq)
     done ;
     true
   )
 
 let getopt pq upto =
-  if pq.nitems =| 0 || not (pq.ge upto (get_key pq 1)) then (
+  if pq.nitems =| 0 || not (pq.cmp upto (get_key pq 1) >= 0) then (
     false
   ) else (
-    while pq.nitems >| 0 && pq.ge upto (get_key pq 1) do (
+    while pq.nitems >| 0 && pq.cmp upto (get_key pq 1) >= 0 do (
       take pq upto
     )
     done ;
@@ -183,7 +185,7 @@ module Make(Ord: Trans.OrderedType) : (S with type key = Ord.t) =
     type key = Ord.t
     type 'a priq = (key,'a) t
     type 'a t = 'a priq
-    let create nd = create Ord.zero nd Ord.ge
+    let create nd = create Ord.zero nd Ord.cmp
     let add = add
     let get = get
     let getopt = getopt
@@ -200,6 +202,8 @@ module Make(Ord: Trans.OrderedType) : (S with type key = Ord.t) =
  *)
 
 let _ = Trace.test_declare name (fun () ->
+  Random.self_init () ;
+
   let print pq =
     printf "PRIQ(%d)" pq.nitems ;
     for i = 1 to pq.nitems do
@@ -269,7 +273,7 @@ let _ = Trace.test_declare name (fun () ->
     print pq ;
 *)
 
-    let pq = create 0 None (>=) in
+    let pq = create 0 None compare in
     let l = ref [] in
 
     for i = 1 to 1000000 do
@@ -279,8 +283,8 @@ let _ = Trace.test_declare name (fun () ->
       
       check pq ;
 
-      let l1 = Sort.list pq.ge !l in
-      let l2 = Sort.list pq.ge (List.map fst (to_list pq)) in
+      let l1 = List.rev (List.sort pq.cmp !l) in
+      let l2 = List.rev (List.sort pq.cmp (List.map fst (to_list pq))) in
 (*
       printf "1:%s\n" (string_of_list string_of_int l1) ;
       printf "2:%s\n" (string_of_list string_of_int l2) ;

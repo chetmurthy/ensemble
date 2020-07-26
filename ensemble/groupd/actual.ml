@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -300,7 +300,8 @@ let create alarm (ls_init,vs_init) =
 
     (* Strip all groups from the table.
      *)
-    hashtbl_clean s.coords ;
+    Hashtbl.clear s.coords ;
+    (*hashtbl_clean s.coords ;*)
 
     (* Reconstruct coordinators.
      *)

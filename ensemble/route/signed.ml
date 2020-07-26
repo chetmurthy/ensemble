@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -17,7 +17,7 @@ open Util
 open Shared
 (**************************************************************)
 let name = Trace.file "SIGNED"
-let failwith = Trace.make_failwith name
+let failwith s = Trace.make_failwith name s
 let log = Trace.log name
 (**************************************************************)
 
@@ -29,7 +29,9 @@ let f mbuf =
   let (marshal,_,unmarshal) = Mbuf.make_marsh name mbuf in
 
   let recv pack key secureh insecureh = 
-    let key = Security.buf_of_key key in
+    let key = match key with 
+      | Security.NoKey -> failwith "recv: NoKey"
+      | Security.Common key -> Security.buf_of_mac key.Security.mac in 
     let handler rbuf ofs len =
       if len <|| hdr_len then (
 	Route.drop (fun () -> sprintf "%s:size below minimum:len=%d\n" name (int_of_len len)) ;

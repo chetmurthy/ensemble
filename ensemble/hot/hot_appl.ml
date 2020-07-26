@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -22,6 +22,7 @@ open Buf
 (**************************************************************)
 let name = Trace.file "HOT_APPL"
 let failwith s = Trace.make_failwith name s
+let log = Trace.log name
 (**************************************************************)
 
 (* Types of C application's downcalls to Ensemble.  The
@@ -33,12 +34,28 @@ type c_dncall =
   | C_Cast of Buf.t
   | C_Send of endpt * Buf.t
   | C_Suspect of endpt array 
+  | C_XferDone of unit
   | C_Protocol of string
   | C_Properties of string
   | C_Leave of unit
   | C_Prompt of unit
+  | C_Rekey of unit
   | C_BlockOk of unit
   | C_Void of unit
+
+let string_of_dncall = function
+  | C_Join _ -> "C_Join"
+  | C_Cast _ -> "C_Cast"
+  | C_Send _ -> "C_Send"
+  | C_Suspect _ -> "C_Suspect"
+  | C_XferDone _ -> "C_XferDone"
+  | C_Protocol _ -> "C_Protocol"
+  | C_Properties _ -> "C_Properties"
+  | C_Leave _ -> "C_Leave"
+  | C_Prompt _ -> "C_Prompt"
+  | C_Rekey _ -> "C_Rekey"
+  | C_BlockOk _ -> "C_BlockOk"
+  | C_Void _ -> "C_Void"
 
 let dncall_of_c mbuf (ls,vs) = 
   let viewh = Hashtbl.create 10 in
@@ -48,57 +65,61 @@ let dncall_of_c mbuf (ls,vs) =
     Hashtbl.add viewh endpt rank
   done ;
   
-  function
-  | C_Join jops -> failwith "dncall_of_c:C_Join"
-  | C_Cast buf ->
-      let iovl = Mbuf.allocl name mbuf buf len0 (Buf.length buf) in
-      Cast(iovl)
-  | C_Send(dest,buf) -> (
-      try
-      	let rank = Hashtbl.find viewh dest in
-	let iovl = Mbuf.allocl name mbuf buf len0 (Buf.length buf) in
-	Send1(rank,iovl)
-      with Not_found -> 
-	(* Drop the message and do a no-op.
-	 *)
-	eprintf "HOT_APPL:Send:warning:unknown destination '%s'\n" dest ;
-  	Control(No_op)
-    )
-  | C_Suspect endpts ->
-      let suspects = ref [] in
-      Array.iter (fun endpt ->
-	try
-	  let rank = Hashtbl.find viewh endpt in
-	  if rank = ls.rank then
-	    failwith "suspecting myself!" ;
-	  suspects := rank :: !suspects
-	with Not_found ->
-	  eprintf "HOT_APPL:warning:Suspect:unknown endpt\n"
-      ) endpts ;
-      Control (Suspect !suspects)
-  | C_Protocol s -> Control (Protocol (Proto.id_of_string s))
-  | C_Properties properties ->
-      let protocol =
-	let props = 
-	  let props_l = Util.string_split ":" properties in
-	  let props_l = List.map Property.id_of_string props_l in
-	  if vs.groupd then
-	    Property.strip_groupd props_l
-	  else 
-	    props_l
-	in
-	Property.choose props
-      in
-      Control (Protocol protocol)
-  | C_Leave () -> Control Leave
-  | C_Prompt () -> Control Prompt
-  | C_BlockOk () -> Control (Block true)
-  | C_Void () -> failwith "dncall_of_c:C_Void"
-
+  function dncall -> 
+    log (fun () -> string_of_dncall dncall);
+    match dncall with 
+      | C_Join jops -> failwith "dncall_of_c:C_Join"
+      | C_Cast buf ->
+	  let iovl = Mbuf.allocl name mbuf buf len0 (Buf.length buf) in
+	  Cast(iovl)
+      | C_Send(dest,buf) -> (
+	  try
+      	    let rank = Hashtbl.find viewh dest in
+	    let iovl = Mbuf.allocl name mbuf buf len0 (Buf.length buf) in
+	    Send1(rank,iovl)
+	  with Not_found -> 
+	    (* Drop the message and do a no-op.
+	     *)
+	    eprintf "HOT_APPL:Send:warning:unknown destination '%s'\n" dest ;
+  	    Control(No_op)
+	)
+      | C_Suspect endpts ->
+	  let suspects = ref [] in
+	  Array.iter (fun endpt ->
+	    try
+	      let rank = Hashtbl.find viewh endpt in
+	      if rank = ls.rank then
+		failwith "suspecting myself!" ;
+	      suspects := rank :: !suspects
+	    with Not_found ->
+	      eprintf "HOT_APPL:warning:Suspect:unknown endpt\n"
+	  ) endpts ;
+	  Control (Suspect !suspects)
+      | C_XferDone () -> Control XferDone
+      | C_Protocol s -> Control (Protocol (Proto.id_of_string s))
+      | C_Properties properties ->
+	  let protocol =
+	    let props = 
+	      let props_l = Util.string_split ":" properties in
+	      let props_l = List.map Property.id_of_string props_l in
+	      if vs.groupd then
+		Property.strip_groupd props_l
+	      else 
+		props_l
+	    in
+	    Property.choose props
+	  in
+	  Control (Protocol protocol)
+      | C_Leave () -> Control Leave
+      | C_Prompt () -> Control Prompt
+      | C_Rekey () -> Control (Rekey false)
+      | C_BlockOk () -> Control (Block true)
+      | C_Void () -> failwith "dncall_of_c:C_Void"
+	  
 (**************************************************************)
-
+	  
 type context = (id, (c_dncall -> unit)) Hashtbl.t
-
+    
 let context name =
   let active = Hashtbl.create 10 in
   active

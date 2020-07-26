@@ -1,6 +1,6 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -100,16 +100,14 @@ value skt_setsock_bsdcompat(	/* ML */
         value sock_v,
 	value bool_v
 ) {
-#ifdef linux
-  {
-    int sock ;
-    int ret ;
-    int flag ;
-    sock = Socket_val(sock_v) ;
-    flag = Bool_val(bool_v) ;
-    ret = setsockopt(sock, SOL_SOCKET, SO_BSDCOMPAT, &flag, sizeof(flag)) ;
-    if (ret < 0) serror("setsockopt:bsdcompat", Nothing) ;
-  }
+#ifdef SO_BSDCOMPAT
+  int sock ;
+  int ret ;
+  int flag ;
+  sock = Socket_val(sock_v) ;
+  flag = Bool_val(bool_v) ;
+  ret = setsockopt(sock, SOL_SOCKET, SO_BSDCOMPAT, &flag, sizeof(flag)) ;
+  if (ret < 0) serror("setsockopt:bsdcompat", Nothing) ;
 #endif
   return Val_unit ;
 }

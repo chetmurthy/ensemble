@@ -1,6 +1,6 @@
 (**************************************************************)
 (*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -48,7 +48,6 @@ type state = {
   primary       : primary ;		(* primary partition? (only w/some protocols) *)
   groupd        : bool ;		(* using groupd server? *)
   xfer_view	: bool ;		(* is this an XFER view? *)
-  new_key	: bool ;		(* is this a new group key? *)
   key		: Security.key ;	(* keys in use *)
   prev_ids      : id list ;             (* identifiers for prev. views *)
   params        : Param.tl ;		(* parameters of protocols *)
@@ -59,7 +58,7 @@ type state = {
   view 		: t ;			(* members in the view *)
   clients	: bool Arrayf.t ;	(* who are the clients in the group? *)
   address       : Addr.set Arrayf.t ;	(* addresses of members *)
-  out_of_date   : bool Arrayf.t	;	(* who is out of date *)
+  out_of_date   : ltime Arrayf.t	; (* who is out of date *)
   lwe           : Endpt.id Arrayf.t Arrayf.t ; (* for light-weight endpoints *)
   protos        : bool Arrayf.t  	(* who is using protos server? *)
 }
@@ -75,14 +74,13 @@ type fields =
   | Vs_prev_ids     of id list
   | Vs_proto_id	    of Proto.id
   | Vs_xfer_view    of bool
-  | Vs_new_key      of bool
   | Vs_key	    of Security.key
   | Vs_clients	    of bool Arrayf.t
   | Vs_groupd       of bool
   | Vs_protos       of bool Arrayf.t
   | Vs_primary      of primary
   | Vs_address      of Addr.set Arrayf.t
-  | Vs_out_of_date  of bool Arrayf.t
+  | Vs_out_of_date  of ltime Arrayf.t
   | Vs_lwe          of Endpt.id Arrayf.t Arrayf.t
   | Vs_uptime       of Time.t
 

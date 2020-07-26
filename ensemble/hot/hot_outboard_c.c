@@ -1,6 +1,6 @@
 /**************************************************************/
 /*
- *  Ensemble, (Version 0.70p1)
+ *  Ensemble, (Version 1.00)
  *  Copyright 2000 Cornell University
  *  All rights reserved.
  *
@@ -528,10 +528,12 @@ typedef enum {
     DN_CAST,
     DN_SEND_BLOCKED,
     DN_SUSPECT,
+    DN_XFERDONE,
     DN_PROTOCOL,
     DN_PROPERTIES,
     DN_LEAVE,
     DN_PROMPT,
+    DN_REKEY,
     DN_BLOCK_OK,
     DN_SEND
 } hot_dnType_t;
@@ -543,10 +545,12 @@ static const char *string_of_dntype(hot_dnType_t t) {
         CASE(DN_CAST) ;
         CASE(DN_SEND) ;
         CASE(DN_SUSPECT) ;
+	CASE(DN_XFERDONE) ;
         CASE(DN_PROTOCOL) ;
         CASE(DN_PROPERTIES) ;
         CASE(DN_LEAVE) ;
         CASE(DN_PROMPT) ;
+	CASE(DN_REKEY) ;
         CASE(DN_BLOCK_OK) ;
         CASE(DN_SEND_BLOCKED) ;
 #undef CASE
@@ -973,6 +977,9 @@ static void cb_View(
 
     read_boolList(&ncl, &vs.clients);
     assert(ncl == vs.nmembers);
+
+    read_string_prealloc(vs.key);
+    trace("\t key: %s", vs.key);
 
     begin_critical(); {
 	s = lookup_context(id);
@@ -1553,6 +1560,9 @@ void hot_ens_InitJoinOps(hot_ens_JoinOps_t *ops) {
     ops->argv = NULL ;
     ops->env = NULL ;
     ops->endpt.name[0] = 0x0;
+    strcpy(ops->princ, "");
+    strcpy(ops->key, "");
+    ops->secure = 0;
 }
 
 /* Join a group.  The group context is returned in *contextp.  
@@ -1604,6 +1614,10 @@ hot_err_t hot_ens_Join(
 	    hot_sys_Warning("HOT_OUTBOARD does not support 'endpt' in join ops") ;
 	    jops->endpt.name[0] = 0x0;
 	}
+	write_string(jops->princ);
+	write_string(jops->key);
+	write_bool(jops->secure);
+
     } end_write();
 
     return HOT_OK;
@@ -1731,6 +1745,24 @@ hot_err_t hot_ens_Suspect(
     return HOT_OK;
 }
 
+/* Inform Ensemble that the state-transfer is complete. 
+ */
+hot_err_t hot_ens_XferDone(
+    hot_context_t s
+) {
+    begin_write(); {
+	begin_critical(); {
+	    if (s->leaving) {
+		hot_sys_Panic("hot_ens_XferDone: member is leaving") ;
+	    }
+	} end_critical();
+	write_hdr(s,DN_XFERDONE);
+    } end_write();
+    return HOT_OK;
+}
+
+
+
 /* Request a protocol change.
  */
 hot_err_t hot_ens_ChangeProtocol(
@@ -1781,6 +1813,23 @@ hot_err_t hot_ens_RequestNewView(
 	    }
 	} end_critical();
 	write_hdr(s,DN_PROMPT);
+    } end_write();
+    return HOT_OK;
+}
+
+
+/* Request a Rekey operation.
+ */
+hot_err_t hot_ens_Rekey(
+    hot_context_t s
+) {
+    begin_write(); {
+	begin_critical(); {
+	    if (s->leaving) {
+		hot_sys_Panic("hot_ens_Rekey: member is leaving") ;
+	    }
+	} end_critical();
+	write_hdr(s,DN_REKEY);
     } end_write();
     return HOT_OK;
 }
