@@ -1,0 +1,74 @@
+#*************************************************************#
+#
+#   Ensemble, (Version 0.70p1)
+#   Copyright 2000 Cornell University
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+-*- Mode: indented-text -*- 
+Known Ensemble Bugs
+BUGS Author: Mark Hayden
+Last updated: 3/99
+
+* the groupd application is still not very stable
+
+* Linux problems: see the end of this file
+
+
+A feature of Linux causes problems with Ensemble.  I'll describe the
+symptoms, give some work-arounds, and then give a more detailed
+explanation.  Please tell us if you find these symptoms on platforms
+other than Linux.  This release of Ensemble will detect the problem, 
+print a warning message when it first occurs, and attempt to work 
+around them.
+
+
+Symptoms:
+
+1) Processes using the gossip server do not merge.  Usually, this
+   occurs when the environment variable (ENS_GOSSIP_HOSTS) for the
+   gossip servers includes hosts on which you are not running a
+   gossip server.  For instance ENS_GOSSIP_HOSTS is 'A:B' and you are
+   running a gossip server on host B and not A.
+
+2) Groups fall apart when one process fails.  In this case, one
+   process in a group fails, then all members partition into
+   singleton partitions, and then reform back into a group.  For
+   instance, you have processes A, B, and C in a group.  Then
+   process on A fails.  Instead of directly forming a view with B+C,
+   first B and C form singleton views and then merge back to B+C.
+
+
+Workarounds:
+
+* Always run a gossip server on all hosts listed in ENS_GOSSIP_HOSTS.
+  This fixes the first symptom, but not the second.
+
+* Use IP multicast (see instructions in the tutorial).  This should fix
+  both symptoms.
+
+
+Explanation:
+
+When sending messages over unconnected UDP sockets to unbound
+destination ports, Linux detects this and in certain situations
+generates ECONNREFUSED errors on later operations.  It does this even
+when the source and destination sockets are not connected.  The
+problem is that the error is not generated on the initial sendto()
+operation, but on a later socket operation (I've seen it on
+sendto()'s and recv()'s).  For instance, if I send a message to a
+port which has nothing bound to it and then send a message somewhere
+else, Linux may cause the second message to be dropped and generate
+an ECONNREFUSED error (even though the 2nd destination is different
+from the 1st, the 2nd is valid, and the sending socket is not
+connected to any destinations).
+
+The Linux people probably think that this ECONNREFUSED error is
+useful when there are 2 endpoints because each end can detect when
+the other side fails.  Unfortunately, in our case, there are often
+more than 2 endpoints, and the error does not provide useful
+information because it is generated on a later and probably unrelated
+operation.  And, after all, an *unconnected* socket should not be
+generating *connection-refused* errors.

@@ -1,0 +1,15 @@
+00-INDEX: this file
+INSTALL.htm: information about installing Ensemble
+
+tut.ps: tutorial (Postscript)
+  Read this to learn how to run Ensemble demos & utilities
+
+ref.ps: reference manual (Postscript)
+  This contains information about the Ensemble architecture
+  and protocols.
+
+Maestro.htm: Maestro C++/CORBA interface reference manual
+  Read this to learn how to program the Maestro interface
+
+[The HOT interface is only "documented" through the header files.
+You may find the Maestro documentation helpful, however.]

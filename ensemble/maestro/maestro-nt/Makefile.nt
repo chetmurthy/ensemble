@@ -1,0 +1,49 @@
+#*************************************************************#
+#
+#   Ensemble, (Version 0.70p1)
+#   Copyright 2000 Cornell University
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+# To build with security code, comment out LIBHOT and
+# LIBCRYPTO, and uncomment their crypto equivalents
+# 
+ENSLIB = ..\..\lib\nt
+LIBHOT = libhot-nt.lib
+#LIBHOT = libhot-crypto-nt.lib
+LIBMAE = libmae-nt.lib
+LIBCRYPTO =
+#LIBCRYPTO = $(ENSLIB)\libcryptoc-nt.lib
+MAESTRO_OBJ = 	Maestro_Types.obj \
+		Maestro_GroupMember.obj \
+		Maestro_ClSv.obj \
+		Maestro_CSX.obj \
+		Maestro_Prim.obj \
+		Maestro_Group.obj
+
+
+CFLAGS = /TP /I$(ENSLIB) -DWIN32
+LDFLAGS = /link $(LIBMAE) $(LIBCRYPTO) /NODEFAULTLIB \
+	libcmt.lib libcpmt.lib libcimt.lib \
+	oldnames.lib kernel32.lib wsock32.lib
+
+all: maestro_test.exe maestro_perf.exe group.exe
+
+$(LIBMAE): $(ENSLIB)\$(LIBHOT) $(MAESTRO_OBJ)
+	lib /out:$(LIBMAE) $(ENSLIB)\$(LIBHOT) $(MAESTRO_OBJ)
+
+maestro_test.exe: $(LIBMAE) maestro_test.c
+	cl $(CFLAGS) maestro_test.c $(LDFLAGS)
+
+maestro_perf.exe: $(LIBMAE) maestro_perf.c
+	cl $(CFLAGS) maestro_perf.c $(LDFLAGS)
+
+group.exe: $(LIBMAE) group.c
+	cl $(CFLAGS) group.c $(LDFLAGS)
+
+clean:
+	del /Q *.obj
+	del /Q libmae-nt.lib
+	del /Q maestro_test.exe

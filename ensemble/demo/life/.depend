@@ -1,0 +1,29 @@
+#*************************************************************#
+#
+#   Ensemble, (Version 0.70p1)
+#   Copyright 2000 Cornell University
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+collector.cmo: msgs.cmi rules.cmi collector.cmi 
+collector.cmx: msgs.cmi rules.cmx collector.cmi 
+collector.cmi: msgs.cmi rules.cmi 
+debug.cmo: msgs.cmi rules.cmi debug.cmi 
+debug.cmx: msgs.cmi rules.cmx debug.cmi 
+debug.cmi: msgs.cmi rules.cmi 
+life.cmo: collector.cmi lifetk.cmi master.cmi msgs.cmi rules.cmi slave.cmi 
+life.cmx: collector.cmx lifetk.cmx master.cmx msgs.cmi rules.cmx slave.cmx 
+lifetk.cmo: msgs.cmi rules.cmi lifetk.cmi 
+lifetk.cmx: msgs.cmi rules.cmx lifetk.cmi 
+lifetk.cmi: msgs.cmi rules.cmi 
+master.cmo: debug.cmi msgs.cmi rules.cmi slave.cmi master.cmi 
+master.cmx: debug.cmx msgs.cmi rules.cmx slave.cmx master.cmi 
+master.cmi: msgs.cmi rules.cmi 
+msgs.cmi: rules.cmi 
+rules.cmo: rules.cmi 
+rules.cmx: rules.cmi 
+slave.cmo: debug.cmi msgs.cmi rules.cmi slave.cmi 
+slave.cmx: debug.cmx msgs.cmi rules.cmx slave.cmi 
+slave.cmi: msgs.cmi 

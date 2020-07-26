@@ -1,0 +1,76 @@
+#*************************************************************#
+#
+#   Ensemble, (Version 0.70p1)
+#   Copyright 2000 Cornell University
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+README: Ensemble Root directory
+Author: Mark Hayden
+Last updated: 3/30/2000, by Tim Clark
+
+  The design of the Ensemble system is based to a large
+  degree on the C implementation of Horus at the Cornell
+  University Computer Science Department, of which Robbert
+  vanRenesse is the chief architect.  I have tried my best
+  to credit the designer(s) of the original C code in
+  modules that are based on the C implementation.  I would
+  appreciate knowing of any instances in which I have
+  improperly or incompletely credited pieces of this system.
+
+  Mark Hayden
+
+Notes:
+
+  * Please read the file INSTALL.txt or INSTALL.htm (from a Web 
+    browser) to find out how to build and install the Ensemble 
+    distribution.  Also please read RELEASE_NOTES for version
+    specific updates.
+
+  * Some of these directories may not appear in various
+    distributions of Ensemble.
+
+FILES
+
+  Makefile	main Makefile
+  INSTALL	installation instructions
+  BUGS		known bugs
+  RELEASE_NOTES what's new for this release
+  LICENSE	Ensemble copyright notice and license
+
+DIRECTORIES
+
+  mk		Makefile directory
+  doc		documentation directory
+  doc/maestro   Maestro C++ docs
+  doc/tut.ps	tutorial (Postscript file)
+  doc/ref.ps	reference manual (Postscript file)
+  util		general purpose utility modules
+  buffer	buffer management
+  type		abstract data types
+  route         intra-process routers
+  infr		infrastructure support
+  appl		support for applications
+  trans		communication transports (UDP, TCP, ...)
+  layers	protocol layers
+  crypto	Cryptographic support (with Ohad Rodeh)
+  rpc		TCP/IP RPC support (by Robbert vanRenesse)
+  groupd	Group daemon directory
+
+  demo		application demos
+  demo/tk	Tcl/Tk application demos (with Robbert vanRenesse)
+  demo/life	Game of Life demo (by Samuel Weber)
+
+  hot		C application interface (by Alexey Vaysburd)
+  maestro	C++ application interface (by Alexey Vaysburd)
+  ejava		Java application interface (contributed)
+  socket	Ensemble Socket library (with Robbert vanRenesse)
+
+  tools		dependency generation tools, etc...
+
+  lib		compiled libraries and interfaces
+  def		default compilation directory (bytecode)
+  opt		native code compilation directory
+

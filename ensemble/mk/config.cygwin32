@@ -1,0 +1,313 @@
+#*************************************************************#
+#
+#   Ensemble, (Version 0.70p1)
+#   Copyright 2000 Cornell University
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+# -*- Mode: makefile -*- 
+#*************************************************************#
+#
+# CONFIG: This set of definitions is included at the beginning
+# of the makefiles to define configurable compilation
+# parameters.  For Unix.
+#
+# Author: Mark Hayden, Robbert vanRenesse, 4/96
+#
+#*************************************************************#
+# C Compilation macros.  Used for compiling Socket library
+# and the C interface.  Ensemble has been compiled with gcc
+# and acc on SunOS4, Solaris, and Aix.  With cl on NT.
+
+# C compiler to use
+CC	= cl
+CAMLLIB = D:/usr/local/pkg/ocaml-1.05.win32/lib
+
+# MSDEV: points to the MSDEV directory
+MSDEV	= D:/MS/DevStudio/VC
+
+# Note: ENS_CFLAGS is taken from the environment variables.
+
+# CFLAGS: used for compilation of C files
+CFLAGS	= -nologo -D_WIN32 -DWIN32\
+	-I $(OCAML_LIB)/caml		\
+	-I $(ENSROOT)/hot/include	\
+	-I $(ENSROOT)/socket/include	\
+	$(PURIFY_CFLAGS)		\
+	$(ENS_CFLAGS)			\
+	$(HOT_CFLAGS) $(CRYPTO_INC)	\
+	-DHAS_IP_MULTICAST		
+
+# Fix problem with libc.lib, pass "-link /NODEFAULTLIB" option
+# This is a hack.
+NODEFAULTLIB = -cclib -link -cclib /NODEFAULTLIB
+
+# LIBSYS: used for linking executables
+LIBSYS	= $(NODEFAULTLIB) \
+	-cclib ADVAPI32$(ARCS)	\
+	-cclib LIBCMT$(ARCS)	\
+	-cclib OLDNAMES$(ARCS)	\
+	-cclib KERNEL32$(ARCS)	\
+	-cclib WSOCK32$(ARCS)
+
+# SHELL to use for processing these makefiles must be /bin/sh
+SHELL = /bin/sh
+
+
+
+
+
+
+
+
+
+
+#*************************************************************#
+# Arguments to use for linking with CamlTk.  You may need to
+# add "-ccopt -Ldir" arguments).  Only worry about these if
+# you are compiling a graphical application, such as WBML.
+# Note that you must use tk4.0 and tcl7.4.
+
+# for Cornell CS Dept
+#TKLIBS = \
+#	-cclib -lcamltk4 \
+#	-cclib -ltk	\
+#	-cclib -ltcl	\
+#	-cclib -lX11
+
+#TKLIBS = \
+#	-cclib -lcamltk4 \
+#	-cclib -ltk4.0	\
+#	-cclib -ltcl7.4	\
+#	-ccopt -L/usr/local/X11R6/lib \
+#	-cclib -lX11
+
+#*************************************************************#
+# PLATFORM describes the Unix platform you are using.  This
+# is used to differentiate machine dependent files.  On Unix
+# platforms (without the Socket library) there are no
+# machine-dependent files for the bytecode version of
+# Ensemble, so these do not need to be set.  The default is
+# to use the GNU "standards" of machine_name-os_name.  If
+# you are using the tcsh shell, then the environment
+# variables MACHTYPE and OSTYPE will be set correctly for
+# your platform and you can use the defaults.  On NT,
+# PLATFORM should be set to be 'nt'.
+
+MACHTYPE = i386
+OSTYPE = win32
+PLATFORM	= $(MACHTYPE)-$(OSTYPE)
+
+#*************************************************************#
+#*************************************************************#
+# FOR INITIAL CONFIGURATION, NOTHING BELOW HERE SHOULD NEED TO
+# BE EDITED.
+#*************************************************************#
+#*************************************************************#
+
+#*************************************************************#
+# There are three different configurations of Ensemble.  For
+# Unix, the default is to use the Unix library.  For NT,
+# only the socket library is supported.  HSYS_BUILD
+# determines which configurations should be built.
+# ENSCONFDEP is the set of Ensemble system modules being
+# used.  ENSCONF also includes O'caml modules and specifies
+# whether -custom flag should be used.
+
+HSYS_TYPE = skt
+
+# Socket library
+HSYS_BUILD_skt	= socket
+ENSCONFDEP_skt	= $(LIBSOCKDEP) $(ENS)
+ENSCONF_skt	= $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENS)
+
+# Unix library
+HSYS_BUILD_unix	= $(LIBUSOCK)
+ENSCONFDEP_unix	= $(LINKTHR) $(LIBUSOCK) $(ENS)
+ENSCONF_unix    = $(CUSTOM) $(LIBUNIX) $(LIBUSOCK) $(LINK_THR) $(ENS)
+
+HSYS_BUILD	= $(HSYS_BUILD_$(HSYS_TYPE))
+ENSCONF		= $(ENSCONF_$(HSYS_TYPE))
+ENSCONFDEP      = $(ENSCONFDEP_$(HSYS_TYPE))
+
+#*************************************************************#
+# OCAML_LIB should point to the library directory.  For
+# Unix, OCAML_LIB is only necessary for the socket library
+# and the C interface.  By default, it is set to the value
+# of the environment variable CAMLLIB, which normally is set
+# to the O'Caml library directory.  It is usually preferable
+# to set OCAML_LIB indirectly through the CAMLLIB
+# environment variable.  Be careful, $(OCAML_LIB)/caml needs
+# to identify the correct location of the config.h header
+# file.  A copy may also be found in ocaml/byterun, but you
+# do not want to use that version, because it may be
+# inconsistent with the installation you are using.
+
+OCAML_LIB	= $(CAMLLIB)
+
+#*************************************************************#
+# A bunch of configuration macros to support both NT and Unix
+
+EXE	= .exe
+OBJS	= .obj
+ARCS	= .lib
+OBJ	= -$(PLATFORM)$(OBJS)
+ARC	= -$(PLATFORM)$(ARCS)
+NTPLAT	= -$(PLATFORM)
+CP	= cp
+MV	= mv
+LN	= cp
+RM	= rm -f
+#MAKE	= make			# set by default
+NT	=
+MKLIB   = lib /nologo /debugtype:CV
+MKLIBO  = /out:
+RANLIB  = echo
+SUBMAKE = ; $(MAKE) -k
+DEPEND  = .depend
+PARTIALLD = lib /nologo /debugtype:CV
+PARTIALLDO = /out:
+ECHO	= echo
+#*************************************************************#
+BYTEPLAT = -plat $(PLATFORM)
+#*************************************************************#
+NTRULE	= -unix
+UNIXRULE =
+#*************************************************************#
+# How to link various Ocaml libraries.  Should not require
+# modification.
+LIBCUNIX	= $(OCAML_LIB)/libunix$(ARCS)
+LIBMLUNIX	= unix$(CMAS)
+LIBCSOCK	= $(ENSLIB)/libsock$(ARC)
+LIBMLSOCK	= $(ENSLIB)/socket$(CMA)
+LIBCTHREADS	= $(OCAML_LIB)/libthreads$(ARCS)
+LIBMLTHREADS	= threads$(CMAS)
+LIBCSTR		= $(OCAML_LIB)/libstr$(ARCS)
+LIBMLSTR	= str$(CMAS)
+LIBMLSTRBC	= str.cma
+LIBDYNLINK	= dynlink$(CMAS)
+LIBTK		= # not supported
+#*************************************************************#
+# Select whether or not to use Ocaml threads.  Ocaml threads
+# only work with bytecode interpreter.  Default is no
+# threads.  COMP_THR is the option needed for the
+# compilation step.  LINK_THR is the option needed for the
+# link step.  To use threads, you need to recompile Ensemble
+# from scratch in the def directory (run make clean ; make
+# depend ; make).
+
+# No threads
+COMP_THR	= # no threads
+LINK_THR	= # no threads
+
+# Use threads
+#COMP_THR	= -thread
+#LINK_THR	= -thread $(LIBTHREADS)
+
+#*************************************************************#
+# Root of the Ensemble distribution.  Used to find source files
+# when using dynamicly linked ML files.
+
+ENSROOT_ABS	= /usr/u/hayden/ensemble
+
+#*************************************************************#
+# LIBNTUNIX points to the directory of the NT Unix library.
+# This is used for cross-compiling bytecode to work with the
+# NT Unix interface.
+
+LIBNTUNIX	= /usr/local/src/plg/ocaml-1.05/otherlibs/win32unix
+
+#*************************************************************#
+# Where to find ATM/UNET header files and libraries.  By
+# default, these are not compiled with the distribution, so 
+# you shouldn't need to adjust them.
+
+# for Cornell CS Dept
+LIBUNET		= /usr/u/sww/sun4/lib/libunet-2$(ARCS)
+INCUNET		= -I/usr/u/sww/linux/include/unet-2
+
+#*************************************************************#
+# Where to find the Crypto stuff
+
+CRYPTO_ROOT = /usr/u/hayden/lib/$(PLATFORM)
+
+CRYPTO_INC = -I $(CRYPTO_ROOT)
+
+CRYPTO_LINK = \
+	$(ENSROOT)/lib/crypto$(CMA)		\
+	-cclib $(ENSROOT)/lib/libcryptoc$(ARC)	\
+	-cclib $(CRYPTO_ROOT)/rsaref$(ARCS)
+
+#*************************************************************#
+# Configuration infromation for threads and the C interfaces.
+
+# SPARC-SOLARIS
+HOT_CFLAGS_sparc-solaris = -DTHREADED_SELECT
+HOT_MLLINK_sparc-solaris = # empty
+#HOT_LINK_sparc-solaris	= -lpthread -ltermcap -lsocket -lnsl -lm
+HOT_LINK_sparc-solaris	= -lthread -lposix4 -ltermcap -lsocket -lnsl -lm -ldl
+#HOT_THREAD_OBJ_sparc-solaris = pthread_intf$(OBJ)
+HOT_THREAD_OBJ_sparc-solaris = solaris_thread$(OBJ)
+
+# I386-SOLARIS: same as for sparc-solaris
+HOT_CFLAGS_i386-solaris = $(HOT_CFLAGS_sparc-solaris)
+HOT_MLLINK_i386-solaris = $(HOT_MLLINK_sparc-solaris)
+HOT_LINK_i386-solaris	= $(HOT_LINK_sparc-solaris)
+HOT_THREAD_OBJ_i386-solaris = $(HOT_THREAD_OBJ_sparc-solaris)
+
+# SPARC-SUNOS4
+#GTHREADS_sparc-sunos4	= /usr/local/lib
+GTHREADS_sparc-sunos4	= /usr/u/hayden/lib/$(PLATFORM)
+HOT_CFLAGS_sparc-sunos4 = -I $(GTHREADS)
+HOT_MLLINK_sparc-sunos4 = -ccopt -L$(GTHREADS) -cclib -lgthreads -cclib -lmalloc
+HOT_LINK_sparc-sunos4	= -L$(GTHREADS) -lgthreads -lmalloc -ltermcap -lm
+HOT_THREAD_OBJ_sparc-sunos4 = pthread_intf$(OBJ)
+
+# I386-LINUX
+HOT_CFLAGS_i386-linux	= # empty
+HOT_MLLINK_i386-linux	= # empty
+HOT_LINK_i386-linux	= -lgthreads -lmalloc -ltermcap -lm
+HOT_THREAD_OBJ_i386-linux = pthread_intf$(OBJ)
+
+# ALPHA-OSF1
+HOT_CFLAGS_alpha-osf1	= -DOSF1_THREADS
+HOT_MLLINK_alpha-osf1	=
+HOT_LINK_alpha-osf1	= -lrt -lpthreads -lmach -lexc -lc_r -lm -ltermcap -taso
+HOT_THREAD_OBJ_alpha-osf1 = pthread_intf$(OBJ)
+
+# RS6000-AIX
+HOT_CFLAGS_rs6000-aix	= -DOSF1_THREADS
+HOT_MLLINK_rs6000-aix	= # empty
+HOT_LINK_rs6000-aix	= -lpthreads -lm -ltermcap
+HOT_THREAD_OBJ_rs6000-aix = pthread_intf$(OBJ)
+
+# HP9000-HPUX
+HOT_CFLAGS_hp9000-hpux	=
+HOT_MLLINK_hp9000-hpux	= # empty
+HOT_LINK_hp9000-hpux	=
+HOT_THREAD_OBJ_hp9000-hpux = pthread_intf$(OBJ)
+
+GTHREADS	= $(GTHREADS_$(PLATFORM))
+HOT_CFLAGS	= $(HOT_CFLAGS_$(PLATFORM))
+HOT_MLLINK	= $(HOT_MLLINK_$(PLATFORM))
+HOT_LINK	= $(HOT_LINK_$(PLATFORM))
+HOT_THREAD_OBJ	= $(HOT_THREAD_OBJ_$(PLATFORM))
+
+#*************************************************************#
+# Purify options
+
+PURIFY_HOME_sparc-solaris = /opts/pure/purify-4.0.1-solaris2
+PURIFY_HOME = $(PURIFY_HOME_$(PLATFORM))
+PURIFY_CFLAGS = $(PURIFY_CFLAGS_$(PLATFORM))
+
+PURIFY_sparc-solaris = 	$(PURIFY_HOME)/purify 			\
+			-cache-dir=/usr/u/alexey/tmp 		\
+			-threads=yes 				\
+			-chain-length=15			\
+			-windows=yes
+PURIFY_CFLAGS_sparc-solaris = -I $(PURIFY_HOME)
+
+PURIFY_LIB 	= $(PURIFY_HOME)/purify_stubs.a
+PURIFY 		= $(PURIFY_$(PLATFORM))

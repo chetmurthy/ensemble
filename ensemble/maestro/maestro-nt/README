@@ -1,0 +1,68 @@
+#*************************************************************#
+#
+#   Ensemble, (Version 0.70p1)
+#   Copyright 2000 Cornell University
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+README: Maestro
+Author: Alexey Vaysburd
+Last Update: 2/22/1999, Tim Clark
+
+This directory contains Maestro/C++ interface and several demos.
+
+Contents:
+
+Maestro_Config.h	: compile-time configuration parameters
+Maestro_Types.[hC]	: basic abstractions
+Maestro_GroupMember.[hC] : group-member functionality (sends, casts, views)
+Maestro_ClSv.[hC]	: clients/servers with state transfer
+Maestro_CSX.[hC]	: higher-level state transfer interface
+Maestro_Prim.[hC]	: higher-level primary partition interface
+
+maestro_test.C		: single-process Maestro sanity test
+maestro_perf.C		: two-process RPC performance test
+
+Makefile.nt		: NT version Makefile
+
+
+
+Outboard mode
+-------------
+
+In addition to the standard configuration, Ensemble can now be run
+in the so called outboard mode.  In this mode Ensemble is started
+in a separate process, and talks to the application process via a 
+pipe.  There are several advantages in using the outboard mode:
+
+(1) Memory corruption and synchronization bugs of the application are
+    isolated from the Ensemble code.
+(2) You can use purify with the application.
+(3) Program size is smaller since the Ensemble library is not included,
+    so it takes less time to link the application.  This is helpful in
+    the development/debugging phase when you frequently recompile.
+
+Disadvantages of the outboard mode are lower performance, running 
+two processes instead of once, and the need to perform additional 
+configuration steps, as described below.
+
+There are two versions of the HOT library, libhot.a supporting the
+standard "inboard" mode and libhoto.a for the outboard mode.  
+In order to enable the outboard mode in Maestro/Ensemble applications, 
+perform the following steps.
+
+(1) Link the application with the libhoto.a library.  
+    If Maestro is used, the HOT library is not linked in directly.
+    Instead, it is included within the Maestro library (libmae.a).
+    In this case make sure the Maestro library is built to contain libhoto.a
+    rather than libhot.a.  This is controlled by the HOT_MODE option at the 
+    top of the Maestro makefile.  Setting "HOT_MODE = inboard" will build
+    Maestro/Ensemble library in the inboard mode.  Respectively for
+    "HOT_MODE = outboard".
+
+(2) Set the environment variable ENS_OUTBOARD to point to the location of the 
+    outboard Ensemble program (usually found in ensemble/demo/outboard).  
+
+

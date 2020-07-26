@@ -1,0 +1,347 @@
+#*************************************************************#
+#
+#   Ensemble, (Version 0.70p1)
+#   Copyright 2000 Cornell University
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+# -*- Mode: makefile -*- 
+#*************************************************************#
+#
+# CONFIG.NMK: This set of definitions is included at the
+# beginning of the makefiles to define configurable
+# compilation parameters.  For NT.
+#
+# Authors: Mark Hayden, Robbert vanRenesse, 4/96
+#
+#*************************************************************#
+# C Compilation macros.  Used for compiling Socket library
+# and the C interface.  Ensemble has been compiled with gcc
+# and acc on SunOS4, Solaris, and Aix.  With cl on NT.
+
+# C compiler to use
+CC	= cl /nologo
+
+# MSDEV: points to the MSDEV directory
+MSDEV	= c:MSDEV\bin
+
+# CFLAGS: used for compilation of C files
+CFLAGS	= /Ox /MT -O -DWIN32 \
+	-I $(ENSROOT)\socket\include	\
+	-I $(ENSROOT)\hot\include	\
+	-I $(OCAML_LIB)			\
+	-I $(MSDEV)\include		\
+	$(HOT_CFLAGS_nt)		\
+	$(ETH_CFLAGS)			\
+	-DOSTYPE=$(OSTYPE)		\
+	-DMACHTYPE=$(MACHTYPE)		\
+	-DHAS_IP_MULTICAST
+
+
+# Fix problem with libc.lib, pass "-link /NODEFAULTLIB" option
+# This is a hack.
+NODEFAULTLIB =
+
+# LIBSYS: used for linking executables
+LIBSYS	= $(NODEFAULTLIB) \
+	-cclib ADVAPI32$(ARCS)	\
+	-cclib LIBCMT$(ARCS)	\
+	-cclib OLDNAMES$(ARCS)	\
+	-cclib KERNEL32$(ARCS)	\
+	-cclib WSOCK32$(ARCS)
+
+LIBSYSCL = -link /NODEFAULTLIB \
+	ADVAPI32$(ARCS)	\
+	LIBCMT$(ARCS)	\
+	OLDNAMES$(ARCS)	\
+	KERNEL32$(ARCS)	\
+	WSOCK32$(ARCS)
+
+#*************************************************************#
+# Arguments to use for linking with CamlTk.  You may need to
+# add "-ccopt -Ldir" arguments).
+
+TKLIBS = # not supported for NT
+
+
+
+
+
+
+
+#*************************************************************#
+# PLATFORM describes the Unix platform you are using.  This
+# is used to differentiate machine dependent files.  On Unix
+# platforms (without the Socket library) there are no
+# machine-dependent files for the bytecode version of
+# Ensemble, so these do not need to be set.  The default is
+# to use the GNU "standards" of machine_name-os_name.  If
+# you are using the tcsh shell, then the environment
+# variables MACHTYPE and OSTYPE will be set correctly for
+# your platform and you can use the defaults.  On NT,
+# PLATFORM should be set to be 'nt'.
+
+# MACHTYPE = # unneeded
+# OSTYPE = # unnneeded
+# !NOTE! make sure there are no trailing spaces on the next line
+PLATFORM = nt
+
+#*************************************************************#
+
+
+
+
+
+
+
+#*************************************************************#
+# FOR INITIAL CONFIGURATION, NOTHING BELOW HERE SHOULD NEED TO
+# BE EDITED.
+#*************************************************************#
+#*************************************************************#
+
+#*************************************************************#
+# Decide whether or not to use dynamic linking.  The default
+# is 'no'.  Setting this to 'yes' only has an impact with the
+# bytecode version of Ensemble.
+
+# 'yes' or 'no'
+# !NOTE! make sure there are no trailing spaces on the next line
+USE_DYNLINK = no
+
+DYNLINKSTUFF_yes_opt  = $(ENSLIB)/_nulldynlink$(CMO)
+DYNLINKSTUFF_no_byte  = $(ENSLIB)/_nulldynlink$(CMO)
+DYNLINKSTUFF_no_opt   = $(ENSLIB)/_nulldynlink$(CMO)
+DYNLINKSTUFF_yes_byte = $(LIBDYNLINK)
+
+# embedded macros don't work on NT
+#DYNLINKSTUFF = $(DYNLINKSTUFF_$(USE_DYNLINK)_$(COMPTYPE))
+DYNLINKSTUFF = DYNLINKSTUFF_no_byte
+
+#*************************************************************#
+# There are 3 levels of libraries to use.  The core library
+# contains the minimal Ensemble library.  There is not enough
+# included to run any protocol stacks, so additional modules
+# need to be dynamically linked (so this cannot be used with
+# the native code libraries, and USE_DYNLINK must be set!).
+# The min library includes a minimal set of layers and other
+# stuff that can be used to run the default Ensemble protocol
+# stack and a a total ordering layer for using totally ordered
+# layers.  The full library contains everything not in the
+# previous two libraries.  The macro ENSLIBS_TYPE is used to
+# switch betwen these different configurations.  The default
+# value is "full", which is the safest (although largest)
+# version.
+
+# 'core' or 'min' or 'full'
+# !NOTE! make sure there are no trailing spaces on the next line
+ENSLIBS_TYPE = full
+
+ENSLIBS_core_byte = $(ENSCORELIB)
+ENSLIBS_core_opt  = $(ENSLIBS_min_opt) # override, because native code does not have dynamic linking
+
+ENSLIBS_min_byte  = $(ENSLIBS_core_byte) $(ENSMINLIB)
+ENSLIBS_min_opt   = $(ENSMINLIB_min_byte)
+
+ENSLIBS_full_byte = $(ENSLIBS_min_byte) $(ENSRESTLIB)
+ENSLIBS_full_opt  = $(ENSLIBS_full_byte)
+
+# embedded macros don't work on NT
+#ENSLIBS_DEP	= $(ENSLIBS_$(ENSLIBS_TYPE)_$(COMPTYPE))
+#ENSLIBS	= $(DYNLINKSTUFF) $(ENSLIBS_DEP)
+ENSLIBS_DEP     = ENSLIBS_full_byte
+ENSLIBS         = $(ENSLIB)\_nulldynlink$(CMO) $(ENSCORELIB) $(ENSMINLIB) $(ENSRESTLIB)
+
+#*************************************************************#
+# There are three different configurations of Ensemble.  For
+# Unix, the default is to use the Unix library.  For NT,
+# only the socket library is supported.  HSYS_BUILD
+# determines which configurations should be built.
+# ENSCONFDEP is the set of Ensemble system modules being
+# used.  ENSCONF also includes O'caml modules and specifies
+# whether -custom flag should be used.
+
+# Socket library
+HSYS_BUILD	= socket
+ENSCONFDEP	= $(LIBSOCKDEP) $(ENSLIBS)
+ENSCONF		= $(CUSTOM) $(LIBUNIX) $(LIBSOCK) $(LINK_THR) $(ENSLIBS)
+ENSCONF_skt = $(ENSCONF)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#*************************************************************#
+# OCAML_LIB should point to the library directory.  For
+# Unix, OCAML_LIB is only necessary for the socket library
+# and the C interface.  By default, it is set to the value
+# of the environment variable CAMLLIB, which normally is set
+# to the O'Caml library directory.  It is usually preferable
+# to set OCAML_LIB indirectly through the CAMLLIB
+# environment variable.  Be careful, $(OCAML_LIB)/caml needs
+# to identify the correct location of the config.h header
+# file.  A copy may also be found in ocaml/byterun, but you
+# do not want to use that version, because it may be
+# inconsistent with the installation you are using.
+
+OCAML_LIB	= $(CAMLLIB)
+
+#*************************************************************#
+# Uncomment this definition if you want to use the raw ethernet
+# transport.  This is only supported on Linux platforms which
+# are configured with the packet sockets (CONFIG_PACKET).
+
+ETH_CFLAGS	=# -DRAW_ETH
+
+#*************************************************************#
+# A bunch of configuration macros to support both NT and Unix
+
+EXE	= .exe
+OBJS	= .obj
+ARCS    = .lib
+OBJ	= -$(PLATFORM)$(OBJS)
+ARC	= -$(PLATFORM)$(ARCS)
+CP	= copy
+MV	= move
+LN	= copy			# use copy instead
+RM	= del /Q
+MAKE	= nmake
+MKLIB	= lib /nologo /debugtype:CV
+MKLIBO  = /out:
+RANLIB  = echo			# not needed on NT
+SUBMAKE = "& echo"
+DEPEND  = depend.nt
+PARTIALLD = lib /nologo /debugtype:cv
+PARTIALLDO  = /out:
+ECHO	= echo
+STRIP   = echo
+MKDIR   = mkdir
+RMDIR   = rmdir /S /Q
+#*************************************************************#
+NTRULE	=
+UNIXRULE = -nt
+#*************************************************************#
+# How to link various Ocaml libraries.  Should not require
+# modification.
+LIBCUNIX	= $(OCAML_LIB)\libunix$(ARCS)
+LIBMLUNIX	= unix$(CMAS)
+LIBCSOCK	= $(ENSLIB)\libsock$(ARC)
+LIBMLSOCK	= $(ENSLIB)\socket$(CMA)
+LIBCTHREADS	= $(OCAML_LIB)\libthreads$(ARCS)
+LIBMLTHREADS	= threads$(CMAS)
+LIBCSTR		= $(OCAML_LIB)\libstr$(ARCS)
+LIBMLSTR	= str$(CMAS)
+LIBMLSTRBC	= str.cma
+LIBDYNLINK	= dynlink$(CMAS)
+LIBTK		= # not supported
+#*************************************************************#
+# Select whether or not to use Ocaml threads.  Ocaml threads
+# only work with bytecode interpreter.  Default is no
+# threads.  COMP_THR is the option needed for the
+# compilation step.  LINK_THR is the option needed for the
+# link step.  To use threads, you need to recompile Ensemble
+# from scratch in the def directory (run make clean ; make
+# depend ; make).
+
+# No threads
+COMP_THR	= # no threads
+LINK_THR	= # no threads
+
+# Use threads
+#COMP_THR	= -thread
+#LINK_THR	= -thread $(LIBTHREADS)
+
+#*************************************************************#
+# Root of the Ensemble distribution.  Used to find source files
+# when using dynamicly linked ML files.
+
+ENSROOT_ABS	= C:\nt1314\profiles\rvr\desktop\ens
+
+#*************************************************************#
+# Where to find ATM/UNET header files and libraries.  By
+# default, these are not compiled with the distribution, so 
+# you shouldn't need to adjust them.
+
+# for Cornell CS Dept
+#LIBUNET	= \usr\u\sww\sun4\lib\libunet-2.a
+#INCUNET	= -I\usr\u\sww\sun4\include\unet-2
+
+#*************************************************************#
+# MPI header files
+
+INCMPI		= -I/localhome/hayden/mpich/include
+
+#*************************************************************#
+# Where to find the Crypto stuff
+
+CRYPTO_LINK =
+#	$(ENSROOT)/lib/$(PLATFORM)/crypto$(CMA)		\
+#	-cclib $(ENSROOT)/lib/$(PLATFORM)/libcryptoc$(ARC)
+
+#*************************************************************#
+
+HOT_THREAD_OBJ	= ntthread$(OBJ)
+HOT_CFLAGS_nt	= -DTHREADED_SELECT
+HOT_MLLINK_nt	= #?
+HOT_LINK_nt	= #?
+HOT_LINK_nt	= #?
+
+#*************************************************************#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

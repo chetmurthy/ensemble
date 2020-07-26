@@ -1,0 +1,34 @@
+#*************************************************************#
+#
+#   Ensemble, (Version 0.70p1)
+#   Copyright 2000 Cornell University
+#   All rights reserved.
+#
+#   See ensemble/doc/license.txt for further information.
+#
+#*************************************************************#
+ENSLIB = ..\lib
+LIBHOT = libhot-nt.lib
+LIBMAE = libmae-nt.lib
+MAESTRO_OBJ = 	Maestro_Types.obj \
+		Maestro_GroupMember.obj \
+		Maestro_ClSv.obj \
+		Maestro_CSX.obj
+
+CFLAGS = /TP /I$(ENSLIB)
+LDFLAGS = /link $(LIBMAE) /NODEFAULTLIB \
+	libcmt.lib libcpmt.lib libcimt.lib \
+	oldnames.lib kernel32.lib wsock32.lib
+
+all: maestro_test.exe
+
+$(LIBMAE): $(ENSLIB)\$(LIBHOT) $(MAESTRO_OBJ)
+	lib /out:$(LIBMAE) $(ENSLIB)\$(LIBHOT) $(MAESTRO_OBJ)
+
+maestro_test.exe: $(LIBMAE) maestro_test.c
+	cl $(CFLAGS) maestro_test.c $(LDFLAGS)
+
+clean:
+	del /Q *.obj 
+	del /Q libmae-nt.lib 
+	del /Q test.exe 
